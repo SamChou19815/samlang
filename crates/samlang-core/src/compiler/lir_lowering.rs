@@ -266,6 +266,16 @@ impl<'a> LoweringManager<'a> {
         });
         statements
       }
+      mir::Statement::LateInitDeclaration { name, type_ } => {
+        vec![lir::Statement::LateInitDeclaration { name, type_: lower_type(type_) }]
+      }
+      mir::Statement::LateInitAssignment { name, assigned_expression } => {
+        let lowered = lower_expression(assigned_expression);
+        let mut statements = vec![];
+        self.add_ref_counting_if_type_allowed(&mut statements, &lowered);
+        statements.push(lir::Statement::LateInitAssignment { name, assigned_expression: lowered });
+        statements
+      }
       mir::Statement::StructInit { struct_variable_name, type_name, expression_list } => {
         let type_ = lower_type(mir::Type::Id(type_name));
         let mut statements = vec![];
@@ -1010,7 +1020,16 @@ mod tests {
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
-              s2: vec![],
+              s2: vec![
+                Statement::LateInitDeclaration {
+                  name: heap.alloc_str_for_test("cast"),
+                  type_: INT_TYPE,
+                },
+                Statement::LateInitAssignment {
+                  name: heap.alloc_str_for_test("cast"),
+                  assigned_expression: ZERO,
+                },
+              ],
               final_assignments: vec![(heap.alloc_str_for_test("finalV2"), INT_TYPE, ZERO, ZERO)],
             },
             Statement::While {
@@ -1104,6 +1123,8 @@ function __$compiled_program_main(): number {{
     let cast = 0 as unknown as number;
     finalV2 = 0;
   }} else {{
+    let cast: numberundefined as any;
+    cast = 0;
     finalV2 = 0;
   }}
   let finalV3: number;

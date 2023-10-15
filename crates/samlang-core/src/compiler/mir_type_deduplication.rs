@@ -118,6 +118,13 @@ fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
       type_: rewrite_type(state, type_),
       assigned_expression: rewrite_expr(state, assigned_expression),
     },
+    Statement::LateInitDeclaration { name, type_ } => {
+      Statement::LateInitDeclaration { name, type_: rewrite_type(state, type_) }
+    }
+    Statement::LateInitAssignment { name, assigned_expression } => Statement::LateInitAssignment {
+      name,
+      assigned_expression: rewrite_expr(state, assigned_expression),
+    },
     Statement::StructInit { struct_variable_name, type_name, expression_list } => {
       Statement::StructInit {
         struct_variable_name,
@@ -344,6 +351,8 @@ mod tests {
           ],
           s2: vec![
             Statement::Cast { name: PStr::UNDERSCORE, type_: INT_TYPE, assigned_expression: ZERO },
+            Statement::LateInitDeclaration { name: PStr::UNDERSCORE, type_: INT_TYPE },
+            Statement::LateInitAssignment { name: PStr::UNDERSCORE, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: PStr::UNDERSCORE,
               type_name: table.create_type_name_for_test(PStr::UPPER_D),
@@ -383,6 +392,8 @@ function __$main(): int {
     _ = 0;
   } else {
     let _ = 0 as int;
+    let _: int;
+    _ = 0;
     let _: _C = [0];
     let _: _C = Closure { fun: (__$f: (_E) -> int), context: (v: int) };
     _ = 0;

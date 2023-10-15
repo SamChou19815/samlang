@@ -402,6 +402,19 @@ fn optimize_stmt(
       false
     }
 
+    Statement::LateInitDeclaration { name, type_ } => {
+      collector.push(Statement::LateInitDeclaration { name: *name, type_: *type_ });
+      false
+    }
+
+    Statement::LateInitAssignment { name, assigned_expression } => {
+      collector.push(Statement::LateInitAssignment {
+        name: *name,
+        assigned_expression: *assigned_expression,
+      });
+      false
+    }
+
     Statement::StructInit { struct_variable_name, type_name, expression_list } => {
       let mut optimized_expression_list = vec![];
       for (i, e) in expression_list.iter().enumerate() {

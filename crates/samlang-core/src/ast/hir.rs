@@ -419,6 +419,14 @@ pub(crate) enum Statement {
     type_: Type,
     assigned_expression: Expression,
   },
+  LateInitDeclaration {
+    name: PStr,
+    type_: Type,
+  },
+  LateInitAssignment {
+    name: PStr,
+    assigned_expression: Expression,
+  },
   StructInit {
     struct_variable_name: PStr,
     type_: IdType,
@@ -625,6 +633,22 @@ impl Statement {
           name.as_str(heap),
           assigned_expression.debug_print(heap),
           type_.pretty_print(heap),
+        ));
+      }
+      Statement::LateInitDeclaration { name, type_ } => {
+        collector.push(format!(
+          "{}let {}: {};\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          type_.pretty_print(heap),
+        ));
+      }
+      Statement::LateInitAssignment { name, assigned_expression } => {
+        collector.push(format!(
+          "{}{} = {};\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          assigned_expression.debug_print(heap),
         ));
       }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {

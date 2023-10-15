@@ -297,6 +297,8 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::Cast { name: PStr::UNDERSCORE, type_: INT_TYPE, assigned_expression: ZERO },
+            Statement::LateInitDeclaration { name: PStr::LOWER_B, type_: INT_TYPE },
+            Statement::LateInitAssignment { name: PStr::LOWER_B, assigned_expression: ZERO },
             Statement::IndexedAccess {
               name: PStr::LOWER_C,
               type_: INT_TYPE,
@@ -374,6 +376,8 @@ function __$loop(): int {
 
 function __$moveMove(a: int): int {
   let _ = 0 as int;
+  let b: int;
+  b = 0;
   let c: int = (a: int)[0];
   return 0;
 }
@@ -382,6 +386,8 @@ function __$insanelyBigFunction(a: int): int {
   let _t2c: int = (a: int)[0];
   (a: int)();
   let _t4_ = 0 as int;
+  let _t4b: int;
+  _t4b = 0;
   let _t4c: int = (a: int)[0];
   (a: int)();
   __$non-existing-function();

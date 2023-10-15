@@ -86,6 +86,12 @@ fn collect_used_names_from_statement(
         collect_for_type_set(t, type_set);
       }
     }
+    Statement::LateInitDeclaration { name: _, type_ } => {
+      collect_for_type_set(type_, type_set);
+    }
+    Statement::LateInitAssignment { name: _, assigned_expression } => {
+      collect_used_names_from_expression(str_name_set, fn_name_set, type_set, assigned_expression);
+    }
     Statement::Cast { name: _, type_, assigned_expression } => {
       collect_for_type_set(type_, type_set);
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, assigned_expression)

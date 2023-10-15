@@ -57,9 +57,11 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
     Statement::While { loop_variables, statements, break_collector: _ } => {
       collect_use_from_while_parts(loop_variables, statements, set);
     }
-    Statement::Cast { name: _, type_: _, assigned_expression } => {
+    Statement::Cast { name: _, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name: _, assigned_expression } => {
       collect_use_from_expression(assigned_expression, set);
     }
+    Statement::LateInitDeclaration { name: _, type_: _ } => {}
     Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       for e in expression_list {
         collect_use_from_expression(e, set);
@@ -171,7 +173,8 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
       });
       true
     }
-    Statement::Cast { name, type_: _, assigned_expression } => {
+    Statement::Cast { name, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name, assigned_expression } => {
       if !set.contains(name) {
         false
       } else {
@@ -179,6 +182,7 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
         true
       }
     }
+    Statement::LateInitDeclaration { name, type_: _ } => set.contains(name),
     Statement::StructInit { struct_variable_name, type_name: _, expression_list } => {
       if !set.contains(struct_variable_name) {
         false

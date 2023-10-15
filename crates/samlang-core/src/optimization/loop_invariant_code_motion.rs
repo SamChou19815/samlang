@@ -29,95 +29,79 @@ pub(super) fn optimize(
   let mut hoisted_stmts = vec![];
   let mut inner_stmts = vec![];
   for stmt in stmts {
-    match stmt {
+    match &stmt {
       Statement::Binary(b) => {
         if expression_is_loop_invariant(&b.e1, &non_loop_invariant_variables)
           && expression_is_loop_invariant(&b.e2, &non_loop_invariant_variables)
         {
-          hoisted_stmts.push(Statement::Binary(b));
+          hoisted_stmts.push(stmt);
         } else {
           non_loop_invariant_variables.insert(b.name);
-          inner_stmts.push(Statement::Binary(b));
+          inner_stmts.push(stmt);
         }
       }
-      Statement::IndexedAccess { name, type_, pointer_expression, index } => {
-        if expression_is_loop_invariant(&pointer_expression, &non_loop_invariant_variables) {
-          hoisted_stmts.push(Statement::IndexedAccess { name, type_, pointer_expression, index });
+      Statement::IndexedAccess { name, type_: _, pointer_expression, index: _ } => {
+        if expression_is_loop_invariant(pointer_expression, &non_loop_invariant_variables) {
+          hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(name);
-          inner_stmts.push(Statement::IndexedAccess { name, type_, pointer_expression, index });
+          non_loop_invariant_variables.insert(*name);
+          inner_stmts.push(stmt);
         }
       }
-      Statement::Cast { name, type_, assigned_expression } => {
-        if expression_is_loop_invariant(&assigned_expression, &non_loop_invariant_variables) {
-          hoisted_stmts.push(Statement::Cast { name, type_, assigned_expression });
+      Statement::Cast { name, type_: _, assigned_expression }
+      | Statement::LateInitAssignment { name, assigned_expression } => {
+        if expression_is_loop_invariant(assigned_expression, &non_loop_invariant_variables) {
+          hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(name);
-          inner_stmts.push(Statement::Cast { name, type_, assigned_expression });
+          non_loop_invariant_variables.insert(*name);
+          inner_stmts.push(stmt);
         }
       }
-      Statement::StructInit { struct_variable_name, type_name, expression_list } => {
+      Statement::LateInitDeclaration { .. } => hoisted_stmts.push(stmt),
+      Statement::StructInit { struct_variable_name, type_name: _, expression_list } => {
         if expression_list
           .iter()
           .all(|e| expression_is_loop_invariant(e, &non_loop_invariant_variables))
         {
-          hoisted_stmts.push(Statement::StructInit {
-            struct_variable_name,
-            type_name,
-            expression_list,
-          });
+          hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(struct_variable_name);
-          inner_stmts.push(Statement::StructInit {
-            struct_variable_name,
-            type_name,
-            expression_list,
-          });
+          non_loop_invariant_variables.insert(*struct_variable_name);
+          inner_stmts.push(stmt);
         }
       }
       Statement::ClosureInit {
         closure_variable_name,
-        closure_type_name,
-        function_name,
+        closure_type_name: _,
+        function_name: _,
         context,
       } => {
-        if expression_is_loop_invariant(&context, &non_loop_invariant_variables) {
-          hoisted_stmts.push(Statement::ClosureInit {
-            closure_variable_name,
-            closure_type_name,
-            function_name,
-            context,
-          });
+        if expression_is_loop_invariant(context, &non_loop_invariant_variables) {
+          hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(closure_variable_name);
-          inner_stmts.push(Statement::ClosureInit {
-            closure_variable_name,
-            closure_type_name,
-            function_name,
-            context,
-          });
+          non_loop_invariant_variables.insert(*closure_variable_name);
+          inner_stmts.push(stmt);
         }
       }
-      Statement::Call { callee, arguments, return_type, return_collector } => {
+      Statement::Call { callee: _, arguments: _, return_type: _, return_collector } => {
         if let Some(c) = &return_collector {
           non_loop_invariant_variables.insert(*c);
         }
-        inner_stmts.push(Statement::Call { callee, arguments, return_type, return_collector });
+        inner_stmts.push(stmt);
       }
-      Statement::IfElse { condition, s1, s2, final_assignments } => {
-        for (n, _, _, _) in &final_assignments {
+      Statement::IfElse { condition: _, s1: _, s2: _, final_assignments } => {
+        for (n, _, _, _) in final_assignments {
           non_loop_invariant_variables.insert(*n);
         }
-        inner_stmts.push(Statement::IfElse { condition, s1, s2, final_assignments });
+        inner_stmts.push(stmt);
       }
       Statement::SingleIf { .. } | Statement::Break(_) => {
         inner_stmts.push(stmt);
       }
-      Statement::While { loop_variables, statements, break_collector } => {
+      Statement::While { loop_variables: _, statements: _, break_collector } => {
         if let Some(v) = &break_collector {
           non_loop_invariant_variables.insert(v.name);
         }
-        inner_stmts.push(Statement::While { loop_variables, statements, break_collector });
+        inner_stmts.push(stmt);
       }
     }
   }
@@ -306,6 +290,11 @@ mod tests {
           type_: INT_TYPE,
           assigned_expression: Expression::var_name(PStr::LOWER_I, INT_TYPE),
         },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("l3"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("l3"),
+          assigned_expression: Expression::var_name(PStr::LOWER_I, INT_TYPE),
+        },
         Statement::IfElse {
           condition: ZERO,
           s1: vec![],
@@ -333,6 +322,7 @@ let d: int = (c: int)[0];
 let h: _I = Closure { fun: (__$f: () -> int), context: (d: int) };
 let kk: _I = [0];
 let l1 = 0 as int;
+let l3: int;
 let i: int = 0;
 let j: int = 0;
 let x: int = 0;
@@ -357,6 +347,7 @@ while (true) {
   let g: _I = Closure { fun: (__$f: () -> int), context: (x: int) };
   let kk2: _I = [(g: int)];
   let l2 = (i: int) as int;
+  l3 = (i: int);
   let bad: int;
   if 0 {
     bad = 0;
@@ -378,7 +369,7 @@ while (true) {
     );
     assert_eq!(
       vec![
-        "bad", "cc", "e", "f", "fc", "g", "i", "j", "kk2", "l2", "tmp_i", "tmp_j", "tmp_x",
+        "bad", "cc", "e", "f", "fc", "g", "i", "j", "kk2", "l2", "l3", "tmp_i", "tmp_j", "tmp_x",
         "tmp_y", "tmp_z", "x", "y", "z", "zzzz",
       ],
       non_loop_invariant_variables.iter().map(|it| it.as_str(heap)).sorted().collect_vec()

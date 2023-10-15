@@ -77,6 +77,11 @@ mod tests {
           type_: INT_TYPE,
           assigned_expression: ZERO,
         },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("c2"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("c2"),
+          assigned_expression: ZERO,
+        },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
           type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
@@ -122,6 +127,8 @@ mod tests {
 let b0 = (i0: int) + 3;
 let b3 = (i0: int) + (b0: int);
 let c1 = 0 as int;
+let c2: int;
+c2 = 0;
 let s: _S = [(i0: int), (b0: int), (b3: int)];
 let s: _S = Closure { fun: (__$a: () -> int), context: 0 };
 __$fff((i0: int), (b0: int), (b3: int));

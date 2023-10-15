@@ -172,9 +172,13 @@ impl<'a> LoweringManager<'a> {
         self.loop_cx = saved_current_loop_cx;
         instructions
       }
-      lir::Statement::Cast { name, type_: _, assigned_expression } => {
+      lir::Statement::Cast { name, type_: _, assigned_expression }
+      | lir::Statement::LateInitAssignment { name, assigned_expression } => {
         let assigned = self.lower_expr(assigned_expression);
         vec![wasm::Instruction::Inline(self.set(name, assigned))]
+      }
+      lir::Statement::LateInitDeclaration { name: _, type_: _ } => {
+        vec![]
       }
       lir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
         let mut instructions = vec![wasm::Instruction::Inline(self.set(
@@ -329,11 +333,11 @@ mod tests {
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
-              statements: vec![Statement::Cast {
-                name: PStr::LOWER_C,
-                type_: INT_TYPE,
-                assigned_expression: ZERO,
-              }],
+              statements: vec![
+                Statement::Cast { name: PStr::LOWER_C, type_: INT_TYPE, assigned_expression: ZERO },
+                Statement::LateInitDeclaration { name: PStr::LOWER_C, type_: INT_TYPE },
+                Statement::LateInitAssignment { name: PStr::LOWER_C, assigned_expression: ZERO },
+              ],
               break_collector: None,
             }],
             s2: vec![
@@ -433,6 +437,7 @@ mod tests {
     (local.set $i (i32.const 0))
     (loop $l0
       (block $l1
+        (local.set $c (i32.const 0))
         (local.set $c (i32.const 0))
         (local.set $i (i32.const 0))
         (br $l0)

@@ -27,6 +27,8 @@ fn optimize_stmts(
       | Statement::SingleIf { .. }
       | Statement::While { .. }
       | Statement::Cast { .. }
+      | Statement::LateInitDeclaration { .. }
+      | Statement::LateInitAssignment { .. }
       | Statement::StructInit { .. }
       | Statement::ClosureInit { .. } => collector.push(stmt),
 

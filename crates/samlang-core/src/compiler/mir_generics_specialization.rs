@@ -268,6 +268,22 @@ impl Rewriter {
           ),
         });
       }
+      hir::Statement::LateInitDeclaration { name, type_ } => {
+        collector.push(mir::Statement::LateInitDeclaration {
+          name: *name,
+          type_: self.rewrite_type(heap, type_, generics_replacement_map),
+        })
+      }
+      hir::Statement::LateInitAssignment { name, assigned_expression } => {
+        collector.push(mir::Statement::LateInitAssignment {
+          name: *name,
+          assigned_expression: self.rewrite_expr(
+            heap,
+            assigned_expression,
+            generics_replacement_map,
+          ),
+        })
+      }
       hir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let type_name =
           self.rewrite_id_type(heap, type_, generics_replacement_map).into_id().unwrap();
@@ -1216,6 +1232,14 @@ sources.mains = [_DUMMY_I$main]
                     type_: hir::INT_TYPE,
                     assigned_expression: hir::Expression::var_name(PStr::LOWER_A, hir::INT_TYPE),
                   },
+                  hir::Statement::LateInitDeclaration {
+                    name: heap.alloc_str_for_test("late_init"),
+                    type_: hir::INT_TYPE,
+                  },
+                  hir::Statement::LateInitAssignment {
+                    name: heap.alloc_str_for_test("late_init"),
+                    assigned_expression: hir::Expression::var_name(PStr::LOWER_A, hir::INT_TYPE),
+                  },
                 ],
                 s2: vec![
                   hir::Statement::Call {
@@ -1384,6 +1408,8 @@ function _DUMMY_I$main(): int {
     _DUMMY_I_DUMMY_J$functor_fun(G1);
     let v1: int = (a: DUMMY_I_int__Str)[0];
     let cast = (a: int) as int;
+    let late_init: int;
+    late_init = (a: int);
     finalV = (v1: int);
   } else {
     _DUMMY_I$main();

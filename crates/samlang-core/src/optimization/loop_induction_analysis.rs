@@ -185,6 +185,8 @@ fn stmt_contains_break(stmt: &Statement) -> bool {
     | Statement::IndexedAccess { .. }
     | Statement::Call { .. }
     | Statement::Cast { .. }
+    | Statement::LateInitDeclaration { .. }
+    | Statement::LateInitAssignment { .. }
     | Statement::StructInit { .. }
     | Statement::ClosureInit { .. } => false,
     // Although it might contain break, the break never affects the outer loop,
