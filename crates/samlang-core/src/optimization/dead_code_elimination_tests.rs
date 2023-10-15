@@ -62,6 +62,14 @@ mod tests {
         type_: INT_TYPE,
         assigned_expression: Expression::var_name(heap.alloc_str_for_test("s"), INT_TYPE),
       },
+      Statement::LateInitDeclaration {
+        name: heap.alloc_str_for_test("i_am_definitely_unused_2"),
+        type_: INT_TYPE,
+      },
+      Statement::LateInitAssignment {
+        name: heap.alloc_str_for_test("i_am_definitely_unused_2"),
+        assigned_expression: ZERO,
+      },
       Statement::Call {
         callee: Callee::FunctionName(FunctionNameExpression {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
@@ -146,6 +154,16 @@ return (ii: int);"#,
           type_: INT_TYPE,
           assigned_expression: Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
         },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("s3"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("s3"),
+          assigned_expression: Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
+        },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("s4"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("s4"),
+          assigned_expression: Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
+        },
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
@@ -155,6 +173,7 @@ return (ii: int);"#,
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("s2"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("s3"), INT_TYPE),
           ],
           return_type: INT_TYPE,
           return_collector: None,
@@ -169,7 +188,9 @@ let p = 0 + 1;
 let i1: int = (p: int)[3];
 let s1: _Id = Closure { fun: (__$closure: () -> int), context: (b2: int) };
 let s2 = (s1: int) as int;
-__$ff((i1: int), (s1: int), (s2: int));
+let s3: int;
+s3 = (s1: int);
+__$ff((i1: int), (s1: int), (s2: int), (s3: int));
 return 0;"#,
     );
   }

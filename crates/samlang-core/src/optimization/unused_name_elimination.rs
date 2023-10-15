@@ -87,6 +87,10 @@ fn collect_used_names_from_statement(
       collect_for_type_set(type_, type_set);
       collect_used_names_from_expression(str_name_set, type_set, assigned_expression);
     }
+    Statement::LateInitDeclaration { name: _, type_: _ } => {}
+    Statement::LateInitAssignment { name: _, assigned_expression } => {
+      collect_used_names_from_expression(str_name_set, type_set, assigned_expression);
+    }
     Statement::StructInit { struct_variable_name: _, type_name, expression_list } => {
       type_set.insert(*type_name);
       for e in expression_list {
@@ -354,6 +358,11 @@ mod tests {
             Statement::Cast {
               name: PStr::LOWER_A,
               type_: INT_TYPE,
+              assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
+            },
+            Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_TYPE },
+            Statement::LateInitAssignment {
+              name: PStr::LOWER_A,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
             Statement::Call {

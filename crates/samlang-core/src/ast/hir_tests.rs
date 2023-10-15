@@ -292,6 +292,11 @@ mod tests {
           type_: INT_TYPE,
           assigned_expression: ZERO,
         },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("cast"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("cast"),
+          assigned_expression: ZERO,
+        },
         Statement::ConditionalDestructure {
           test_expr: ZERO,
           tag: 0,
@@ -431,6 +436,8 @@ if 0 {
   let dd = 0 >>> 0;
   let dd = 0 ^ 0;
   let cast = 0 as int;
+  let cast: int;
+  cast = 0;
   let [_, _: int] if tagof(0)==0 {
     undefined = 0;
     break;

@@ -54,9 +54,11 @@ fn stmt_uses_basic_induction_var(
           || expr_uses_basic_induction_var(&loop_var.loop_value, v)
       }) || stmts_uses_basic_induction_var(statements, v)
     }
-    Statement::Cast { name: _, type_: _, assigned_expression } => {
+    Statement::Cast { name: _, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name: _, assigned_expression } => {
       expr_uses_basic_induction_var(assigned_expression, v)
     }
+    Statement::LateInitDeclaration { name: _, type_: _ } => false,
     Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       expression_list.iter().any(|e| expr_uses_basic_induction_var(e, v))
     }
@@ -304,6 +306,8 @@ mod tests {
             }],
             statements: vec![
               Statement::Cast { name: PStr::LOWER_A, type_: INT_TYPE, assigned_expression: ZERO },
+              Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_TYPE },
+              Statement::LateInitAssignment { name: PStr::LOWER_A, assigned_expression: ZERO },
               Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),

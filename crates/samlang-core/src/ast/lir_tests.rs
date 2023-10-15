@@ -198,6 +198,14 @@ mod tests {
                 index: 0,
               },
               Statement::Cast { name: PStr::LOWER_C, type_: INT_TYPE, assigned_expression: ZERO },
+              Statement::LateInitDeclaration {
+                name: heap.alloc_str_for_test("c"),
+                type_: INT_TYPE,
+              },
+              Statement::LateInitAssignment {
+                name: heap.alloc_str_for_test("c"),
+                assigned_expression: ZERO,
+              },
               Statement::Break(ZERO),
             ],
             final_assignments: vec![(
@@ -264,6 +272,8 @@ function __$f(v1: () => number): number {{
     let f: number = big[0];
     0[0] = 0;
     let c = 0 as unknown as number;
+    let c: numberundefined as any;
+    c = 0;
     break;
     bar = b2;
   }}

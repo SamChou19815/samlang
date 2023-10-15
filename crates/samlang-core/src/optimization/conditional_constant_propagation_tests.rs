@@ -290,6 +290,11 @@ mod tests {
           type_: INT_TYPE,
           assigned_expression: Expression::var_name(heap.alloc_str_for_test("a18"), INT_TYPE),
         },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("a20"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("a20"),
+          assigned_expression: Expression::var_name(heap.alloc_str_for_test("a18"), INT_TYPE),
+        },
       ],
       Expression::var_name(heap.alloc_str_for_test("a17"), INT_TYPE),
       heap,
@@ -308,6 +313,8 @@ let a16 = (a15: int) + 5;
 let a17 = (a15: int) + 47;
 let a18 = (a15: int) / 5;
 let a19 = (a18: int) as int;
+let a20: int;
+a20 = (a18: int);
 return (a17: int);"#,
     );
   }

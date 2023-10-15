@@ -124,9 +124,11 @@ fn collect_def_function_usages_stmt(
       }
       collect_def_function_usages_stmts(state, f, statements);
     }
-    Statement::Cast { name: _, type_: _, assigned_expression } => {
+    Statement::Cast { name: _, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name: _, assigned_expression } => {
       collect_def_function_usages_expr(state, assigned_expression)
     }
+    Statement::LateInitDeclaration { .. } => {}
     Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       for e in expression_list {
         collect_def_function_usages_expr(state, e);
@@ -159,6 +161,8 @@ fn collect_global_usages_stmt(
     | Statement::IndexedAccess { .. }
     | Statement::Break(_)
     | Statement::Cast { .. }
+    | Statement::LateInitDeclaration { .. }
+    | Statement::LateInitAssignment { .. }
     | Statement::StructInit { .. }
     | Statement::Call {
       callee: Callee::Variable(_),
@@ -309,9 +313,11 @@ fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
       rewrite_stmts(state, statements);
     }
     Statement::Break(e) => rewrite_expr(state, e),
-    Statement::Cast { name: _, type_: _, assigned_expression } => {
+    Statement::Cast { name: _, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name: _, assigned_expression } => {
       rewrite_expr(state, assigned_expression)
     }
+    Statement::LateInitDeclaration { name: _, type_: _ } => {}
     Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       for e in expression_list {
         rewrite_expr(state, e);
@@ -572,6 +578,8 @@ mod tests {
               break_collector: None,
             },
             Statement::Cast { name: dummy_name, type_: INT_TYPE, assigned_expression: ZERO },
+            Statement::LateInitDeclaration { name: dummy_name, type_: INT_TYPE },
+            Statement::LateInitAssignment { name: dummy_name, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: dummy_name,
               type_name: table.create_type_name_for_test(dummy_name),
@@ -625,6 +633,8 @@ function __$func_with_consts(b: _B, e: _E): int {
     _ = 0;
   }
   let _ = 0 as int;
+  let _: int;
+  _ = 0;
   let _: __ = [0, 0];
   return 0;
 }

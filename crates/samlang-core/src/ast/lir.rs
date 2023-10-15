@@ -176,6 +176,14 @@ pub(crate) enum Statement {
     type_: Type,
     assigned_expression: Expression,
   },
+  LateInitDeclaration {
+    name: PStr,
+    type_: Type,
+  },
+  LateInitAssignment {
+    name: PStr,
+    assigned_expression: Expression,
+  },
   StructInit {
     struct_variable_name: PStr,
     type_: Type,
@@ -418,6 +426,21 @@ impl Statement {
         assigned_expression.pretty_print(collector, heap, table);
         collector.push_str(" as unknown as ");
         type_.pretty_print(collector, heap, table);
+        collector.push_str(";\n");
+      }
+      Statement::LateInitDeclaration { name, type_ } => {
+        Self::append_spaces(collector, level);
+        collector.push_str("let ");
+        collector.push_str(name.as_str(heap));
+        collector.push_str(": ");
+        type_.pretty_print(collector, heap, table);
+        collector.push_str("undefined as any;\n");
+      }
+      Statement::LateInitAssignment { name, assigned_expression } => {
+        Self::append_spaces(collector, level);
+        collector.push_str(name.as_str(heap));
+        collector.push_str(" = ");
+        assigned_expression.pretty_print(collector, heap, table);
         collector.push_str(";\n");
       }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {

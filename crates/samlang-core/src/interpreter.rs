@@ -197,11 +197,13 @@ fn eval_stmt(
         }
       }
     }
-    Statement::Cast { name, type_: _, assigned_expression } => {
+    Statement::Cast { name, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name, assigned_expression } => {
       let v = eval_expr(mem, assigned_expression);
       mem.write_to_stack(*name, v);
       Ok(())
     }
+    Statement::LateInitDeclaration { .. } => Ok(()),
     Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
       let address = mem.malloc(expression_list.len() * 4);
       for (i, expr) in expression_list.iter().enumerate() {
@@ -750,6 +752,17 @@ mod tests {
             Statement::Cast {
               name: heap.alloc_str_for_test("cast"),
               type_: INT_TYPE,
+              assigned_expression: Expression::Variable(
+                heap.alloc_str_for_test("product"),
+                INT_TYPE,
+              ),
+            },
+            Statement::LateInitDeclaration {
+              name: heap.alloc_str_for_test("cast"),
+              type_: INT_TYPE,
+            },
+            Statement::LateInitAssignment {
+              name: heap.alloc_str_for_test("cast"),
               assigned_expression: Expression::Variable(
                 heap.alloc_str_for_test("product"),
                 INT_TYPE,

@@ -115,10 +115,12 @@ fn optimize_stmt(
       variable_cx.pop_scope();
       true
     }
-    Statement::Cast { name: _, type_: _, assigned_expression } => {
+    Statement::Cast { name: _, type_: _, assigned_expression }
+    | Statement::LateInitAssignment { name: _, assigned_expression } => {
       optimize_expr(assigned_expression, variable_cx);
       true
     }
+    Statement::LateInitDeclaration { name: _, type_: _ } => true,
     Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       for e in expression_list {
         optimize_expr(e, variable_cx);

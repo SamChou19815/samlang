@@ -20,7 +20,8 @@ mod estimator {
 
   fn estimate_stmt_inline_cost(stmt: &Statement) -> usize {
     match stmt {
-      Statement::Binary(_) | Statement::Cast { .. } => 1,
+      Statement::LateInitDeclaration { .. } => 0,
+      Statement::Binary(_) | Statement::Cast { .. } | Statement::LateInitAssignment { .. } => 1,
       Statement::IndexedAccess { .. } => 2,
       Statement::Call { .. } => 10,
       Statement::IfElse { condition: _, s1, s2, final_assignments } => {
@@ -153,10 +154,13 @@ mod estimator {
             statements: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
             break_collector: None,
           },
+          Statement::Cast { name: PStr::EMPTY, type_: INT_TYPE, assigned_expression: ZERO },
+          Statement::LateInitDeclaration { name: PStr::EMPTY, type_: INT_TYPE },
+          Statement::LateInitAssignment { name: PStr::EMPTY, assigned_expression: ZERO },
         ],
         return_value: ZERO,
       });
-      assert_eq!(32, actual);
+      assert_eq!(34, actual);
     }
   }
 }
@@ -297,6 +301,14 @@ fn inline_rewrite_stmt(
     Statement::Cast { name, type_, assigned_expression } => Statement::Cast {
       name: bind_with_mangled_name(cx, heap, prefix, name, type_),
       type_: *type_,
+      assigned_expression: inline_rewrite_expr(assigned_expression, cx),
+    },
+    Statement::LateInitDeclaration { name, type_ } => Statement::LateInitDeclaration {
+      name: bind_with_mangled_name(cx, heap, prefix, name, type_),
+      type_: *type_,
+    },
+    Statement::LateInitAssignment { name, assigned_expression } => Statement::LateInitAssignment {
+      name: cx.get(name).unwrap().into_variable().unwrap().name,
       assigned_expression: inline_rewrite_expr(assigned_expression, cx),
     },
     Statement::StructInit { struct_variable_name, type_name, expression_list } => {

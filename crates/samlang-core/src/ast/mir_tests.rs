@@ -179,6 +179,11 @@ mod tests {
           type_: INT_TYPE,
           assigned_expression: ZERO,
         },
+        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("cast"), type_: INT_TYPE },
+        Statement::LateInitAssignment {
+          name: heap.alloc_str_for_test("cast"),
+          assigned_expression: ZERO,
+        },
         Statement::While {
           loop_variables: vec![],
           statements: vec![Statement::SingleIf {
@@ -277,6 +282,8 @@ if 0 {
   let dd = 0 >>> 0;
   let dd = 0 ^ 0;
   let cast = 0 as int;
+  let cast: int;
+  cast = 0;
   while (true) {
     if 0 {
     }
