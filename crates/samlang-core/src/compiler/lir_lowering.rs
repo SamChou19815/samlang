@@ -1032,9 +1032,9 @@ mod tests {
 type _Object = [number, number, number];
 type _Variant = [number, number];
 function __$cc(): number {{
-  let _t3: (t0: any, t1: number) => number = cc[1];
-  let _t4: any = cc[2];
-  _t3(_t4, 0);
+  let _t1: (t0: any, t1: number) => number = cc[1];
+  let _t2: any = cc[2];
+  _t1(_t2, 0);
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
@@ -1057,21 +1057,21 @@ function __$cc(): number {{
 }}
 function __$main(): number {{
   let v1 = 0 + 0;
-  let _t5 = obj as unknown as any;
-  __$inc_ref(_t5);
+  let _t3 = obj as unknown as any;
+  __$inc_ref(_t3);
   let O: _Object = [131073, 0, obj];
   let v1: _Variant = [1, 0, 0];
-  let _t6 = G1 as unknown as any;
-  __$inc_ref(_t6);
+  let _t4 = G1 as unknown as any;
+  __$inc_ref(_t4);
   let v2: _Variant = [131073, 0, G1];
+  let _t5 = G1 as unknown as any;
+  __$inc_ref(_t5);
+  let _t6 = __$aaa as unknown as (t0: any) => number;
   let _t7 = G1 as unknown as any;
-  __$inc_ref(_t7);
-  let _t8 = __$aaa as unknown as (t0: any) => number;
-  let _t9 = G1 as unknown as any;
-  let c1: _CC = [131073, _t8, _t9];
-  let _t10 = __$bbb as unknown as (t0: any) => number;
-  let _t11 = 0 as unknown as any;
-  let c2: _CC = [1, _t10, _t11];
+  let c1: _CC = [131073, _t6, _t7];
+  let _t8 = __$bbb as unknown as (t0: any) => number;
+  let _t9 = 0 as unknown as any;
+  let c2: _CC = [1, _t8, _t9];
   __$dec_ref(O);
   __$dec_ref(v1);
   __$dec_ref(v2);
@@ -1086,17 +1086,17 @@ function __$compiled_program_main(): number {{
     let ccc: number = __$cc(0);
     finalV = v1;
   }} else {{
-    let _t13: (t0: any, t1: number) => number = cc[1];
-    let _t14: any = cc[2];
-    let _t12: _CC = _t13(_t14, 0);
-    let _t15 = _t12 as unknown as any;
-    __$inc_ref(_t15);
+    let _t11: (t0: any, t1: number) => number = cc[1];
+    let _t12: any = cc[2];
+    let _t10: _CC = _t11(_t12, 0);
+    let _t13 = _t10 as unknown as any;
+    __$inc_ref(_t13);
+    let _t14 = G1 as unknown as any;
+    __$inc_ref(_t14);
+    let _t15 = __$aaa as unknown as (t0: any) => number;
     let _t16 = G1 as unknown as any;
-    __$inc_ref(_t16);
-    let _t17 = __$aaa as unknown as (t0: any) => number;
-    let _t18 = G1 as unknown as any;
-    let v2: _CC = [131073, _t17, _t18];
-    __$dec_ref(_t12);
+    let v2: _CC = [131073, _t15, _t16];
+    __$dec_ref(_t10);
     finalV = v2;
   }}
   let finalV2: number;

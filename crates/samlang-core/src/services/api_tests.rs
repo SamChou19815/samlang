@@ -852,13 +852,13 @@ interface Interface {}
     assert!(completion::auto_complete(&state, &test_mod_ref, Position(4, 3)).is_empty());
     assert!(completion::auto_complete(&state, &test_mod_ref, Position(14, 22)).is_empty());
     assert_eq!(
-      r#"List [kind=Class, detail=class List]
+      r#"Developer [kind=Class, detail=class Developer]
+Interface [kind=Interface, detail=interface Interface]
+List [kind=Class, detail=class List]
 Main [kind=Class, detail=class Main]
 Pair [kind=Class, detail=class Pair]
 Process [kind=Class, detail=class Process]
-Str [kind=Class, detail=class Str]
-Developer [kind=Class, detail=class Developer]
-Interface [kind=Interface, detail=interface Interface]"#,
+Str [kind=Class, detail=class Str]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(4, 5))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
@@ -1025,11 +1025,11 @@ class Developer {
     );
     assert_eq!(
       r#"
+Developer [kind=Class, detail=class Developer]
 Main [kind=Class, detail=class Main]
 Other [kind=Class, detail=class Other]
 Process [kind=Class, detail=class Process]
 Str [kind=Class, detail=class Str]
-Developer [kind=Class, detail=class Developer]
 "#
       .trim(),
       completion::auto_complete(&state, &mod_ref, Position(3, 39))

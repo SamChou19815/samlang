@@ -353,11 +353,6 @@ function __$cc(): int {
   return 0;
 }
 
-function __$loop(): int {
-  __$loop();
-  return 0;
-}
-
 function __$factorial(n: int, acc: int): int {
   let c = (n: int) == 0;
   let fa: int;
@@ -372,28 +367,33 @@ function __$factorial(n: int, acc: int): int {
   return (fa: int);
 }
 
-function __$insanelyBigFunction(a: int): int {
-  let _t4c: int = (a: int)[0];
-  (a: int)();
-  let _t6_ = 0 as int;
-  let _t6c: int = (a: int)[0];
-  (a: int)();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
-  __$non-existing-function();
+function __$loop(): int {
+  __$loop();
   return 0;
 }
 
 function __$moveMove(a: int): int {
   let _ = 0 as int;
   let c: int = (a: int)[0];
+  return 0;
+}
+
+function __$insanelyBigFunction(a: int): int {
+  let _t2c: int = (a: int)[0];
+  (a: int)();
+  let _t4_ = 0 as int;
+  let _t4c: int = (a: int)[0];
+  (a: int)();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
+  __$non-existing-function();
   return 0;
 }
 "#,
@@ -819,22 +819,22 @@ function __$main(): int {
 function __$main(): int {
   let _t0n: int = 10;
   while (true) {
-    let _t2n: int = 10;
+    let _t1n: int = 10;
     while (true) {
-      let _t4n: int = 10;
+      let _t2n: int = 10;
       while (true) {
-        let _t6n: int = 10;
+        let _t3n: int = 10;
         while (true) {
-          let _t8n: int = 10;
+          let _t4n: int = 10;
           while (true) {
-            let _t8_tmp_n: int = __$fooBar();
-            _t8n = (_t8_tmp_n: int);
+            let _t4_tmp_n: int = __$fooBar();
+            _t4n = (_t4_tmp_n: int);
           }
-          _t6n = (v: int);
+          _t3n = (v: int);
         }
-        _t4n = (v: int);
+        _t2n = (v: int);
       }
-      _t2n = (v: int);
+      _t1n = (v: int);
     }
     _t0n = (v: int);
   }
