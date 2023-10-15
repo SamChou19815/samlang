@@ -758,11 +758,11 @@ mod tests {
               ),
             },
             Statement::LateInitDeclaration {
-              name: heap.alloc_str_for_test("cast"),
+              name: heap.alloc_str_for_test("late_init"),
               type_: INT_TYPE,
             },
             Statement::LateInitAssignment {
-              name: heap.alloc_str_for_test("cast"),
+              name: heap.alloc_str_for_test("late_init"),
               assigned_expression: Expression::Variable(
                 heap.alloc_str_for_test("product"),
                 INT_TYPE,
