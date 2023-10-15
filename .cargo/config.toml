@@ -4,7 +4,7 @@ f = "fmt --all"
 t = "nextest run"
 tc = "llvm-cov nextest --fail-under-lines 100 --fail-uncovered-lines 0 --fail-uncovered-functions 0 --fail-uncovered-regions 0 --show-missing-lines --ignore-filename-regex=(main.rs)|(samlang-wasm)"
 th = "llvm-cov nextest --no-clean --fail-under-lines 100 --fail-uncovered-lines 0 --fail-uncovered-functions 0 --fail-uncovered-regions 0 --html --show-missing-lines --ignore-filename-regex=(main.rs)|(samlang-wasm)"
-lint = "clippy --no-deps --tests"
+lint = "clippy --no-deps --tests --bins"
 
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
