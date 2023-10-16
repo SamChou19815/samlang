@@ -714,12 +714,18 @@ fn matching_pattern_to_document(heap: &Heap, pattern: &pattern::MatchingPattern<
       tag,
       data_variables,
       type_: (),
-    }) => Document::concat(vec![
-      Document::Text(rc_pstr(heap, tag.name)),
-      parenthesis_surrounded_doc(comma_sep_list(data_variables, |(p, _)| {
-        matching_pattern_to_document(heap, p)
-      })),
-    ]),
+    }) => {
+      if data_variables.is_empty() {
+        Document::Text(rc_pstr(heap, tag.name))
+      } else {
+        Document::concat(vec![
+          Document::Text(rc_pstr(heap, tag.name)),
+          parenthesis_surrounded_doc(comma_sep_list(data_variables, |(p, _)| {
+            matching_pattern_to_document(heap, p)
+          })),
+        ])
+      }
+    }
     pattern::MatchingPattern::Id(id, _) => Document::Text(rc_pstr(heap, id.name)),
     pattern::MatchingPattern::Wildcard(_) => Document::Text(rcs("_")),
   }
@@ -1358,7 +1364,7 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       r#"{
   let _ = if let {
     foo as {
-      bar as [Fizz(baz), Buzz(), _],
+      bar as [Fizz(baz), Buzz, _],
       boo
     }
   } = true then {
