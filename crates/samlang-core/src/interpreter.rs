@@ -287,7 +287,7 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: FunctionNam
   let mut id_to_functions = HashMap::new();
   let mut global_str_names_to_address = HashMap::new();
   let mut global_fn_names_to_address = HashMap::new();
-  let mut global_name_id = 0;
+  let mut global_name_id = 1024;
 
   for (string_id, v) in sources.global_variables.iter().enumerate() {
     let string_id = i32::try_from(string_id).unwrap();
@@ -796,7 +796,7 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Expression::int(16), // calling function _
+              callee: Expression::int(16 + 1024), // calling function _
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("hw_string"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,

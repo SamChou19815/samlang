@@ -572,9 +572,9 @@ impl Rewriter {
                 for t in types {
                   mapping_types.push(self.rewrite_type(heap, t, &solved_targs_replacement_map));
                 }
-                if mapping_types.len() == 2
-                  && !mapping_types[1].is_int()
-                  && permit_unboxed_optimization
+                if permit_unboxed_optimization
+                  && mapping_types.len() == 2
+                  && self.type_permit_enum_boxed_optimization(&mapping_types[1])
                   && already_unused_boxed_optimization.is_none()
                 {
                   let t = mapping_types[1];
@@ -607,6 +607,31 @@ impl Rewriter {
       }
     }
     mir::Type::Id(mir_type_name)
+  }
+
+  fn type_permit_enum_boxed_optimization(&self, type_: &mir::Type) -> bool {
+    match type_ {
+      // We cannot distinguish unboxed int from tags
+      mir::Type::Int => false,
+      mir::Type::Id(type_id) => {
+        match &self.specialized_type_definitions.get(type_id).unwrap().mappings {
+          // Structs are always pointers.
+          mir::TypeDefinitionMappings::Struct(_) => true,
+          // We must be careful with enums, since they are not always pointers.
+          mir::TypeDefinitionMappings::Enum(defs) => {
+            for def in defs {
+              match def {
+                mir::EnumTypeDefinition::Boxed(_) => {}
+                // Deopt if enum can be int or unboxed.
+                // This is essential to correctly pattern match on Some(Some(Some(_)))
+                mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int => return false,
+              }
+            }
+            true
+          }
+        }
+      }
+    }
   }
 
   fn rewrite_fn_type(

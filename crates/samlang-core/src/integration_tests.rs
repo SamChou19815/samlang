@@ -1612,11 +1612,24 @@ class Foo(val a: int) {
   function bar(): int = 3
 }
 
-class Option<T>(None(unit), Some(T)) {
+class Option<T>(None, Some(T)) {
   function matchExample(opt: Option<int>): int =
     match (opt) {
-      None(_) -> 42,
+      None -> 42,
       Some(a) -> a,
+    }
+}
+
+class FooOrFoo(F1(Foo), F2(Foo)) {
+  function f1(): FooOrFoo = FooOrFoo.F1(Foo.init(1))
+  function f2(): FooOrFoo = FooOrFoo.F2(Foo.init(2))
+
+  function intValue(): int = FooOrFoo.f1().getInt() + FooOrFoo.f2().getInt()
+
+  method getInt(): int =
+    match (this) {
+      F1(foo) -> foo.a,
+      F2(foo) -> foo.a,
     }
 }
 
@@ -1650,8 +1663,20 @@ class Main {
     )
 
   function nestedVal(): int = {
+    let veryOpt = Option.Some(Option.Some(Option.Some(Foo.init(1))));
+    let opt = match veryOpt {
+      None -> 0,
+      Some(v1) -> match v1 {
+        None -> 1,
+        Some(v2) -> match v2 {
+          None -> 2,
+          Some(v3) -> 3, // <- get this
+        }
+      },
+    };
+    let _ = Option.Some(FooOrFoo.f1());
     let a = {
-      let b = 4;
+      let b = 1 + opt;
       let c = {
         let c = b;
         b
@@ -1663,6 +1688,7 @@ class Main {
 
   function main(): unit = Process.println(Str.fromInt(Main.identity(
     Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
+    + FooOrFoo.intValue() - FooOrFoo.intValue()
   )))
 }
 "#,
