@@ -660,15 +660,20 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.variable_cx.push_scope();
       let mut bindings = vec![];
       for dv in data_variables {
-        if let Some((source::Id { loc: _, associated_comments: _, name }, data_var_type)) = dv {
+        if let Some((
+          source::Id { loc: _, associated_comments: _, name: original_name },
+          data_var_type,
+        )) = dv
+        {
           let data_var_type =
             self.type_lowering_manager.lower_source_type(self.heap, data_var_type);
+          let name = self.allocate_temp_variable();
           bind_value(
             &mut self.variable_cx,
-            *name,
-            hir::Expression::var_name(*name, data_var_type.clone()),
+            *original_name,
+            hir::Expression::var_name(name, data_var_type.clone()),
           );
-          bindings.push(Some((*name, data_var_type)));
+          bindings.push(Some((name, data_var_type)));
         } else {
           bindings.push(None);
         }
@@ -871,75 +876,6 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::pattern::DestructuringPattern::Wildcard(_) => {}
     }
   }
-
-  /*
-  fn lower_matching_pattern(
-    &mut self,
-    pattern: &source::pattern::MatchingPattern<Rc<type_::Type>>,
-    lowered_stmts: &mut Vec<hir::Statement>,
-    assigned_expr: hir::Expression,
-    e1: hir::Expression,
-    e2: hir::Expression,
-  ) {
-    match pattern {
-      source::pattern::MatchingPattern::Tuple(_, destructured_names) => {
-        let id_type = assigned_expr.type_().as_id().unwrap();
-        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
-        for (index, nested) in destructured_names.iter().enumerate() {
-          let field_type = &resolved_struct_mappings[index];
-          let name = self.allocate_temp_variable();
-          lowered_stmts.push(hir::Statement::IndexedAccess {
-            name,
-            type_: field_type.clone(),
-            pointer_expression: assigned_expr.clone(),
-            index,
-          });
-          self.lower_matching_pattern(
-            &nested.pattern,
-            lowered_stmts,
-            hir::Expression::var_name(name, field_type.clone()),
-            e1,
-            e2,
-          );
-        }
-      }
-      source::pattern::MatchingPattern::Object(_, destructured_names) => {
-        let id_type = assigned_expr.type_().as_id().unwrap();
-        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
-        for destructured_name in destructured_names {
-          let field_type = &resolved_struct_mappings[destructured_name.field_order];
-          let name = self.allocate_temp_variable();
-          lowered_stmts.push(hir::Statement::IndexedAccess {
-            name,
-            type_: field_type.clone(),
-            pointer_expression: assigned_expr.clone(),
-            index: destructured_name.field_order,
-          });
-          self.lower_matching_pattern(
-            &destructured_name.pattern,
-            lowered_stmts,
-            hir::Expression::var_name(name, field_type.clone()),
-            e1,
-            e2,
-          );
-        }
-      }
-      source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
-        loc: _,
-        tag_order,
-        tag,
-        data_variables,
-        type_,
-      }) => {
-        let id_type = assigned_expr.type_().as_id().unwrap();
-      }
-      source::pattern::MatchingPattern::Id(id, _) => {
-        bind_value(&mut self.variable_cx, id.name, assigned_expr);
-      }
-      source::pattern::MatchingPattern::Wildcard(_) => {}
-    }
-  }
-  */
 
   fn lower_block(&mut self, expression: &source::expr::Block<Rc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = vec![];
@@ -2098,7 +2034,10 @@ return (_t1: DUMMY_Dummy);"#,
               source::Id::from(heap.alloc_str_for_test("bar")),
               builder.int_type(),
             ))],
-            body: Box::new(dummy_source_this(heap)),
+            body: Box::new(source::expr::E::LocalId(
+              source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              source::Id::from(heap.alloc_str_for_test("bar")),
+            )),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
@@ -2112,8 +2051,8 @@ return (_t1: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let [bar: int] if tagof((_this: DUMMY_Dummy))==0 {
-  _t3 = (_this: DUMMY_Dummy);
+let [_t4: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t3 = (_t4: int);
 } else {
   let [_] if tagof((_this: DUMMY_Dummy))==1 {
     _t2 = (_this: DUMMY_Dummy);
@@ -2165,10 +2104,10 @@ return (_t3: DUMMY_Dummy);"#,
       r#"const GLOBAL_STRING_0 = '';
 
 let [_] if tagof((_this: DUMMY_Dummy))==0 {
-  _t4 = (_this: DUMMY_Dummy);
+  _t5 = (_this: DUMMY_Dummy);
 } else {
-  let [bar: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==1 {
-    _t3 = (bar: DUMMY_Dummy);
+  let [_t4: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==1 {
+    _t3 = (_t4: DUMMY_Dummy);
   } else {
     let [_] if tagof((_this: DUMMY_Dummy))==2 {
       _t2 = (_this: DUMMY_Dummy);
@@ -2178,9 +2117,9 @@ let [_] if tagof((_this: DUMMY_Dummy))==0 {
     }
     _t3 = (_t2: DUMMY_Dummy);
   }
-  _t4 = (_t3: DUMMY_Dummy);
+  _t5 = (_t3: DUMMY_Dummy);
 }
-return (_t4: DUMMY_Dummy);"#,
+return (_t5: DUMMY_Dummy);"#,
     );
   }
 
