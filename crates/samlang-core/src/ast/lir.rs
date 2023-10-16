@@ -434,7 +434,7 @@ impl Statement {
         collector.push_str(name.as_str(heap));
         collector.push_str(": ");
         type_.pretty_print(collector, heap, table);
-        collector.push_str("undefined as any;\n");
+        collector.push_str(" = undefined as any;\n");
       }
       Statement::LateInitAssignment { name, assigned_expression } => {
         Self::append_spaces(collector, level);

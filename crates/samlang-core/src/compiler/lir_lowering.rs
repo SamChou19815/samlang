@@ -1123,7 +1123,7 @@ function __$compiled_program_main(): number {{
     let cast = 0 as unknown as number;
     finalV2 = 0;
   }} else {{
-    let cast: numberundefined as any;
+    let cast: number = undefined as any;
     cast = 0;
     finalV2 = 0;
   }}
