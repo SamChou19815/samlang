@@ -272,7 +272,7 @@ function __$f(v1: () => number): number {{
     let f: number = big[0];
     0[0] = 0;
     let c = 0 as unknown as number;
-    let c: numberundefined as any;
+    let c: number = undefined as any;
     c = 0;
     break;
     bar = b2;
