@@ -267,6 +267,29 @@ pub(crate) mod pattern {
       }
     }
 
+    pub(crate) fn always_matching(&self) -> bool {
+      match self {
+        Self::Tuple(_, elements) => {
+          for e in elements {
+            if !e.pattern.always_matching() {
+              return false;
+            }
+          }
+          true
+        }
+        Self::Object(_, elements) => {
+          for e in elements {
+            if !e.pattern.always_matching() {
+              return false;
+            }
+          }
+          true
+        }
+        Self::Variant(_) => false,
+        Self::Id(_, _) | Self::Wildcard(_) => true,
+      }
+    }
+
     pub(crate) fn bindings(&self) -> HashSet<PStr> {
       let mut set = HashSet::new();
       self.collect_bindings(&mut set);
