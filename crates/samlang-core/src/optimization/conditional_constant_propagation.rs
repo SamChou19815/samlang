@@ -276,6 +276,20 @@ fn optimize_stmt(
         }
         return false;
       }
+      if s1.is_empty() && s2.is_empty() && final_assignments.len() == 1 {
+        let (n, _, e1, e2) = &final_assignments[0];
+        match (e1, e2) {
+          (Expression::IntLiteral(1), Expression::IntLiteral(0)) => {
+            value_cx.checked_bind(*n, condition);
+            return false;
+          }
+          (Expression::IntLiteral(0), Expression::IntLiteral(1)) => {
+            collector.push(Statement::binary(*n, Operator::XOR, condition, ONE));
+            return false;
+          }
+          _ => {}
+        }
+      }
       push_scope(value_cx, index_access_cx, binary_expr_cx);
       let mut s1_collector = vec![];
       optimize_stmts(s1, heap, value_cx, index_access_cx, binary_expr_cx, &mut s1_collector);
