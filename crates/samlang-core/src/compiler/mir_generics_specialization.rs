@@ -248,8 +248,12 @@ impl Rewriter {
           ),
         });
       }
-      hir::Statement::SingleIf { .. } => {
-        panic!("SingleIf should not appear before tailrec optimization.")
+      hir::Statement::SingleIf { condition, invert_condition, statements } => {
+        collector.push(mir::Statement::SingleIf {
+          condition: self.rewrite_expr(heap, condition, generics_replacement_map),
+          invert_condition: *invert_condition,
+          statements: self.rewrite_stmts(heap, statements, generics_replacement_map),
+        });
       }
       hir::Statement::Break(_) => {
         panic!("Break should not appear before tailrec optimization.")
@@ -931,42 +935,6 @@ sources.mains = [_DUMMY_I$main]
         parameters: vec![],
         type_parameters: vec![],
         type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-        body: vec![hir::Statement::SingleIf {
-          condition: hir::ZERO,
-          invert_condition: false,
-          statements: vec![],
-        }],
-        return_value: hir::ZERO,
-      }],
-    };
-    perform_generics_specialization(heap, sources);
-  }
-
-  #[should_panic]
-  #[test]
-  fn panic_test_3() {
-    let heap = &mut Heap::new();
-
-    let sources = hir::Sources {
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![hir::TypeDefinition {
-        name: hir::STRING_TYPE.into_id().unwrap().name,
-        type_parameters: vec![],
-        mappings: hir::TypeDefinitionMappings::Enum(vec![]),
-      }],
-      main_function_names: vec![hir::FunctionName {
-        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
-        fn_name: PStr::MAIN_FN,
-      }],
-      functions: vec![hir::Function {
-        name: hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
-          fn_name: PStr::MAIN_FN,
-        },
-        parameters: vec![],
-        type_parameters: vec![],
-        type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
         body: vec![hir::Statement::While {
           loop_variables: vec![],
           statements: vec![],
@@ -1178,6 +1146,11 @@ sources.mains = [_DUMMY_I$main]
               hir::Statement::IfElse {
                 condition: hir::ONE,
                 s1: vec![
+                  hir::Statement::SingleIf {
+                    condition: hir::ZERO,
+                    invert_condition: false,
+                    statements: vec![],
+                  },
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
@@ -1426,6 +1399,8 @@ variant type DUMMY_Enum3 = [Boxed(int, DUMMY_J), Boxed(int, DUMMY_J), int]
 function _DUMMY_I$main(): int {
   let finalV: int;
   if 1 {
+    if 0 {
+    }
     let a: DUMMY_I_int__Str = _DUMMY_I_int$creatorIA(0);
     let a2: DUMMY_I_int__Str = _DUMMY_I__Str$creatorIA(G1);
     let b: DUMMY_I_int__Str = _DUMMY_I__Str$creatorIB(G1);
