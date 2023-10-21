@@ -1567,6 +1567,12 @@ class Option<T>(None, Some(T)) {
       None -> Process.panic("Ah"),
       Some(v) -> v,
     }
+  function deepForceValue(opt: Option<Option<Option<Box<int>>>>): int =
+    if let Some(Some(Some({content}))) = opt then {
+      content
+    } else {
+      Process.panic("cannot force")
+    }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
       None -> Option.None(),
@@ -1587,14 +1593,19 @@ class Main {
 
   private function consistencyTest(): unit = {
     let _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
-    let _ = Main.assertEquals(Box.create(42).getContent(), 42, "Ah2");
-    let _ = Main.assertEquals(FunctionExample.getIdentityFunction<int>()(42), 42, "Ah3");
-    let _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
-    let _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
-    let _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
-    let _ = Main.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
-    let _ = Main.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
-    let _ = Main.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
+    let _ = Main.assertEquals(
+      Option.deepForceValue(Option.getSome(Option.getSome(Option.getSome(Box.create(42))))),
+      42,
+      "Ah2",
+    );
+    let _ = Main.assertEquals(Box.create(42).getContent(), 42, "Ah3");
+    let _ = Main.assertEquals(FunctionExample.getIdentityFunction<int>()(42), 42, "Ah4");
+    let _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah5");
+    let _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah6");
+    let _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah7");
+    let _ = Main.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah8");
+    let _ = Main.assertTrue(PrimitiveType.getString().isTruthy(), "Ah9");
+    let _ = Main.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah10");
   }
 
   function main(): unit = {
