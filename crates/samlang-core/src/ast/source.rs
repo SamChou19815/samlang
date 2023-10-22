@@ -197,11 +197,9 @@ impl Id {
 }
 
 pub(crate) mod pattern {
-  use std::collections::HashSet;
-
-  use samlang_heap::PStr;
-
   use super::{Id, Location};
+  use samlang_heap::PStr;
+  use std::collections::BTreeMap;
 
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct TuplePatternElement<Base: Clone, T: Clone> {
@@ -290,13 +288,13 @@ pub(crate) mod pattern {
       }
     }
 
-    pub(crate) fn bindings(&self) -> HashSet<PStr> {
-      let mut set = HashSet::new();
-      self.collect_bindings(&mut set);
-      set
+    pub(crate) fn bindings(&self) -> BTreeMap<PStr, &T> {
+      let mut map = BTreeMap::new();
+      self.collect_bindings(&mut map);
+      map
     }
 
-    fn collect_bindings(&self, collector: &mut HashSet<PStr>) {
+    fn collect_bindings<'a>(&'a self, collector: &mut BTreeMap<PStr, &'a T>) {
       match self {
         Self::Tuple(_, ps) => {
           for nested in ps {
@@ -313,8 +311,8 @@ pub(crate) mod pattern {
             p.collect_bindings(collector)
           }
         }
-        Self::Id(Id { name, .. }, _) => {
-          collector.insert(*name);
+        Self::Id(Id { name, .. }, t) => {
+          collector.insert(*name, t);
         }
         Self::Wildcard(_) => {}
       }

@@ -590,13 +590,27 @@ impl<'a> ExpressionLoweringManager<'a> {
     expression: &source::expr::IfElse<Rc<type_::Type>>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
-    let condition = self.lowered_and_add_statements(
-      match expression.condition.as_ref() {
-        source::expr::IfElseCondition::Expression(e) => e,
-        source::expr::IfElseCondition::Guard(_, _) => panic!("TODO IF_LET"),
-      },
-      &mut lowered_stmts,
-    );
+    self.variable_cx.push_scope();
+    let condition = match expression.condition.as_ref() {
+      source::expr::IfElseCondition::Expression(e) => {
+        self.lowered_and_add_statements(e, &mut lowered_stmts)
+      }
+      source::expr::IfElseCondition::Guard(p, e) => {
+        let e = self.lowered_and_add_statements(e, &mut lowered_stmts);
+        let mut binding_names = HashMap::new();
+        for (n, t) in p.bindings() {
+          let name = self.allocate_temp_variable();
+          binding_names.insert(n, name);
+          let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
+          bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.clone()));
+          lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
+        }
+        let LoweringResult { statements: mut stmts, expression: condition } =
+          self.lower_matching_pattern(p, &binding_names, e);
+        lowered_stmts.append(&mut stmts);
+        condition
+      }
+    };
     let final_var_name = self.allocate_temp_variable();
     let LoweringResult { statements: s1, expression: e1 } = self.lower(&expression.e1);
     let LoweringResult { statements: s2, expression: e2 } = self.lower(&expression.e2);
@@ -607,6 +621,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       s2,
       final_assignments: vec![(final_var_name, lowered_return_type.clone(), e1, e2)],
     });
+    self.variable_cx.pop_scope();
     bind_value(
       &mut self.variable_cx,
       final_var_name,
@@ -615,6 +630,159 @@ impl<'a> ExpressionLoweringManager<'a> {
     LoweringResult {
       statements: lowered_stmts,
       expression: hir::Expression::var_name(final_var_name, lowered_return_type),
+    }
+  }
+
+  fn lower_matching_pattern(
+    &mut self,
+    pattern: &source::pattern::MatchingPattern<Rc<type_::Type>>,
+    binding_names: &HashMap<PStr, PStr>,
+    lowered_expression: hir::Expression,
+  ) -> LoweringResult {
+    match pattern {
+      source::pattern::MatchingPattern::Tuple(_, elements) => {
+        let id_type = lowered_expression.type_().as_id().unwrap();
+        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+        let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
+        for (index, nested) in elements.iter().enumerate().rev() {
+          let field_type = &resolved_struct_mappings[index];
+          let name = self.allocate_temp_variable();
+          let LoweringResult {
+            statements: mut nested_pattern_lowering_stmts,
+            expression: nested_pattern_condition,
+          } = self.lower_matching_pattern(
+            &nested.pattern,
+            binding_names,
+            hir::Expression::var_name(name, field_type.clone()),
+          );
+          nested_pattern_lowering_stmts.insert(
+            0,
+            hir::Statement::IndexedAccess {
+              name,
+              type_: field_type.clone(),
+              pointer_expression: lowered_expression.clone(),
+              index,
+            },
+          );
+          let final_condition = self.allocate_temp_variable();
+          nested_pattern_lowering_stmts.push(hir::Statement::IfElse {
+            condition: nested_pattern_condition,
+            s1: acc.statements,
+            s2: vec![],
+            final_assignments: vec![(final_condition, hir::INT_TYPE, acc.expression, hir::ZERO)],
+          });
+          acc = LoweringResult {
+            statements: nested_pattern_lowering_stmts,
+            expression: hir::Expression::var_name(final_condition, hir::INT_TYPE),
+          };
+        }
+        acc
+      }
+      source::pattern::MatchingPattern::Object(_, elements) => {
+        let id_type = lowered_expression.type_().as_id().unwrap();
+        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+        let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
+        for (index, nested) in elements.iter().enumerate().rev() {
+          let field_type = &resolved_struct_mappings[index];
+          let name = self.allocate_temp_variable();
+          let LoweringResult {
+            statements: mut nested_pattern_lowering_stmts,
+            expression: nested_pattern_condition,
+          } = self.lower_matching_pattern(
+            &nested.pattern,
+            binding_names,
+            hir::Expression::var_name(name, field_type.clone()),
+          );
+          nested_pattern_lowering_stmts.insert(
+            0,
+            hir::Statement::IndexedAccess {
+              name,
+              type_: field_type.clone(),
+              pointer_expression: lowered_expression.clone(),
+              index,
+            },
+          );
+          let final_condition = self.allocate_temp_variable();
+          nested_pattern_lowering_stmts.push(hir::Statement::IfElse {
+            condition: nested_pattern_condition,
+            s1: acc.statements,
+            s2: vec![],
+            final_assignments: vec![(final_condition, hir::INT_TYPE, acc.expression, hir::ZERO)],
+          });
+          acc = LoweringResult {
+            statements: nested_pattern_lowering_stmts,
+            expression: hir::Expression::var_name(final_condition, hir::INT_TYPE),
+          };
+        }
+        acc
+      }
+      source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+        loc: _,
+        tag_order,
+        tag: _,
+        data_variables,
+        type_: _,
+      }) => {
+        let mut non_optional_bindings = vec![];
+        let mut optional_bindings = vec![];
+        for (_, nested_type) in data_variables {
+          let data_var_type = self.type_lowering_manager.lower_source_type(self.heap, nested_type);
+          let name = self.allocate_temp_variable();
+          non_optional_bindings.push((name, data_var_type.clone()));
+          optional_bindings.push(Some((name, data_var_type)));
+        }
+        let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
+        for ((nested_pattern, _), (name, data_var_type)) in
+          data_variables.iter().zip(non_optional_bindings).rev()
+        {
+          let LoweringResult {
+            statements: mut nested_pattern_lowering_stmts,
+            expression: nested_pattern_condition,
+          } = self.lower_matching_pattern(
+            nested_pattern,
+            binding_names,
+            hir::Expression::var_name(name, data_var_type.clone()),
+          );
+          let final_condition = self.allocate_temp_variable();
+          nested_pattern_lowering_stmts.push(hir::Statement::IfElse {
+            condition: nested_pattern_condition,
+            s1: acc.statements,
+            s2: vec![],
+            final_assignments: vec![(final_condition, hir::INT_TYPE, acc.expression, hir::ZERO)],
+          });
+          acc = LoweringResult {
+            statements: nested_pattern_lowering_stmts,
+            expression: hir::Expression::var_name(final_condition, hir::INT_TYPE),
+          };
+        }
+        let final_assignment_temp = self.allocate_temp_variable();
+        LoweringResult {
+          statements: vec![hir::Statement::ConditionalDestructure {
+            test_expr: lowered_expression,
+            tag: *tag_order,
+            bindings: optional_bindings,
+            s1: acc.statements,
+            s2: Vec::new(),
+            final_assignments: vec![(
+              final_assignment_temp,
+              hir::INT_TYPE,
+              acc.expression,
+              hir::ZERO,
+            )],
+          }],
+          expression: hir::Expression::var_name(final_assignment_temp, hir::INT_TYPE),
+        }
+      }
+      source::pattern::MatchingPattern::Id(id, _) => LoweringResult {
+        statements: vec![hir::Statement::LateInitAssignment {
+          name: *binding_names.get(&id.name).unwrap(),
+          assigned_expression: lowered_expression,
+        }],
+        expression: hir::ONE,
+      },
+      source::pattern::MatchingPattern::Wildcard(_) => {
+        LoweringResult { statements: Vec::with_capacity(0), expression: hir::ONE }
+      }
     }
   }
 
@@ -1979,25 +2147,6 @@ return (_t1: _$SyntheticIDType0);"#,
     );
   }
 
-  #[should_panic]
-  #[test]
-  fn if_let_unsupported_test() {
-    let heap = &mut Heap::new();
-    assert_expr_correctly_lowered(
-      &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
-        condition: Box::new(source::expr::IfElseCondition::Guard(
-          source::pattern::MatchingPattern::Wildcard(Location::dummy()),
-          dummy_source_this(heap),
-        )),
-        e1: Box::new(dummy_source_this(heap)),
-        e2: Box::new(dummy_source_this(heap)),
-      }),
-      heap,
-      "",
-    );
-  }
-
   #[test]
   fn control_flow_lowering_tests() {
     let builder = test_type_builder::create();
@@ -2120,6 +2269,205 @@ let [_] if tagof((_this: DUMMY_Dummy))==0 {
   _t5 = (_t3: DUMMY_Dummy);
 }
 return (_t5: DUMMY_Dummy);"#,
+    );
+  }
+
+  #[test]
+  fn if_let_test() {
+    let heap = &mut Heap::new();
+    assert_expr_correctly_lowered(
+      &source::expr::E::IfElse(source::expr::IfElse {
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        condition: Box::new(source::expr::IfElseCondition::Guard(
+          source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+          dummy_source_this(heap),
+        )),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
+      }),
+      heap,
+      r#"let _t1: DUMMY_Dummy;
+if 1 {
+  _t1 = (_this: DUMMY_Dummy);
+} else {
+  _t1 = (_this: DUMMY_Dummy);
+}
+return (_t1: DUMMY_Dummy);"#,
+    );
+
+    let heap = &mut Heap::new();
+    let builder = test_type_builder::create();
+    assert_expr_correctly_lowered(
+      &source::expr::E::IfElse(source::expr::IfElse {
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        condition: Box::new(source::expr::IfElseCondition::Guard(
+          source::pattern::MatchingPattern::Object(
+            Location::dummy(),
+            vec![
+              source::pattern::ObjectPatternElement {
+                loc: Location::dummy(),
+                field_order: 0,
+                field_name: source::Id::from(PStr::LOWER_A),
+                pattern: Box::new(source::pattern::MatchingPattern::Id(
+                  source::Id::from(PStr::LOWER_A),
+                  builder.int_type(),
+                )),
+                shorthand: true,
+                type_: builder.int_type(),
+              },
+              source::pattern::ObjectPatternElement {
+                loc: Location::dummy(),
+                field_order: 1,
+                field_name: source::Id::from(PStr::LOWER_B),
+                pattern: Box::new(source::pattern::MatchingPattern::Id(
+                  source::Id::from(PStr::LOWER_C),
+                  builder.int_type(),
+                )),
+                shorthand: false,
+                type_: builder.int_type(),
+              },
+            ],
+          ),
+          dummy_source_this(heap),
+        )),
+        e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          condition: Box::new(source::expr::IfElseCondition::Guard(
+            source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 0,
+              tag: source::Id::from(PStr::EMPTY),
+              data_variables: vec![
+                (
+                  source::pattern::MatchingPattern::Id(
+                    source::Id::from(heap.alloc_str_for_test("bar")),
+                    builder.int_type(),
+                  ),
+                  builder.int_type(),
+                ),
+                (
+                  source::pattern::MatchingPattern::Id(
+                    source::Id::from(heap.alloc_str_for_test("baz")),
+                    builder.int_type(),
+                  ),
+                  builder.int_type(),
+                ),
+              ],
+              type_: builder.int_type(),
+            }),
+            dummy_source_this(heap),
+          )),
+          e1: Box::new(id_expr(
+            heap.alloc_str_for_test("bar"),
+            Rc::new(dummy_source_id_type(heap)),
+          )),
+          e2: Box::new(dummy_source_this(heap)),
+        })),
+        e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          condition: Box::new(source::expr::IfElseCondition::Guard(
+            source::pattern::MatchingPattern::Tuple(
+              Location::dummy(),
+              vec![
+                source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Id(
+                    source::Id::from(PStr::LOWER_A),
+                    builder.int_type(),
+                  )),
+                  type_: builder.int_type(),
+                },
+                source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Id(
+                    source::Id::from(PStr::LOWER_C),
+                    builder.int_type(),
+                  )),
+                  type_: builder.int_type(),
+                },
+              ],
+            ),
+            dummy_source_this(heap),
+          )),
+          e1: Box::new(dummy_source_this(heap)),
+          e2: Box::new(dummy_source_this(heap)),
+        })),
+      }),
+      heap,
+      r#"let _t1: int;
+let _t2: int;
+let _t5: int = (_this: DUMMY_Dummy)[0];
+_t1 = (_t5: int);
+let _t6: int;
+if 1 {
+  let _t3: int = (_this: DUMMY_Dummy)[1];
+  _t2 = (_t3: int);
+  let _t4: int;
+  if 1 {
+    _t4 = 1;
+  } else {
+    _t4 = 0;
+  }
+  _t6 = (_t4: int);
+} else {
+  _t6 = 0;
+}
+let _t7: int;
+if (_t6: int) {
+  let _t8: int;
+  let _t9: int;
+  let [_t10: int, _t11: int] if tagof((_this: DUMMY_Dummy))==0 {
+    _t8 = (_t10: int);
+    let _t13: int;
+    if 1 {
+      _t9 = (_t11: int);
+      let _t12: int;
+      if 1 {
+        _t12 = 1;
+      } else {
+        _t12 = 0;
+      }
+      _t13 = (_t12: int);
+    } else {
+      _t13 = 0;
+    }
+    _t14 = (_t13: int);
+  } else {
+    _t14 = 0;
+  }
+  let _t15: int;
+  if (_t14: int) {
+    _t15 = (_t8: int);
+  } else {
+    _t15 = (_this: DUMMY_Dummy);
+  }
+  _t7 = (_t15: int);
+} else {
+  let _t16: int;
+  let _t17: int;
+  let _t20: int = (_this: DUMMY_Dummy)[0];
+  _t16 = (_t20: int);
+  let _t21: int;
+  if 1 {
+    let _t18: int = (_this: DUMMY_Dummy)[1];
+    _t17 = (_t18: int);
+    let _t19: int;
+    if 1 {
+      _t19 = 1;
+    } else {
+      _t19 = 0;
+    }
+    _t21 = (_t19: int);
+  } else {
+    _t21 = 0;
+  }
+  let _t22: DUMMY_Dummy;
+  if (_t21: int) {
+    _t22 = (_this: DUMMY_Dummy);
+  } else {
+    _t22 = (_this: DUMMY_Dummy);
+  }
+  _t7 = (_t22: DUMMY_Dummy);
+}
+return (_t7: int);"#,
     );
   }
 

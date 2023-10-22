@@ -46,6 +46,11 @@ class Option<T>(None(unit), Some(T)) {
 
   function <T> getSome(d: T): Option<T> = Option.Some(d)
 
+  function deepForceValue(opt: Option<Option<Option<Box<int>>>>): int =
+    if let Some(Some(Some({ content }))) = opt then { content } else {
+      Process.panic("cannot force")
+    }
+
   method forceValue(): T =
     match this {
       None(_) -> Process.panic("Trying to get value from Option.None"),
@@ -68,6 +73,10 @@ class DifferentModulesDemo {
 
   function run(): unit = {
     let _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
+    let _ = ForTests.assertIntEquals(
+      Option.deepForceValue(Option.getSome(Option.getSome(Option.getSome(Box.init(42))))),
+      42
+    );
     let _ = ForTests.assertIntEquals(Box.init(42).getContent(), 42);
     let _ = ForTests.assertIntEquals(FunctionExample.getIdentityFunction<int>()(42), 42);
     let _ = ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
