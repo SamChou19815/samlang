@@ -769,30 +769,50 @@ return 0;"#,
             Expression::var_name(heap.alloc_str_for_test("a22"), INT_TYPE),
           )],
         },
+        Statement::IfElse {
+          condition: Expression::var_name(heap.alloc_str_for_test("ma2"), INT_TYPE),
+          s1: vec![],
+          s2: vec![],
+          final_assignments: vec![(heap.alloc_str_for_test("ma3"), INT_TYPE, ONE, ZERO)],
+        },
+        Statement::IfElse {
+          condition: Expression::var_name(heap.alloc_str_for_test("ma2"), INT_TYPE),
+          s1: vec![],
+          s2: vec![],
+          final_assignments: vec![(heap.alloc_str_for_test("ma4"), INT_TYPE, ZERO, ONE)],
+        },
         Statement::binary(
           heap.alloc_str_for_test("r1"),
           Operator::EQ,
           Expression::var_name(heap.alloc_str_for_test("ma1"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("ma2"), INT_TYPE),
         ),
-        Statement::binary(heap.alloc_str_for_test("r2"), Operator::NE, ONE, ZERO),
-        Statement::binary(heap.alloc_str_for_test("r3"), Operator::XOR, ONE, ZERO),
-        Statement::binary(heap.alloc_str_for_test("r4"), Operator::NE, ONE, ZERO),
         Statement::binary(
-          heap.alloc_str_for_test("r5"),
+          heap.alloc_str_for_test("r2"),
           Operator::EQ,
-          Expression::var_name(heap.alloc_str_for_test("r4"), INT_TYPE),
-          Expression::var_name(heap.alloc_str_for_test("r2"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("ma3"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("ma4"), INT_TYPE),
+        ),
+        Statement::binary(heap.alloc_str_for_test("r3"), Operator::NE, ONE, ZERO),
+        Statement::binary(heap.alloc_str_for_test("r4"), Operator::XOR, ONE, ZERO),
+        Statement::binary(heap.alloc_str_for_test("r5"), Operator::NE, ONE, ZERO),
+        Statement::binary(
+          heap.alloc_str_for_test("r6"),
+          Operator::EQ,
+          Expression::var_name(heap.alloc_str_for_test("r5"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("r3"), INT_TYPE),
         ),
       ],
-      Expression::var_name(heap.alloc_str_for_test("r5"), INT_TYPE),
+      Expression::var_name(heap.alloc_str_for_test("r6"), INT_TYPE),
       heap,
       table,
       r#"__$foo();
 __$bar();
 let a1: int = __$foo();
 let a22: int = __$bar();
+let ma4 = (a22: int) ^ 1;
 let r1 = (a22: int) == (a1: int);
+let r2 = (ma4: int) == (a22: int);
 return 1;"#,
     );
 
