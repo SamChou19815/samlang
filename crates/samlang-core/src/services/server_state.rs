@@ -501,7 +501,7 @@ class Test2 {
       r#"
 Error ------------------------------------ Test.sam:2:1-2:18
 
-Module `B` is not resolved.
+Cannot resolve module `B`.
 
   2| import {A} from B
      ^^^^^^^^^^^^^^^^^
@@ -528,7 +528,7 @@ Name `A` collides with a previously defined name at [1].
       r#"
 Error ------------------------------------ Test.sam:1:1-1:18
 
-Module `A` is not resolved.
+Cannot resolve module `A`.
 
   1| import {A} from A
      ^^^^^^^^^^^^^^^^^
@@ -555,7 +555,7 @@ Name `A` collides with a previously defined name at [1].
       r#"
 Error ------------------------------------ Test.sam:1:1-1:18
 
-Module `A` is not resolved.
+Cannot resolve module `A`.
 
   1| import {A} from A
      ^^^^^^^^^^^^^^^^^
