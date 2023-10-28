@@ -539,10 +539,13 @@ pub(crate) enum ErrorDetail {
   MissingClassMemberDefinitions { missing_definitions: Vec<PStr> },
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
+  NonExhausiveStructBinding { missing_bindings: Vec<PStr> },
+  NonExhausiveTupleBinding { expected_count: usize, actual_count: usize },
   NonExhausiveMatch { missing_tags: Vec<PStr> },
   Stacked(StackableError),
   TypeParameterNameMismatch { expected: Vec<Description> },
   Underconstrained,
+  UselessPattern { only_pattern: bool },
 }
 
 impl ErrorDetail {
@@ -624,6 +627,24 @@ impl ErrorDetail {
         printable_stream.push_pstr(name);
         printable_stream.push_text("` collides with a previously defined name at ");
         printable_stream.push_location(old_loc);
+        printable_stream.push_text(".");
+      }
+      ErrorDetail::NonExhausiveStructBinding { missing_bindings } => {
+        printable_stream.push_text(
+          "The pattern does not bind all fields. The following names have not been mentioned:",
+        );
+        for tag in missing_bindings {
+          printable_stream.push_text("\n- `");
+          printable_stream.push_pstr(tag);
+          printable_stream.push_text("`");
+        }
+      }
+      ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count } => {
+        printable_stream
+          .push_text("The pattern does not bind all fields. Expected number of elements: ");
+        printable_stream.push_size(*expected_count);
+        printable_stream.push_text(", actual number of elements: ");
+        printable_stream.push_size(*actual_count);
         printable_stream.push_text(".");
       }
       ErrorDetail::NonExhausiveMatch { missing_tags } => {
@@ -714,6 +735,12 @@ impl ErrorDetail {
         printable_stream.push_text(
           "There is not enough context information to decide the type of this expression.",
         );
+      }
+      ErrorDetail::UselessPattern { only_pattern: true } => {
+        printable_stream.push_text("The pattern is irrefutable.");
+      }
+      ErrorDetail::UselessPattern { only_pattern: false } => {
+        printable_stream.push_text("The pattern is already covered by previous cases.");
       }
     }
   }
@@ -947,6 +974,23 @@ impl ErrorSet {
     self.report_error(new_loc, ErrorDetail::NameAlreadyBound { name, old_loc })
   }
 
+  pub(crate) fn report_non_exhausive_struct_binding_error(
+    &mut self,
+    loc: Location,
+    missing_bindings: Vec<PStr>,
+  ) {
+    self.report_error(loc, ErrorDetail::NonExhausiveStructBinding { missing_bindings })
+  }
+
+  pub(crate) fn report_non_exhausive_tuple_binding_error(
+    &mut self,
+    loc: Location,
+    expected_count: usize,
+    actual_count: usize,
+  ) {
+    self.report_error(loc, ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count })
+  }
+
   pub(crate) fn report_non_exhausive_match_error(
     &mut self,
     loc: Location,
@@ -966,8 +1010,13 @@ impl ErrorSet {
   ) {
     self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
   }
+
   pub(crate) fn report_underconstrained_error(&mut self, loc: Location) {
     self.report_error(loc, ErrorDetail::Underconstrained)
+  }
+
+  pub(crate) fn report_useless_pattern_error(&mut self, loc: Location, only_pattern: bool) {
+    self.report_error(loc, ErrorDetail::UselessPattern { only_pattern })
   }
 }
 
@@ -1119,6 +1168,11 @@ Found 2 errors."#
       heap.alloc_str_for_test("bar"),
     );
     error_set.report_name_already_bound_error(Location::dummy(), PStr::LOWER_A, Location::dummy());
+    error_set.report_non_exhausive_struct_binding_error(
+      Location::dummy(),
+      vec![PStr::UPPER_A, PStr::UPPER_B],
+    );
+    error_set.report_non_exhausive_tuple_binding_error(Location::dummy(), 7, 4);
     error_set
       .report_non_exhausive_match_error(Location::dummy(), vec![PStr::UPPER_A, PStr::UPPER_B]);
     error_set.report_stackable_error(Location::dummy(), {
@@ -1142,6 +1196,8 @@ Found 2 errors."#
     error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![]);
     error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![Description::IntType]);
     error_set.report_underconstrained_error(Location::dummy());
+    error_set.report_useless_pattern_error(Location::dummy(), false);
+    error_set.report_useless_pattern_error(Location::dummy(), true);
 
     let expected_errors = r#"
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1203,6 +1259,18 @@ Name `a` collides with a previously defined name at .
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
+The pattern does not bind all fields. The following names have not been mentioned:
+- `A`
+- `B`
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+The pattern does not bind all fields. Expected number of elements: 7, actual number of elements: 4.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
 The match is not exhausive. The following variants have not been handled:
 - `A`
 - `B`
@@ -1231,13 +1299,23 @@ Error ------------------------------------ DUMMY.sam:0:0-0:0
 There is not enough context information to decide the type of this expression.
 
 
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+The pattern is already covered by previous cases.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+The pattern is irrefutable.
+
+
 Error ------------------------------------------------------
 Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:0:0-0:0
 
 Cannot resolve name `global`.
 
 
-Found 17 errors.
+Found 21 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),
