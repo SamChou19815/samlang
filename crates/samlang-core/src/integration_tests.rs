@@ -486,7 +486,7 @@ class Main {
     let expected_errors = r#"
 Error ---------------- access-private-member.sam:12:15-12:16
 
-Cannot find member `b` on `A`.
+Cannot resolve member `b` on `A`.
 
   12|     let _ = A.b();
                     ^
@@ -634,7 +634,7 @@ Error --------------------- bounded-generics.sam:28:20-28:30
 
 Error --------------------- bounded-generics.sam:29:21-29:22
 
-Name `T` is not resolved.
+Cannot resolve name `T`.
 
   29| class ImplTArg<T> : T {} // error: T not resolved
                           ^
@@ -658,7 +658,7 @@ Error ---------------- call-interface-function.sam:3:33-3:36
 
 Error ---------------- call-interface-function.sam:3:45-3:48
 
-Class `Foo` is not resolved.
+Cannot resolve class `Foo`.
 
   3| class Ouch { function call(foo: Foo): int = Foo.bar() }
                                                  ^^^
@@ -934,7 +934,7 @@ Error ------------ illegal-binary-operations.sam:27:35-27:64
 
 Error --------- illegal-private-field-access.sam:15:13-15:14
 
-Cannot find member `b` on `Fields`.
+Cannot resolve member `b` on `Fields`.
 
   15|     let {a, b} = f;
                   ^
@@ -942,7 +942,7 @@ Cannot find member `b` on `Fields`.
 
 Error --------- illegal-private-field-access.sam:17:15-17:16
 
-Cannot find member `b` on `Fields`.
+Cannot resolve member `b` on `Fields`.
 
   17|     let _ = f.b;
                     ^
@@ -1015,7 +1015,7 @@ Name `a` collides with a previously defined name at [1].
 
 Error --------------------------- illegal-this.sam:5:13-5:17
 
-Name `this` is not resolved.
+Cannot resolve name `this`.
 
   5|     let _ = this;
                  ^^^^
@@ -1109,7 +1109,7 @@ Error ------------------------ simple-mismatch.sam:4:30-4:34
 
 Error ------------------------- undefined-type.sam:3:20-3:30
 
-Name `HelloWorld` is not resolved.
+Cannot resolve name `HelloWorld`.
 
   3|   function main(): HelloWorld = 1
                         ^^^^^^^^^^
@@ -1135,7 +1135,7 @@ Error ------------------------- undefined-type.sam:3:33-3:34
 
 Error --------------------- undefined-variable.sam:3:26-3:36
 
-Name `helloWorld` is not resolved.
+Cannot resolve name `helloWorld`.
 
   3|   function main(): Str = helloWorld
                               ^^^^^^^^^^

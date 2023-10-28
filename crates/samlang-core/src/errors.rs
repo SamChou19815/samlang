@@ -527,6 +527,7 @@ mod stackable_error_tests {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ErrorDetail {
   CannotResolveClass { module_reference: ModuleReference, name: PStr },
+  CannotResolveMember { parent: Description, member: PStr },
   CannotResolveModule { module_reference: ModuleReference },
   CannotResolveName { name: PStr },
   CyclicTypeDefinition { type_: Description },
@@ -535,7 +536,6 @@ pub(crate) enum ErrorDetail {
   IncompatibleSubType { lower: Description, upper: Description },
   IncompatibleTypeKind { lower: Description, upper: Description },
   InvalidSyntax(String),
-  MemberMissing { parent: Description, member: PStr },
   MissingClassMemberDefinitions { missing_definitions: Vec<PStr> },
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
@@ -549,19 +549,26 @@ impl ErrorDetail {
   fn push_to_printable_stream<'a>(&'a self, printable_stream: &mut PrintableStream<'a>) {
     match self {
       ErrorDetail::CannotResolveClass { module_reference: _, name } => {
-        printable_stream.push_text("Class `");
+        printable_stream.push_text("Cannot resolve class `");
         printable_stream.push_pstr(name);
-        printable_stream.push_text("` is not resolved.");
+        printable_stream.push_text("`.");
+      }
+      ErrorDetail::CannotResolveMember { parent, member } => {
+        printable_stream.push_text("Cannot resolve member `");
+        printable_stream.push_pstr(member);
+        printable_stream.push_text("` on `");
+        printable_stream.push_description(parent);
+        printable_stream.push_text("`.");
       }
       ErrorDetail::CannotResolveModule { module_reference } => {
-        printable_stream.push_text("Module `");
+        printable_stream.push_text("Cannot resolve module `");
         printable_stream.push_mod_ref(module_reference);
-        printable_stream.push_text("` is not resolved.");
+        printable_stream.push_text("`.");
       }
       ErrorDetail::CannotResolveName { name } => {
-        printable_stream.push_text("Name `");
+        printable_stream.push_text("Cannot resolve name `");
         printable_stream.push_pstr(name);
-        printable_stream.push_text("` is not resolved.");
+        printable_stream.push_text("`.");
       }
       ErrorDetail::CyclicTypeDefinition { type_ } => {
         printable_stream.push_text("Type `");
@@ -596,13 +603,6 @@ impl ErrorDetail {
       }
       ErrorDetail::InvalidSyntax(reason) => {
         printable_stream.push_text(reason);
-      }
-      ErrorDetail::MemberMissing { parent, member } => {
-        printable_stream.push_text("Cannot find member `");
-        printable_stream.push_pstr(member);
-        printable_stream.push_text("` on `");
-        printable_stream.push_description(parent);
-        printable_stream.push_text("`.");
       }
       ErrorDetail::MissingClassMemberDefinitions { missing_definitions } => {
         printable_stream.push_text("The following members must be implemented for the class:");
@@ -848,6 +848,15 @@ impl ErrorSet {
     self.errors.insert(CompileTimeError { location, detail });
   }
 
+  pub(crate) fn report_cannot_resolve_member_error(
+    &mut self,
+    loc: Location,
+    parent: Description,
+    member: PStr,
+  ) {
+    self.report_error(loc, ErrorDetail::CannotResolveMember { parent, member })
+  }
+
   pub(crate) fn report_cannot_resolve_module_error(
     &mut self,
     loc: Location,
@@ -910,15 +919,6 @@ impl ErrorSet {
 
   pub(crate) fn report_invalid_syntax_error(&mut self, loc: Location, reason: String) {
     self.report_error(loc, ErrorDetail::InvalidSyntax(reason))
-  }
-
-  pub(crate) fn report_member_missing_error(
-    &mut self,
-    loc: Location,
-    parent: Description,
-    member: PStr,
-  ) {
-    self.report_error(loc, ErrorDetail::MemberMissing { parent, member })
   }
 
   pub(crate) fn report_missing_class_member_definition_error(
@@ -1028,7 +1028,7 @@ mod tests {
     assert_eq!(
       r#"Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Module `DUMMY` is not resolved.
+Cannot resolve module `DUMMY`.
 
 
 Found 1 error.
@@ -1037,7 +1037,7 @@ Found 1 error.
       error_set.pretty_print_error_messages_no_frame(&heap)
     );
     assert_eq!(
-      (Location::dummy(), "Module `DUMMY` is not resolved.".to_string(), vec![]),
+      (Location::dummy(), "Cannot resolve module `DUMMY`.".to_string(), vec![]),
       error_set.errors()[0].to_ide_format(&heap)
     );
 
@@ -1069,13 +1069,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Module `DUMMY` is not resolved.
+Cannot resolve module `DUMMY`.
 
 
 Error ------------------------------------------------------
 Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:0:0-0:0
 
-Name `global` is not resolved.
+Cannot resolve name `global`.
 
 
 Found 2 errors."#
@@ -1104,7 +1104,7 @@ Found 2 errors."#
       builder.bool_type().to_description(),
     );
     error_set.report_invalid_syntax_error(Location::dummy(), "bad code".to_string());
-    error_set.report_member_missing_error(
+    error_set.report_cannot_resolve_member_error(
       Location::dummy(),
       Description::NominalType { name: heap.alloc_str_for_test("Foo"), type_args: vec![] },
       heap.alloc_str_for_test("bar"),
@@ -1146,12 +1146,17 @@ Found 2 errors."#
     let expected_errors = r#"
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Class `global` is not resolved.
+Cannot resolve class `global`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Module `DUMMY` is not resolved.
+Cannot resolve member `bar` on `Foo`.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Cannot resolve module `DUMMY`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1177,11 +1182,6 @@ Error ------------------------------------ DUMMY.sam:0:0-0:0
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 bad code
-
-
-Error ------------------------------------ DUMMY.sam:0:0-0:0
-
-Cannot find member `bar` on `Foo`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1234,7 +1234,7 @@ There is not enough context information to decide the type of this expression.
 Error ------------------------------------------------------
 Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:0:0-0:0
 
-Name `global` is not resolved.
+Cannot resolve name `global`.
 
 
 Found 17 errors.

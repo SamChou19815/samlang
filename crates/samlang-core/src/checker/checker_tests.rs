@@ -883,7 +883,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:6-1:17
 
-Cannot find member `helloWorld2` on `Test`.
+Cannot resolve member `helloWorld2` on `Test`.
 
   1| Test.helloWorld2
           ^^^^^^^^^^^
@@ -949,7 +949,7 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:6-1:9
 
-Cannot find member `Foo` on `Test`.
+Cannot resolve member `Foo` on `Test`.
 
   1| Test.Foo(true)
           ^^^
@@ -965,7 +965,7 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:6-1:9
 
-Cannot find member `Bar` on `Test`.
+Cannot resolve member `Bar` on `Test`.
 
   1| Test.Bar(42)
           ^^^
@@ -1063,7 +1063,7 @@ Found 2 errors.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:7
 
-Class `Test44` is not resolved.
+Cannot resolve class `Test44`.
 
   1| Test44.Bar(42)
      ^^^^^^
@@ -1079,7 +1079,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:7-1:11
 
-Cannot find member `Tars` on `Test2`.
+Cannot resolve member `Tars` on `Test2`.
 
   1| Test2.Tars(42)
            ^^^^
@@ -1143,7 +1143,7 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:20-1:24
 
-Cannot find member `bazz` on `Test`.
+Cannot resolve member `bazz` on `Test`.
 
   1| Test.init(true, 3).bazz
                         ^^^^
@@ -1159,7 +1159,7 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:35-1:38
 
-Cannot find member `bar` on `Test3`.
+Cannot resolve member `bar` on `Test3`.
 
   1| { let _ = (t3: Test3<bool>) -> t3.bar; }
                                        ^^^
@@ -1175,7 +1175,7 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:17-1:20
 
-Cannot find member `foo` on `Test2`.
+Cannot resolve member `foo` on `Test2`.
 
   1| Test2.Foo(true).foo
                      ^^^
@@ -2756,7 +2756,7 @@ let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
       r#"
 Error ---------------------------------- DUMMY.sam:1:32-1:35
 
-Cannot find member `bar` on `Test`.
+Cannot resolve member `bar` on `Test`.
 
   1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
                                     ^^^
@@ -2764,7 +2764,7 @@ Cannot find member `bar` on `Test`.
 
 Error ---------------------------------- DUMMY.sam:1:37-1:40
 
-Cannot find member `boo` on `Test`.
+Cannot resolve member `boo` on `Test`.
 
   1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
                                          ^^^
@@ -2788,7 +2788,7 @@ Cannot access member of `Test2` at index 1.
 
 Error ---------------------------------- DUMMY.sam:5:30-5:36
 
-Cannot find member `Foo111` on `Test2`.
+Cannot resolve member `Foo111` on `Test2`.
 
   5| let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
                                   ^^^^^^
@@ -2806,7 +2806,7 @@ Found 5 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:13-1:16
 
-Cannot find member `Foo` on `int`.
+Cannot resolve member `Foo` on `int`.
 
   1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
                  ^^^
@@ -2814,7 +2814,7 @@ Cannot find member `Foo` on `int`.
 
 Error ---------------------------------- DUMMY.sam:1:26-1:29
 
-Cannot find member `Bar` on `int`.
+Cannot resolve member `Bar` on `int`.
 
   1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
                               ^^^
@@ -2830,7 +2830,7 @@ Found 2 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:30-1:33
 
-Cannot find member `Foo` on `Test`.
+Cannot resolve member `Foo` on `Test`.
 
   1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
                                   ^^^
@@ -2838,7 +2838,7 @@ Cannot find member `Foo` on `Test`.
 
 Error ---------------------------------- DUMMY.sam:1:43-1:46
 
-Cannot find member `Bar` on `Test`.
+Cannot resolve member `Bar` on `Test`.
 
   1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
                                                ^^^
@@ -2863,7 +2863,7 @@ The match is not exhausive. The following variants have not been handled:
 
 Error ---------------------------------- DUMMY.sam:1:50-1:53
 
-Cannot find member `Baz` on `Test2`.
+Cannot resolve member `Baz` on `Test2`.
 
   1| { let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
                                                       ^^^
@@ -3007,7 +3007,7 @@ Found 2 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
-Cannot find member `b` on `A`.
+Cannot resolve member `b` on `A`.
 
   1| {let {a, b as c} = A.init();}
               ^
@@ -3023,7 +3023,7 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:7-1:8
 
-Cannot find member `a` on `C`.
+Cannot resolve member `a` on `C`.
 
   1| {let {a, b as c} = C.init();}
            ^
@@ -3031,7 +3031,7 @@ Cannot find member `a` on `C`.
 
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
-Cannot find member `b` on `C`.
+Cannot resolve member `b` on `C`.
 
   1| {let {a, b as c} = C.init();}
               ^
@@ -3047,7 +3047,7 @@ Found 2 errors.
       r#"
 Error ------------------------------------ DUMMY.sam:1:7-1:8
 
-Cannot find member `a` on `int`.
+Cannot resolve member `a` on `int`.
 
   1| {let {a, b as c} = 1;}
            ^
@@ -3055,7 +3055,7 @@ Cannot find member `a` on `int`.
 
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
-Cannot find member `b` on `int`.
+Cannot resolve member `b` on `int`.
 
   1| {let {a, b as c} = 1;}
               ^
@@ -3071,7 +3071,7 @@ Found 2 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
-Cannot find member `d` on `A`.
+Cannot resolve member `d` on `A`.
 
   1| {let {a, d as c} = A.init();}
               ^
@@ -3251,7 +3251,7 @@ Found 5 errors.
       r#"
 Error --------------------------------------- A.sam:1:1-1:20
 
-Module `K` is not resolved.
+Cannot resolve module `K`.
 
   1| import { Z } from K
      ^^^^^^^^^^^^^^^^^^^
@@ -3614,7 +3614,7 @@ Type parameter name mismatch. Expected exact match of `<TC>`.
 
 Error ------------------------------------ A.sam:38:16-38:18
 
-Name `TA` is not resolved.
+Cannot resolve name `TA`.
 
   38|   method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
                      ^^
@@ -3654,7 +3654,7 @@ Type parameter name mismatch. Expected exact match of `<TE : Foo>`.
 
 Error ------------------------------------ A.sam:50:34-50:35
 
-Name `T` is not resolved.
+Cannot resolve name `T`.
 
   50| interface WithBound { method <T: T> f(): int }
                                        ^
@@ -3662,7 +3662,7 @@ Name `T` is not resolved.
 
 Error ------------------------------------ A.sam:51:47-51:48
 
-Name `T` is not resolved.
+Cannot resolve name `T`.
 
   51| interface WithBound2 : WithBound { method <T: T> f(): int }
                                                     ^
@@ -3670,7 +3670,7 @@ Name `T` is not resolved.
 
 Error ------------------------------------ A.sam:52:19-52:25
 
-Name `DumDum` is not resolved.
+Cannot resolve name `DumDum`.
 
   52| class Z<T: Foo> : DumDum {} // error
                         ^^^^^^
@@ -3837,7 +3837,7 @@ Error --------------------- bounded-generics.sam:28:20-28:30
 
 Error --------------------- bounded-generics.sam:29:21-29:22
 
-Name `T` is not resolved.
+Cannot resolve name `T`.
 
   29| class ImplTArg<T> : T {} // error: T not resolved
                           ^

@@ -508,7 +508,7 @@ fn check_member_with_unresolved_tparams(
       });
       (partially_checked_expr, vec![])
     } else {
-      cx.error_set.report_member_missing_error(
+      cx.error_set.report_cannot_resolve_member_error(
         expression.field_name.loc,
         Description::NominalType { name: class_id, type_args: vec![] },
         expression.field_name.name,
@@ -940,7 +940,7 @@ fn check_match(
     let mapping_data_types = match unused_mappings.remove(&tag.name) {
       Some(types) => types,
       None => {
-        cx.error_set.report_member_missing_error(
+        cx.error_set.report_cannot_resolve_member_error(
           tag.loc,
           checked_matched_type.to_description(),
           tag.name,
@@ -1113,7 +1113,7 @@ fn check_destructuring_pattern(
       {
         if let Some((field_type, is_public)) = field_mappings.get(&field_name.name) {
           if !is_public {
-            cx.error_set.report_member_missing_error(
+            cx.error_set.report_cannot_resolve_member_error(
               field_name.loc,
               pattern_type.to_description(),
               field_name.name,
@@ -1131,7 +1131,7 @@ fn check_destructuring_pattern(
           });
           continue;
         }
-        cx.error_set.report_member_missing_error(
+        cx.error_set.report_cannot_resolve_member_error(
           field_name.loc,
           pattern_type.to_description(),
           field_name.name,
@@ -1208,7 +1208,7 @@ fn check_matching_pattern(
       {
         if let Some((field_type, is_public)) = field_mappings.get(&field_name.name) {
           if !is_public {
-            cx.error_set.report_member_missing_error(
+            cx.error_set.report_cannot_resolve_member_error(
               field_name.loc,
               pattern_type.to_description(),
               field_name.name,
@@ -1226,7 +1226,7 @@ fn check_matching_pattern(
           });
           continue;
         }
-        cx.error_set.report_member_missing_error(
+        cx.error_set.report_cannot_resolve_member_error(
           field_name.loc,
           pattern_type.to_description(),
           field_name.name,
@@ -1254,7 +1254,11 @@ fn check_matching_pattern(
       let Some((tag_order, resolved_enum)) =
         cx.resolve_enum_definitions(pattern_type).into_iter().find_position(|e| e.name == tag.name)
       else {
-        cx.error_set.report_member_missing_error(tag.loc, pattern_type.to_description(), tag.name);
+        cx.error_set.report_cannot_resolve_member_error(
+          tag.loc,
+          pattern_type.to_description(),
+          tag.name,
+        );
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
         return pattern::MatchingPattern::Variant(pattern::VariantPattern {
           loc: *loc,

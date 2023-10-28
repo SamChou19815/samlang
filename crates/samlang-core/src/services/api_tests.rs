@@ -264,7 +264,7 @@ class Test2(val a: int) {
       r#"
 Error ---------------------------------- Test1.sam:3:10-3:11
 
-Cannot find member `c` on `int`.
+Cannot resolve member `c` on `int`.
 
   3|     let {c, b} = 1 + 2;
               ^
@@ -272,7 +272,7 @@ Cannot find member `c` on `int`.
 
 Error ---------------------------------- Test1.sam:3:13-3:14
 
-Cannot find member `b` on `int`.
+Cannot resolve member `b` on `int`.
 
   3|     let {c, b} = 1 + 2;
                  ^
@@ -280,7 +280,7 @@ Cannot find member `b` on `int`.
 
 Error ------------------------------------ Test1.sam:5:5-5:6
 
-Name `a` is not resolved.
+Cannot resolve name `a`.
 
   5|     a + b + c
          ^
@@ -339,7 +339,7 @@ class Test1(val a: int) {
       r#"
 Error -------------------------------- Test1.sam:12:15-12:16
 
-Name `c` is not resolved.
+Cannot resolve name `c`.
 
   12|       let _ = c;
                     ^
