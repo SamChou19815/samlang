@@ -65,6 +65,7 @@ struct PatternMatrix(Vec<PatternVector>);
 
 pub(super) trait PatternMatchingContext {
   fn is_variant_signature_complete(
+    &self,
     module_reference: ModuleReference,
     class_name: PStr,
     variant_name: &[PStr],
@@ -72,17 +73,23 @@ pub(super) trait PatternMatchingContext {
 }
 
 pub(super) fn is_additional_pattern_useful<CX: PatternMatchingContext>(
+  cx: &CX,
   existing_patterns: &[AbstractPatternNode],
   pattern: AbstractPatternNode,
 ) -> bool {
-  useful_internal::<CX>(
+  useful_internal(
+    cx,
     &PatternMatrix(existing_patterns.iter().map(|p| PatternVector(one(p.clone()))).collect_vec()),
     PatternVector(one(pattern)),
   )
 }
 
 /// http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
-fn useful_internal<CX: PatternMatchingContext>(p: &PatternMatrix, q: PatternVector) -> bool {
+fn useful_internal<CX: PatternMatchingContext>(
+  cx: &CX,
+  p: &PatternMatrix,
+  q: PatternVector,
+) -> bool {
   if p.0.is_empty() {
     return true;
   }
@@ -92,7 +99,8 @@ fn useful_internal<CX: PatternMatchingContext>(p: &PatternMatrix, q: PatternVect
   match q_first.0.as_ref() {
     AbstractPatternNodeInner::StructLike { variant, elements: rs } => {
       let rs_len = rs.len();
-      useful_internal::<CX>(
+      useful_internal(
+        cx,
         &convert_into_specialized_matrix(p, *variant, rs_len),
         PatternVector(rs.clone().append(q_rest)),
       )
@@ -112,13 +120,14 @@ fn useful_internal<CX: PatternMatchingContext>(p: &PatternMatrix, q: PatternVect
           }
         }
       }
-      if is_signature_complete::<CX>(&root_constructors) {
+      if is_signature_complete(cx, &root_constructors) {
         for (variant, rs_len) in root_constructors {
           let mut new_q = q_rest.clone();
           for _ in 0..rs_len {
             new_q = cons(AbstractPatternNode::wildcard(), new_q);
           }
-          if useful_internal::<CX>(
+          if useful_internal(
+            cx,
             &convert_into_specialized_matrix(p, variant, rs_len),
             PatternVector(new_q),
           ) {
@@ -143,12 +152,12 @@ fn useful_internal<CX: PatternMatchingContext>(p: &PatternMatrix, q: PatternVect
             }
           }
         }
-        useful_internal::<CX>(&PatternMatrix(default_matrix_rows), PatternVector(q_rest))
+        useful_internal(cx, &PatternMatrix(default_matrix_rows), PatternVector(q_rest))
       }
     }
     AbstractPatternNodeInner::Or(possibilities) => possibilities
       .iter()
-      .any(|r| useful_internal::<CX>(p, PatternVector(cons(r.clone(), q_rest.clone())))),
+      .any(|r| useful_internal(cx, p, PatternVector(cons(r.clone(), q_rest.clone())))),
   }
 }
 
@@ -204,6 +213,7 @@ fn convert_into_specialized_matrix(
 }
 
 fn is_signature_complete<CX: PatternMatchingContext>(
+  cx: &CX,
   root_constructors: &HashMap<Option<VariantPatternConstructor>, usize>,
 ) -> bool {
   if root_constructors.contains_key(&None) {
@@ -221,7 +231,7 @@ fn is_signature_complete<CX: PatternMatchingContext>(
   assert!(variants_grouped.len() == 1);
   let ((mod_ref, class_name), variants) =
     variants_grouped.pop().expect("Already checked it's non-empty.");
-  CX::is_variant_signature_complete(mod_ref, class_name, &variants)
+  cx.is_variant_signature_complete(mod_ref, class_name, &variants)
 }
 
 #[cfg(test)]
@@ -287,6 +297,7 @@ mod tests {
 
   impl PatternMatchingContext for MockingPatternMatchingContext {
     fn is_variant_signature_complete(
+      &self,
       _module_reference: ModuleReference,
       class_name: PStr,
       variant_name: &[PStr],
@@ -308,7 +319,8 @@ mod tests {
   }
 
   fn useful(matrix: &[&[P]], vector: &[P]) -> bool {
-    super::useful_internal::<MockingPatternMatchingContext>(
+    super::useful_internal(
+      &MockingPatternMatchingContext,
       &super::PatternMatrix(
         matrix.iter().map(|r| super::PatternVector(super::list(r.to_vec()))).collect(),
       ),
@@ -321,7 +333,7 @@ mod tests {
     assert!(!format!("{:?}", OPTION_NONE).is_empty());
     assert!(!format!("{:?}", P::wildcard()).is_empty());
     assert_eq!(LETTERS, LETTERS_A.clone().class_name);
-    assert!(!MockingPatternMatchingContext::is_variant_signature_complete(
+    assert!(!MockingPatternMatchingContext.is_variant_signature_complete(
       ModuleReference::ROOT,
       PStr::PANIC,
       &[],
@@ -448,7 +460,8 @@ mod tests {
         P::variant(OPTION_SOME, vec![P::wildcard()])
       ])]
     ));
-    assert!(!super::is_additional_pattern_useful::<MockingPatternMatchingContext>(
+    assert!(!super::is_additional_pattern_useful(
+      &MockingPatternMatchingContext,
       &[
         P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()]),
         P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)]),
