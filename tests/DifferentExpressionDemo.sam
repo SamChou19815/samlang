@@ -11,7 +11,7 @@ class Obj(val d: int, val e: int) {
     let a: int = 1;
     let b: int = 2;
     let c = 3;
-    let { e as d }: Obj = Obj.init(5, 4);
+    let { d as _, e as d }: Obj = Obj.init(5, 4);
     let _: int = 42;
     a + b * c / d
   }

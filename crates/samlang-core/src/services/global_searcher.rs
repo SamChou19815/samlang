@@ -341,7 +341,7 @@ mod tests {
         let a: int = 1;
         let b = 2;
         let c = 3; // c = 3
-        let { e as d } = Obj.init(5, 4); // d = 4
+        let { d as _, e as d } = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
         let _ = if let { a as d3, b as d4 } = Foo.init(5, false) then {} else {};
