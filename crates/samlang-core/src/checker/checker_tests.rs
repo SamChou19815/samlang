@@ -2588,7 +2588,7 @@ Found 1 error.
     );
     assert_checks(
       heap,
-      "{ let _ = (t: Test) -> if let {foo, bar as _} = t then 1 else 2; }",
+      "{ let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t then 1 else 2; }",
       &builder.unit_type(),
     );
     assert_checks(
@@ -2600,6 +2600,22 @@ Found 1 error.
       heap,
       "{ let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2; }",
       &builder.unit_type(),
+    );
+    assert_errors(
+      heap,
+      "{ let _ = (t: Test2) -> if let Foo = t then 1 else 2; }",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:32-1:35
+
+The pattern does not bind all fields. Expected number of elements: 1, actual number of elements: 0.
+
+  1| { let _ = (t: Test2) -> if let Foo = t then 1 else 2; }
+                                    ^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors_full_customization(
       heap,
@@ -2754,6 +2770,16 @@ let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
 }"#,
       &builder.unit_type(),
       r#"
+Error ---------------------------------- DUMMY.sam:1:31-1:41
+
+The pattern does not bind all fields. The following names have not been mentioned:
+- `fff`
+- `foo`
+
+  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+                                   ^^^^^^^^^^
+
+
 Error ---------------------------------- DUMMY.sam:1:32-1:35
 
 Cannot resolve member `bar` on `Test`.
@@ -2768,6 +2794,14 @@ Cannot resolve member `boo` on `Test`.
 
   1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
                                          ^^^
+
+
+Error ---------------------------------- DUMMY.sam:2:29-2:37
+
+The pattern does not bind all fields. Expected number of elements: 3, actual number of elements: 2.
+
+  2| let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+                                 ^^^^^^^^
 
 
 Error ---------------------------------- DUMMY.sam:2:33-2:36
@@ -2794,7 +2828,7 @@ Cannot resolve member `Foo111` on `Test2`.
                                   ^^^^^^
 
 
-Found 5 errors.
+Found 7 errors.
 "#,
       "Test2",
       false,
@@ -3069,12 +3103,37 @@ Found 2 errors.
       "{let {a, d as c} = A.init();}",
       &builder.unit_type(),
       r#"
+Error ----------------------------------- DUMMY.sam:1:6-1:17
+
+The pattern does not bind all fields. The following names have not been mentioned:
+- `b`
+
+  1| {let {a, d as c} = A.init();}
+          ^^^^^^^^^^^
+
+
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot resolve member `d` on `A`.
 
   1| {let {a, d as c} = A.init();}
               ^
+
+
+Found 2 errors.
+"#,
+    );
+    assert_errors(
+      heap,
+      "{let [_]= A.init();}",
+      &builder.unit_type(),
+      r#"
+Error ------------------------------------ DUMMY.sam:1:6-1:9
+
+The pattern does not bind all fields. Expected number of elements: 2, actual number of elements: 1.
+
+  1| {let [_]= A.init();}
+          ^^^
 
 
 Found 1 error.

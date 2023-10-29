@@ -1649,7 +1649,7 @@ class Obj(private val d: int, val e: int) {
     let a: int = 1;
     let b = 2;
     let c = 3;
-    let { e as d } = Obj.init(5, 4); // d = 4
+    let { d as _, e as d } = Obj.init(5, 4); // d = 4
     let _ = 42;
     // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
     a + b * c / d

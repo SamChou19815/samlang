@@ -20,7 +20,11 @@ use crate::{
 };
 use itertools::Itertools;
 use samlang_heap::{ModuleReference, PStr};
-use std::{collections::HashMap, ops::Deref, rc::Rc};
+use std::{
+  collections::{BTreeSet, HashMap},
+  ops::Deref,
+  rc::Rc,
+};
 
 mod type_hint {
   use super::super::type_::{FunctionType, Type};
@@ -1091,14 +1095,23 @@ fn check_destructuring_pattern(
         let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
         checked_destructured_names.push(pattern::TuplePatternElement { pattern: checked, type_ });
       }
+      if fields.len() > checked_destructured_names.len() {
+        cx.error_set.report_non_exhausive_tuple_binding_error(
+          *pattern_loc,
+          fields.len(),
+          checked_destructured_names.len(),
+        );
+      }
       pattern::DestructuringPattern::Tuple(*pattern_loc, checked_destructured_names)
     }
     pattern::DestructuringPattern::Object(pattern_loc, destructed_names) => {
       let fields = cx.resolve_struct_definitions(pattern_type);
       let mut field_order_mapping = HashMap::new();
+      let mut not_mentioned_fields = BTreeSet::new();
       let mut field_mappings = HashMap::new();
       for (i, field) in fields.into_iter().enumerate() {
         field_order_mapping.insert(field.name, i);
+        not_mentioned_fields.insert(field.name);
         field_mappings.insert(field.name, (field.type_, field.is_public));
       }
       let mut checked_destructured_names = vec![];
@@ -1119,6 +1132,7 @@ fn check_destructuring_pattern(
               field_name.name,
             );
           }
+          not_mentioned_fields.remove(&field_name.name);
           let checked = Box::new(check_destructuring_pattern(cx, pattern, field_type));
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
           checked_destructured_names.push(pattern::ObjectPatternElement {
@@ -1146,6 +1160,12 @@ fn check_destructuring_pattern(
           shorthand: *shorthand,
           type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
+      }
+      if !not_mentioned_fields.is_empty() {
+        cx.error_set.report_non_exhausive_struct_binding_error(
+          *pattern_loc,
+          not_mentioned_fields.into_iter().collect(),
+        );
       }
       pattern::DestructuringPattern::Object(*pattern_loc, checked_destructured_names)
     }
@@ -1186,14 +1206,23 @@ fn check_matching_pattern(
         let checked = Box::new(check_matching_pattern(cx, pattern, &type_));
         checked_destructured_names.push(pattern::TuplePatternElement { pattern: checked, type_ });
       }
+      if fields.len() > checked_destructured_names.len() {
+        cx.error_set.report_non_exhausive_tuple_binding_error(
+          *pattern_loc,
+          fields.len(),
+          checked_destructured_names.len(),
+        );
+      }
       pattern::MatchingPattern::Tuple(*pattern_loc, checked_destructured_names)
     }
     pattern::MatchingPattern::Object(pattern_loc, destructed_names) => {
       let fields = cx.resolve_struct_definitions(pattern_type);
+      let mut not_mentioned_fields = BTreeSet::new();
       let mut field_order_mapping = HashMap::new();
       let mut field_mappings = HashMap::new();
       for (i, field) in fields.into_iter().enumerate() {
         field_order_mapping.insert(field.name, i);
+        not_mentioned_fields.insert(field.name);
         field_mappings.insert(field.name, (field.type_, field.is_public));
       }
       let mut checked_destructured_names = vec![];
@@ -1214,6 +1243,7 @@ fn check_matching_pattern(
               field_name.name,
             );
           }
+          not_mentioned_fields.remove(&field_name.name);
           let checked = Box::new(check_matching_pattern(cx, pattern, field_type));
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
           checked_destructured_names.push(pattern::ObjectPatternElement {
@@ -1241,6 +1271,12 @@ fn check_matching_pattern(
           shorthand: *shorthand,
           type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
+      }
+      if !not_mentioned_fields.is_empty() {
+        cx.error_set.report_non_exhausive_struct_binding_error(
+          *pattern_loc,
+          not_mentioned_fields.into_iter().collect(),
+        );
       }
       pattern::MatchingPattern::Object(*pattern_loc, checked_destructured_names)
     }
@@ -1283,6 +1319,13 @@ fn check_matching_pattern(
           let type_ = Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
           checked_data_variables.push((check_matching_pattern(cx, p, &type_), type_));
         }
+      }
+      if resolved_enum.types.len() > checked_data_variables.len() {
+        cx.error_set.report_non_exhausive_tuple_binding_error(
+          *loc,
+          resolved_enum.types.len(),
+          checked_data_variables.len(),
+        );
       }
       pattern::MatchingPattern::Variant(pattern::VariantPattern {
         loc: *loc,
