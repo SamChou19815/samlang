@@ -227,14 +227,16 @@ pub mod query {
           ),
         ))
       }
-      LocationCoverSearchResult::Expression(expression) => Some(TypeQueryResult {
+      LocationCoverSearchResult::Expression(expr::E::Literal(common, _)) => Some(TypeQueryResult {
         contents: vec![TypeQueryContent {
           language: "samlang",
-          value: expression.type_().pretty_print(&state.heap),
+          value: common.type_.pretty_print(&state.heap),
         }],
-        location: expression.loc(),
+        location: common.loc,
       }),
-      LocationCoverSearchResult::TypedName(location, _, type_) => Some(TypeQueryResult {
+      // Don't return results of arbitrary expressions
+      LocationCoverSearchResult::Expression(_) => None,
+      LocationCoverSearchResult::TypedName(location, _, type_, _) => Some(TypeQueryResult {
         contents: vec![TypeQueryContent {
           language: "samlang",
           value: type_.pretty_print(&state.heap),
@@ -308,20 +310,7 @@ pub mod query {
       position,
       false,
     )? {
-      LocationCoverSearchResult::Expression(
-        expr::E::Literal(_, _)
-        | expr::E::ClassId(_, _, _)
-        | expr::E::Tuple(_, _)
-        | expr::E::FieldAccess(_)
-        | expr::E::MethodAccess(_)
-        | expr::E::Unary(_)
-        | expr::E::Call(_)
-        | expr::E::Binary(_)
-        | expr::E::IfElse(_)
-        | expr::E::Match(_)
-        | expr::E::Lambda(_)
-        | expr::E::Block(_),
-      ) => None,
+      LocationCoverSearchResult::Expression(_) => None,
       LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => {
         Some(search_modules_globally(
           &state.checked_modules,
@@ -352,19 +341,10 @@ pub mod query {
           &super::super::global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
         ))
       }
-      LocationCoverSearchResult::TypedName(loc, _, _) => {
+      LocationCoverSearchResult::TypedName(loc, _, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
         VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
-          .map(|it| it.all_locations())
-      }
-      LocationCoverSearchResult::Expression(expr::E::LocalId(
-        expr::ExpressionCommon { loc, .. },
-        _,
-      )) => {
-        let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(*module_reference, module)
-          .find_all_definition_and_uses(loc)
           .map(|it| it.all_locations())
       }
     }
@@ -376,20 +356,7 @@ pub mod query {
     position: Position,
   ) -> Option<Location> {
     match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
-      LocationCoverSearchResult::Expression(
-        expr::E::Literal(_, _)
-        | expr::E::ClassId(_, _, _)
-        | expr::E::Tuple(_, _)
-        | expr::E::FieldAccess(_)
-        | expr::E::MethodAccess(_)
-        | expr::E::Unary(_)
-        | expr::E::Call(_)
-        | expr::E::Binary(_)
-        | expr::E::IfElse(_)
-        | expr::E::Match(_)
-        | expr::E::Lambda(_)
-        | expr::E::Block(_),
-      ) => None,
+      LocationCoverSearchResult::Expression(_) => None,
       LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => Some(
         state_searcher_utils::find_field_def(state, &mod_ref, &class_name, &field_name)?.name.loc,
       ),
@@ -406,19 +373,10 @@ pub mod query {
       LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
         Some(state_searcher_utils::find_toplevel(state, &mod_ref, &class_name)?.loc())
       }
-      LocationCoverSearchResult::TypedName(loc, _, _) => {
+      LocationCoverSearchResult::TypedName(loc, _, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
         VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
-          .map(|it| it.definition_location)
-      }
-      LocationCoverSearchResult::Expression(expr::E::LocalId(
-        expr::ExpressionCommon { loc, .. },
-        _,
-      )) => {
-        let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(*module_reference, module)
-          .find_all_definition_and_uses(loc)
           .map(|it| it.definition_location)
       }
     }
@@ -507,7 +465,7 @@ pub mod rewrite {
     }
     let def_or_use_loc =
       match state_searcher_utils::search_at_pos(state, module_reference, position, false) {
-        Some(LocationCoverSearchResult::TypedName(loc, _, _)) => loc,
+        Some(LocationCoverSearchResult::TypedName(loc, _, _, _)) => loc,
         Some(LocationCoverSearchResult::Expression(e)) => e.loc(),
         _ => return None,
       };
@@ -663,7 +621,7 @@ pub mod completion {
             },
           );
         }
-        LocationCoverSearchResult::Expression(expr::E::LocalId(_, Id { .. })) => {
+        LocationCoverSearchResult::TypedName(_, _, _, false) => {
           let parsed = state.parsed_modules.get(module_reference).unwrap();
           let (_, local_cx) =
             type_check_module(*module_reference, parsed, &state.global_cx, &mut ErrorSet::new());

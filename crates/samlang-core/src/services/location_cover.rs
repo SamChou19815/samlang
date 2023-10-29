@@ -21,7 +21,7 @@ pub(super) enum LocationCoverSearchResult<'a> {
     is_method: bool,
     type_: Rc<Type>,
   },
-  TypedName(Location, PStr, Type),
+  TypedName(Location, PStr, Type, bool), // bool: binding
 }
 
 fn search_destructuring_pattern(
@@ -36,7 +36,7 @@ fn search_destructuring_pattern(
       patterns.iter().find_map(|p| search_destructuring_pattern(&p.pattern, position))
     }
     pattern::DestructuringPattern::Id(id, type_) if id.loc.contains_position(position) => {
-      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone()))
+      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone(), true))
     }
     pattern::DestructuringPattern::Id(_, _) | pattern::DestructuringPattern::Wildcard(_) => None,
   }
@@ -57,7 +57,7 @@ fn search_matching_pattern(
       variant_pattern.data_variables.iter().find_map(|(p, _)| search_matching_pattern(p, position))
     }
     pattern::MatchingPattern::Id(id, type_) if id.loc.contains_position(position) => {
-      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone()))
+      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone(), true))
     }
     pattern::MatchingPattern::Id(_, _) | pattern::MatchingPattern::Wildcard(_) => None,
   }
@@ -72,7 +72,13 @@ fn search_expression(
     return None;
   }
   let found_from_children = match expr {
-    expr::E::Literal(_, _) | expr::E::LocalId(_, _) => None,
+    expr::E::Literal(_, _) => None,
+    expr::E::LocalId(common, id) => Some(LocationCoverSearchResult::TypedName(
+      id.loc,
+      id.name,
+      common.type_.as_ref().clone(),
+      false,
+    )),
     expr::E::ClassId(_, mod_ref, id) => {
       // We already checked at the start whether the expression contains the target.
       Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
@@ -173,6 +179,7 @@ fn search_expression(
               param.name.loc,
               param.name.name,
               Type::from_annotation(annot),
+              true,
             ));
           }
         }
@@ -236,6 +243,7 @@ pub(super) fn search_module_locally(
             param.name.loc,
             param.name.name,
             Type::from_annotation(&param.annotation),
+            true,
           ));
         }
       }
