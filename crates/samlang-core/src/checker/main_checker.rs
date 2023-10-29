@@ -1,5 +1,6 @@
 use super::{
   global_signature,
+  pattern_matching::{self, AbstractPatternNode},
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
     FunctionType, GlobalSignature, ISourceType, MemberSignature, NominalType, PrimitiveTypeKind,
@@ -901,13 +902,20 @@ fn check_if_else(
   hint: type_hint::Hint,
 ) -> expr::E<Rc<Type>> {
   let condition = Box::new(match expression.condition.as_ref() {
-    expr::IfElseCondition::Expression(e) => {
-      expr::IfElseCondition::Expression(type_check_expression(cx, e, type_hint::MISSING))
+    expr::IfElseCondition::Expression(expr) => {
+      expr::IfElseCondition::Expression(type_check_expression(cx, expr, type_hint::MISSING))
     }
-    expr::IfElseCondition::Guard(p, e) => {
-      let e = type_check_expression(cx, e, type_hint::MISSING);
-      let p = check_matching_pattern(cx, p, e.type_());
-      expr::IfElseCondition::Guard(p, e)
+    expr::IfElseCondition::Guard(p, expr) => {
+      let expr = type_check_expression(cx, expr, type_hint::MISSING);
+      let (pattern, abstract_pattern_node) = check_matching_pattern(cx, p, expr.type_());
+      if !pattern_matching::is_additional_pattern_useful(
+        cx,
+        &[abstract_pattern_node],
+        AbstractPatternNode::wildcard(),
+      ) {
+        cx.error_set.report_useless_pattern_error(*p.loc(), true);
+      }
+      expr::IfElseCondition::Guard(pattern, expr)
     }
   });
   let e1 = Box::new(type_check_expression(cx, &expression.e1, hint));
@@ -1177,15 +1185,90 @@ fn check_destructuring_pattern(
   }
 }
 
+fn any_typed_invalid_matching_pattern(
+  cx: &mut TypingContext,
+  pattern: &pattern::MatchingPattern<()>,
+) -> pattern::MatchingPattern<Rc<Type>> {
+  match pattern {
+    pattern::MatchingPattern::Tuple(pattern_loc, destructured_names) => {
+      let mut checked_destructured_names = vec![];
+      for pattern::TuplePatternElement { pattern, type_: _ } in destructured_names {
+        let loc = pattern.loc();
+        checked_destructured_names.push(pattern::TuplePatternElement {
+          pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
+          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+        });
+      }
+      pattern::MatchingPattern::Tuple(*pattern_loc, checked_destructured_names)
+    }
+    pattern::MatchingPattern::Object(pattern_loc, destructed_names) => {
+      let mut checked_destructured_names = vec![];
+      for pattern::ObjectPatternElement {
+        loc,
+        field_order,
+        field_name,
+        pattern,
+        shorthand,
+        type_: _,
+      } in destructed_names
+      {
+        checked_destructured_names.push(pattern::ObjectPatternElement {
+          loc: *loc,
+          field_order: *field_order,
+          field_name: *field_name,
+          pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
+          shorthand: *shorthand,
+          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+        });
+      }
+      pattern::MatchingPattern::Object(*pattern_loc, checked_destructured_names)
+    }
+    pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc,
+      tag_order,
+      tag,
+      data_variables,
+      type_: _,
+    }) => pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc: *loc,
+      tag_order: *tag_order,
+      tag: *tag,
+      data_variables: data_variables
+        .iter()
+        .map(|(p, ())| {
+          (
+            any_typed_invalid_matching_pattern(cx, p),
+            Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false)),
+          )
+        })
+        .collect(),
+      type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+    }),
+    pattern::MatchingPattern::Id(id, ()) => {
+      let type_ = Rc::new(Type::Any(Reason::new(id.loc, Some(id.loc)), false));
+      cx.local_typing_context.write(id.loc, type_.clone());
+      pattern::MatchingPattern::Id(*id, type_)
+    }
+    pattern::MatchingPattern::Wildcard(loc) => pattern::MatchingPattern::Wildcard(*loc),
+  }
+}
+
 fn check_matching_pattern(
   cx: &mut TypingContext,
   pattern: &pattern::MatchingPattern<()>,
   pattern_type: &Rc<Type>,
-) -> pattern::MatchingPattern<Rc<Type>> {
+) -> (pattern::MatchingPattern<Rc<Type>>, pattern_matching::AbstractPatternNode) {
   match pattern {
     pattern::MatchingPattern::Tuple(pattern_loc, destructured_names) => {
-      let fields = cx.resolve_struct_definitions(pattern_type);
+      let Some((_, _, fields)) = cx.resolve_detailed_struct_definitions_opt(pattern_type) else {
+        cx.error_set.report_not_a_struct_error(*pattern_loc, pattern_type.to_description());
+        return (
+          any_typed_invalid_matching_pattern(cx, pattern),
+          pattern_matching::AbstractPatternNode::nothing(),
+        );
+      };
       let mut checked_destructured_names = vec![];
+      let mut abstract_pattern_nodes = vec![];
       for (index, pattern::TuplePatternElement { pattern, type_: _ }) in
         destructured_names.iter().enumerate()
       {
@@ -1194,17 +1277,20 @@ fn check_matching_pattern(
           if !field_sig.is_public {
             cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
           }
-          let checked = Box::new(check_matching_pattern(cx, pattern, &field_sig.type_));
+          let (checked, abstract_node) = check_matching_pattern(cx, pattern, &field_sig.type_);
           checked_destructured_names.push(pattern::TuplePatternElement {
-            pattern: checked,
+            pattern: Box::new(checked),
             type_: Rc::new(field_sig.type_.reposition(*loc)),
           });
+          abstract_pattern_nodes.push(abstract_node);
           continue;
         }
         cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        let checked = Box::new(check_matching_pattern(cx, pattern, &type_));
-        checked_destructured_names.push(pattern::TuplePatternElement { pattern: checked, type_ });
+        let (checked, abstract_node) = check_matching_pattern(cx, pattern, &type_);
+        checked_destructured_names
+          .push(pattern::TuplePatternElement { pattern: Box::new(checked), type_ });
+        abstract_pattern_nodes.push(abstract_node);
       }
       if fields.len() > checked_destructured_names.len() {
         cx.error_set.report_non_exhausive_tuple_binding_error(
@@ -1212,18 +1298,32 @@ fn check_matching_pattern(
           fields.len(),
           checked_destructured_names.len(),
         );
+        for _ in checked_destructured_names.len()..fields.len() {
+          abstract_pattern_nodes.push(pattern_matching::AbstractPatternNode::wildcard());
+        }
       }
-      pattern::MatchingPattern::Tuple(*pattern_loc, checked_destructured_names)
+      (
+        pattern::MatchingPattern::Tuple(*pattern_loc, checked_destructured_names),
+        pattern_matching::AbstractPatternNode::tuple(abstract_pattern_nodes),
+      )
     }
     pattern::MatchingPattern::Object(pattern_loc, destructed_names) => {
-      let fields = cx.resolve_struct_definitions(pattern_type);
+      let Some((_, _, fields)) = cx.resolve_detailed_struct_definitions_opt(pattern_type) else {
+        cx.error_set.report_not_a_struct_error(*pattern_loc, pattern_type.to_description());
+        return (
+          any_typed_invalid_matching_pattern(cx, pattern),
+          pattern_matching::AbstractPatternNode::nothing(),
+        );
+      };
       let mut not_mentioned_fields = BTreeSet::new();
       let mut field_order_mapping = HashMap::new();
       let mut field_mappings = HashMap::new();
+      let mut abstract_pattern_nodes = Vec::with_capacity(fields.len());
       for (i, field) in fields.into_iter().enumerate() {
         field_order_mapping.insert(field.name, i);
         not_mentioned_fields.insert(field.name);
         field_mappings.insert(field.name, (field.type_, field.is_public));
+        abstract_pattern_nodes.push(AbstractPatternNode::wildcard());
       }
       let mut checked_destructured_names = vec![];
       for pattern::ObjectPatternElement {
@@ -1244,16 +1344,17 @@ fn check_matching_pattern(
             );
           }
           not_mentioned_fields.remove(&field_name.name);
-          let checked = Box::new(check_matching_pattern(cx, pattern, field_type));
+          let (checked, abstract_node) = check_matching_pattern(cx, pattern, field_type);
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
           checked_destructured_names.push(pattern::ObjectPatternElement {
             loc: *loc,
             field_order: *field_order,
             field_name: *field_name,
-            pattern: checked,
+            pattern: Box::new(checked),
             shorthand: *shorthand,
             type_: Rc::new(field_type.reposition(*loc)),
           });
+          abstract_pattern_nodes[*field_order] = abstract_node;
           continue;
         }
         cx.error_set.report_cannot_resolve_member_error(
@@ -1262,15 +1363,16 @@ fn check_matching_pattern(
           field_name.name,
         );
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        let checked = Box::new(check_matching_pattern(cx, pattern, &type_));
+        let (checked, abstract_node) = check_matching_pattern(cx, pattern, &type_);
         checked_destructured_names.push(pattern::ObjectPatternElement {
           loc: *loc,
           field_order: *field_order,
           field_name: *field_name,
-          pattern: checked,
+          pattern: Box::new(checked),
           shorthand: *shorthand,
           type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
+        abstract_pattern_nodes[*field_order] = abstract_node;
       }
       if !not_mentioned_fields.is_empty() {
         cx.error_set.report_non_exhausive_struct_binding_error(
@@ -1278,68 +1380,97 @@ fn check_matching_pattern(
           not_mentioned_fields.into_iter().collect(),
         );
       }
-      pattern::MatchingPattern::Object(*pattern_loc, checked_destructured_names)
+      (
+        pattern::MatchingPattern::Object(*pattern_loc, checked_destructured_names),
+        pattern_matching::AbstractPatternNode::tuple(abstract_pattern_nodes),
+      )
     }
     pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc,
-      tag_order,
+      tag_order: _,
       tag,
       data_variables,
       type_: _,
     }) => {
-      let Some((tag_order, resolved_enum)) =
-        cx.resolve_enum_definitions(pattern_type).into_iter().find_position(|e| e.name == tag.name)
+      let Some((
+        abstract_variant_constructor_mod_ref,
+        abstract_variant_constructor_class_name,
+        resolved_enum,
+      )) = cx.resolve_detailed_enum_definitions_opt(pattern_type)
+      else {
+        cx.error_set.report_not_an_enum_error(tag.loc, pattern_type.to_description());
+        return (
+          any_typed_invalid_matching_pattern(cx, pattern),
+          pattern_matching::AbstractPatternNode::nothing(),
+        );
+      };
+      let Some((tag_order, resolved_enum_variant)) =
+        resolved_enum.into_iter().find_position(|e| e.name == tag.name)
       else {
         cx.error_set.report_cannot_resolve_member_error(
           tag.loc,
           pattern_type.to_description(),
           tag.name,
         );
-        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        return pattern::MatchingPattern::Variant(pattern::VariantPattern {
-          loc: *loc,
-          tag_order: *tag_order,
-          tag: *tag,
-          data_variables: data_variables
-            .iter()
-            .map(|(p, ())| (check_matching_pattern(cx, p, &type_), type_.clone()))
-            .collect(),
-          type_,
-        });
+        return (
+          any_typed_invalid_matching_pattern(cx, pattern),
+          pattern_matching::AbstractPatternNode::nothing(),
+        );
       };
       let mut checked_data_variables = Vec::with_capacity(data_variables.len());
+      let abstract_variant_constructor = pattern_matching::VariantPatternConstructor {
+        module_reference: abstract_variant_constructor_mod_ref,
+        class_name: abstract_variant_constructor_class_name,
+        variant_name: resolved_enum_variant.name,
+      };
+      let mut abstract_pattern_nodes = vec![];
       for (index, (p, ())) in data_variables.iter().enumerate() {
-        if let Some(resolved_pattern_type) = resolved_enum.types.get(index) {
-          checked_data_variables.push((
-            check_matching_pattern(cx, p, resolved_pattern_type),
-            resolved_pattern_type.clone(),
-          ));
+        if let Some(resolved_pattern_type) = resolved_enum_variant.types.get(index) {
+          let (checked, abstract_node) = check_matching_pattern(cx, p, resolved_pattern_type);
+          checked_data_variables.push((checked, resolved_pattern_type.clone()));
+          abstract_pattern_nodes.push(abstract_node);
         } else {
           cx.error_set.report_element_missing_error(*p.loc(), pattern_type.to_description(), index);
           let type_ = Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
-          checked_data_variables.push((check_matching_pattern(cx, p, &type_), type_));
+          let (checked, abstract_node) = check_matching_pattern(cx, p, &type_);
+          checked_data_variables.push((checked, type_));
+          abstract_pattern_nodes.push(abstract_node);
         }
       }
-      if resolved_enum.types.len() > checked_data_variables.len() {
+      if resolved_enum_variant.types.len() > checked_data_variables.len() {
         cx.error_set.report_non_exhausive_tuple_binding_error(
           *loc,
-          resolved_enum.types.len(),
+          resolved_enum_variant.types.len(),
           checked_data_variables.len(),
         );
+        for _ in checked_data_variables.len()..resolved_enum_variant.types.len() {
+          abstract_pattern_nodes.push(pattern_matching::AbstractPatternNode::wildcard());
+        }
       }
-      pattern::MatchingPattern::Variant(pattern::VariantPattern {
-        loc: *loc,
-        tag_order,
-        tag: *tag,
-        data_variables: checked_data_variables,
-        type_: pattern_type.clone(),
-      })
+      (
+        pattern::MatchingPattern::Variant(pattern::VariantPattern {
+          loc: *loc,
+          tag_order,
+          tag: *tag,
+          data_variables: checked_data_variables,
+          type_: pattern_type.clone(),
+        }),
+        pattern_matching::AbstractPatternNode::variant(
+          abstract_variant_constructor,
+          abstract_pattern_nodes,
+        ),
+      )
     }
     pattern::MatchingPattern::Id(id, ()) => {
       cx.local_typing_context.write(id.loc, pattern_type.clone());
-      pattern::MatchingPattern::Id(*id, pattern_type.clone())
+      (
+        pattern::MatchingPattern::Id(*id, pattern_type.clone()),
+        pattern_matching::AbstractPatternNode::wildcard(),
+      )
     }
-    pattern::MatchingPattern::Wildcard(loc) => pattern::MatchingPattern::Wildcard(*loc),
+    pattern::MatchingPattern::Wildcard(loc) => {
+      (pattern::MatchingPattern::Wildcard(*loc), pattern_matching::AbstractPatternNode::wildcard())
+    }
   }
 }
 

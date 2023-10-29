@@ -11,7 +11,10 @@ use crate::{
   errors::{ErrorSet, StackableError},
 };
 use samlang_heap::{ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc};
+use std::{
+  collections::{HashMap, HashSet},
+  rc::Rc,
+};
 
 pub(crate) struct LocalTypingContext {
   type_map: HashMap<Location, Rc<Type>>,
@@ -277,13 +280,36 @@ impl<'a> TypingContext<'a> {
     self.current_module_reference == module_reference && class_name == self.current_class
   }
 
+  pub(super) fn resolve_detailed_struct_definitions_opt(
+    &self,
+    type_: &Type,
+  ) -> Option<(ModuleReference, PStr, Vec<StructItemDefinitionSignature>)> {
+    match self.resolve_type_definition(type_) {
+      None | Some((_, _, TypeDefinitionSignature::Enum(_))) => None,
+      Some((mod_ref, t_id, TypeDefinitionSignature::Struct(items))) => Some((mod_ref, t_id, items)),
+    }
+  }
+
+  pub(super) fn resolve_detailed_enum_definitions_opt(
+    &self,
+    type_: &Type,
+  ) -> Option<(ModuleReference, PStr, Vec<EnumVariantDefinitionSignature>)> {
+    match self.resolve_type_definition(type_) {
+      None | Some((_, _, TypeDefinitionSignature::Struct(_))) => None,
+      Some((mod_ref, t_id, TypeDefinitionSignature::Enum(variants))) => {
+        Some((mod_ref, t_id, variants))
+      }
+    }
+  }
+
   pub(super) fn resolve_struct_definitions(
     &self,
     type_: &Type,
   ) -> Vec<StructItemDefinitionSignature> {
-    match self.resolve_type_definition(type_) {
-      None | Some(TypeDefinitionSignature::Enum(_)) => vec![],
-      Some(TypeDefinitionSignature::Struct(items)) => items,
+    if let Some((_, _, result)) = self.resolve_detailed_struct_definitions_opt(type_) {
+      result
+    } else {
+      Vec::with_capacity(0)
     }
   }
 
@@ -291,13 +317,17 @@ impl<'a> TypingContext<'a> {
     &self,
     type_: &Type,
   ) -> Vec<EnumVariantDefinitionSignature> {
-    match self.resolve_type_definition(type_) {
-      None | Some(TypeDefinitionSignature::Struct(_)) => vec![],
-      Some(TypeDefinitionSignature::Enum(variants)) => variants,
+    if let Some((_, _, result)) = self.resolve_detailed_enum_definitions_opt(type_) {
+      result
+    } else {
+      Vec::with_capacity(0)
     }
   }
 
-  fn resolve_type_definition(&self, type_: &Type) -> Option<TypeDefinitionSignature> {
+  fn resolve_type_definition(
+    &self,
+    type_: &Type,
+  ) -> Option<(ModuleReference, PStr, TypeDefinitionSignature)> {
     let nominal_type = self.nominal_type_upper_bound(type_)?;
     let resolved_type_def = global_signature::resolve_interface_cx(
       self.global_signature,
@@ -318,26 +348,58 @@ impl<'a> TypingContext<'a> {
     {
       subst_map.insert(tparam.name, targ.clone());
     }
+    let mod_ref = nominal_type.module_reference;
+    let t_id = nominal_type.id;
     match resolved_type_def {
-      TypeDefinitionSignature::Struct(items) => Some(TypeDefinitionSignature::Struct(
-        items
-          .iter()
-          .map(|item| StructItemDefinitionSignature {
-            name: item.name,
-            type_: type_system::subst_type(&item.type_, &subst_map),
-            is_public: item.is_public || nominal_type.id.eq(&self.current_class),
-          })
-          .collect(),
-      )),
-      TypeDefinitionSignature::Enum(variants) => Some(TypeDefinitionSignature::Enum(
-        variants
-          .iter()
-          .map(|variant| EnumVariantDefinitionSignature {
-            name: variant.name,
-            types: variant.types.iter().map(|it| type_system::subst_type(it, &subst_map)).collect(),
-          })
-          .collect(),
-      )),
+      TypeDefinitionSignature::Struct(items) => {
+        let def = TypeDefinitionSignature::Struct(
+          items
+            .iter()
+            .map(|item| StructItemDefinitionSignature {
+              name: item.name,
+              type_: type_system::subst_type(&item.type_, &subst_map),
+              is_public: item.is_public || nominal_type.id.eq(&self.current_class),
+            })
+            .collect(),
+        );
+        Some((mod_ref, t_id, def))
+      }
+      TypeDefinitionSignature::Enum(variants) => {
+        let def = TypeDefinitionSignature::Enum(
+          variants
+            .iter()
+            .map(|variant| EnumVariantDefinitionSignature {
+              name: variant.name,
+              types: variant
+                .types
+                .iter()
+                .map(|it| type_system::subst_type(it, &subst_map))
+                .collect(),
+            })
+            .collect(),
+        );
+        Some((mod_ref, t_id, def))
+      }
     }
+  }
+}
+
+impl<'a> super::pattern_matching::PatternMatchingContext for TypingContext<'a> {
+  fn is_variant_signature_complete(
+    &self,
+    module_reference: ModuleReference,
+    class_name: PStr,
+    variant_name: &[PStr],
+  ) -> bool {
+    let set = variant_name.iter().copied().collect::<HashSet<_>>();
+    global_signature::resolve_interface_cx(self.global_signature, module_reference, class_name)
+      .expect("Should not be called with invalid enum.")
+      .type_definition
+      .as_ref()
+      .expect("Should not be called with invalid enum.")
+      .as_enum()
+      .expect("Should not be called with invalid enum.")
+      .iter()
+      .all(|v| set.contains(&v.name))
   }
 }

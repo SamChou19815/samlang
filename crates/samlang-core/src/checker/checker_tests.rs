@@ -2588,11 +2588,6 @@ Found 1 error.
     );
     assert_checks(
       heap,
-      "{ let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t then 1 else 2; }",
-      &builder.unit_type(),
-    );
-    assert_checks(
-      heap,
       "{ let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
     );
@@ -2600,6 +2595,22 @@ Found 1 error.
       heap,
       "{ let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2; }",
       &builder.unit_type(),
+    );
+    assert_errors(
+      heap,
+      "{ let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t then 1 else 2; }",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:31-1:56
+
+The pattern is irrefutable.
+
+  1| { let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t then 1 else 2; }
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
@@ -2747,6 +2758,14 @@ Found 1 error.
       "{ let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }",
       &builder.unit_type(),
       r#"
+Error ---------------------------------- DUMMY.sam:1:31-1:40
+
+The pattern is irrefutable.
+
+  1| { let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }
+                                   ^^^^^^^^^
+
+
 Error ---------------------------------- DUMMY.sam:1:38-1:39
 
 Cannot access member of `Pair<int, int>` at index 2.
@@ -2755,7 +2774,7 @@ Cannot access member of `Pair<int, int>` at index 2.
                                           ^
 
 
-Found 1 error.
+Found 2 errors.
 "#,
       "Test",
       true,
@@ -2767,6 +2786,9 @@ let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
+let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, [eee, fff]) = t then 1 else 2;
+let _ = (t: Test2) -> if let {s} = t then 1 else 2;
+let _ = if let F = 1 then 1 else 2;
 }"#,
       &builder.unit_type(),
       r#"
@@ -2775,6 +2797,14 @@ Error ---------------------------------- DUMMY.sam:1:31-1:41
 The pattern does not bind all fields. The following names have not been mentioned:
 - `fff`
 - `foo`
+
+  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+                                   ^^^^^^^^^^
+
+
+Error ---------------------------------- DUMMY.sam:1:31-1:41
+
+The pattern is irrefutable.
 
   1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
                                    ^^^^^^^^^^
@@ -2804,6 +2834,14 @@ The pattern does not bind all fields. Expected number of elements: 3, actual num
                                  ^^^^^^^^
 
 
+Error ---------------------------------- DUMMY.sam:2:29-2:37
+
+The pattern is irrefutable.
+
+  2| let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+                                 ^^^^^^^^
+
+
 Error ---------------------------------- DUMMY.sam:2:33-2:36
 
 Cannot access member of `Test` at index 1.
@@ -2828,7 +2866,31 @@ Cannot resolve member `Foo111` on `Test2`.
                                   ^^^^^^
 
 
-Found 7 errors.
+Error ---------------------------------- DUMMY.sam:6:30-6:36
+
+Cannot resolve member `Foo111` on `Test2`.
+
+  6| let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, [eee, fff]) = t then 1 else 2;
+                                  ^^^^^^
+
+
+Error ---------------------------------- DUMMY.sam:7:30-7:33
+
+`Test2` is not an instance of a struct class.
+
+  7| let _ = (t: Test2) -> if let {s} = t then 1 else 2;
+                                  ^^^
+
+
+Error ---------------------------------- DUMMY.sam:8:16-8:17
+
+`int` is not an instance of an enum class.
+
+  8| let _ = if let F = 1 then 1 else 2;
+                    ^
+
+
+Found 12 errors.
 "#,
       "Test2",
       false,
