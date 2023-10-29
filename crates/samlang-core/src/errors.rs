@@ -542,6 +542,8 @@ pub(crate) enum ErrorDetail {
   NonExhausiveStructBinding { missing_bindings: Vec<PStr> },
   NonExhausiveTupleBinding { expected_count: usize, actual_count: usize },
   NonExhausiveMatch { missing_tags: Vec<PStr> },
+  NotAnEnum { description: Description },
+  NotAStruct { description: Description },
   Stacked(StackableError),
   TypeParameterNameMismatch { expected: Vec<Description> },
   Underconstrained,
@@ -655,6 +657,16 @@ impl ErrorDetail {
           printable_stream.push_pstr(tag);
           printable_stream.push_text("`");
         }
+      }
+      ErrorDetail::NotAnEnum { description } => {
+        printable_stream.push_text("`");
+        printable_stream.push_description(description);
+        printable_stream.push_text("` is not an instance of an enum class.");
+      }
+      ErrorDetail::NotAStruct { description } => {
+        printable_stream.push_text("`");
+        printable_stream.push_description(description);
+        printable_stream.push_text("` is not an instance of a struct class.");
       }
       ErrorDetail::Stacked(s) => {
         for (i, e) in s.rev_stack.iter().rev().enumerate() {
@@ -999,6 +1011,14 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveMatch { missing_tags })
   }
 
+  pub(crate) fn report_not_an_enum_error(&mut self, loc: Location, description: Description) {
+    self.report_error(loc, ErrorDetail::NotAnEnum { description })
+  }
+
+  pub(crate) fn report_not_a_struct_error(&mut self, loc: Location, description: Description) {
+    self.report_error(loc, ErrorDetail::NotAStruct { description })
+  }
+
   pub(crate) fn report_stackable_error(&mut self, loc: Location, stackable: StackableError) {
     self.report_error(loc, ErrorDetail::Stacked(stackable))
   }
@@ -1175,6 +1195,8 @@ Found 2 errors."#
     error_set.report_non_exhausive_tuple_binding_error(Location::dummy(), 7, 4);
     error_set
       .report_non_exhausive_match_error(Location::dummy(), vec![PStr::UPPER_A, PStr::UPPER_B]);
+    error_set.report_not_an_enum_error(Location::dummy(), Description::IntType);
+    error_set.report_not_a_struct_error(Location::dummy(), Description::IntType);
     error_set.report_stackable_error(Location::dummy(), {
       let mut stacked = StackableError::new();
       stacked.add_type_error(super::TypeIncompatibilityNode {
@@ -1278,6 +1300,16 @@ The match is not exhausive. The following variants have not been handled:
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
+`int` is not an instance of an enum class.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+`int` is not an instance of a struct class.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
 `any` is incompatible with `any`.
 - Function parameter arity of 0 is incompatible with function parameter arity of 0.
   - Type argument arity of 0 is incompatible with type argument arity of 0.
@@ -1315,7 +1347,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Cannot resolve name `global`.
 
 
-Found 21 errors.
+Found 23 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

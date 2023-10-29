@@ -336,9 +336,9 @@ mod tests {
         let { d as _, e as d } = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
-        let _ = if let { a as d3 } = Foo.init(5) then {} else {};
+        let _ = if let Some({ a as d3 }) = Option.Some(Foo.init(5)) then {} else {};
         let _ = if let Some(_) = Option.Some(1) then {} else {};
-        let _ = if let [_, _] = [1,2] then {} else {};
+        let _ = if let Some([_, _]) = Option.Some([1,2]) then {} else {};
         let _ = f.d;
         let [h, i] = [111, 122];
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2

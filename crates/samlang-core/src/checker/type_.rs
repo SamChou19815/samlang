@@ -526,6 +526,7 @@ pub(crate) struct EnumVariantDefinitionSignature {
   pub(crate) types: Vec<Rc<Type>>,
 }
 
+#[derive(EnumAsInner)]
 pub(crate) enum TypeDefinitionSignature {
   Struct(Vec<StructItemDefinitionSignature>),
   Enum(Vec<EnumVariantDefinitionSignature>),

@@ -304,15 +304,16 @@ mod tests {
     builtin_parsed_std_sources, checker::type_check_sources, errors::ErrorSet,
     parser::parse_source_module_from_text,
   };
+  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
+  use std::collections::HashMap;
 
   #[test]
   fn searcher_coverage_test() {
     let heap = &mut Heap::new();
     let mut error_set = ErrorSet::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["foo".to_string()]);
-    let parsed = parse_source_module_from_text(
-      r#"class Foo(val a: int, val b: bool) {
+    let source = r#"class Foo(val a: int, val b: bool) {
       function bar(): int = 3
 
       method foo(): unit = {
@@ -390,15 +391,36 @@ mod tests {
         )));
         Main.main()
       }
-    }"#,
-      mod_ref,
-      heap,
-      &mut error_set,
-    );
+    }"#;
+    let parsed = parse_source_module_from_text(source, mod_ref, heap, &mut error_set);
     let mut modules = builtin_parsed_std_sources(heap);
     modules.insert(mod_ref, parsed);
     let (checked_sources, _) = type_check_sources(&modules, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+    assert_eq!(
+      r#"
+Error ---------------------------------- foo.sam:33:24-33:44
+
+The pattern is irrefutable.
+
+  33|         let _ = if let { a as d3, b as d4 } = Foo.init(5, false) then {} else {};
+                             ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ---------------------------------- foo.sam:35:24-35:30
+
+The pattern is irrefutable.
+
+  35|         let _ = if let [_, _] = [1,2] then {} else {};
+                             ^^^^^^
+
+
+Found 2 errors.
+"#
+      .trim(),
+      error_set
+        .pretty_print_error_messages(heap, &HashMap::from([(mod_ref, source.to_string())]))
+        .trim()
+    );
     super::search_modules_globally(
       &checked_sources,
       &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Foo")),
