@@ -50,6 +50,10 @@ impl AbstractPatternNode {
     }))
   }
 
+  pub(super) fn nothing() -> Self {
+    Self(Rc::new(AbstractPatternNodeInner::Or(Vec::with_capacity(0))))
+  }
+
   pub(super) fn or(possibilities: Vec<AbstractPatternNode>) -> Self {
     Self(Rc::new(AbstractPatternNodeInner::Or(possibilities)))
   }
@@ -404,6 +408,10 @@ mod tests {
     assert!(useful(
       &[&[P::enum_(OPTION_NONE), P::wildcard()], &[P::wildcard(), P::enum_(OPTION_NONE)],],
       &[P::variant(OPTION_SOME, vec![P::wildcard()]), P::variant(OPTION_SOME, vec![P::wildcard()])]
+    ));
+    assert!(!useful(
+      &[&[P::enum_(OPTION_NONE), P::wildcard()], &[P::wildcard(), P::enum_(OPTION_NONE)],],
+      &[P::nothing()]
     ));
     assert!(!useful(
       &[
