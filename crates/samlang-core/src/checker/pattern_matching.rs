@@ -6,14 +6,16 @@ use std::{
   rc::Rc,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+use crate::ast::Description;
+
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub(super) struct VariantPatternConstructor {
   pub(super) module_reference: ModuleReference,
   pub(super) class_name: PStr,
   pub(super) variant_name: PStr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 enum AbstractPatternNodeInner {
   // We assume the elements are normalized to add wildcard to not-mentioned fields.
   StructLike {
@@ -24,8 +26,44 @@ enum AbstractPatternNodeInner {
   Or(Vec<AbstractPatternNode>),
 }
 
-#[derive(Debug, Clone)]
+impl AbstractPatternNodeInner {
+  fn to_description(&self) -> Description {
+    match self {
+      Self::StructLike { variant: None, elements } => Description::TuplePattern(
+        elements.iter().map(AbstractPatternNode::to_description).collect(),
+      ),
+      Self::StructLike {
+        variant:
+          Some(VariantPatternConstructor { module_reference: _, class_name: _, variant_name }),
+        elements,
+      } => Description::VariantPattern(
+        *variant_name,
+        elements.iter().map(AbstractPatternNode::to_description).collect(),
+      ),
+      Self::Wildcard => Description::WildcardPattern,
+      Self::Or(choices) => {
+        Description::OrPattern(choices.iter().map(AbstractPatternNode::to_description).collect())
+      }
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct AbstractPatternNode(Rc<AbstractPatternNodeInner>);
+
+impl AbstractPatternNode {
+  fn to_description(&self) -> Description {
+    self.0.to_description()
+  }
+
+  fn toplevel_elements_to_description(PatternVector(elements): PatternVector) -> Description {
+    if elements.len() == 1 {
+      elements.first().unwrap().to_description()
+    } else {
+      AbstractPatternNodeInner::StructLike { variant: None, elements }.to_description()
+    }
+  }
+}
 
 impl AbstractPatternNode {
   pub(super) fn wildcard() -> Self {
@@ -33,14 +71,18 @@ impl AbstractPatternNode {
   }
 
   pub(super) fn tuple(elements: Vec<AbstractPatternNode>) -> Self {
-    Self(Rc::new(AbstractPatternNodeInner::StructLike { variant: None, elements: list(elements) }))
+    Self::tuple_or_variant(None, elements)
   }
 
   pub(super) fn variant(c: VariantPatternConstructor, elements: Vec<AbstractPatternNode>) -> Self {
-    Self(Rc::new(AbstractPatternNodeInner::StructLike {
-      variant: Some(c),
-      elements: list(elements),
-    }))
+    Self::tuple_or_variant(Some(c), elements)
+  }
+
+  pub(super) fn tuple_or_variant(
+    variant: Option<VariantPatternConstructor>,
+    elements: Vec<AbstractPatternNode>,
+  ) -> Self {
+    Self(Rc::new(AbstractPatternNodeInner::StructLike { variant, elements: list(elements) }))
   }
 
   pub(super) fn enum_(c: VariantPatternConstructor) -> Self {
@@ -64,12 +106,12 @@ struct PatternVector(PersistentList<AbstractPatternNode>);
 struct PatternMatrix(Vec<PatternVector>);
 
 pub(super) trait PatternMatchingContext {
-  fn is_variant_signature_complete(
+  fn variant_signature_incomplete_names(
     &self,
     module_reference: ModuleReference,
     class_name: PStr,
     variant_name: &[PStr],
-  ) -> bool;
+  ) -> HashMap<PStr, usize>;
 }
 
 pub(super) fn is_additional_pattern_useful<CX: PatternMatchingContext>(
@@ -84,7 +126,20 @@ pub(super) fn is_additional_pattern_useful<CX: PatternMatchingContext>(
   )
 }
 
-/// http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
+pub(super) fn incomplete_counterexample<CX: PatternMatchingContext>(
+  cx: &CX,
+  existing_patterns: &[AbstractPatternNode],
+) -> Option<Description> {
+  incomplete_counterexample_internal(
+    cx,
+    &PatternMatrix(existing_patterns.iter().map(|p| PatternVector(one(p.clone()))).collect_vec()),
+    1,
+  )
+  .map(AbstractPatternNode::toplevel_elements_to_description)
+}
+
+/// http://moscova.inria.fr/~maranget/papers/warn/warn.pdf.
+/// Section 3.1
 fn useful_internal<CX: PatternMatchingContext>(
   cx: &CX,
   p: &PatternMatrix,
@@ -106,21 +161,8 @@ fn useful_internal<CX: PatternMatchingContext>(
       )
     }
     AbstractPatternNodeInner::Wildcard => {
-      let mut root_constructors = HashMap::new();
-      let mut find_constructor_pattern_queue =
-        p.0.iter().filter_map(|r| r.0.first()).collect::<VecDeque<_>>();
-      while let Some(pattern) = find_constructor_pattern_queue.pop_front() {
-        match pattern.0.as_ref() {
-          AbstractPatternNodeInner::Wildcard => {}
-          AbstractPatternNodeInner::StructLike { variant, elements } => {
-            root_constructors.insert(*variant, elements.len());
-          }
-          AbstractPatternNodeInner::Or(possibilities) => {
-            find_constructor_pattern_queue.extend(possibilities.iter())
-          }
-        }
-      }
-      if is_signature_complete(cx, &root_constructors) {
+      let root_constructors = find_roots_constructors(p);
+      if signature_incomplete_names(cx, &root_constructors).is_none() {
         for (variant, rs_len) in root_constructors {
           let mut new_q = q_rest.clone();
           for _ in 0..rs_len {
@@ -136,23 +178,8 @@ fn useful_internal<CX: PatternMatchingContext>(
         }
         false
       } else {
-        let mut default_matrix_rows = vec![];
-        let mut convert_to_default_matrix_queue =
-          p.0.iter().map(|PatternVector(r)| r.clone()).collect::<VecDeque<_>>();
-        while let Some(p_row) = convert_to_default_matrix_queue.pop_front() {
-          match p_row.first().unwrap().0.as_ref() {
-            AbstractPatternNodeInner::StructLike { .. } => { /* skip */ }
-            AbstractPatternNodeInner::Wildcard => {
-              default_matrix_rows.push(PatternVector(p_row.rest()));
-            }
-            AbstractPatternNodeInner::Or(possibilities) => {
-              for r in possibilities {
-                convert_to_default_matrix_queue.push_front(cons(r.clone(), p_row.rest()));
-              }
-            }
-          }
-        }
-        useful_internal(cx, &PatternMatrix(default_matrix_rows), PatternVector(q_rest))
+        let default_matrix = default_matrix(p);
+        useful_internal(cx, &default_matrix, PatternVector(q_rest))
       }
     }
     AbstractPatternNodeInner::Or(possibilities) => possibilities
@@ -212,15 +239,53 @@ fn convert_into_specialized_matrix(
   PatternMatrix(new_rows)
 }
 
-fn is_signature_complete<CX: PatternMatchingContext>(
+fn find_roots_constructors(p: &PatternMatrix) -> HashMap<Option<VariantPatternConstructor>, usize> {
+  let mut root_constructors = HashMap::new();
+  let mut find_constructor_pattern_queue =
+    p.0.iter().filter_map(|r| r.0.first()).collect::<VecDeque<_>>();
+  while let Some(pattern) = find_constructor_pattern_queue.pop_front() {
+    match pattern.0.as_ref() {
+      AbstractPatternNodeInner::Wildcard => {}
+      AbstractPatternNodeInner::StructLike { variant, elements } => {
+        root_constructors.insert(*variant, elements.len());
+      }
+      AbstractPatternNodeInner::Or(possibilities) => {
+        find_constructor_pattern_queue.extend(possibilities.iter())
+      }
+    }
+  }
+  root_constructors
+}
+
+fn default_matrix(p: &PatternMatrix) -> PatternMatrix {
+  let mut default_matrix_rows = vec![];
+  let mut convert_to_default_matrix_queue =
+    p.0.iter().map(|PatternVector(r)| r.clone()).collect::<VecDeque<_>>();
+  while let Some(p_row) = convert_to_default_matrix_queue.pop_front() {
+    match p_row.first().unwrap().0.as_ref() {
+      AbstractPatternNodeInner::StructLike { .. } => { /* skip */ }
+      AbstractPatternNodeInner::Wildcard => {
+        default_matrix_rows.push(PatternVector(p_row.rest()));
+      }
+      AbstractPatternNodeInner::Or(possibilities) => {
+        for r in possibilities {
+          convert_to_default_matrix_queue.push_front(cons(r.clone(), p_row.rest()));
+        }
+      }
+    }
+  }
+  PatternMatrix(default_matrix_rows)
+}
+
+fn signature_incomplete_names<CX: PatternMatchingContext>(
   cx: &CX,
   root_constructors: &HashMap<Option<VariantPatternConstructor>, usize>,
-) -> bool {
+) -> Option<Vec<(VariantPatternConstructor, usize)>> {
   if root_constructors.contains_key(&None) {
-    return true;
+    return None;
   }
   if root_constructors.is_empty() {
-    return false;
+    return Some(Vec::with_capacity(0));
   }
   let mut variants_grouped = vec![];
   for (key, group) in
@@ -231,14 +296,78 @@ fn is_signature_complete<CX: PatternMatchingContext>(
   assert!(variants_grouped.len() == 1);
   let ((mod_ref, class_name), variants) =
     variants_grouped.pop().expect("Already checked it's non-empty.");
-  cx.is_variant_signature_complete(mod_ref, class_name, &variants)
+  let result = cx
+    .variant_signature_incomplete_names(mod_ref, class_name, &variants)
+    .into_iter()
+    .map(|(n, size)| {
+      (VariantPatternConstructor { module_reference: mod_ref, class_name, variant_name: n }, size)
+    })
+    .collect_vec();
+  if result.is_empty() {
+    None
+  } else {
+    Some(result)
+  }
+}
+
+/// http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
+/// Section 5
+fn incomplete_counterexample_internal<CX: PatternMatchingContext>(
+  cx: &CX,
+  p: &PatternMatrix,
+  n: usize,
+) -> Option<PatternVector> {
+  if n == 0 {
+    if p.0.is_empty() {
+      return Some(PatternVector(PersistentList::NULL));
+    }
+    return None;
+  }
+  let root_constructors = find_roots_constructors(p);
+  if let Some(incomplete_names) = signature_incomplete_names(cx, &root_constructors) {
+    let incomplete_vector = incomplete_counterexample_internal(cx, &default_matrix(p), n - 1)?;
+    let head = if let Some((variant, size)) = incomplete_names.into_iter().min() {
+      AbstractPatternNode::variant(
+        variant,
+        (0..size).map(|_| AbstractPatternNode::wildcard()).collect(),
+      )
+    } else {
+      AbstractPatternNode::wildcard()
+    };
+    Some(PatternVector(cons(head, incomplete_vector.0)))
+  } else {
+    for (variant, a_k) in root_constructors.into_iter().sorted_by_key(|(k, _)| *k) {
+      if let Some(incomplete_vector) = incomplete_counterexample_internal(
+        cx,
+        &convert_into_specialized_matrix(p, variant, a_k),
+        a_k + n - 1,
+      ) {
+        let mut split_remaining_count = a_k;
+        let mut split_remaining = incomplete_vector.0;
+        let mut first_part_vec = Vec::with_capacity(a_k);
+        while split_remaining_count > 0 {
+          let (head, tail) = split_remaining.pop().unwrap();
+          split_remaining = tail;
+          first_part_vec.push(head);
+          split_remaining_count -= 1;
+        }
+        return Some(PatternVector(cons(
+          AbstractPatternNode::tuple_or_variant(variant, first_part_vec),
+          split_remaining,
+        )));
+      }
+    }
+    None
+  }
 }
 
 #[cfg(test)]
 mod tests {
+  use super::{
+    AbstractPatternNode as P, PatternMatchingContext, PatternVector, VariantPatternConstructor,
+  };
+  use pretty_assertions::assert_eq;
   use samlang_heap::{ModuleReference, PStr};
-
-  use super::{AbstractPatternNode as P, PatternMatchingContext, VariantPatternConstructor};
 
   const OPTION: PStr = PStr::six_letter_literal(b"Option");
   const SOME: PStr = PStr::four_letter_literal(b"Some");
@@ -296,36 +425,63 @@ mod tests {
   struct MockingPatternMatchingContext;
 
   impl PatternMatchingContext for MockingPatternMatchingContext {
-    fn is_variant_signature_complete(
+    fn variant_signature_incomplete_names(
       &self,
       _module_reference: ModuleReference,
       class_name: PStr,
       variant_name: &[PStr],
-    ) -> bool {
+    ) -> super::HashMap<PStr, usize> {
       if class_name == OPTION {
-        variant_name.contains(&SOME) && variant_name.contains(&NONE)
+        let mut incomplete = super::HashMap::from([(SOME, 1), (NONE, 0)]);
+        for n in variant_name {
+          incomplete.remove(n);
+        }
+        incomplete
       } else if class_name == LETTERS {
-        variant_name.contains(&PStr::UPPER_A)
-          && variant_name.contains(&PStr::UPPER_B)
-          && variant_name.contains(&PStr::UPPER_C)
-          && variant_name.contains(&PStr::UPPER_D)
-          && variant_name.contains(&PStr::UPPER_E)
-          && variant_name.contains(&PStr::UPPER_F)
-          && variant_name.contains(&PStr::UPPER_G)
+        let mut incomplete = super::HashMap::from([
+          (PStr::UPPER_A, 0),
+          (PStr::UPPER_B, 0),
+          (PStr::UPPER_C, 0),
+          (PStr::UPPER_D, 0),
+          (PStr::UPPER_E, 0),
+          (PStr::UPPER_F, 0),
+          (PStr::UPPER_G, 0),
+        ]);
+        for n in variant_name {
+          incomplete.remove(n);
+        }
+        incomplete
       } else {
-        false
+        super::HashMap::from([(SOME, 1), (NONE, 0)])
       }
     }
   }
 
-  fn useful(matrix: &[&[P]], vector: &[P]) -> bool {
-    super::useful_internal(
+  fn useful_and_counter_example(matrix: &[&[P]], vector: &[P]) -> (bool, Option<String>) {
+    let matrix = super::PatternMatrix(
+      matrix.iter().map(|r| super::PatternVector(super::list(r.to_vec()))).collect(),
+    );
+    let useful = super::useful_internal(
       &MockingPatternMatchingContext,
-      &super::PatternMatrix(
-        matrix.iter().map(|r| super::PatternVector(super::list(r.to_vec()))).collect(),
-      ),
+      &matrix,
       super::PatternVector(super::list(vector.to_vec())),
+    );
+    let counter_example = super::incomplete_counterexample_internal(
+      &MockingPatternMatchingContext,
+      &matrix,
+      vector.len(),
     )
+    .map(P::toplevel_elements_to_description)
+    .map(|d| d.pretty_print(&samlang_heap::Heap::new()));
+    (useful, counter_example)
+  }
+
+  fn useful(matrix: &[&[P]], vector: &[P]) -> bool {
+    let (useful, counter_example) = useful_and_counter_example(matrix, vector);
+    if useful {
+      assert!(counter_example.is_some());
+    }
+    useful
   }
 
   #[test]
@@ -333,11 +489,18 @@ mod tests {
     assert!(!format!("{:?}", OPTION_NONE).is_empty());
     assert!(!format!("{:?}", P::wildcard()).is_empty());
     assert_eq!(LETTERS, LETTERS_A.clone().class_name);
-    assert!(!MockingPatternMatchingContext.is_variant_signature_complete(
-      ModuleReference::ROOT,
-      PStr::PANIC,
-      &[],
-    ));
+    assert!(!MockingPatternMatchingContext
+      .variant_signature_incomplete_names(ModuleReference::ROOT, PStr::PANIC, &[],)
+      .is_empty());
+    assert!(P::wildcard().eq(&P::wildcard()));
+    assert_eq!(
+      "_ | _",
+      P::toplevel_elements_to_description(PatternVector(super::list(vec![P::or(vec![
+        P::wildcard(),
+        P::wildcard()
+      ])])))
+      .pretty_print(&samlang_heap::Heap::new())
+    );
   }
 
   #[test]
@@ -354,16 +517,19 @@ mod tests {
 
   #[test]
   fn test_simple_enums() {
-    assert!(useful(
-      &[
-        &[P::enum_(LETTERS_A)],
-        &[P::enum_(LETTERS_B)],
-        &[P::enum_(LETTERS_C)],
-        &[P::enum_(LETTERS_D)],
-        &[P::enum_(LETTERS_E)],
-      ],
-      &[P::or(vec![P::enum_(LETTERS_F), P::enum_(LETTERS_G)])]
-    ));
+    assert_eq!(
+      (true, Some("F".to_string())),
+      useful_and_counter_example(
+        &[
+          &[P::enum_(LETTERS_A)],
+          &[P::enum_(LETTERS_B)],
+          &[P::enum_(LETTERS_C)],
+          &[P::enum_(LETTERS_D)],
+          &[P::enum_(LETTERS_E)],
+        ],
+        &[P::or(vec![P::enum_(LETTERS_F), P::enum_(LETTERS_G)])]
+      )
+    );
     assert!(!useful(
       &[
         &[P::enum_(LETTERS_A)],
@@ -379,30 +545,36 @@ mod tests {
 
   #[test]
   fn test_simple_enums_two_columns() {
-    assert!(useful(
-      &[
-        &[P::enum_(LETTERS_A), P::wildcard()],
-        &[P::enum_(LETTERS_B), P::wildcard()],
-        &[P::enum_(LETTERS_C), P::wildcard()],
-        &[P::enum_(LETTERS_D), P::wildcard()],
-        &[P::enum_(LETTERS_E), P::wildcard()],
-        &[P::enum_(LETTERS_F), P::wildcard()],
-        &[P::enum_(LETTERS_G), P::or(vec![P::enum_(LETTERS_A), P::enum_(LETTERS_B)])],
-      ],
-      &[P::wildcard(), P::wildcard()],
-    ));
-    assert!(useful(
-      &[
-        &[P::wildcard(), P::enum_(LETTERS_A)],
-        &[P::wildcard(), P::enum_(LETTERS_B)],
-        &[P::wildcard(), P::enum_(LETTERS_C)],
-        &[P::wildcard(), P::enum_(LETTERS_D)],
-        &[P::wildcard(), P::enum_(LETTERS_E)],
-        &[P::wildcard(), P::enum_(LETTERS_F)],
-        &[P::or(vec![P::enum_(LETTERS_A), P::enum_(LETTERS_B)]), P::enum_(LETTERS_G)],
-      ],
-      &[P::wildcard(), P::wildcard()],
-    ));
+    assert_eq!(
+      (true, Some("(G, C)".to_string())),
+      useful_and_counter_example(
+        &[
+          &[P::enum_(LETTERS_A), P::wildcard()],
+          &[P::enum_(LETTERS_B), P::wildcard()],
+          &[P::enum_(LETTERS_C), P::wildcard()],
+          &[P::enum_(LETTERS_D), P::wildcard()],
+          &[P::enum_(LETTERS_E), P::wildcard()],
+          &[P::enum_(LETTERS_F), P::wildcard()],
+          &[P::enum_(LETTERS_G), P::or(vec![P::enum_(LETTERS_A), P::enum_(LETTERS_B)])],
+        ],
+        &[P::wildcard(), P::wildcard()],
+      )
+    );
+    assert_eq!(
+      (true, Some("(C, G)".to_string())),
+      useful_and_counter_example(
+        &[
+          &[P::wildcard(), P::enum_(LETTERS_A)],
+          &[P::wildcard(), P::enum_(LETTERS_B)],
+          &[P::wildcard(), P::enum_(LETTERS_C)],
+          &[P::wildcard(), P::enum_(LETTERS_D)],
+          &[P::wildcard(), P::enum_(LETTERS_E)],
+          &[P::wildcard(), P::enum_(LETTERS_F)],
+          &[P::or(vec![P::enum_(LETTERS_A), P::enum_(LETTERS_B)]), P::enum_(LETTERS_G)],
+        ],
+        &[P::wildcard(), P::wildcard()],
+      )
+    );
   }
 
   #[test]
@@ -450,6 +622,18 @@ mod tests {
       &[&[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])]],
       &[P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)])]
     ));
+    assert_eq!(
+      "(Some(_), Some(_))",
+      super::incomplete_counterexample(
+        &MockingPatternMatchingContext,
+        &[
+          P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()]),
+          P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)]),
+        ],
+      )
+      .unwrap()
+      .pretty_print(&samlang_heap::Heap::new())
+    );
     assert!(useful(
       &[
         &[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])],
