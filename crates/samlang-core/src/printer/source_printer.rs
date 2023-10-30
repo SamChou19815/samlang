@@ -567,16 +567,7 @@ impl expr::E<()> {
       expr::E::Match(e) => {
         let mut list = vec![];
         for case in &e.cases {
-          list.push(Document::Text(rc_pstr(heap, case.tag.name)));
-          if !case.data_variables.is_empty() {
-            list.push(parenthesis_surrounded_doc(comma_sep_list(&case.data_variables, |v| {
-              Document::Text(if let Some((data_var, _)) = v {
-                rc_pstr(heap, data_var.name)
-              } else {
-                rcs("_")
-              })
-            })));
-          }
+          list.push(matching_pattern_to_document(heap, &case.pattern));
           list.push(Document::Text(rcs(" -> ")));
           list.push(case.body.create_doc(heap, comment_store));
           if !matches!(case.body.deref(), expr::E::Block(_) | expr::E::Match(_)) {

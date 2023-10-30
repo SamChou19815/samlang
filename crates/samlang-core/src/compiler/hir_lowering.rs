@@ -854,49 +854,38 @@ impl<'a> ExpressionLoweringManager<'a> {
       }],
       hir::Expression::var_name(unreachable_branch_collector, final_return_type),
     );
-    for source::expr::VariantPatternToExpression { tag_order, data_variables, body, .. } in
+    for source::expr::VariantPatternToExpression { loc: _, pattern, body } in
       expression.cases.iter().rev()
     {
       let final_assignment_temp = self.allocate_temp_variable();
       let lowered_return_type = acc.1.type_().clone();
       let (acc_stmts, acc_e) = acc;
-      let mut local_stmts = vec![];
+      let mut new_stmts = vec![];
       self.variable_cx.push_scope();
-      let mut bindings = vec![];
-      for dv in data_variables {
-        if let Some((
-          source::Id { loc: _, associated_comments: _, name: original_name },
-          data_var_type,
-        )) = dv
-        {
-          let data_var_type =
-            self.type_lowering_manager.lower_source_type(self.heap, data_var_type);
-          let name = self.allocate_temp_variable();
-          bind_value(
-            &mut self.variable_cx,
-            *original_name,
-            hir::Expression::var_name(name, data_var_type.clone()),
-          );
-          bindings.push(Some((name, data_var_type)));
-        } else {
-          bindings.push(None);
-        }
+      let mut binding_names = HashMap::new();
+      for (n, t) in pattern.bindings() {
+        let name = self.allocate_temp_variable();
+        binding_names.insert(n, name);
+        let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
+        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.clone()));
+        new_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
       }
-      let final_expr = self.lowered_and_add_statements(body, &mut local_stmts);
+      let LoweringResult { statements: mut binding_stmts, expression: match_success_condition } =
+        self.lower_matching_pattern(pattern, &binding_names, matched_expr.clone());
+      new_stmts.append(&mut binding_stmts);
+      let body_lowering_result = self.lower(body);
       self.variable_cx.pop_scope();
-      let new_stmts = vec![hir::Statement::ConditionalDestructure {
-        test_expr: matched_expr.clone(),
-        tag: *tag_order,
-        bindings,
-        s1: local_stmts,
+      new_stmts.push(hir::Statement::IfElse {
+        condition: match_success_condition,
+        s1: body_lowering_result.statements,
         s2: acc_stmts,
         final_assignments: vec![(
           final_assignment_temp,
           lowered_return_type.clone(),
-          final_expr,
+          body_lowering_result.expression,
           acc_e,
         )],
-      }];
+      });
       acc = (new_stmts, hir::Expression::var_name(final_assignment_temp, lowered_return_type))
     }
 
@@ -2171,12 +2160,19 @@ return (_t1: DUMMY_Dummy);"#,
         cases: vec![
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(heap.alloc_str_for_test("Foo")),
-            tag_order: 0,
-            data_variables: vec![Some((
-              source::Id::from(heap.alloc_str_for_test("bar")),
-              builder.int_type(),
-            ))],
+            pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 0,
+              tag: source::Id::from(heap.alloc_str_for_test("Foo")),
+              data_variables: vec![(
+                source::pattern::MatchingPattern::Id(
+                  source::Id::from(heap.alloc_str_for_test("bar")),
+                  builder.int_type(),
+                ),
+                builder.int_type(),
+              )],
+              type_: Rc::new(dummy_source_id_type(heap)),
+            }),
             body: Box::new(source::expr::E::LocalId(
               source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
               source::Id::from(heap.alloc_str_for_test("bar")),
@@ -2184,9 +2180,16 @@ return (_t1: DUMMY_Dummy);"#,
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(heap.alloc_str_for_test("Bar")),
-            tag_order: 1,
-            data_variables: vec![None],
+            pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 1,
+              tag: source::Id::from(heap.alloc_str_for_test("Bar")),
+              data_variables: vec![(
+                source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+                builder.int_type(),
+              )],
+              type_: Rc::new(dummy_source_id_type(heap)),
+            }),
             body: Box::new(dummy_source_this(heap)),
           },
         ],
@@ -2194,18 +2197,32 @@ return (_t1: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let [_t4: int] if tagof((_this: DUMMY_Dummy))==0 {
-  _t3 = (_t4: int);
+let _t6: int;
+let [_t7: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t6 = (_t7: int);
+  _t8 = 1;
 } else {
-  let [_] if tagof((_this: DUMMY_Dummy))==1 {
+  _t8 = 0;
+}
+let _t5: DUMMY_Dummy;
+if (_t8: int) {
+  _t5 = (_t6: int);
+} else {
+  let [_t3: int] if tagof((_this: DUMMY_Dummy))==1 {
+    _t4 = 1;
+  } else {
+    _t4 = 0;
+  }
+  let _t2: DUMMY_Dummy;
+  if (_t4: int) {
     _t2 = (_this: DUMMY_Dummy);
   } else {
     let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
     _t2 = (_t1: DUMMY_Dummy);
   }
-  _t3 = (_t2: DUMMY_Dummy);
+  _t5 = (_t2: DUMMY_Dummy);
 }
-return (_t3: DUMMY_Dummy);"#,
+return (_t5: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2216,19 +2233,33 @@ return (_t3: DUMMY_Dummy);"#,
         cases: vec![
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(heap.alloc_str_for_test("Foo")),
-            tag_order: 0,
-            data_variables: vec![None],
+            pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 0,
+              tag: source::Id::from(heap.alloc_str_for_test("Foo")),
+              data_variables: vec![(
+                source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+                builder.int_type(),
+              )],
+              type_: Rc::new(dummy_source_id_type(heap)),
+            }),
             body: Box::new(dummy_source_this(heap)),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(heap.alloc_str_for_test("Bar")),
-            tag_order: 1,
-            data_variables: vec![Some((
-              source::Id::from(heap.alloc_str_for_test("bar")),
-              Rc::new(dummy_source_id_type(heap)),
-            ))],
+            pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 1,
+              tag: source::Id::from(heap.alloc_str_for_test("Bar")),
+              data_variables: vec![(
+                source::pattern::MatchingPattern::Id(
+                  source::Id::from(heap.alloc_str_for_test("bar")),
+                  builder.int_type(),
+                ),
+                builder.int_type(),
+              )],
+              type_: Rc::new(dummy_source_id_type(heap)),
+            }),
             body: Box::new(id_expr(
               heap.alloc_str_for_test("bar"),
               Rc::new(dummy_source_id_type(heap)),
@@ -2236,9 +2267,16 @@ return (_t3: DUMMY_Dummy);"#,
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(heap.alloc_str_for_test("Baz")),
-            tag_order: 2,
-            data_variables: vec![None],
+            pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 2,
+              tag: source::Id::from(heap.alloc_str_for_test("Baz")),
+              data_variables: vec![(
+                source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+                builder.int_type(),
+              )],
+              type_: Rc::new(dummy_source_id_type(heap)),
+            }),
             body: Box::new(dummy_source_this(heap)),
           },
         ],
@@ -2246,23 +2284,43 @@ return (_t3: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let [_] if tagof((_this: DUMMY_Dummy))==0 {
-  _t5 = (_this: DUMMY_Dummy);
+let [_t10: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t11 = 1;
 } else {
-  let [_t4: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==1 {
-    _t3 = (_t4: DUMMY_Dummy);
+  _t11 = 0;
+}
+let _t9: DUMMY_Dummy;
+if (_t11: int) {
+  _t9 = (_this: DUMMY_Dummy);
+} else {
+  let _t6: int;
+  let [_t7: int] if tagof((_this: DUMMY_Dummy))==1 {
+    _t6 = (_t7: int);
+    _t8 = 1;
   } else {
-    let [_] if tagof((_this: DUMMY_Dummy))==2 {
+    _t8 = 0;
+  }
+  let _t5: DUMMY_Dummy;
+  if (_t8: int) {
+    _t5 = (_t6: int);
+  } else {
+    let [_t3: int] if tagof((_this: DUMMY_Dummy))==2 {
+      _t4 = 1;
+    } else {
+      _t4 = 0;
+    }
+    let _t2: DUMMY_Dummy;
+    if (_t4: int) {
       _t2 = (_this: DUMMY_Dummy);
     } else {
       let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
       _t2 = (_t1: DUMMY_Dummy);
     }
-    _t3 = (_t2: DUMMY_Dummy);
+    _t5 = (_t2: DUMMY_Dummy);
   }
-  _t5 = (_t3: DUMMY_Dummy);
+  _t9 = (_t5: DUMMY_Dummy);
 }
-return (_t5: DUMMY_Dummy);"#,
+return (_t9: DUMMY_Dummy);"#,
     );
   }
 

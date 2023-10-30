@@ -10,18 +10,17 @@ class BoxedInt(val i: int) : Comparable<BoxedInt>, Useless {
   method compare(other: BoxedInt): int = this.i - other.i
 }
 
-class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
-  function <T: Comparable<T>> nil(): List<T> = List.Nil<T>({  })
+class List<T: Comparable<T>>(Nil, Cons(T, List<T>)) {
+  function <T: Comparable<T>> nil(): List<T> = List.Nil<T>()
 
-  function <T: Comparable<T>> of(t: T): List<T> = List.Cons(Pair.init(t, List.Nil<T>({  })))
+  function <T: Comparable<T>> of(t: T): List<T> = List.Cons(t, List.Nil<T>())
 
-  method cons(t: T): List<T> = List.Cons(Pair.init(t, this))
+  method cons(t: T): List<T> = List.Cons(t, this)
 
   method iter(f: (T) -> unit): unit =
     match this {
-      Nil(_) -> {  }
-      Cons(pair) -> {
-        let (v, rest) = pair;
+      Nil -> {  }
+      Cons(v, rest) -> {
         let _ = f(v);
         rest.iter(f)
       }
@@ -29,36 +28,27 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   method sort(): List<T> =
     match this {
-      Nil(_) -> this,
-      Cons(pair) -> match pair.e1 {
-        Nil(_) -> this,
-        Cons(_) -> {
-          let (l1, l2) = this.split(List.nil<T>(), List.nil<T>());
-          l1.sort().merge(l2.sort())
-        }
+      Nil -> this,
+      Cons(_, Nil) -> this,
+      Cons(_, Cons(_, _)) -> {
+        let (l1, l2) = this.split(List.nil<T>(), List.nil<T>());
+        l1.sort().merge(l2.sort())
       }
     }
 
   private method merge(other: List<T>): List<T> =
-    match this {
-      Nil(_) -> other,
-      Cons(pair1) -> match other {
-        Nil(_) -> this,
-        Cons(pair2) -> {
-          let (h1, t1) = pair1;
-          let (h2, t2) = pair2;
-          if h1.compare(h2) < 0 then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
-        }
+    match (this, other) {
+      (Nil, _) -> other,
+      (_, Nil) -> this,
+      (Cons(h1, t1), Cons(h2, t2)) -> {
+        if h1.compare(h2) < 0 then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
       }
     }
 
   private method split(y: List<T>, z: List<T>): Pair<List<T>, List<T>> =
     match this {
-      Nil(_) -> Pair.init(y, z),
-      Cons(pair) -> {
-        let (x, rest) = pair;
-        rest.split(z, y.cons(x))
-      }
+      Nil -> Pair.init(y, z),
+      Cons(x, rest) -> { rest.split(z, y.cons(x)) }
     }
 }
 

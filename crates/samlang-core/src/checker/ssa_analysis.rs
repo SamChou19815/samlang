@@ -290,9 +290,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.visit_expression(&e.matched);
         for case in &e.cases {
           self.context.push_scope();
-          for (id, _) in case.data_variables.iter().filter_map(|it| it.as_ref()) {
-            self.define_id(id.name, id.loc);
-          }
+          self.visit_matching_pattern(&case.pattern);
           self.visit_expression(&case.body);
           let (local_defs, _) = self.context.pop_scope();
           self.local_scoped_def_locs.insert(case.loc, local_defs);

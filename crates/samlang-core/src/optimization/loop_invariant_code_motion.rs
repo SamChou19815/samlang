@@ -48,8 +48,7 @@ pub(super) fn optimize(
           inner_stmts.push(stmt);
         }
       }
-      Statement::Cast { name, type_: _, assigned_expression }
-      | Statement::LateInitAssignment { name, assigned_expression } => {
+      Statement::Cast { name, type_: _, assigned_expression } => {
         if expression_is_loop_invariant(assigned_expression, &non_loop_invariant_variables) {
           hoisted_stmts.push(stmt);
         } else {
@@ -57,7 +56,11 @@ pub(super) fn optimize(
           inner_stmts.push(stmt);
         }
       }
-      Statement::LateInitDeclaration { .. } => hoisted_stmts.push(stmt),
+      Statement::LateInitDeclaration { name, type_: _ }
+      | Statement::LateInitAssignment { name, assigned_expression: _ } => {
+        non_loop_invariant_variables.insert(*name);
+        inner_stmts.push(stmt)
+      }
       Statement::StructInit { struct_variable_name, type_name: _, expression_list } => {
         if expression_list
           .iter()
@@ -322,7 +325,6 @@ let d: int = (c: int)[0];
 let h: _I = Closure { fun: (__$f: () -> int), context: (d: int) };
 let kk: _I = [0];
 let l1 = 0 as int;
-let l3: int;
 let i: int = 0;
 let j: int = 0;
 let x: int = 0;
@@ -347,6 +349,7 @@ while (true) {
   let g: _I = Closure { fun: (__$f: () -> int), context: (x: int) };
   let kk2: _I = [(g: int)];
   let l2 = (i: int) as int;
+  let l3: int;
   l3 = (i: int);
   let bad: int;
   if 0 {

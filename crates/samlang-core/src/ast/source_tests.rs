@@ -314,9 +314,7 @@ mod tests {
       matched: Box::new(zero_expr.clone()),
       cases: vec![expr::VariantPatternToExpression {
         loc: Location::dummy(),
-        tag: Id::from(heap.alloc_str_for_test("name")),
-        tag_order: 1,
-        data_variables: vec![],
+        pattern: pattern::MatchingPattern::Wildcard(Location::dummy()),
         body: Box::new(zero_expr.clone()),
       }],
     }));

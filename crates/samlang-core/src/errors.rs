@@ -456,7 +456,6 @@ pub(crate) struct TypeIncompatibilityNode {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum IncompatibilityNode {
   Type(Box<TypeIncompatibilityNode>),
-  DataVariablesArity(usize, usize),
   FunctionParametersArity(usize, usize),
   TypeArgumentsArity(usize, usize),
   TypeParametersArity(usize, usize),
@@ -478,10 +477,6 @@ impl StackableError {
 
   pub(crate) fn add_type_error(&mut self, node: TypeIncompatibilityNode) {
     self.rev_stack.push(IncompatibilityNode::Type(Box::new(node)));
-  }
-
-  pub(crate) fn add_data_variables_arity_error(&mut self, lower: usize, upper: usize) {
-    self.rev_stack.push(IncompatibilityNode::DataVariablesArity(lower, upper));
   }
 
   pub(crate) fn add_fn_param_arity_error(&mut self, lower: usize, upper: usize) {
@@ -506,7 +501,6 @@ mod stackable_error_tests {
   fn boilterplate() {
     let mut stacked = super::StackableError::new();
     stacked.add_type_args_arity_error(0, 0);
-    stacked.add_data_variables_arity_error(0, 0);
     stacked.add_fn_param_arity_error(0, 0);
     stacked.add_type_args_arity_error(0, 0);
     stacked.add_type_params_arity_error(0, 0);
@@ -541,7 +535,6 @@ pub(crate) enum ErrorDetail {
   NameAlreadyBound { name: PStr, old_loc: Location },
   NonExhausiveStructBinding { missing_bindings: Vec<PStr> },
   NonExhausiveTupleBinding { expected_count: usize, actual_count: usize },
-  NonExhausiveMatchForMatchExpr { missing_tags: Vec<PStr> },
   NonExhausiveMatch { counter_example: Description },
   NotAnEnum { description: Description },
   NotAStruct { description: Description },
@@ -650,15 +643,6 @@ impl ErrorDetail {
         printable_stream.push_size(*actual_count);
         printable_stream.push_text(".");
       }
-      ErrorDetail::NonExhausiveMatchForMatchExpr { missing_tags } => {
-        printable_stream
-          .push_text("The match is not exhausive. The following variants have not been handled:");
-        for tag in missing_tags {
-          printable_stream.push_text("\n- `");
-          printable_stream.push_pstr(tag);
-          printable_stream.push_text("`");
-        }
-      }
       ErrorDetail::NonExhausiveMatch { counter_example } => {
         printable_stream.push_text(
           "This pattern-matching is not exhausive.\nHere is an example of a non-matching value: `",
@@ -704,13 +688,6 @@ impl ErrorDetail {
               } else {
                 printable_stream.push_text("`.");
               }
-            }
-            IncompatibilityNode::DataVariablesArity(l, u) => {
-              printable_stream.push_text("Data variable arity of ");
-              printable_stream.push_size(*l);
-              printable_stream.push_text(" is incompatible with data variable arity of ");
-              printable_stream.push_size(*u);
-              printable_stream.push_text(".");
             }
             IncompatibilityNode::FunctionParametersArity(l, u) => {
               printable_stream.push_text("Function parameter arity of ");
@@ -1011,14 +988,6 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count })
   }
 
-  pub(crate) fn report_non_exhausive_match_for_match_expr_error(
-    &mut self,
-    loc: Location,
-    missing_tags: Vec<PStr>,
-  ) {
-    self.report_error(loc, ErrorDetail::NonExhausiveMatchForMatchExpr { missing_tags })
-  }
-
   pub(crate) fn report_non_exhausive_match_error(
     &mut self,
     loc: Location,
@@ -1209,10 +1178,6 @@ Found 2 errors."#
       vec![PStr::UPPER_A, PStr::UPPER_B],
     );
     error_set.report_non_exhausive_tuple_binding_error(Location::dummy(), 7, 4);
-    error_set.report_non_exhausive_match_for_match_expr_error(
-      Location::dummy(),
-      vec![PStr::UPPER_A, PStr::UPPER_B],
-    );
     error_set.report_non_exhausive_match_error(Location::dummy(), Description::IntType);
     error_set.report_not_an_enum_error(Location::dummy(), Description::IntType);
     error_set.report_not_a_struct_error(Location::dummy(), Description::IntType);
@@ -1312,13 +1277,6 @@ The pattern does not bind all fields. Expected number of elements: 7, actual num
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-The match is not exhausive. The following variants have not been handled:
-- `A`
-- `B`
-
-
-Error ------------------------------------ DUMMY.sam:0:0-0:0
-
 This pattern-matching is not exhausive.
 Here is an example of a non-matching value: `int`.
 
@@ -1372,7 +1330,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Cannot resolve name `global`.
 
 
-Found 24 errors.
+Found 23 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),
