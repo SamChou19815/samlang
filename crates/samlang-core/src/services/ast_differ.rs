@@ -527,6 +527,7 @@ mod tests {
     let toplevel = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
+      private: false,
       name: Id::from(PStr::UPPER_A),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],

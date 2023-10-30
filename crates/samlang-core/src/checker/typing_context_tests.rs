@@ -16,7 +16,10 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
-  use std::collections::{HashMap, HashSet};
+  use std::{
+    collections::{HashMap, HashSet},
+    vec,
+  };
 
   fn empty_local_typing_context() -> LocalTypingContext {
     LocalTypingContext::new(SsaAnalysisResult {
@@ -118,6 +121,7 @@ mod tests {
         interfaces: HashMap::from([(
           PStr::UPPER_A,
           InterfaceSignature {
+            private: false,
             type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
             type_parameters: vec![TypeParameterSignature {
               name: heap.alloc_str_for_test("T"),
@@ -184,6 +188,7 @@ mod tests {
           (
             PStr::UPPER_A,
             InterfaceSignature {
+              private: false,
               type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
@@ -200,6 +205,7 @@ mod tests {
           (
             PStr::UPPER_B,
             InterfaceSignature {
+              private: false,
               type_definition: None,
               type_parameters: vec![],
               super_types: vec![builder.simple_nominal_type_unwrapped(PStr::UPPER_B)],
@@ -278,92 +284,118 @@ Found 3 errors.
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
     let mut heap = Heap::new();
+    let mod_ref_w = heap.alloc_module_reference(vec![PStr::UPPER_W]);
     let mut error_set = ErrorSet::new();
-    let global_cx = HashMap::from([(
-      ModuleReference::DUMMY,
-      ModuleSignature {
-        interfaces: HashMap::from([
-          (
+    let global_cx = HashMap::from([
+      (
+        mod_ref_w,
+        ModuleSignature {
+          interfaces: HashMap::from([(
             PStr::UPPER_A,
             InterfaceSignature {
+              private: true,
               type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
-              type_parameters: vec![
-                TypeParameterSignature { name: PStr::UPPER_A, bound: None },
-                TypeParameterSignature { name: PStr::UPPER_B, bound: None },
-              ],
+              type_parameters: vec![],
               super_types: vec![],
-              functions: HashMap::from([
-                MemberSignature::create_builtin_function(
-                  heap.alloc_str_for_test("f1"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-                MemberSignature::create_private_builtin_function(
-                  heap.alloc_str_for_test("f2"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-              ]),
-              methods: HashMap::from([
-                MemberSignature::create_builtin_function(
-                  heap.alloc_str_for_test("m1"),
-                  vec![builder.generic_type(PStr::UPPER_A), builder.generic_type(PStr::UPPER_B)],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-                MemberSignature::create_builtin_function(
-                  heap.alloc_str_for_test("m2"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-              ]),
+              functions: HashMap::from([MemberSignature::create_builtin_function(
+                heap.alloc_str_for_test("f1"),
+                vec![],
+                builder.int_type(),
+                vec![PStr::UPPER_C],
+              )]),
+              methods: HashMap::new(),
             },
-          ),
-          (
-            PStr::UPPER_B,
-            InterfaceSignature {
-              type_definition: None,
-              type_parameters: vec![
-                TypeParameterSignature { name: PStr::UPPER_E, bound: None },
-                TypeParameterSignature { name: PStr::UPPER_F, bound: None },
-              ],
-              super_types: vec![],
-              functions: HashMap::from([
-                MemberSignature::create_builtin_function(
-                  heap.alloc_str_for_test("f1"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-                MemberSignature::create_private_builtin_function(
-                  heap.alloc_str_for_test("f2"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-              ]),
-              methods: HashMap::from([
-                MemberSignature::create_builtin_function(
-                  heap.alloc_str_for_test("m1"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-                MemberSignature::create_private_builtin_function(
-                  heap.alloc_str_for_test("m2"),
-                  vec![],
-                  builder.int_type(),
-                  vec![PStr::UPPER_C],
-                ),
-              ]),
-            },
-          ),
-        ]),
-      },
-    )]);
+          )]),
+        },
+      ),
+      (
+        ModuleReference::DUMMY,
+        ModuleSignature {
+          interfaces: HashMap::from([
+            (
+              PStr::UPPER_A,
+              InterfaceSignature {
+                private: false,
+                type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+                type_parameters: vec![
+                  TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+                  TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+                ],
+                super_types: vec![],
+                functions: HashMap::from([
+                  MemberSignature::create_builtin_function(
+                    heap.alloc_str_for_test("f1"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                  MemberSignature::create_private_builtin_function(
+                    heap.alloc_str_for_test("f2"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                ]),
+                methods: HashMap::from([
+                  MemberSignature::create_builtin_function(
+                    heap.alloc_str_for_test("m1"),
+                    vec![builder.generic_type(PStr::UPPER_A), builder.generic_type(PStr::UPPER_B)],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                  MemberSignature::create_builtin_function(
+                    heap.alloc_str_for_test("m2"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                ]),
+              },
+            ),
+            (
+              PStr::UPPER_B,
+              InterfaceSignature {
+                private: false,
+                type_definition: None,
+                type_parameters: vec![
+                  TypeParameterSignature { name: PStr::UPPER_E, bound: None },
+                  TypeParameterSignature { name: PStr::UPPER_F, bound: None },
+                ],
+                super_types: vec![],
+                functions: HashMap::from([
+                  MemberSignature::create_builtin_function(
+                    heap.alloc_str_for_test("f1"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                  MemberSignature::create_private_builtin_function(
+                    heap.alloc_str_for_test("f2"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                ]),
+                methods: HashMap::from([
+                  MemberSignature::create_builtin_function(
+                    heap.alloc_str_for_test("m1"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                  MemberSignature::create_private_builtin_function(
+                    heap.alloc_str_for_test("m2"),
+                    vec![],
+                    builder.int_type(),
+                    vec![PStr::UPPER_C],
+                  ),
+                ]),
+              },
+            ),
+          ]),
+        },
+      ),
+    ]);
     let cx = TypingContext::new(
       &global_cx,
       &mut local_cx,
@@ -390,6 +422,19 @@ Found 3 errors.
       heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
       PStr::UPPER_A
     ));
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: mod_ref_w,
+          id: PStr::UPPER_A,
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("f1"),
+        Location::dummy()
+      )
+      .is_none());
     assert!(cx
       .get_method_type(
         &NominalType {
@@ -664,15 +709,61 @@ Found 3 errors.
   fn resolve_type_definitions_test() {
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let global_cx = HashMap::from([(
-      ModuleReference::DUMMY,
-      ModuleSignature {
-        interfaces: HashMap::from([
-          (
+    let mod_ref_w = heap.alloc_module_reference(vec![PStr::UPPER_W]);
+    let global_cx = HashMap::from([
+      (
+        ModuleReference::DUMMY,
+        ModuleSignature {
+          interfaces: HashMap::from([
+            (
+              PStr::UPPER_A,
+              InterfaceSignature {
+                private: false,
+                type_definition: Some(TypeDefinitionSignature::Enum(vec![
+                  EnumVariantDefinitionSignature {
+                    name: PStr::LOWER_A,
+                    types: vec![builder.generic_type(PStr::UPPER_A)],
+                  },
+                  EnumVariantDefinitionSignature {
+                    name: PStr::LOWER_B,
+                    types: vec![builder.generic_type(PStr::UPPER_B)],
+                  },
+                ])),
+                type_parameters: vec![
+                  TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+                  TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+                ],
+                super_types: vec![],
+                functions: HashMap::new(),
+                methods: HashMap::new(),
+              },
+            ),
+            (
+              PStr::UPPER_B,
+              InterfaceSignature {
+                private: false,
+                type_definition: Some(TypeDefinitionSignature::Struct(vec![])),
+                type_parameters: vec![
+                  TypeParameterSignature { name: PStr::UPPER_E, bound: None },
+                  TypeParameterSignature { name: PStr::UPPER_F, bound: None },
+                ],
+                super_types: vec![],
+                functions: HashMap::new(),
+                methods: HashMap::new(),
+              },
+            ),
+          ]),
+        },
+      ),
+      (
+        mod_ref_w,
+        ModuleSignature {
+          interfaces: HashMap::from([(
             PStr::UPPER_A,
             InterfaceSignature {
+              private: true,
               type_definition: Some(TypeDefinitionSignature::Enum(vec![
                 EnumVariantDefinitionSignature {
                   name: PStr::LOWER_A,
@@ -691,23 +782,10 @@ Found 3 errors.
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
-          ),
-          (
-            PStr::UPPER_B,
-            InterfaceSignature {
-              type_definition: Some(TypeDefinitionSignature::Struct(vec![])),
-              type_parameters: vec![
-                TypeParameterSignature { name: PStr::UPPER_E, bound: None },
-                TypeParameterSignature { name: PStr::UPPER_F, bound: None },
-              ],
-              super_types: vec![],
-              functions: HashMap::new(),
-              methods: HashMap::new(),
-            },
-          ),
-        ]),
-      },
-    )]);
+          )]),
+        },
+      ),
+    ]);
     let cx = TypingContext::new(
       &global_cx,
       &mut local_cx,
@@ -733,6 +811,15 @@ Found 3 errors.
         &builder.general_nominal_type(PStr::UPPER_C, vec![builder.int_type(), builder.int_type()])
       )
       .is_empty());
+    assert!(cx
+      .resolve_detailed_enum_definitions_opt(&Type::Nominal(NominalType {
+        reason: Reason::dummy(),
+        is_class_statics: false,
+        module_reference: mod_ref_w,
+        id: PStr::UPPER_A,
+        type_arguments: vec![]
+      }))
+      .is_none());
 
     let resolved = cx.resolve_enum_definitions(
       &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()]),

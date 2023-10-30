@@ -1598,7 +1598,8 @@ pub(crate) fn type_check_module(
   for one_import in module.imports.iter() {
     if let Some(module_cx) = global_cx.get(&one_import.imported_module) {
       for id in one_import.imported_members.iter() {
-        if !module_cx.interfaces.contains_key(&id.name) {
+        if module_cx.interfaces.get(&id.name).filter(|interface_cx| !interface_cx.private).is_none()
+        {
           error_set.report_missing_export_error(id.loc, one_import.imported_module, id.name);
         }
       }
@@ -1787,6 +1788,7 @@ pub(crate) fn type_check_module(
         Toplevel::Class(InterfaceDeclarationCommon {
           loc: c.loc,
           associated_comments: c.associated_comments,
+          private: c.private,
           name: c.name,
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),

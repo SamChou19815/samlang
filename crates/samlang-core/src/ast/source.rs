@@ -638,6 +638,7 @@ pub(crate) struct ClassMemberDefinition<T: Clone> {
 pub(crate) struct InterfaceDeclarationCommon<D, M> {
   pub(crate) loc: Location,
   pub(crate) associated_comments: CommentReference,
+  pub(crate) private: bool,
   pub(crate) name: Id,
   pub(crate) type_parameters: Vec<TypeParameter>,
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
@@ -711,6 +712,13 @@ impl<T: Clone> Toplevel<T> {
     match self {
       Toplevel::Interface(i) => i.associated_comments,
       Toplevel::Class(c) => c.associated_comments,
+    }
+  }
+
+  pub(crate) fn is_private(&self) -> bool {
+    match self {
+      Toplevel::Interface(i) => i.private,
+      Toplevel::Class(c) => c.private,
     }
   }
 

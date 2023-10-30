@@ -373,6 +373,7 @@ pub(super) fn apply_renaming(
         Toplevel::Class(c) => Toplevel::Class(ClassDefinition {
           loc: c.loc,
           associated_comments: c.associated_comments,
+          private: c.private,
           name: c.name,
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
