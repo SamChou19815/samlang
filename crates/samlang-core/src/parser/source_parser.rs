@@ -1132,39 +1132,10 @@ impl<'a> SourceParser<'a> {
           },
         );
       }
-      Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACKET)) => {
-        self.consume();
-        let mut expressions = self
-          .parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
-            s.parse_expression()
-          });
-        if let Some(node) = expressions.get(MAX_STRUCT_SIZE) {
-          self.error_set.report_invalid_syntax_error(
-            node.loc(),
-            format!("Maximum allowed tuple size is {MAX_STRUCT_SIZE}"),
-          );
-        }
-        expressions.truncate(MAX_STRUCT_SIZE);
-        let end_loc = self.assert_and_consume_operator(TokenOp::RBRACKET);
-        let loc = peeked_loc.union(&end_loc);
-        let common = expr::ExpressionCommon {
-          loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        };
-        if expressions.len() < 2 {
-          self.error_set.report_invalid_syntax_error(
-            loc,
-            "Tuple needs to include at least 2 elements.".to_string(),
-          );
-          return expr::E::Literal(common, Literal::Int(0));
-        }
-        return expr::E::Tuple(common, expressions);
-      }
       _ => {}
     }
 
-    // Lambda or nested expression
+    // Lambda or tuple or nested expression
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
       self.consume();
       // () -> ...
@@ -1187,12 +1158,13 @@ impl<'a> SourceParser<'a> {
         });
       }
 
+      // (id ...
       if let Token(loc_id_for_lambda, TokenContent::LowerId(id_for_lambda)) = self.peek() {
         self.consume();
         let next = self.peek();
         match next.1 {
-          // (...) -> ...
-          TokenContent::Operator(TokenOp::COMMA) | TokenContent::Operator(TokenOp::COLON) => {
+          // (id: ... definitely a lambda
+          TokenContent::Operator(TokenOp::COLON) => {
             self.unconsume();
             let parameters =
               self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
@@ -1221,7 +1193,162 @@ impl<'a> SourceParser<'a> {
               body: Box::new(body),
             });
           }
-          // (id) -> ...
+          // (id, ..., might be lambda, might be tuple
+          TokenContent::Operator(TokenOp::COMMA) => {
+            self.unconsume();
+            // Advance as far as possible for a comma separated lower id.
+            // This is common for both arrow function and tuple.
+            let mut parameters_or_tuple_elements_cover = vec![self.parse_lower_id()];
+            while let Token(_, TokenContent::Operator(TokenOp::COMMA)) = self.peek() {
+              self.consume();
+              if let Token(_, TokenContent::LowerId(_)) = self.peek() {
+                self.consume();
+                match self.peek() {
+                  Token(_, TokenContent::Operator(TokenOp::COMMA))
+                  | Token(_, TokenContent::Operator(TokenOp::RPAREN)) => {
+                    self.unconsume(); // unconsume lower id
+                    parameters_or_tuple_elements_cover.push(self.parse_lower_id());
+                  }
+                  _ => {
+                    self.unconsume(); // unconsume lower id
+                    break;
+                  }
+                }
+              } else {
+                break;
+              }
+            }
+            // If we see ), it means that the cover is complete and still ambiguous.
+            if let Token(right_parenthesis_loc, TokenContent::Operator(TokenOp::RPAREN)) =
+              self.peek()
+            {
+              self.consume();
+              if let Token(_, TokenContent::Operator(TokenOp::ARROW)) = self.peek() {
+                self.consume();
+                let body = self.parse_expression();
+                let loc = peeked_loc.union(&body.loc());
+                return expr::E::Lambda(expr::Lambda {
+                  common: expr::ExpressionCommon {
+                    loc,
+                    associated_comments: self
+                      .comments_store
+                      .create_comment_reference(associated_comments),
+                    type_: (),
+                  },
+                  parameters: parameters_or_tuple_elements_cover
+                    .into_iter()
+                    .map(|name| OptionallyAnnotatedId { name, type_: (), annotation: None })
+                    .collect(),
+                  captured: HashMap::new(),
+                  body: Box::new(body),
+                });
+              } else {
+                let tuple_elements = parameters_or_tuple_elements_cover
+                  .into_iter()
+                  .map(|name| {
+                    expr::E::LocalId(
+                      expr::ExpressionCommon {
+                        loc: name.loc,
+                        associated_comments: NO_COMMENT_REFERENCE,
+                        type_: (),
+                      },
+                      name,
+                    )
+                  })
+                  .collect_vec();
+                let loc = peeked_loc.union(&right_parenthesis_loc);
+                return expr::E::Tuple(
+                  expr::ExpressionCommon {
+                    loc,
+                    associated_comments: self
+                      .comments_store
+                      .create_comment_reference(associated_comments),
+                    type_: (),
+                  },
+                  tuple_elements,
+                );
+              }
+            }
+            if let Token(_, TokenContent::LowerId(_)) = self.peek() {
+              self.consume();
+              if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
+                self.unconsume();
+                let rest_parameters =
+                  self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+                    let name = s.parse_lower_id();
+                    if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
+                      s.consume();
+                      OptionallyAnnotatedId {
+                        name,
+                        type_: (),
+                        annotation: Some(s.parse_annotation()),
+                      }
+                    } else {
+                      OptionallyAnnotatedId { name, type_: (), annotation: None }
+                    }
+                  });
+                let parameters = parameters_or_tuple_elements_cover
+                  .into_iter()
+                  .map(|name| OptionallyAnnotatedId { name, type_: (), annotation: None })
+                  .chain(rest_parameters)
+                  .collect_vec();
+                self.assert_and_consume_operator(TokenOp::RPAREN);
+                self.assert_and_consume_operator(TokenOp::ARROW);
+                let body = self.parse_expression();
+                let loc = peeked_loc.union(&body.loc());
+                return expr::E::Lambda(expr::Lambda {
+                  common: expr::ExpressionCommon {
+                    loc,
+                    associated_comments: self
+                      .comments_store
+                      .create_comment_reference(associated_comments),
+                    type_: (),
+                  },
+                  parameters,
+                  captured: HashMap::new(),
+                  body: Box::new(body),
+                });
+              }
+              self.unconsume();
+            }
+            let rest_tuple_elements = self
+              .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+                s.parse_expression()
+              });
+            let mut tuple_elements = parameters_or_tuple_elements_cover
+              .into_iter()
+              .map(|name| {
+                expr::E::LocalId(
+                  expr::ExpressionCommon {
+                    loc: name.loc,
+                    associated_comments: NO_COMMENT_REFERENCE,
+                    type_: (),
+                  },
+                  name,
+                )
+              })
+              .chain(rest_tuple_elements)
+              .collect_vec();
+            if let Some(node) = tuple_elements.get(MAX_STRUCT_SIZE) {
+              self.error_set.report_invalid_syntax_error(
+                node.loc(),
+                format!("Maximum allowed tuple size is {MAX_STRUCT_SIZE}"),
+              );
+            }
+            tuple_elements.truncate(MAX_STRUCT_SIZE);
+            let end_loc = self.assert_and_consume_operator(TokenOp::RPAREN);
+            let loc = peeked_loc.union(&end_loc);
+            let common = expr::ExpressionCommon {
+              loc,
+              associated_comments: self
+                .comments_store
+                .create_comment_reference(associated_comments),
+              type_: (),
+            };
+            debug_assert!(tuple_elements.len() > 1);
+            return expr::E::Tuple(common, tuple_elements);
+          }
+          // (id) -> ... OR (id)
           TokenContent::Operator(TokenOp::RPAREN) => {
             self.consume();
             if let Token(_, TokenContent::Operator(TokenOp::ARROW)) = self.peek() {
@@ -1249,6 +1376,7 @@ impl<'a> SourceParser<'a> {
                 body: Box::new(body),
               });
             } else {
+              // (id)
               self.unconsume();
             }
           }
@@ -1256,9 +1384,29 @@ impl<'a> SourceParser<'a> {
         }
         self.unconsume();
       }
-      let nested_expr = self.parse_expression_with_ending_comments();
-      self.assert_and_consume_operator(TokenOp::RPAREN);
-      return nested_expr;
+      let mut expressions = self
+        .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+          s.parse_expression()
+        });
+      if let Some(node) = expressions.get(MAX_STRUCT_SIZE) {
+        self.error_set.report_invalid_syntax_error(
+          node.loc(),
+          format!("Maximum allowed tuple size is {MAX_STRUCT_SIZE}"),
+        );
+      }
+      expressions.truncate(MAX_STRUCT_SIZE);
+      let end_loc = self.assert_and_consume_operator(TokenOp::RPAREN);
+      let loc = peeked_loc.union(&end_loc);
+      let common = expr::ExpressionCommon {
+        loc,
+        associated_comments: self.comments_store.create_comment_reference(associated_comments),
+        type_: (),
+      };
+      debug_assert!(!expressions.is_empty());
+      if expressions.len() == 1 {
+        return expressions.pop().unwrap();
+      }
+      return expr::E::Tuple(common, expressions);
     }
 
     // Statement Block: { ... }
@@ -1339,16 +1487,16 @@ impl<'a> SourceParser<'a> {
 
   pub(super) fn parse_destructuring_pattern(&mut self) -> pattern::DestructuringPattern<()> {
     let peeked = self.peek();
-    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACKET)) = peeked {
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
       self.consume();
       let destructured_names =
-        self.parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
+        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
           pattern::TuplePatternElement {
             pattern: Box::new(s.parse_destructuring_pattern()),
             type_: (),
           }
         });
-      let end_location = self.assert_and_consume_operator(TokenOp::RBRACKET);
+      let end_location = self.assert_and_consume_operator(TokenOp::RPAREN);
       return pattern::DestructuringPattern::Tuple(
         peeked_loc.union(&end_location),
         destructured_names,
@@ -1399,13 +1547,13 @@ impl<'a> SourceParser<'a> {
 
   pub(super) fn parse_matching_pattern(&mut self) -> pattern::MatchingPattern<()> {
     let peeked = self.peek();
-    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACKET)) = peeked {
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
       self.consume();
       let destructured_names =
-        self.parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
+        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
           pattern::TuplePatternElement { pattern: Box::new(s.parse_matching_pattern()), type_: () }
         });
-      let end_location = self.assert_and_consume_operator(TokenOp::RBRACKET);
+      let end_location = self.assert_and_consume_operator(TokenOp::RPAREN);
       return pattern::MatchingPattern::Tuple(peeked_loc.union(&end_location), destructured_names);
     }
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {

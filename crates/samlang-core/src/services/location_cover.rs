@@ -275,6 +275,7 @@ mod tests {
     parser::parse_source_module_from_text,
     Heap, ModuleReference,
   };
+  use pretty_assertions::assert_eq;
   use std::rc::Rc;
 
   #[test]
@@ -346,9 +347,9 @@ mod tests {
         let g = Obj.init(d, 4); // d = 4
         let _ = if let Some({ a as d3 }) = Option.Some(Foo.init(5)) then {} else {};
         let _ = if let Some(_) = Option.Some(1) then {} else {};
-        let _ = if let Some([_, _]) = Option.Some([1,2]) then {} else {};
+        let _ = if let Some((_, _)) = Option.Some((1,2)) then {} else {};
         let _ = f.d;
-        let [h, i] = [111, 122];
+        let (h, i) = (111, 122);
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d
       }

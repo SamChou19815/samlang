@@ -319,7 +319,7 @@ mod tests {
       method foo(): unit = {
         let _ = (f: Foo, b: Option<Foo>, a: (Foo)->Foo) -> this.a;
         let {a, b} = this;
-        let [c, d] = [1, 2];
+        let (c, d) = (1, 2);
       }
     }
 
@@ -347,7 +347,7 @@ mod tests {
         let g = Obj.init(d, 4); // d = 4
         let _ = if let { a as d3, b as d4 } = Foo.init(5, false) then {} else {};
         let _ = if let Some(_) = Option.Some(1) then {} else {};
-        let _ = if let [_, _] = [1,2] then {} else {};
+        let _ = if let (_, _) = (1,2) then {} else {};
         let _ = f.d;
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d
@@ -410,7 +410,7 @@ Error ---------------------------------- foo.sam:35:24-35:30
 
 The pattern is irrefutable.
 
-  35|         let _ = if let [_, _] = [1,2] then {} else {};
+  35|         let _ = if let (_, _) = (1,2) then {} else {};
                              ^^^^^^
 
 

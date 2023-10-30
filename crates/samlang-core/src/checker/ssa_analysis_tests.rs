@@ -51,7 +51,7 @@ mod tests {
   } else {
     (p1: Foo, p2) -> Baz.ouch<Foo>(p2).ahha<Foo>(p1) + a
   };
-  let _ = if let {pat1 as {pat2 as [Fizz(pat3), Buzz, _], pat4}} = true then 1 else 2;
+  let _ = if let {pat1 as {pat2 as (Fizz(pat3), Buzz, _), pat4}} = true then 1 else 2;
   let a = 3;
   let {o1, o2 as o3} = {};
   o1 + o3

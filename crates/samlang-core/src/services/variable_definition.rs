@@ -702,7 +702,7 @@ class Main {
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let [v, _] = [1, 2] then 1 else 2;
+    let _ = if let (v, _) = (1, 2) then 1 else 2;
   }
 }"#;
     let (_, lookup) = prepare_lookup(source);
@@ -712,7 +712,7 @@ class Main {
       Location::from_pos(3, 20, 3, 21),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let [renAmeD, _] = [1, 2] then 1 else 2;
+    let _ = if let (renAmeD, _) = (1, 2) then 1 else 2;
   }
 }
 "#,
@@ -727,7 +727,7 @@ class Main {
     let c = a;
     let g = 3;
     let {f, g as h} = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (x, y) -> if x + y + i + j * 3 > h then panic(f) else println(h);
@@ -763,7 +763,7 @@ class Main {
     let renAmeD = a;
     let g = 3;
     let { f, g as h } = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -788,7 +788,7 @@ class Main {
     let c = renAmeD;
     let g = 3;
     let { f, g as h } = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -813,7 +813,7 @@ class Main {
     let c = a;
     let renAmeD = 3;
     let { f, g as h } = Main.init(3, renAmeD);
-    let [i, j] = [3, renAmeD];
+    let (i, j) = (3, renAmeD);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -838,7 +838,7 @@ class Main {
     let c = a;
     let g = 3;
     let { f as renAmeD, g as h } = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = renAmeD + h;
     let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -863,7 +863,7 @@ class Main {
     let c = a;
     let g = 3;
     let { f, g as renAmeD } = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(renAmeD);
     let _ = f + renAmeD;
     let lambda1 = (
@@ -891,7 +891,7 @@ class Main {
     let c = a;
     let g = 3;
     let { f, g as h } = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (
@@ -919,7 +919,7 @@ class Main {
     let c = a;
     let g = 3;
     let { f, g as h } = Main.init(3, g);
-    let [renAmeD, j] = [3, g];
+    let (renAmeD, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (
@@ -947,7 +947,7 @@ class Main {
     let c = a;
     let g = 3;
     let { f, g as h } = Main.init(3, g);
-    let [i, j] = [3, g];
+    let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
     let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
