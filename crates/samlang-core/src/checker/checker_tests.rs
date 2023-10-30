@@ -120,6 +120,7 @@ mod tests {
             (
               heap.alloc_str_for_test("Test"),
               InterfaceSignature {
+                private: false,
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
                     name: heap.alloc_str_for_test("foo"),
@@ -301,6 +302,7 @@ mod tests {
             (
               heap.alloc_str_for_test("Test2"),
               InterfaceSignature {
+                private: false,
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
                     name: heap.alloc_str_for_test("Foo"),
@@ -345,6 +347,7 @@ mod tests {
             (
               heap.alloc_str_for_test("Test3"),
               InterfaceSignature {
+                private: false,
                 type_parameters: vec![TypeParameterSignature { name: PStr::UPPER_E, bound: None }],
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
@@ -366,6 +369,7 @@ mod tests {
             (
               heap.alloc_str_for_test("Test4"),
               InterfaceSignature {
+                private: false,
                 type_parameters: vec![TypeParameterSignature { name: PStr::UPPER_E, bound: None }],
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
@@ -422,6 +426,7 @@ mod tests {
             (
               PStr::UPPER_A,
               InterfaceSignature {
+                private: false,
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
                     name: PStr::LOWER_A,
@@ -454,6 +459,7 @@ mod tests {
             (
               PStr::UPPER_B,
               InterfaceSignature {
+                private: false,
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
                     name: PStr::LOWER_A,
@@ -486,6 +492,7 @@ mod tests {
             (
               PStr::UPPER_C,
               InterfaceSignature {
+                private: false,
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
                     name: PStr::LOWER_A,
@@ -3346,7 +3353,8 @@ Found 5 errors.
   class B<A, A>(val value: int) {
     function of(): B<int, bool> = B.init(A.a())
     method intValue(): int = this.value
-  }"#;
+  }
+  private class D {}"#;
     let source_c = r#"import { B } from B
   class C(Int(int), Int(bool), Boo(B)) {
     function ofInt(value: int): C = C.Int(value)
@@ -3354,7 +3362,7 @@ Found 5 errors.
     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
   }"#;
     let source_d = r#"import { A } from A
-  import { B } from B
+  import { B, D } from B
   import { C } from C
 
   class IdentifyChecker { function equals(c1: C, c1: C): bool = c1.intValue() == c1.intValue() }
@@ -3540,6 +3548,14 @@ Error -------------------------------------- C.sam:5:58-5:81
                                                            ^
 
 
+Error -------------------------------------- D.sam:2:15-2:16
+
+There is no `D` export in `B`.
+
+  2|   import { B, D } from B
+                   ^
+
+
 Error -------------------------------------- D.sam:5:50-5:52
 
 Name `c1` collides with a previously defined name at [1].
@@ -3553,7 +3569,7 @@ Name `c1` collides with a previously defined name at [1].
                                                ^^
 
 
-Found 14 errors.
+Found 15 errors.
 "#,
     );
   }

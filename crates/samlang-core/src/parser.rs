@@ -220,7 +220,7 @@ mod tests {
     /**
      * docs
      */
-    class Option<T>(None, Some(T)) {
+    private class Option<T>(None, Some(T)) {
       function <T> getNone(): Option<T> = Option.None({})
       function <T> getSome(d: T): Option<T> = Option.Some(d)
       method <R> map(f: (T) -> R): Option<R> =
@@ -293,7 +293,7 @@ mod tests {
     // Adapted from website
     import { Foo, Bar } from path.To;
 
-    interface A {
+    private interface A {
       private function main: Str =
     }
 
@@ -389,7 +389,7 @@ mod tests {
       val a39: int
     ) {}
 
-    class VariantTooLarge(
+    private class VariantTooLarge(
       None,
       Some(int,int,int,int,int,
         int,int,int,int,int,

@@ -314,7 +314,10 @@ impl<'a> SourceParser<'a> {
       }
       loop {
         match self.peek() {
-          Token(_, TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE)) => break,
+          Token(
+            _,
+            TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE),
+          ) => break,
           Token(_, TokenContent::EOF) => break 'outer,
           Token(loc, content) => {
             self.consume();
@@ -337,9 +340,18 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_toplevel(&mut self) -> Toplevel<()> {
-    let peeked = self.peek().1;
     self.unconsume_comments();
-    if let TokenContent::Keyword(Keyword::CLASS) = peeked {
+    let is_private = if let TokenContent::Keyword(Keyword::PRIVATE) = self.peek().1 {
+      self.consume();
+      true
+    } else {
+      false
+    };
+    let is_class = matches!(self.peek().1, TokenContent::Keyword(Keyword::CLASS));
+    if is_private {
+      self.unconsume();
+    }
+    if is_class {
       Toplevel::Class(self.parse_class())
     } else {
       Toplevel::Interface(self.parse_interface())
@@ -348,7 +360,14 @@ impl<'a> SourceParser<'a> {
 
   pub(super) fn parse_class(&mut self) -> ClassDefinition<()> {
     let associated_comments = self.collect_preceding_comments();
-    let mut loc = self.assert_and_consume_keyword(Keyword::CLASS);
+    let (mut loc, private) =
+      if let Token(loc, TokenContent::Keyword(Keyword::PRIVATE)) = self.peek() {
+        self.consume();
+        self.assert_and_consume_keyword(Keyword::CLASS);
+        (loc, true)
+      } else {
+        (self.assert_and_consume_keyword(Keyword::CLASS), false)
+      };
     let name = self.parse_upper_id();
     loc = loc.union(&name.loc);
     let (type_param_loc_start, type_param_loc_end, mut type_parameters) =
@@ -365,7 +384,7 @@ impl<'a> SourceParser<'a> {
     self.fix_tparams_with_generic_annot(&mut type_parameters);
     let (type_definition, extends_or_implements_nodes) = match self.peek().1 {
       TokenContent::Operator(TokenOp::LBRACE | TokenOp::COLON)
-      | TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE) => {
+      | TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE) => {
         let nodes = if let TokenContent::Operator(TokenOp::COLON) = self.peek().1 {
           self.consume();
           let nodes = self.parse_extends_or_implements_nodes();
@@ -415,6 +434,7 @@ impl<'a> SourceParser<'a> {
     InterfaceDeclarationCommon {
       loc,
       associated_comments: self.comments_store.create_comment_reference(associated_comments),
+      private,
       name,
       type_parameters,
       extends_or_implements_nodes,
@@ -425,7 +445,14 @@ impl<'a> SourceParser<'a> {
 
   pub(super) fn parse_interface(&mut self) -> InterfaceDeclaration {
     let associated_comments = self.collect_preceding_comments();
-    let mut loc = self.assert_and_consume_keyword(Keyword::INTERFACE);
+    let (mut loc, private) =
+      if let Token(loc, TokenContent::Keyword(Keyword::PRIVATE)) = self.peek() {
+        self.consume();
+        self.assert_and_consume_keyword(Keyword::INTERFACE);
+        (loc, true)
+      } else {
+        (self.assert_and_consume_keyword(Keyword::INTERFACE), false)
+      };
     let name = self.parse_upper_id();
     let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
@@ -462,6 +489,7 @@ impl<'a> SourceParser<'a> {
     InterfaceDeclarationCommon {
       loc,
       associated_comments: self.comments_store.create_comment_reference(associated_comments),
+      private,
       name,
       type_parameters,
       extends_or_implements_nodes,
@@ -531,7 +559,10 @@ impl<'a> SourceParser<'a> {
   }
 
   fn peeked_class_or_interface_start(&mut self) -> bool {
-    matches!(self.peek().1, TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE))
+    matches!(
+      self.peek().1,
+      TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE)
+    )
   }
 
   pub(super) fn parse_class_member_definition(&mut self) -> ClassMemberDefinition<()> {

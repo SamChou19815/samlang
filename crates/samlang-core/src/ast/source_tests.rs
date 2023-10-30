@@ -461,6 +461,7 @@ mod tests {
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
+      private: false,
       name: Id::from(PStr::LOWER_A),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
@@ -526,6 +527,7 @@ mod tests {
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
+      private: false,
       name: Id::from(heap.alloc_str_for_test("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
@@ -559,6 +561,7 @@ mod tests {
     let interface: Toplevel<()> = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
+      private: false,
       name: Id::from(heap.alloc_str_for_test("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],

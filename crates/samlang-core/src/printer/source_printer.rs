@@ -892,7 +892,11 @@ fn interface_to_doc(
       true,
     )
     .unwrap_or(Document::Nil),
-    Document::Text(rc_string(format!("interface {}", interface.name.name.as_str(heap)))),
+    Document::Text(rc_string(format!(
+      "{}interface {}",
+      if interface.private { "private " } else { "" },
+      interface.name.name.as_str(heap)
+    ))),
     type_parameters_to_doc(heap, comment_store, false, &interface.type_parameters),
     extends_or_implements_node_to_doc(heap, comment_store, &interface.extends_or_implements_nodes),
   ];
@@ -933,7 +937,11 @@ fn class_to_doc(
       true,
     )
     .unwrap_or(Document::Nil),
-    Document::Text(rc_string(format!("class {}", class.name.name.as_str(heap)))),
+    Document::Text(rc_string(format!(
+      "{}class {}",
+      if class.private { "private " } else { "" },
+      class.name.name.as_str(heap)
+    ))),
     type_parameters_to_doc(heap, comment_store, false, &class.type_parameters),
     match &class.type_definition {
       TypeDefinition::Struct { loc: _, fields } if fields.is_empty() => Document::Nil,
@@ -1403,7 +1411,7 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       r#"
 interface Foo {}
 interface Foo2 : Foo {}
-interface Bar</* comment*/A: // foo
+private interface Bar</* comment*/A: // foo
 B> { function baz(): int }
 class Empty
 class Empty2 : Foo
@@ -1414,7 +1422,7 @@ interface Foo
 
 interface Foo2 : Foo
 
-interface Bar<
+private interface Bar<
   /* comment */
   A: // foo
   B
@@ -1460,7 +1468,7 @@ class Obj(private val d: int, val e: int) {
 }
 
 /** short line */
-class A(val a: int) {}
+private class A(val a: int) {}
 
 /** some very very very very very very very very very very very very very very very very very very
  * long document string
@@ -1553,7 +1561,7 @@ class Obj(
 }
 
 /** short line */
-class A(val a: int)
+private class A(val a: int)
 
 /**
  * some very very very very very very

@@ -482,6 +482,7 @@ impl MemberSignature {
 }
 
 pub(crate) struct InterfaceSignature {
+  pub(crate) private: bool,
   pub(crate) type_definition: Option<TypeDefinitionSignature>,
   pub(crate) functions: HashMap<PStr, MemberSignature>,
   pub(crate) methods: HashMap<PStr, MemberSignature>,
@@ -494,7 +495,8 @@ impl InterfaceSignature {
   pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push(format!(
-      "{} {} : [{}]",
+      "{}{} {} : [{}]",
+      if self.private { "private " } else { "" },
       if let Some(type_def) = &self.type_definition {
         format!("class({})", type_def.to_string(heap))
       } else {
@@ -589,6 +591,7 @@ pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
       (
         PStr::PROCESS_TYPE,
         InterfaceSignature {
+          private: false,
           type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
           type_parameters: vec![],
           super_types: vec![],
@@ -624,6 +627,7 @@ pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
       (
         PStr::STR_TYPE,
         InterfaceSignature {
+          private: false,
           type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
           functions: HashMap::from([MemberSignature::create_builtin_function(
             PStr::FROM_INT,
@@ -797,7 +801,7 @@ methods:
     );
     assert_eq!(
       r#"
-class(a:bool, b:(private) bool)  : []
+private class(a:bool, b:(private) bool)  : []
 functions:
 methods:
 m1: public () -> any
@@ -805,6 +809,7 @@ m2: public () -> any
 "#
       .trim(),
       InterfaceSignature {
+        private: true,
         type_definition: Some(TypeDefinitionSignature::Struct(vec![
           StructItemDefinitionSignature {
             name: PStr::LOWER_A,

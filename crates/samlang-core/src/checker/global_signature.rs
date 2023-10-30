@@ -24,6 +24,7 @@ pub(crate) fn build_module_signature(
   let mut interfaces = HashMap::new();
   for toplevel in &module.toplevels {
     let is_class = toplevel.is_class();
+    let private = toplevel.is_private();
     let name = toplevel.name().name;
     let mut functions = HashMap::new();
     let mut methods = HashMap::new();
@@ -122,6 +123,7 @@ pub(crate) fn build_module_signature(
     interfaces.insert(
       name,
       InterfaceSignature {
+        private,
         type_definition,
         functions,
         methods,
