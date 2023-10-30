@@ -62,8 +62,8 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   method min(): Option<Pair<K, V>> =
     match this {
       Empty -> Option.None(),
-      Leaf(k, v) -> Option.Some([k, v]),
-      Node(_, k, v, child, _) -> if child.isEmpty() then { Option.Some([k, v]) } else {
+      Leaf(k, v) -> Option.Some((k, v)),
+      Node(_, k, v, child, _) -> if child.isEmpty() then { Option.Some((k, v)) } else {
         child.min()
       },
     }
@@ -71,8 +71,8 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   method max(): Option<Pair<K, V>> =
     match this {
       Empty -> Option.None(),
-      Leaf(k, v) -> Option.Some([k, v]),
-      Node(_, k, v, _, child) -> if child.isEmpty() then { Option.Some([k, v]) } else {
+      Leaf(k, v) -> Option.Some((k, v)),
+      Node(_, k, v, _, child) -> if child.isEmpty() then { Option.Some((k, v)) } else {
         child.min()
       },
     }
@@ -128,7 +128,7 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     match this {
       Empty -> Process.panic("Bad tree"),
       Leaf(_, _) -> Process.panic("Bad tree"),
-      Node(_, k, v, l, r) -> { [k, v, l, r] }
+      Node(_, k, v, l, r) -> { (k, v, l, r) }
     }
 
   private function <K: Comparable<K>, V> balanced(l: Map<K, V>, k: K, v: V, r: Map<K, V>): Map<
@@ -138,22 +138,22 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     let lh = l.height();
     let rh = r.height();
     if lh > rh + 2 then {
-      let [lk, lv, ll, lr] = l.forcedNodeWithoutHeight();
+      let (lk, lv, ll, lr) = l.forcedNodeWithoutHeight();
       if ll.height() >= lr.height() then { Map.node(ll, lk, lv, Map.create(lr, k, v, r)) } else {
-        let [lrk, lrv, lrl, lrr] = lr.forcedNodeWithoutHeight();
+        let (lrk, lrv, lrl, lrr) = lr.forcedNodeWithoutHeight();
         Map.node(Map.create(ll, lk, lv, lrl), lrk, lrv, Map.create(lrr, k, v, r))
       }
     } else if rh > lh + 2 then {
-      let [rk, rv, rl, rr] = r.forcedNodeWithoutHeight();
+      let (rk, rv, rl, rr) = r.forcedNodeWithoutHeight();
       if rr.height() >= rl.height() then { Map.node(Map.create(l, k, v, rl), rk, rv, rr) } else {
-        let [rlk, rlv, rll, rlr] = rl.forcedNodeWithoutHeight();
+        let (rlk, rlv, rll, rlr) = rl.forcedNodeWithoutHeight();
         Map.node(Map.create(l, k, v, rll), rlk, rlv, Map.create(rlr, rk, rv, rr))
       }
     } else { Map.create(l, k, v, r) }
   }
 
   private method removeMinBindingFromNodeUnsafe(): Map<K, V> = {
-    let [k, v, l, r] = this.forcedNodeWithoutHeight();
+    let (k, v, l, r) = this.forcedNodeWithoutHeight();
     match l {
       Empty -> r,
       Leaf(_, _) -> Map.balanced(Map.empty<K, V>(), k, v, r),

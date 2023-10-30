@@ -6,7 +6,7 @@ class Option<T>(None, Some(T)) {
       None -> Option.None(),
       Some(a) -> match optionB {
         None -> Option.None(),
-        Some(b) -> Option.Some([a, b]),
+        Some(b) -> Option.Some((a, b)),
       }
     }
 

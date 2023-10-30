@@ -1365,10 +1365,10 @@ class Main {
 import {Pair} from std.tuples;
 
 class List(Nil(unit), Cons(Pair<int, List>)) {
-  function of(i: int): List = List.Cons([
+  function of(i: int): List = List.Cons((
     i,
     List.Nil({  })
-  ])
+  ))
 }
 
 class Main { function main(): unit = { let _: List = List.of(1); Process.println("hello") }  }
@@ -2109,15 +2109,15 @@ class BoxedInt(val i: int): Comparable<BoxedInt> {
 class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T: Comparable<T>> nil(): List<T> = List.Nil<T>({  })
 
-  function <T: Comparable<T>> of(t: T): List<T> = List.Cons([t, List.Nil<T>({  })])
+  function <T: Comparable<T>> of(t: T): List<T> = List.Cons((t, List.Nil<T>({  })))
 
-  method cons(t: T): List<T> = List.Cons([t, this])
+  method cons(t: T): List<T> = List.Cons((t, this))
 
   method iter(f: (T) -> unit): unit =
     match (this) {
       Nil(_) -> {  }
       Cons(pair) -> {
-        let [v, rest] = pair;
+        let (v, rest) = pair;
         let _ = f(v);
         rest.iter(f)
       }
@@ -2129,7 +2129,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
       Cons(pair) -> match (pair.e1) {
         Nil(_) -> this,
         Cons(_) -> {
-          let [l1, l2] = this.split(List.nil<T>(), List.nil<T>());
+          let (l1, l2) = this.split(List.nil<T>(), List.nil<T>());
           l1.sort().merge(l2.sort())
         }
       }
@@ -2141,8 +2141,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
       Cons(pair1) -> match (other) {
         Nil(_) -> this,
         Cons(pair2) -> {
-          let [h1, t1] = pair1;
-          let [h2, t2] = pair2;
+          let (h1, t1) = pair1;
+          let (h2, t2) = pair2;
           if (h1.compare(h2) < 0) then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
         }
       }
@@ -2152,7 +2152,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match (this) {
       Nil(_) -> Pair.init(y, z),
       Cons(pair) -> {
-        let [x, rest] = pair;
+        let (x, rest) = pair;
         rest.split(z, y.cons(x))
       }
     }
@@ -2261,11 +2261,11 @@ class Main {
 import {Pair, Triple} from std.tuples;
 
 class Clazz(val t: Pair<Triple<int, int, bool>, Str>) {
-    function of(): Clazz = Clazz.init([[42, 2, false], ""])
+    function of(): Clazz = Clazz.init(((42, 2, false), ""))
 
     method thisTest(): int = {
-      let [[i, _, _], _] = this.t;
-      let {t as {e0 as [j, _, _], e1}} = this;
+      let ((i, _, _), _) = this.t;
+      let {t as {e0 as (j, _, _), e1}} = this;
       i + j
     }
 }

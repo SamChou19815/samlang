@@ -36,10 +36,6 @@ fn braces_surrounded_doc(doc: Document) -> Document {
   Document::spaced_bracket(rcs("{"), doc, rcs("}"))
 }
 
-fn square_brackets_surrounded_doc(doc: Document) -> Document {
-  Document::no_space_bracket(rcs("["), doc, rcs("]"))
-}
-
 fn angle_bracket_surrounded_doc(doc: Document) -> Document {
   Document::no_space_bracket(rcs("<"), doc, rcs(">"))
 }
@@ -480,7 +476,7 @@ impl expr::E<()> {
         Document::Text(rc_pstr(heap, id.name))
       }
       expr::E::Tuple(_, expressions) => {
-        square_brackets_surrounded_doc(comma_sep_list(expressions, |e| {
+        parenthesis_surrounded_doc(comma_sep_list(expressions, |e| {
           e.create_doc(heap, comment_store)
         }))
       }
@@ -666,7 +662,7 @@ fn destructuring_pattern_to_document(
 ) -> Document {
   match pattern {
     pattern::DestructuringPattern::Tuple(_, names) => {
-      square_brackets_surrounded_doc(comma_sep_list(names, |it| {
+      parenthesis_surrounded_doc(comma_sep_list(names, |it| {
         destructuring_pattern_to_document(heap, &it.pattern)
       }))
     }
@@ -691,7 +687,7 @@ fn destructuring_pattern_to_document(
 fn matching_pattern_to_document(heap: &Heap, pattern: &pattern::MatchingPattern<()>) -> Document {
   match pattern {
     pattern::MatchingPattern::Tuple(_, names) => {
-      square_brackets_surrounded_doc(comma_sep_list(names, |it| {
+      parenthesis_surrounded_doc(comma_sep_list(names, |it| {
         matching_pattern_to_document(heap, &it.pattern)
       }))
     }
@@ -1336,15 +1332,15 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     );
 
     assert_reprint_expr(
-      "{ let [a, _]: int = [1, 4]; }",
+      "{ let (a, _): int = (1, 4); }",
       r#"{
-  let [a, _]: int = [1, 4];
+  let (a, _): int = (1, 4);
 }"#,
     );
     assert_reprint_expr(
-      "{ let [aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa]: int = 3; }",
+      "{ let (aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa): int = 3; }",
       r#"{
-  let [
+  let (
     aaaaa,
     aaaaa,
     aaaaa,
@@ -1356,15 +1352,15 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     aaaaa,
     _,
     aaaaa
-  ]: int = 3;
+  ): int = 3;
 }"#,
     );
     assert_reprint_expr(
-      "{let_=if let {foo as {bar as [Fizz(baz), Buzz, _], boo}} = true then 3 else bar;}",
+      "{let_=if let {foo as {bar as (Fizz(baz), Buzz, _), boo}} = true then 3 else bar;}",
       r#"{
   let _ = if let {
     foo as {
-      bar as [Fizz(baz), Buzz, _],
+      bar as (Fizz(baz), Buzz, _),
       boo
     }
   } = true then {

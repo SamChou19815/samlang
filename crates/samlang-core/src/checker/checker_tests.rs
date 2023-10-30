@@ -714,21 +714,21 @@ Found 1 error.
     assert_errors_full_customization(
       heap,
       r#"{
-  let _: int = [1, 1].e1;
-  let _: int = [1, 1, 1].e2;
-  let _: int = [1, 1, 1, 1].e3;
-  let _: int = [1, 1, 1, 1, 1].e4;
-  let _: int = [1, 1, 1, 1, 1, 1].e5;
-  let _: int = [1, 1, 1, 1, 1, 1, 1].e6;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1].e7;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1].e8;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e9;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e10;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e11;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e12;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e13;
-  let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
-  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e15;
+  let _: int = (1, 1).e1;
+  let _: int = (1, 1, 1).e2;
+  let _: int = (1, 1, 1, 1).e3;
+  let _: int = (1, 1, 1, 1, 1).e4;
+  let _: int = (1, 1, 1, 1, 1, 1).e5;
+  let _: int = (1, 1, 1, 1, 1, 1, 1).e6;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1).e7;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1).e8;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e9;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e10;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e11;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e12;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e13;
+  let _: bool = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e14;
+  let _: int = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e15;
 }"#,
       &builder.unit_type(),
       r#"
@@ -736,17 +736,17 @@ Error --------------------------------- DUMMY.sam:15:3-15:67
 
 `int` [1] is incompatible with `bool` [2].
 
-  15|   let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  15|   let _: bool = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e14;
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   [1] DUMMY.sam:15:17-15:66
   -------------------------
-  15|   let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  15|   let _: bool = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e14;
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   [2] DUMMY.sam:15:10-15:14
   -------------------------
-  15|   let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  15|   let _: bool = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).e14;
                ^^^^
 
 
@@ -2755,14 +2755,14 @@ Found 1 error.
     );
     assert_errors_full_customization(
       heap,
-      "{ let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }",
+      "{ let _ = (t: Test) -> if let (a, b, _) = (1, 2) then 1 else 2; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:31-1:40
 
 The pattern is irrefutable.
 
-  1| { let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }
+  1| { let _ = (t: Test) -> if let (a, b, _) = (1, 2) then 1 else 2; }
                                    ^^^^^^^^^
 
 
@@ -2770,7 +2770,7 @@ Error ---------------------------------- DUMMY.sam:1:38-1:39
 
 Cannot access member of `Pair<int, int>` at index 2.
 
-  1| { let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }
+  1| { let _ = (t: Test) -> if let (a, b, _) = (1, 2) then 1 else 2; }
                                           ^
 
 
@@ -2782,11 +2782,11 @@ Found 2 errors.
     assert_errors_full_customization(
       heap,
       r#"{ let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
-let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
-let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, [eee, fff]) = t then 1 else 2;
+let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t then 1 else 2;
 let _ = (t: Test2) -> if let {s} = t then 1 else 2;
 let _ = if let F = 1 then 1 else 2;
 }"#,
@@ -2830,7 +2830,7 @@ Error ---------------------------------- DUMMY.sam:2:29-2:37
 
 The pattern does not bind all fields. Expected number of elements: 3, actual number of elements: 2.
 
-  2| let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+  2| let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
                                  ^^^^^^^^
 
 
@@ -2838,7 +2838,7 @@ Error ---------------------------------- DUMMY.sam:2:29-2:37
 
 The pattern is irrefutable.
 
-  2| let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+  2| let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
                                  ^^^^^^^^
 
 
@@ -2846,7 +2846,7 @@ Error ---------------------------------- DUMMY.sam:2:33-2:36
 
 Cannot access member of `Test` at index 1.
 
-  2| let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+  2| let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
                                      ^^^
 
 
@@ -2870,7 +2870,7 @@ Error ---------------------------------- DUMMY.sam:6:30-6:36
 
 Cannot resolve member `Foo111` on `Test2`.
 
-  6| let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, [eee, fff]) = t then 1 else 2;
+  6| let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t then 1 else 2;
                                   ^^^^^^
 
 
@@ -3074,14 +3074,14 @@ Found 2 errors.
 
     assert_errors(
       heap,
-      "{let [a, b, c] = A.init();}",
+      "{let (a, b, c) = A.init();}",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot access member of `A` at index 1.
 
-  1| {let [a, b, c] = A.init();}
+  1| {let (a, b, c) = A.init();}
               ^
 
 
@@ -3089,7 +3089,7 @@ Error ---------------------------------- DUMMY.sam:1:13-1:14
 
 Cannot access member of `A` at index 2.
 
-  1| {let [a, b, c] = A.init();}
+  1| {let (a, b, c) = A.init();}
                  ^
 
 
@@ -3187,14 +3187,14 @@ Found 2 errors.
     );
     assert_errors(
       heap,
-      "{let [_]= A.init();}",
+      "{let (_)= A.init();}",
       &builder.unit_type(),
       r#"
 Error ------------------------------------ DUMMY.sam:1:6-1:9
 
 The pattern does not bind all fields. Expected number of elements: 2, actual number of elements: 1.
 
-  1| {let [_]= A.init();}
+  1| {let (_)= A.init();}
           ^^^
 
 

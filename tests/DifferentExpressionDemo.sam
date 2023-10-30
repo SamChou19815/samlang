@@ -24,8 +24,8 @@ class Clazz(val t: int) {
     let i = this.t;
     let { t as j } = this;
     let { t as _ } = this;
-    let [_] = this;
-    let [k] = this;
+    let (_) = this;
+    let (k) = this;
     i + j + k - k
   }
 }
@@ -34,7 +34,7 @@ class DifferentExpressionDemo {
   function identity(a: int): int = a
 
   function random(): int = {
-    let { e0, e1, e2 as [e3, _] } = [1, 2, [1, 3]];
+    let { e0, e1, e2 as (e3, _) } = (1, 2, (1, 3));
     let a = 42;
     a
   }

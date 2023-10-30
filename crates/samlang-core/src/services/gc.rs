@@ -336,11 +336,11 @@ mod tests {
           let b = 2;
           let c = 3; // c = 3
           let { d } = Obj.init(5, 4);
-          let [_, d1] = [1, 2];
+          let (_, d1) = (1, 2);
           let { e as d2 } = Obj.init(5, 4); // d = 4
           let _ = if let { e as d3 } = Obj.init(5, 4) then {} else {};
           let _ = if let Some(_) = Option.Some(1) then {} else {};
-          let _ = if let [_, _] = [1,2] then {} else {};
+          let _ = if let (_, _) = (1,2) then {} else {};
           let f = Obj.init(5, 4); // d = 4
           let g = Obj.init(d, 4); // d = 4
           let _ = f.d;
