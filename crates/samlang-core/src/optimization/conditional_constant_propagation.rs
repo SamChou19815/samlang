@@ -424,7 +424,7 @@ fn optimize_stmt(
     Statement::LateInitAssignment { name, assigned_expression } => {
       collector.push(Statement::LateInitAssignment {
         name: *name,
-        assigned_expression: *assigned_expression,
+        assigned_expression: optimize_expr(value_cx, assigned_expression),
       });
       false
     }

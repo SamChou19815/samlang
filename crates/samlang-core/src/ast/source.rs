@@ -218,25 +218,6 @@ pub(crate) mod pattern {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) enum DestructuringPattern<T: Clone> {
-    Tuple(Location, Vec<TuplePatternElement<DestructuringPattern<T>, T>>),
-    Object(Location, Vec<ObjectPatternElement<DestructuringPattern<T>, T>>),
-    Id(Id, T),
-    Wildcard(Location),
-  }
-
-  impl<T: Clone> DestructuringPattern<T> {
-    pub(crate) fn loc(&self) -> &Location {
-      match self {
-        Self::Tuple(loc, _)
-        | Self::Object(loc, _)
-        | Self::Id(Id { loc, .. }, _)
-        | Self::Wildcard(loc) => loc,
-      }
-    }
-  }
-
-  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct VariantPattern<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) tag_order: usize,
@@ -521,7 +502,7 @@ pub(crate) mod expr {
   pub(crate) struct DeclarationStatement<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
-    pub(crate) pattern: super::pattern::DestructuringPattern<T>,
+    pub(crate) pattern: super::pattern::MatchingPattern<T>,
     pub(crate) annotation: Option<annotation::T>,
     pub(crate) assigned_expression: Box<E<T>>,
   }

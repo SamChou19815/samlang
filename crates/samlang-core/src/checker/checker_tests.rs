@@ -3124,23 +3124,15 @@ Found 1 error.
       "{let {a, b as c} = C.init();}",
       &builder.unit_type(),
       r#"
-Error ------------------------------------ DUMMY.sam:1:7-1:8
+Error ----------------------------------- DUMMY.sam:1:6-1:17
 
-Cannot resolve member `a` on `C`.
-
-  1| {let {a, b as c} = C.init();}
-           ^
-
-
-Error ---------------------------------- DUMMY.sam:1:10-1:11
-
-Cannot resolve member `b` on `C`.
+`C` is not an instance of a struct class.
 
   1| {let {a, b as c} = C.init();}
-              ^
+          ^^^^^^^^^^^
 
 
-Found 2 errors.
+Found 1 error.
 "#,
     );
     assert_errors(
@@ -3148,23 +3140,15 @@ Found 2 errors.
       "{let {a, b as c} = 1;}",
       &builder.unit_type(),
       r#"
-Error ------------------------------------ DUMMY.sam:1:7-1:8
+Error ----------------------------------- DUMMY.sam:1:6-1:17
 
-Cannot resolve member `a` on `int`.
-
-  1| {let {a, b as c} = 1;}
-           ^
-
-
-Error ---------------------------------- DUMMY.sam:1:10-1:11
-
-Cannot resolve member `b` on `int`.
+`int` is not an instance of a struct class.
 
   1| {let {a, b as c} = 1;}
-              ^
+          ^^^^^^^^^^^
 
 
-Found 2 errors.
+Found 1 error.
 "#,
     );
     assert_errors(
@@ -3203,6 +3187,23 @@ The pattern does not bind all fields. Expected number of elements: 2, actual num
 
   1| {let (_)= A.init();}
           ^^^
+
+
+Found 1 error.
+"#,
+    );
+    assert_errors(
+      heap,
+      "{let Foo(_) = Test2.Foo(false);}",
+      &builder.unit_type(),
+      r#"
+Error ----------------------------------- DUMMY.sam:1:6-1:12
+
+This pattern-matching is not exhausive.
+Here is an example of a non-matching value: `Bar(_)`.
+
+  1| {let Foo(_) = Test2.Foo(false);}
+          ^^^^^^
 
 
 Found 1 error.

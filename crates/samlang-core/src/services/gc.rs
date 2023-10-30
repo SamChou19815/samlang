@@ -67,29 +67,6 @@ fn mark_id(heap: &mut Heap, id: &Id) {
   heap.mark(id.name);
 }
 
-fn mark_destructuring_pattern(heap: &mut Heap, pattern: &pattern::DestructuringPattern<Rc<Type>>) {
-  match pattern {
-    pattern::DestructuringPattern::Tuple(_, names) => {
-      for n in names {
-        mark_destructuring_pattern(heap, &n.pattern);
-        mark_type(heap, &n.type_);
-      }
-    }
-    pattern::DestructuringPattern::Object(_, names) => {
-      for n in names {
-        mark_type(heap, &n.type_);
-        mark_id(heap, &n.field_name);
-        mark_destructuring_pattern(heap, &n.pattern);
-      }
-    }
-    pattern::DestructuringPattern::Id(id, type_) => {
-      mark_id(heap, id);
-      mark_type(heap, type_);
-    }
-    pattern::DestructuringPattern::Wildcard(_) => {}
-  }
-}
-
 fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<Type>>) {
   match pattern {
     pattern::MatchingPattern::Tuple(_, names) => {
@@ -194,7 +171,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       for stmt in &e.statements {
         mark_expression(heap, &stmt.assigned_expression);
         mark_annot_opt(heap, &stmt.annotation);
-        mark_destructuring_pattern(heap, &stmt.pattern);
+        mark_matching_pattern(heap, &stmt.pattern);
       }
       if let Some(e) = &e.expression {
         mark_expression(heap, e);
