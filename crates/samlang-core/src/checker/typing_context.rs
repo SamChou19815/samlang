@@ -316,17 +316,6 @@ impl<'a> TypingContext<'a> {
     }
   }
 
-  pub(super) fn resolve_enum_definitions(
-    &self,
-    type_: &Type,
-  ) -> Vec<EnumVariantDefinitionSignature> {
-    if let Some((_, _, result)) = self.resolve_detailed_enum_definitions_opt(type_) {
-      result
-    } else {
-      Vec::with_capacity(0)
-    }
-  }
-
   fn resolve_type_definition(
     &self,
     type_: &Type,

@@ -936,67 +936,30 @@ fn check_match(
   hint: type_hint::Hint,
 ) -> expr::E<Rc<Type>> {
   let checked_matched = type_check_expression(cx, &expression.matched, type_hint::MISSING);
-  let checked_matched_type = checked_matched.type_().deref();
-  let variants = cx.resolve_enum_definitions(checked_matched_type);
-  let mut orders = HashMap::new();
-  let mut unused_mappings = HashMap::new();
-  for (i, variant) in variants.into_iter().enumerate() {
-    orders.insert(variant.name, i);
-    unused_mappings.insert(variant.name, variant.types);
-  }
+  let checked_matched_type = checked_matched.type_();
   let mut checked_cases = vec![];
   let mut matching_list_type: Option<Rc<Type>> = None;
-  for expr::VariantPatternToExpression { loc, tag, tag_order: _, data_variables, body } in
-    &expression.cases
-  {
-    let mapping_data_types = match unused_mappings.remove(&tag.name) {
-      Some(types) => types,
-      None => {
-        cx.error_set.report_cannot_resolve_member_error(
-          tag.loc,
-          checked_matched_type.to_description(),
-          tag.name,
-        );
-        continue;
-      }
-    };
-    if data_variables.len() != mapping_data_types.len() {
-      let mut error = StackableError::new();
-      error.add_data_variables_arity_error(data_variables.len(), mapping_data_types.len());
-      cx.error_set.report_stackable_error(*loc, error);
-    }
-    let checked_data_variables = data_variables
-      .iter()
-      .zip(mapping_data_types)
-      .map(|(dv, t)| {
-        if let Some((data_variable, _)) = dv {
-          cx.local_typing_context.write(data_variable.loc, t.clone());
-          Some((*data_variable, t))
-        } else {
-          None
-        }
-      })
-      .collect_vec();
+  let mut abstract_pattern_nodes = Vec::with_capacity(expression.cases.len());
+  for expr::VariantPatternToExpression { loc, pattern, body } in &expression.cases {
+    let (pattern, abstract_pattern_node) =
+      check_matching_pattern(cx, pattern, true, checked_matched_type);
+    abstract_pattern_nodes.push(abstract_pattern_node);
     let checked_body = type_check_expression(cx, body, hint);
-    let tag_order = *orders.get(&tag.name).unwrap();
     match &matching_list_type {
       Some(expected) => assignability_check(cx, *loc, checked_body.type_(), expected),
       None => matching_list_type = Some(checked_body.type_().clone()),
     }
     checked_cases.push(expr::VariantPatternToExpression {
       loc: *loc,
-      tag: *tag,
-      tag_order,
-      data_variables: checked_data_variables,
+      pattern,
       body: Box::new(checked_body),
     });
   }
-  if !unused_mappings.is_empty() {
-    cx.error_set.report_non_exhausive_match_for_match_expr_error(
-      expression.common.loc,
-      unused_mappings.keys().copied().collect(),
-    );
-  };
+  if let Some(description) =
+    pattern_matching::incomplete_counterexample(cx, &abstract_pattern_nodes)
+  {
+    cx.error_set.report_non_exhausive_match_error(expression.common.loc, description);
+  }
   expr::E::Match(expr::Match {
     common: expression.common.with_new_type(Rc::new(
       matching_list_type

@@ -152,11 +152,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
     expr::E::Match(e) => {
       mark_expression(heap, &e.matched);
       for case in &e.cases {
-        mark_id(heap, &case.tag);
-        for (v, t) in case.data_variables.iter().filter_map(|it| it.as_ref()) {
-          mark_id(heap, v);
-          mark_type(heap, t);
-        }
+        mark_matching_pattern(heap, &case.pattern);
         mark_expression(heap, &case.body);
       }
     }

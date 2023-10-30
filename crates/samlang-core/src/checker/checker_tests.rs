@@ -2907,9 +2907,22 @@ Found 12 errors.
       "match (3) { Foo(_) -> 1, Bar(s) -> 2 }",
       &builder.unit_type(),
       r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:39
+
+`int` [1] is incompatible with `unit` .
+
+  1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:39
+  ----------------------
+  1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 Error ---------------------------------- DUMMY.sam:1:13-1:16
 
-Cannot resolve member `Foo` on `int`.
+`int` is not an instance of an enum class.
 
   1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
                  ^^^
@@ -2917,13 +2930,13 @@ Cannot resolve member `Foo` on `int`.
 
 Error ---------------------------------- DUMMY.sam:1:26-1:29
 
-Cannot resolve member `Bar` on `int`.
+`int` is not an instance of an enum class.
 
   1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
                               ^^^
 
 
-Found 2 errors.
+Found 3 errors.
 "#,
     );
     assert_errors(
@@ -2931,9 +2944,22 @@ Found 2 errors.
       "match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }",
       &builder.unit_type(),
       r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:57
+
+`int` [1] is incompatible with `unit` .
+
+  1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:57
+  ----------------------
+  1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 Error ---------------------------------- DUMMY.sam:1:30-1:33
 
-Cannot resolve member `Foo` on `Test`.
+`Test` is not an instance of an enum class.
 
   1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
                                   ^^^
@@ -2941,13 +2967,13 @@ Cannot resolve member `Foo` on `Test`.
 
 Error ---------------------------------- DUMMY.sam:1:43-1:46
 
-Cannot resolve member `Bar` on `Test`.
+`Test` is not an instance of an enum class.
 
   1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
                                                ^^^
 
 
-Found 2 errors.
+Found 3 errors.
 "#,
     );
     assert_errors_full_customization(
@@ -2957,8 +2983,8 @@ Found 2 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:25-1:64
 
-The match is not exhausive. The following variants have not been handled:
-- `Bar`
+This pattern-matching is not exhausive.
+Here is an example of a non-matching value: `Bar(_)`.
 
   1| { let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -3242,12 +3268,12 @@ Function parameter arity of 1 is incompatible with function parameter arity of 0
                 ^^^^^^^^^^^^^^
 
 
-Error ---------------------------------- DUMMY.sam:6:32-6:51
+Error ---------------------------------- DUMMY.sam:6:39-6:40
 
-Data variable arity of 2 is incompatible with data variable arity of 1.
+Cannot access member of `Test2` at index 1.
 
   6|     match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
-                                    ^^^^^^^^^^^^^^^^^^^
+                                           ^
 
 
 Error ---------------------------------- DUMMY.sam:8:11-8:64
@@ -3513,42 +3539,6 @@ Type argument arity of 0 is incompatible with type argument arity of 2.
                                   ^
 
 
-Error -------------------------------------- C.sam:5:30-5:83
-
-`bool` [1] is incompatible with `int` [2].
-
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  [1] C.sam:5:30-5:83
-  -------------------
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  [2] C.sam:5:24-5:27
-  -------------------
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                            ^^^
-
-
-Error -------------------------------------- C.sam:5:58-5:81
-
-`int` [1] is incompatible with `bool` [2].
-
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                                              ^^^^^^^^^^^^^^^^^^^^^^^
-
-  [1] C.sam:5:68-5:80
-  -------------------
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                                                        ^^^^^^^^^^^^
-
-  [2] C.sam:5:55-5:56
-  -------------------
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                                           ^
-
-
 Error -------------------------------------- D.sam:2:15-2:16
 
 There is no `D` export in `B`.
@@ -3570,7 +3560,7 @@ Name `c1` collides with a previously defined name at [1].
                                                ^^
 
 
-Found 15 errors.
+Found 13 errors.
 "#,
     );
   }

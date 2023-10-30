@@ -317,7 +317,7 @@ pub(crate) struct AnnotatedId<T: Clone> {
 
 pub(crate) mod expr {
   use super::super::loc::Location;
-  use super::{annotation, CommentReference, Id, Literal};
+  use super::{annotation, pattern, CommentReference, Id, Literal};
   use samlang_heap::{ModuleReference, PStr};
   use std::collections::HashMap;
 
@@ -477,9 +477,7 @@ pub(crate) mod expr {
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct VariantPatternToExpression<T: Clone> {
     pub(crate) loc: Location,
-    pub(crate) tag: Id,
-    pub(crate) tag_order: usize,
-    pub(crate) data_variables: Vec<Option<(Id, T)>>,
+    pub(crate) pattern: pattern::MatchingPattern<T>,
     pub(crate) body: Box<E<T>>,
   }
 

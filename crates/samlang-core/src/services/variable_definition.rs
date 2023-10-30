@@ -230,17 +230,10 @@ fn apply_expr_renaming(
       cases: e
         .cases
         .iter()
-        .map(|expr::VariantPatternToExpression { loc, tag, tag_order, data_variables, body }| {
+        .map(|expr::VariantPatternToExpression { loc, pattern, body }| {
           expr::VariantPatternToExpression {
             loc: *loc,
-            tag: *tag,
-            tag_order: *tag_order,
-            data_variables: data_variables
-              .iter()
-              .map(|dv| {
-                dv.as_ref().map(|(id, t)| (mod_def_id(id, definition_and_uses, new_name), *t))
-              })
-              .collect(),
+            pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
             body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name)),
           }
         })

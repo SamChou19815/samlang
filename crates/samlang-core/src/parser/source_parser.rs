@@ -697,7 +697,7 @@ impl<'a> SourceParser<'a> {
       let match_expression = self.parse_expression_with_ending_comments();
       self.assert_and_consume_operator(TokenOp::LBRACE);
       let mut matching_list = vec![self.parse_pattern_to_expression()];
-      while let TokenContent::UpperId(_) = self.peek().1 {
+      while !matches!(self.peek().1, TokenContent::Operator(TokenOp::RBRACE)) {
         matching_list.push(self.parse_pattern_to_expression());
       }
       let loc = peeked_loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
@@ -716,26 +716,10 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_pattern_to_expression(&mut self) -> expr::VariantPatternToExpression<()> {
-    let tag = self.parse_upper_id();
-    let data_variables = if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = self.peek() {
-      self.consume();
-      let results = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-        if let TokenContent::Operator(TokenOp::UNDERSCORE) = s.peek().1 {
-          s.consume();
-          None
-        } else {
-          let name = s.parse_lower_id();
-          Some((name, ()))
-        }
-      });
-      self.assert_and_consume_operator(TokenOp::RPAREN);
-      results
-    } else {
-      vec![]
-    };
+    let pattern = self.parse_matching_pattern();
     self.assert_and_consume_operator(TokenOp::ARROW);
     let expression = self.parse_expression();
-    let mut loc = tag.loc.union(&expression.loc());
+    let mut loc = pattern.loc().union(&expression.loc());
     if matches!(expression, expr::E::Block(_) | expr::E::Match(_))
       || matches!(self.peek().1, TokenContent::Operator(TokenOp::RBRACE))
     {
@@ -745,13 +729,7 @@ impl<'a> SourceParser<'a> {
     } else {
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::COMMA));
     }
-    expr::VariantPatternToExpression {
-      loc,
-      tag,
-      tag_order: 0,
-      data_variables,
-      body: Box::new(expression),
-    }
+    expr::VariantPatternToExpression { loc, pattern, body: Box::new(expression) }
   }
 
   fn parse_if_else(&mut self) -> expr::E<()> {

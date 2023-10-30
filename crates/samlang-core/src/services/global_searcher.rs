@@ -161,18 +161,7 @@ fn search_expression(
     expr::E::Match(e) => {
       search_expression(&e.matched, request, collector);
       for case in &e.cases {
-        match (request, e.matched.type_().as_nominal()) {
-          (
-            GlobalNameSearchRequest::InterfaceMember(mod_ref, toplevel_name, fn_name, false),
-            Some(nominal_type),
-          ) if mod_ref.eq(&nominal_type.module_reference)
-            && toplevel_name.eq(&nominal_type.id)
-            && fn_name.eq(&case.tag.name) =>
-          {
-            collector.push(case.tag.loc);
-          }
-          _ => {}
-        }
+        search_matching_pattern(&case.pattern, e.matched.type_(), request, collector);
         search_expression(&case.body, request, collector);
       }
     }

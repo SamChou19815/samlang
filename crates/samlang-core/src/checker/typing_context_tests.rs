@@ -821,9 +821,11 @@ Found 3 errors.
       }))
       .is_none());
 
-    let resolved = cx.resolve_enum_definitions(
-      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()]),
-    );
+    let (_, _, resolved) = cx
+      .resolve_detailed_enum_definitions_opt(
+        &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()]),
+      )
+      .unwrap();
     assert_eq!(2, resolved.len());
     let resolved_a = &resolved[0];
     let resolved_b = &resolved[1];
