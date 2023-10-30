@@ -541,7 +541,8 @@ pub(crate) enum ErrorDetail {
   NameAlreadyBound { name: PStr, old_loc: Location },
   NonExhausiveStructBinding { missing_bindings: Vec<PStr> },
   NonExhausiveTupleBinding { expected_count: usize, actual_count: usize },
-  NonExhausiveMatch { missing_tags: Vec<PStr> },
+  NonExhausiveMatchForMatchExpr { missing_tags: Vec<PStr> },
+  NonExhausiveMatch { counter_example: Description },
   NotAnEnum { description: Description },
   NotAStruct { description: Description },
   Stacked(StackableError),
@@ -649,7 +650,7 @@ impl ErrorDetail {
         printable_stream.push_size(*actual_count);
         printable_stream.push_text(".");
       }
-      ErrorDetail::NonExhausiveMatch { missing_tags } => {
+      ErrorDetail::NonExhausiveMatchForMatchExpr { missing_tags } => {
         printable_stream
           .push_text("The match is not exhausive. The following variants have not been handled:");
         for tag in missing_tags {
@@ -657,6 +658,13 @@ impl ErrorDetail {
           printable_stream.push_pstr(tag);
           printable_stream.push_text("`");
         }
+      }
+      ErrorDetail::NonExhausiveMatch { counter_example } => {
+        printable_stream.push_text(
+          "This pattern-matching is not exhausive.\nHere is an example of a non-matching value: `",
+        );
+        printable_stream.push_description(counter_example);
+        printable_stream.push_text("`.");
       }
       ErrorDetail::NotAnEnum { description } => {
         printable_stream.push_text("`");
@@ -1003,12 +1011,20 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count })
   }
 
-  pub(crate) fn report_non_exhausive_match_error(
+  pub(crate) fn report_non_exhausive_match_for_match_expr_error(
     &mut self,
     loc: Location,
     missing_tags: Vec<PStr>,
   ) {
-    self.report_error(loc, ErrorDetail::NonExhausiveMatch { missing_tags })
+    self.report_error(loc, ErrorDetail::NonExhausiveMatchForMatchExpr { missing_tags })
+  }
+
+  pub(crate) fn report_non_exhausive_match_error(
+    &mut self,
+    loc: Location,
+    counter_example: Description,
+  ) {
+    self.report_error(loc, ErrorDetail::NonExhausiveMatch { counter_example })
   }
 
   pub(crate) fn report_not_an_enum_error(&mut self, loc: Location, description: Description) {
@@ -1193,8 +1209,11 @@ Found 2 errors."#
       vec![PStr::UPPER_A, PStr::UPPER_B],
     );
     error_set.report_non_exhausive_tuple_binding_error(Location::dummy(), 7, 4);
-    error_set
-      .report_non_exhausive_match_error(Location::dummy(), vec![PStr::UPPER_A, PStr::UPPER_B]);
+    error_set.report_non_exhausive_match_for_match_expr_error(
+      Location::dummy(),
+      vec![PStr::UPPER_A, PStr::UPPER_B],
+    );
+    error_set.report_non_exhausive_match_error(Location::dummy(), Description::IntType);
     error_set.report_not_an_enum_error(Location::dummy(), Description::IntType);
     error_set.report_not_a_struct_error(Location::dummy(), Description::IntType);
     error_set.report_stackable_error(Location::dummy(), {
@@ -1300,6 +1319,12 @@ The match is not exhausive. The following variants have not been handled:
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
+This pattern-matching is not exhausive.
+Here is an example of a non-matching value: `int`.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
 `int` is not an instance of an enum class.
 
 
@@ -1347,7 +1372,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Cannot resolve name `global`.
 
 
-Found 23 errors.
+Found 24 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

@@ -11,10 +11,7 @@ use crate::{
   errors::{ErrorSet, StackableError},
 };
 use samlang_heap::{ModuleReference, PStr};
-use std::{
-  collections::{HashMap, HashSet},
-  rc::Rc,
-};
+use std::{collections::HashMap, rc::Rc};
 
 pub(crate) struct LocalTypingContext {
   type_map: HashMap<Location, Rc<Type>>,
@@ -394,21 +391,26 @@ impl<'a> TypingContext<'a> {
 }
 
 impl<'a> super::pattern_matching::PatternMatchingContext for TypingContext<'a> {
-  fn is_variant_signature_complete(
+  fn variant_signature_incomplete_names(
     &self,
     module_reference: ModuleReference,
     class_name: PStr,
     variant_name: &[PStr],
-  ) -> bool {
-    let set = variant_name.iter().copied().collect::<HashSet<_>>();
-    global_signature::resolve_interface_cx(self.global_signature, module_reference, class_name)
-      .expect("Should not be called with invalid enum.")
-      .type_definition
-      .as_ref()
-      .expect("Should not be called with invalid enum.")
-      .as_enum()
-      .expect("Should not be called with invalid enum.")
-      .iter()
-      .all(|v| set.contains(&v.name))
+  ) -> HashMap<PStr, usize> {
+    let mut incomplete =
+      global_signature::resolve_interface_cx(self.global_signature, module_reference, class_name)
+        .expect("Should not be called with invalid enum.")
+        .type_definition
+        .as_ref()
+        .expect("Should not be called with invalid enum.")
+        .as_enum()
+        .expect("Should not be called with invalid enum.")
+        .iter()
+        .map(|variant| (variant.name, variant.types.len()))
+        .collect::<HashMap<_, _>>();
+    for n in variant_name {
+      incomplete.remove(n);
+    }
+    incomplete
   }
 }

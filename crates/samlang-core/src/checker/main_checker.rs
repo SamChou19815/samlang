@@ -992,7 +992,7 @@ fn check_match(
     });
   }
   if !unused_mappings.is_empty() {
-    cx.error_set.report_non_exhausive_match_error(
+    cx.error_set.report_non_exhausive_match_for_match_expr_error(
       expression.common.loc,
       unused_mappings.keys().copied().collect(),
     );

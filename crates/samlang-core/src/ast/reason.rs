@@ -20,6 +20,10 @@ pub(crate) enum Description {
   NominalType { name: PStr, type_args: Vec<Description> },
   FunctionType(Vec<Description>, Box<Description>),
   TypeParameter(PStr, Option<Box<Description>>),
+  WildcardPattern,
+  TuplePattern(Vec<Description>),
+  VariantPattern(PStr, Vec<Description>),
+  OrPattern(Vec<Description>),
 }
 
 impl Description {
@@ -58,6 +62,24 @@ impl Description {
       Self::TypeParameter(name, None) => name.as_str(heap).to_string(),
       Self::TypeParameter(name, Some(bound)) => {
         format!("{} : {}", name.as_str(heap), bound.pretty_print(heap))
+      }
+      Self::WildcardPattern => "_".to_string(),
+      Self::TuplePattern(elements) => {
+        format!("({})", elements.iter().map(|e| e.pretty_print(heap)).join(", "))
+      }
+      Self::VariantPattern(tag, elements) => {
+        if elements.is_empty() {
+          tag.as_str(heap).to_string()
+        } else {
+          format!(
+            "{}({})",
+            tag.as_str(heap),
+            elements.iter().map(|e| e.pretty_print(heap)).join(", ")
+          )
+        }
+      }
+      Self::OrPattern(elements) => {
+        elements.iter().map(|e| e.pretty_print(heap)).join(" | ").to_string()
       }
     }
   }
@@ -144,6 +166,20 @@ mod tests {
       "A : int",
       Description::TypeParameter(PStr::UPPER_A, Some(Box::new(Description::IntType)))
         .pretty_print(heap)
+    );
+    assert_eq!(
+      "A | B((_, _))",
+      Description::OrPattern(vec![
+        Description::VariantPattern(PStr::UPPER_A, vec![]),
+        Description::VariantPattern(
+          PStr::UPPER_B,
+          vec![Description::TuplePattern(vec![
+            Description::WildcardPattern,
+            Description::WildcardPattern
+          ])]
+        )
+      ])
+      .pretty_print(heap)
     );
   }
 
