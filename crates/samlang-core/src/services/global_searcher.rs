@@ -49,40 +49,6 @@ fn search_id_annot(
   }
 }
 
-fn search_destructuring_pattern(
-  pattern: &pattern::DestructuringPattern<Rc<Type>>,
-  pattern_type: &Rc<Type>,
-  request: &GlobalNameSearchRequest,
-  collector: &mut Vec<Location>,
-) {
-  match pattern {
-    pattern::DestructuringPattern::Tuple(_, patterns) => {
-      for p in patterns {
-        search_destructuring_pattern(&p.pattern, &p.type_, request, collector)
-      }
-    }
-    pattern::DestructuringPattern::Object(_, patterns) => {
-      match (pattern_type.as_ref(), request) {
-        (
-          Type::Nominal(nominal_type),
-          GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
-        ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {
-          for n in patterns {
-            if field_name.eq(&n.field_name.name) {
-              collector.push(n.field_name.loc);
-            }
-          }
-        }
-        _ => {}
-      }
-      for p in patterns {
-        search_destructuring_pattern(&p.pattern, &p.type_, request, collector)
-      }
-    }
-    pattern::DestructuringPattern::Id(_, _) | pattern::DestructuringPattern::Wildcard(_) => {}
-  }
-}
-
 fn search_matching_pattern(
   pattern: &pattern::MatchingPattern<Rc<Type>>,
   pattern_type: &Rc<Type>,
@@ -223,7 +189,7 @@ fn search_expression(
         if let Some(annot) = &stmt.annotation {
           search_annot(annot, request, collector);
         }
-        search_destructuring_pattern(
+        search_matching_pattern(
           &stmt.pattern,
           stmt.assigned_expression.type_(),
           request,

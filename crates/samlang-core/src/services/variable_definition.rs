@@ -79,72 +79,6 @@ fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) 
   }
 }
 
-fn apply_destructuring_pattern_renaming(
-  pattern: &pattern::DestructuringPattern<()>,
-  definition_and_uses: &DefinitionAndUses,
-  new_name: PStr,
-) -> pattern::DestructuringPattern<()> {
-  match pattern {
-    pattern::DestructuringPattern::Tuple(l, names) => pattern::DestructuringPattern::Tuple(
-      *l,
-      names
-        .iter()
-        .map(|pattern::TuplePatternElement { pattern, type_ }| pattern::TuplePatternElement {
-          pattern: Box::new(apply_destructuring_pattern_renaming(
-            pattern,
-            definition_and_uses,
-            new_name,
-          )),
-          type_: *type_,
-        })
-        .collect(),
-    ),
-    pattern::DestructuringPattern::Object(l, names) => pattern::DestructuringPattern::Object(
-      *l,
-      names
-        .iter()
-        .map(
-          |pattern::ObjectPatternElement {
-             loc,
-             field_order,
-             field_name,
-             pattern,
-             shorthand: _,
-             type_,
-           }| {
-            let pattern = Box::new(apply_destructuring_pattern_renaming(
-              pattern,
-              definition_and_uses,
-              new_name,
-            ));
-            let shorthand = matches!(
-              pattern.as_ref(),
-              pattern::DestructuringPattern::Id(id, _) if id.name.eq(&field_name.name),
-            );
-            pattern::ObjectPatternElement {
-              loc: *loc,
-              field_order: *field_order,
-              field_name: *field_name,
-              pattern,
-              shorthand,
-              type_: *type_,
-            }
-          },
-        )
-        .collect(),
-    ),
-    pattern::DestructuringPattern::Id(id, ()) => {
-      let name =
-        if id.loc.eq(&definition_and_uses.definition_location) { new_name } else { id.name };
-      pattern::DestructuringPattern::Id(
-        Id { loc: id.loc, associated_comments: id.associated_comments, name },
-        (),
-      )
-    }
-    pattern::DestructuringPattern::Wildcard(_) => pattern.clone(),
-  }
-}
-
 fn apply_matching_pattern_renaming(
   pattern: &pattern::MatchingPattern<()>,
   definition_and_uses: &DefinitionAndUses,
@@ -341,7 +275,7 @@ fn apply_expr_renaming(
            }| expr::DeclarationStatement {
             loc: *loc,
             associated_comments: *associated_comments,
-            pattern: apply_destructuring_pattern_renaming(pattern, definition_and_uses, new_name),
+            pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
             annotation: annotation.clone(),
             assigned_expression: Box::new(apply_expr_renaming(
               assigned_expression,

@@ -494,7 +494,7 @@ mod tests {
     let stmt = expr::DeclarationStatement {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      pattern: crate::ast::source::pattern::DestructuringPattern::Id(
+      pattern: crate::ast::source::pattern::MatchingPattern::Id(
         Id::from(heap.alloc_str_for_test("v")),
         (),
       ),

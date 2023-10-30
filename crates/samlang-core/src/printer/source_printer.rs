@@ -656,34 +656,6 @@ impl expr::E<()> {
   }
 }
 
-fn destructuring_pattern_to_document(
-  heap: &Heap,
-  pattern: &pattern::DestructuringPattern<()>,
-) -> Document {
-  match pattern {
-    pattern::DestructuringPattern::Tuple(_, names) => {
-      parenthesis_surrounded_doc(comma_sep_list(names, |it| {
-        destructuring_pattern_to_document(heap, &it.pattern)
-      }))
-    }
-    pattern::DestructuringPattern::Object(_, names) => {
-      braces_surrounded_doc(comma_sep_list(names, |it| {
-        if it.shorthand {
-          Document::Text(rc_pstr(heap, it.field_name.name))
-        } else {
-          Document::concat(vec![
-            Document::Text(rc_pstr(heap, it.field_name.name)),
-            Document::Text(rcs(" as ")),
-            destructuring_pattern_to_document(heap, &it.pattern),
-          ])
-        }
-      }))
-    }
-    pattern::DestructuringPattern::Id(id, _) => Document::Text(rc_pstr(heap, id.name)),
-    pattern::DestructuringPattern::Wildcard(_) => Document::Text(rcs("_")),
-  }
-}
-
 fn matching_pattern_to_document(heap: &Heap, pattern: &pattern::MatchingPattern<()>) -> Document {
   match pattern {
     pattern::MatchingPattern::Tuple(_, names) => {
@@ -733,7 +705,7 @@ pub(super) fn statement_to_document(
   stmt: &expr::DeclarationStatement<()>,
 ) -> Document {
   let mut segments = vec![];
-  let pattern_doc = destructuring_pattern_to_document(heap, &stmt.pattern);
+  let pattern_doc = matching_pattern_to_document(heap, &stmt.pattern);
   segments.push(
     associated_comments_doc(
       heap,

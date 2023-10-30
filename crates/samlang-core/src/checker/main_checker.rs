@@ -907,7 +907,7 @@ fn check_if_else(
     }
     expr::IfElseCondition::Guard(p, expr) => {
       let expr = type_check_expression(cx, expr, type_hint::MISSING);
-      let (pattern, abstract_pattern_node) = check_matching_pattern(cx, p, expr.type_());
+      let (pattern, abstract_pattern_node) = check_matching_pattern(cx, p, false, expr.type_());
       if !pattern_matching::is_additional_pattern_useful(
         cx,
         &[abstract_pattern_node],
@@ -1074,114 +1074,11 @@ fn check_lambda(
   })
 }
 
-fn check_destructuring_pattern(
-  cx: &mut TypingContext,
-  pattern: &pattern::DestructuringPattern<()>,
-  pattern_type: &Rc<Type>,
-) -> pattern::DestructuringPattern<Rc<Type>> {
-  match pattern {
-    pattern::DestructuringPattern::Tuple(pattern_loc, destructured_names) => {
-      let fields = cx.resolve_struct_definitions(pattern_type);
-      let mut checked_destructured_names = vec![];
-      for (index, pattern::TuplePatternElement { pattern, type_: _ }) in
-        destructured_names.iter().enumerate()
-      {
-        let loc = pattern.loc();
-        if let Some(field_sig) = fields.get(index) {
-          if !field_sig.is_public {
-            cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
-          }
-          let checked = Box::new(check_destructuring_pattern(cx, pattern, &field_sig.type_));
-          checked_destructured_names.push(pattern::TuplePatternElement {
-            pattern: checked,
-            type_: Rc::new(field_sig.type_.reposition(*loc)),
-          });
-          continue;
-        }
-        cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
-        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
-        checked_destructured_names.push(pattern::TuplePatternElement { pattern: checked, type_ });
-      }
-      if fields.len() > checked_destructured_names.len() {
-        cx.error_set.report_non_exhausive_tuple_binding_error(
-          *pattern_loc,
-          fields.len(),
-          checked_destructured_names.len(),
-        );
-      }
-      pattern::DestructuringPattern::Tuple(*pattern_loc, checked_destructured_names)
-    }
-    pattern::DestructuringPattern::Object(pattern_loc, destructed_names) => {
-      let fields = cx.resolve_struct_definitions(pattern_type);
-      let mut field_order_mapping = HashMap::new();
-      let mut not_mentioned_fields = BTreeSet::new();
-      let mut field_mappings = HashMap::new();
-      for (i, field) in fields.into_iter().enumerate() {
-        field_order_mapping.insert(field.name, i);
-        not_mentioned_fields.insert(field.name);
-        field_mappings.insert(field.name, (field.type_, field.is_public));
-      }
-      let mut checked_destructured_names = vec![];
-      for pattern::ObjectPatternElement {
-        loc,
-        field_order,
-        field_name,
-        pattern,
-        shorthand,
-        type_: _,
-      } in destructed_names
-      {
-        if let Some((field_type, is_public)) = field_mappings.get(&field_name.name) {
-          if !is_public {
-            cx.error_set.report_cannot_resolve_member_error(
-              field_name.loc,
-              pattern_type.to_description(),
-              field_name.name,
-            );
-          }
-          not_mentioned_fields.remove(&field_name.name);
-          let checked = Box::new(check_destructuring_pattern(cx, pattern, field_type));
-          let field_order = field_order_mapping.get(&field_name.name).unwrap();
-          checked_destructured_names.push(pattern::ObjectPatternElement {
-            loc: *loc,
-            field_order: *field_order,
-            field_name: *field_name,
-            pattern: checked,
-            shorthand: *shorthand,
-            type_: Rc::new(field_type.reposition(*loc)),
-          });
-          continue;
-        }
-        cx.error_set.report_cannot_resolve_member_error(
-          field_name.loc,
-          pattern_type.to_description(),
-          field_name.name,
-        );
-        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
-        checked_destructured_names.push(pattern::ObjectPatternElement {
-          loc: *loc,
-          field_order: *field_order,
-          field_name: *field_name,
-          pattern: checked,
-          shorthand: *shorthand,
-          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
-        });
-      }
-      if !not_mentioned_fields.is_empty() {
-        cx.error_set.report_non_exhausive_struct_binding_error(
-          *pattern_loc,
-          not_mentioned_fields.into_iter().collect(),
-        );
-      }
-      pattern::DestructuringPattern::Object(*pattern_loc, checked_destructured_names)
-    }
-    pattern::DestructuringPattern::Id(id, ()) => {
-      cx.local_typing_context.write(id.loc, pattern_type.clone());
-      pattern::DestructuringPattern::Id(*id, pattern_type.clone())
-    }
-    pattern::DestructuringPattern::Wildcard(loc) => pattern::DestructuringPattern::Wildcard(*loc),
+fn bad_pattern_default(wildcard_on_bad_pattern: bool) -> pattern_matching::AbstractPatternNode {
+  if wildcard_on_bad_pattern {
+    pattern_matching::AbstractPatternNode::wildcard()
+  } else {
+    pattern_matching::AbstractPatternNode::nothing()
   }
 }
 
@@ -1256,6 +1153,7 @@ fn any_typed_invalid_matching_pattern(
 fn check_matching_pattern(
   cx: &mut TypingContext,
   pattern: &pattern::MatchingPattern<()>,
+  wildcard_on_bad_pattern: bool,
   pattern_type: &Rc<Type>,
 ) -> (pattern::MatchingPattern<Rc<Type>>, pattern_matching::AbstractPatternNode) {
   match pattern {
@@ -1264,7 +1162,7 @@ fn check_matching_pattern(
         cx.error_set.report_not_a_struct_error(*pattern_loc, pattern_type.to_description());
         return (
           any_typed_invalid_matching_pattern(cx, pattern),
-          pattern_matching::AbstractPatternNode::nothing(),
+          bad_pattern_default(wildcard_on_bad_pattern),
         );
       };
       let mut checked_destructured_names = vec![];
@@ -1277,7 +1175,8 @@ fn check_matching_pattern(
           if !field_sig.is_public {
             cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
           }
-          let (checked, abstract_node) = check_matching_pattern(cx, pattern, &field_sig.type_);
+          let (checked, abstract_node) =
+            check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, &field_sig.type_);
           checked_destructured_names.push(pattern::TuplePatternElement {
             pattern: Box::new(checked),
             type_: Rc::new(field_sig.type_.reposition(*loc)),
@@ -1287,7 +1186,8 @@ fn check_matching_pattern(
         }
         cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        let (checked, abstract_node) = check_matching_pattern(cx, pattern, &type_);
+        let (checked, abstract_node) =
+          check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, &type_);
         checked_destructured_names
           .push(pattern::TuplePatternElement { pattern: Box::new(checked), type_ });
         abstract_pattern_nodes.push(abstract_node);
@@ -1312,7 +1212,7 @@ fn check_matching_pattern(
         cx.error_set.report_not_a_struct_error(*pattern_loc, pattern_type.to_description());
         return (
           any_typed_invalid_matching_pattern(cx, pattern),
-          pattern_matching::AbstractPatternNode::nothing(),
+          bad_pattern_default(wildcard_on_bad_pattern),
         );
       };
       let mut not_mentioned_fields = BTreeSet::new();
@@ -1344,7 +1244,8 @@ fn check_matching_pattern(
             );
           }
           not_mentioned_fields.remove(&field_name.name);
-          let (checked, abstract_node) = check_matching_pattern(cx, pattern, field_type);
+          let (checked, abstract_node) =
+            check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, field_type);
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
           checked_destructured_names.push(pattern::ObjectPatternElement {
             loc: *loc,
@@ -1363,7 +1264,8 @@ fn check_matching_pattern(
           field_name.name,
         );
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
-        let (checked, abstract_node) = check_matching_pattern(cx, pattern, &type_);
+        let (checked, abstract_node) =
+          check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, &type_);
         checked_destructured_names.push(pattern::ObjectPatternElement {
           loc: *loc,
           field_order: *field_order,
@@ -1401,7 +1303,7 @@ fn check_matching_pattern(
         cx.error_set.report_not_an_enum_error(tag.loc, pattern_type.to_description());
         return (
           any_typed_invalid_matching_pattern(cx, pattern),
-          pattern_matching::AbstractPatternNode::nothing(),
+          bad_pattern_default(wildcard_on_bad_pattern),
         );
       };
       let Some((tag_order, resolved_enum_variant)) =
@@ -1426,13 +1328,15 @@ fn check_matching_pattern(
       let mut abstract_pattern_nodes = vec![];
       for (index, (p, ())) in data_variables.iter().enumerate() {
         if let Some(resolved_pattern_type) = resolved_enum_variant.types.get(index) {
-          let (checked, abstract_node) = check_matching_pattern(cx, p, resolved_pattern_type);
+          let (checked, abstract_node) =
+            check_matching_pattern(cx, p, wildcard_on_bad_pattern, resolved_pattern_type);
           checked_data_variables.push((checked, resolved_pattern_type.clone()));
           abstract_pattern_nodes.push(abstract_node);
         } else {
           cx.error_set.report_element_missing_error(*p.loc(), pattern_type.to_description(), index);
           let type_ = Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
-          let (checked, abstract_node) = check_matching_pattern(cx, p, &type_);
+          let (checked, abstract_node) =
+            check_matching_pattern(cx, p, wildcard_on_bad_pattern, &type_);
           checked_data_variables.push((checked, type_));
           abstract_pattern_nodes.push(abstract_node);
         }
@@ -1498,7 +1402,13 @@ fn check_statement(
   if let Some(hint) = &hint {
     assignability_check(cx, *loc, checked_assigned_expr_type, hint);
   }
-  let checked_pattern = check_destructuring_pattern(cx, pattern, checked_assigned_expr_type);
+  let (checked_pattern, abstract_pattern_node) =
+    check_matching_pattern(cx, pattern, true, checked_assigned_expr_type);
+  if let Some(description) =
+    pattern_matching::incomplete_counterexample(cx, &[abstract_pattern_node])
+  {
+    cx.error_set.report_non_exhausive_match_error(*checked_pattern.loc(), description);
+  }
   expr::DeclarationStatement {
     loc: *loc,
     associated_comments: *associated_comments,

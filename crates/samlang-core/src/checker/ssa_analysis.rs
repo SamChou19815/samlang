@@ -325,7 +325,7 @@ impl<'a> SsaAnalysisState<'a> {
           if let Some(annot) = annotation {
             self.visit_annot(annot);
           }
-          self.visit_destructuring_pattern(pattern);
+          self.visit_matching_pattern(pattern);
         }
         if let Some(final_expr) = &e.expression {
           self.visit_expression(final_expr);
@@ -333,23 +333,6 @@ impl<'a> SsaAnalysisState<'a> {
         let (local_defs, _) = self.context.pop_scope();
         self.local_scoped_def_locs.insert(e.common.loc, local_defs);
       }
-    }
-  }
-
-  fn visit_destructuring_pattern(&mut self, pattern: &pattern::DestructuringPattern<()>) {
-    match pattern {
-      pattern::DestructuringPattern::Tuple(_, names) => {
-        for pattern::TuplePatternElement { pattern, type_: _ } in names {
-          self.visit_destructuring_pattern(pattern);
-        }
-      }
-      pattern::DestructuringPattern::Object(_, names) => {
-        for name in names {
-          self.visit_destructuring_pattern(&name.pattern);
-        }
-      }
-      pattern::DestructuringPattern::Id(id, ()) => self.define_id(id.name, id.loc),
-      pattern::DestructuringPattern::Wildcard(_) => {}
     }
   }
 

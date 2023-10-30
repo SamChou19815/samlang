@@ -254,20 +254,12 @@ class Test2(val a: int) {
 
     assert_eq!(
       r#"
-Error ---------------------------------- Test1.sam:3:10-3:11
+Error ----------------------------------- Test1.sam:3:9-3:15
 
-Cannot resolve member `c` on `int`.
-
-  3|     let {c, b} = 1 + 2;
-              ^
-
-
-Error ---------------------------------- Test1.sam:3:13-3:14
-
-Cannot resolve member `b` on `int`.
+`int` is not an instance of a struct class.
 
   3|     let {c, b} = 1 + 2;
-                 ^
+             ^^^^^^
 
 
 Error ------------------------------------ Test1.sam:5:5-5:6
@@ -302,7 +294,12 @@ Cannot resolve name `a`.
       heap,
       false,
       HashMap::from([
-        (test3_mod_ref, "class ABC { function a(): unit = { let _ = 1; } }".to_string()),
+        (
+          test3_mod_ref,
+          "class ABC { function a(): unit = { let _ = 1; } }
+        "
+          .to_string(),
+        ),
         (test2_mod_ref, "class TTT { method test(): int = this.test() }".to_string()),
         (
           test1_mod_ref,

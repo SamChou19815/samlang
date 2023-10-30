@@ -24,24 +24,6 @@ pub(super) enum LocationCoverSearchResult<'a> {
   TypedName(Location, PStr, Type, bool), // bool: binding
 }
 
-fn search_destructuring_pattern(
-  pattern: &pattern::DestructuringPattern<Rc<Type>>,
-  position: Position,
-) -> Option<LocationCoverSearchResult> {
-  match pattern {
-    pattern::DestructuringPattern::Tuple(_, patterns) => {
-      patterns.iter().find_map(|p| search_destructuring_pattern(&p.pattern, position))
-    }
-    pattern::DestructuringPattern::Object(_, patterns) => {
-      patterns.iter().find_map(|p| search_destructuring_pattern(&p.pattern, position))
-    }
-    pattern::DestructuringPattern::Id(id, type_) if id.loc.contains_position(position) => {
-      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone(), true))
-    }
-    pattern::DestructuringPattern::Id(_, _) | pattern::DestructuringPattern::Wildcard(_) => None,
-  }
-}
-
 fn search_matching_pattern(
   pattern: &pattern::MatchingPattern<Rc<Type>>,
   position: Position,
@@ -191,7 +173,7 @@ fn search_expression(
         if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
           return Some(found);
         }
-        if let Some(found) = search_destructuring_pattern(&stmt.pattern, position) {
+        if let Some(found) = search_matching_pattern(&stmt.pattern, position) {
           return Some(found);
         }
       }
