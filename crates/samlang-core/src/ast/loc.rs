@@ -1,12 +1,9 @@
 use samlang_heap::{Heap, ModuleReference};
-use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Position(pub i32, pub i32);
 
 pub(crate) const DUMMY_POSITION: Position = Position(-1, -1);
-
-type Sources<M> = HashMap<ModuleReference, M>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {
