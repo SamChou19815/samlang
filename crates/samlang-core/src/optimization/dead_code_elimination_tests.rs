@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::Operator,
-    ast::mir::{
+  use crate::optimization::dead_code_elimination;
+  use itertools::Itertools;
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::Operator,
+    mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
-    optimization::dead_code_elimination,
   };
-  use itertools::Itertools;
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
   use std::collections::HashSet;
 

@@ -1,10 +1,10 @@
 use crate::{
-  ast::{
-    source::{expr, pattern, Module, Toplevel},
-    Location, Position,
-  },
   checker::type_::{FunctionType, Type},
   ModuleReference,
+};
+use samlang_ast::{
+  source::{expr, pattern, Module, Toplevel},
+  Location, Position,
 };
 use samlang_heap::PStr;
 use std::rc::Rc;
@@ -247,10 +247,6 @@ pub(super) fn search_module_locally(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{
-      source::{expr, Id, NO_COMMENT_REFERENCE},
-      Location, Position, Reason,
-    },
     builtin_parsed_std_sources,
     checker::{type_::Type, type_check_sources},
     errors::ErrorSet,
@@ -258,6 +254,10 @@ mod tests {
     Heap, ModuleReference,
   };
   use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    source::{expr, Id, NO_COMMENT_REFERENCE},
+    Location, Position, Reason,
+  };
   use std::rc::Rc;
 
   #[test]

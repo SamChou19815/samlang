@@ -5,7 +5,6 @@ pub use common::measure_time;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{BTreeMap, HashMap};
 
-pub mod ast;
 mod checker;
 mod common;
 mod compiler;
@@ -45,7 +44,7 @@ pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, Stri
 #[cfg(test)]
 pub(crate) fn builtin_parsed_std_sources(
   heap: &mut Heap,
-) -> HashMap<ModuleReference, ast::source::Module<()>> {
+) -> HashMap<ModuleReference, samlang_ast::source::Module<()>> {
   let mut error_set = errors::ErrorSet::new();
   let mut parsed_sources = HashMap::new();
   for (mod_ref, source) in builtin_std_raw_sources(heap) {
@@ -132,7 +131,7 @@ pub fn compile_sources(
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {
     let mut main_fn_name = String::new();
-    ast::mir::FunctionName {
+    samlang_ast::mir::FunctionName {
       type_name: lir_sources.symbol_table.create_main_type_name(*module_reference),
       fn_name: PStr::MAIN_FN,
     }

@@ -1,5 +1,5 @@
 [package]
-name = "samlang-core"
+name = "samlang-ast"
 version = "0.9.1"
 edition = "2021"
 
@@ -7,12 +7,7 @@ edition = "2021"
 enum-as-inner = "0.5.1"
 enum-iterator = "1.4.1"
 itertools = "0.11.0"
-phf = { version = "0.11", features = ["macros"] }
-samlang-ast = { path = "../samlang-ast" }
-samlang-collections = { path = "../samlang-collections" }
 samlang-heap = { path = "../samlang-heap" }
-wat = "1.0.66"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
-wasmi = "0.30.0"

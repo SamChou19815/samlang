@@ -1,6 +1,6 @@
 use super::lir_unused_name_elimination;
-use crate::ast::{hir, lir, mir};
 use itertools::Itertools;
+use samlang_ast::{hir, lir, mir};
 use samlang_heap::{Heap, PStr};
 use std::collections::{BTreeMap, HashSet};
 
@@ -745,7 +745,8 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
 
 #[cfg(test)]
 mod tests {
-  use crate::ast::{
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
     hir::Operator,
     lir,
     mir::{
@@ -754,7 +755,6 @@ mod tests {
       TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_TYPE, ONE, ZERO,
     },
   };
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[test]

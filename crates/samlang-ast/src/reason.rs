@@ -3,7 +3,7 @@ use itertools::Itertools;
 use samlang_heap::{Heap, PStr};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum Description {
+pub enum Description {
   UnitType,
   BoolType,
   IntType,
@@ -27,7 +27,7 @@ pub(crate) enum Description {
 }
 
 impl Description {
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Self::UnitType => "unit".to_string(),
       Self::BoolType => "bool".to_string(),
@@ -86,26 +86,26 @@ impl Description {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Reason {
-  pub(crate) use_loc: Location,
-  pub(crate) def_loc: Option<Location>,
+pub struct Reason {
+  pub use_loc: Location,
+  pub def_loc: Option<Location>,
 }
 
 impl Reason {
-  pub(crate) fn dummy() -> Reason {
+  pub fn dummy() -> Reason {
     Reason { use_loc: Location::dummy(), def_loc: Option::Some(Location::dummy()) }
   }
 
   // TODO(reason): Wait until we migrate to location only.
-  pub(crate) fn builtin() -> Reason {
+  pub fn builtin() -> Reason {
     Reason::dummy()
   }
 
-  pub(crate) fn new(use_loc: Location, def_loc: Option<Location>) -> Reason {
+  pub fn new(use_loc: Location, def_loc: Option<Location>) -> Reason {
     Reason { use_loc, def_loc }
   }
 
-  pub(crate) fn to_use_reason(self, use_loc: Location) -> Reason {
+  pub fn to_use_reason(self, use_loc: Location) -> Reason {
     Reason { use_loc, def_loc: self.def_loc }
   }
 }

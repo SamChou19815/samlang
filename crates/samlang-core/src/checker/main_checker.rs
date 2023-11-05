@@ -9,17 +9,15 @@ use super::{
   type_system,
   typing_context::{LocalTypingContext, TypingContext},
 };
-use crate::{
-  ast::{
-    source::{
-      expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon,
-      Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
-    },
-    Description, Location, Reason,
-  },
-  errors::{ErrorSet, StackableError, TypeIncompatibilityNode},
-};
+use crate::errors::{ErrorSet, StackableError, TypeIncompatibilityNode};
 use itertools::Itertools;
+use samlang_ast::{
+  source::{
+    expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon,
+    Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
+  },
+  Description, Location, Reason,
+};
 use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{BTreeSet, HashMap},

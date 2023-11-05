@@ -1,9 +1,6 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
-use crate::{
-  ast::mir::{Binary, Function, Statement},
-  common::take_mut,
-  Heap,
-};
+use crate::{common::take_mut, Heap};
+use samlang_ast::mir::{Binary, Function, Statement};
 use std::collections::BTreeSet;
 
 fn intersection_of(
@@ -81,15 +78,15 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::Operator,
-    ast::mir::{
+  use itertools::Itertools;
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::Operator,
+    mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
       Type, VariableName, INT_TYPE, ONE, ZERO,
     },
   };
-  use itertools::Itertools;
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {

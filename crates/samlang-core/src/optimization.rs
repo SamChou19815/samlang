@@ -39,7 +39,7 @@ pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
   };
 
 fn optimize_function_for_one_round(
-  function: &mut crate::ast::mir::Function,
+  function: &mut samlang_ast::mir::Function,
   heap: &mut samlang_heap::Heap,
   configuration: &OptimizationConfiguration,
 ) {
@@ -57,7 +57,7 @@ fn optimize_function_for_one_round(
 }
 
 fn optimize_function_for_rounds(
-  function: &mut crate::ast::mir::Function,
+  function: &mut samlang_ast::mir::Function,
   heap: &mut samlang_heap::Heap,
   configuration: &OptimizationConfiguration,
 ) {
@@ -70,7 +70,7 @@ fn optimize_function_for_rounds(
 }
 
 fn optimize_functions_for_rounds(
-  functions: &mut [crate::ast::mir::Function],
+  functions: &mut [samlang_ast::mir::Function],
   heap: &mut samlang_heap::Heap,
   configuration: &OptimizationConfiguration,
 ) {
@@ -81,11 +81,11 @@ fn optimize_functions_for_rounds(
 
 pub(super) fn optimize_sources(
   heap: &mut samlang_heap::Heap,
-  mut sources: crate::ast::mir::Sources,
+  mut sources: samlang_ast::mir::Sources,
   configuration: &OptimizationConfiguration,
-) -> crate::ast::mir::Sources {
+) -> samlang_ast::mir::Sources {
   for _ in 0..4 {
-    let crate::ast::mir::Sources {
+    let samlang_ast::mir::Sources {
       symbol_table,
       global_variables,
       closure_types,
@@ -97,7 +97,7 @@ pub(super) fn optimize_sources(
     if configuration.does_perform_inlining {
       functions = inlining::optimize_functions(functions, heap);
     }
-    sources = crate::ast::mir::Sources {
+    sources = samlang_ast::mir::Sources {
       symbol_table,
       global_variables,
       closure_types,
@@ -113,8 +113,8 @@ pub(super) fn optimize_sources(
 
 #[cfg(test)]
 mod tests {
-  use crate::ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_TYPE, ZERO};
   use pretty_assertions::assert_eq;
+  use samlang_ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_TYPE, ZERO};
   use samlang_heap::{Heap, PStr};
 
   fn sources() -> Sources {

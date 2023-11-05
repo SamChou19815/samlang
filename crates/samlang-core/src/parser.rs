@@ -1,4 +1,5 @@
-use crate::{ast::source, errors::ErrorSet};
+use super::errors::ErrorSet;
+use samlang_ast::source;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::HashSet;
 

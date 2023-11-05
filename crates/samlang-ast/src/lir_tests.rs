@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use super::super::lir::*;
-  use crate::ast::{
+  use crate::{
     hir::{GlobalVariable, Operator},
     mir::{FunctionName, SymbolTable},
   };
@@ -87,10 +87,23 @@ mod tests {
           return_value: ZERO,
         },
         Function {
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar2")),
+          parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
+          type_: Type::new_fn_unwrapped(
+            vec![
+              Type::Fn(Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE)),
+              Type::Fn(Type::new_fn_unwrapped(vec![], INT_TYPE)),
+            ],
+            INT_TYPE,
+          ),
+          body: vec![],
+          return_value: ZERO,
+        },
+        Function {
           name: FunctionName::new_for_test(PStr::LOWER_F),
           parameters: vec![heap.alloc_str_for_test("v1")],
           type_: Type::new_fn_unwrapped(
-            vec![Type::Fn(Type::new_fn_unwrapped(vec![], INT_TYPE))],
+            vec![Type::Fn(Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))],
             INT_TYPE,
           ),
           body: vec![Statement::IfElse {
@@ -232,7 +245,10 @@ function __$Bar(f: number, g: number): number {{
   let f: number = big[0];
   return 0;
 }}
-function __$f(v1: () => number): number {{
+function __$Bar2(f: (t0: number, t1: number) => number, g: () => number): number {{
+  return 0;
+}}
+function __$f(v1: (t0: number) => number): number {{
   let bar: number;
   if (0) {{
     let baz: _FooBar = [meggo];

@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
+  use super::super::super::errors::ErrorSet;
   use super::super::lexer::*;
-  use crate::{ast::Location, errors::ErrorSet};
   use pretty_assertions::assert_eq;
+  use samlang_ast::Location;
   use samlang_heap::{Heap, ModuleReference};
 
   #[test]

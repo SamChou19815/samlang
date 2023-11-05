@@ -1,5 +1,5 @@
-use crate::ast::{Description, Location, Reason};
 use itertools::Itertools;
+use samlang_ast::{Description, Location, Reason};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{BTreeSet, HashMap};
 
@@ -75,8 +75,8 @@ impl<'a> PrintableStream<'a> {
 }
 
 mod printer {
-  use crate::ast::Location;
   use itertools::Itertools;
+  use samlang_ast::Location;
   use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashMap;
 
@@ -278,8 +278,8 @@ mod printer {
   #[cfg(test)]
   mod tests {
     use super::*;
-    use crate::ast::Position;
     use pretty_assertions::assert_eq;
+    use samlang_ast::Position;
 
     fn get_frame(
       heap: &Heap,

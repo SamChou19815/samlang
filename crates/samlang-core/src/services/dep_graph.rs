@@ -1,5 +1,5 @@
-use crate::ast::source::Module;
 use itertools::Itertools;
+use samlang_ast::source::Module;
 use samlang_heap::ModuleReference;
 use std::collections::{HashMap, HashSet};
 

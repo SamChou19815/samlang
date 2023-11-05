@@ -1,8 +1,8 @@
-use crate::{
-  ast::lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type},
-  ast::mir::{FunctionName, TypeNameId},
-};
 use itertools::Itertools;
+use samlang_ast::{
+  lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type},
+  mir::{FunctionName, TypeNameId},
+};
 use samlang_heap::PStr;
 use std::collections::{HashMap, HashSet};
 
@@ -206,7 +206,9 @@ pub(super) fn optimize_mir_sources_by_eliminating_unused_ones(
 
 #[cfg(test)]
 mod tests {
-  use crate::ast::{
+  use itertools::Itertools;
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
     hir,
     lir::{
       Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
@@ -214,8 +216,6 @@ mod tests {
     },
     mir::{FunctionName, SymbolTable},
   };
-  use itertools::Itertools;
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[test]

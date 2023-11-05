@@ -1,5 +1,5 @@
-use crate::ast::{hir, mir};
 use itertools::Itertools;
+use samlang_ast::{hir, mir};
 use samlang_heap::{Heap, PStr};
 use std::collections::{HashMap, HashSet};
 
@@ -745,8 +745,8 @@ pub(super) fn perform_generics_specialization(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::hir::{GlobalVariable, Operator};
   use pretty_assertions::assert_eq;
+  use samlang_ast::hir::{GlobalVariable, Operator};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   fn assert_specialized(sources: hir::Sources, heap: &mut Heap, expected: &str) {

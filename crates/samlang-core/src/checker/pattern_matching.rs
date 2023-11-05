@@ -1,12 +1,11 @@
 use itertools::Itertools;
+use samlang_ast::Description;
 use samlang_collections::list::{cons, list, one, PersistentList};
 use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{HashMap, VecDeque},
   rc::Rc,
 };
-
-use crate::ast::Description;
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub(super) struct VariantPatternConstructor {

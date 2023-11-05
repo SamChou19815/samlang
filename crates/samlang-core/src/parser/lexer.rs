@@ -1,16 +1,15 @@
-use crate::{ast::Location, errors::ErrorSet};
+use crate::errors::ErrorSet;
 use phf::phf_map;
+use samlang_ast::Location;
 use samlang_heap::{Heap, ModuleReference, PStr};
 
 struct EOF();
 
 mod char_stream {
   use super::EOF;
-  use crate::{
-    ast::{Location, Position},
-    ModuleReference,
-  };
+  use crate::ModuleReference;
   use itertools::Itertools;
+  use samlang_ast::{Location, Position};
 
   pub(super) struct CharacterStream<'a> {
     pub(super) line_num: i32,

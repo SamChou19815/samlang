@@ -1,12 +1,9 @@
 #[cfg(test)]
 mod tests {
+  use super::super::hir::{GlobalVariable, Operator};
   use super::super::mir::*;
-  use crate::{
-    ast::hir::{GlobalVariable, Operator},
-    ModuleReference,
-  };
   use pretty_assertions::assert_eq;
-  use samlang_heap::{Heap, PStr};
+  use samlang_heap::{Heap, ModuleReference, PStr};
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]

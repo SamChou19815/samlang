@@ -1,5 +1,5 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
-use crate::ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName};
+use samlang_ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 

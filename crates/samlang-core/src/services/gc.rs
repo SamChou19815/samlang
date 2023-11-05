@@ -1,9 +1,9 @@
 use crate::{
-  ast::source::{
-    annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter,
-  },
   checker::type_::{FunctionType, NominalType, Type},
   Heap, ModuleReference,
+};
+use samlang_ast::source::{
+  annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter,
 };
 use std::{collections::HashMap, rc::Rc};
 

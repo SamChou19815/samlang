@@ -6,11 +6,11 @@ use super::{
   },
   type_system,
 };
-use crate::ast::{
+use itertools::Itertools;
+use samlang_ast::{
   source::{Module, Toplevel, TypeDefinition},
   Reason,
 };
-use itertools::Itertools;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{HashMap, HashSet},
@@ -398,7 +398,6 @@ mod tests {
     resolve_function_signature, resolve_method_signature,
   };
   use crate::{
-    ast::Reason,
     checker::type_::{
       create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
     },
@@ -407,6 +406,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_ast::Reason;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
 

@@ -1,4 +1,4 @@
-use crate::ast::mir::{Expression, GenenalLoopVariable, Statement, VariableName};
+use samlang_ast::mir::{Expression, GenenalLoopVariable, Statement, VariableName};
 use samlang_heap::PStr;
 use std::collections::HashSet;
 
@@ -118,15 +118,15 @@ pub(super) fn optimize(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::Operator,
-    ast::mir::{
+  use itertools::Itertools;
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::Operator,
+    mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
       SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
   };
-  use itertools::Itertools;
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[test]

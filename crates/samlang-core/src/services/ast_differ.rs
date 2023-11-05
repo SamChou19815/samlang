@@ -1,11 +1,9 @@
-use crate::{
-  ast::{
-    source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
-    Location,
-  },
-  printer,
-};
+use crate::printer;
 use itertools::Itertools;
+use samlang_ast::{
+  source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
+  Location,
+};
 use samlang_heap::{Heap, ModuleReference};
 use std::{
   collections::{HashMap, HashSet, VecDeque},
@@ -425,12 +423,9 @@ pub(super) fn compute_module_diff_edits(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE},
-    errors::ErrorSet,
-    parser,
-  };
+  use crate::{errors::ErrorSet, parser};
   use pretty_assertions::assert_eq;
+  use samlang_ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE};
   use samlang_heap::PStr;
 
   #[test]
@@ -494,7 +489,7 @@ mod tests {
     let stmt = expr::DeclarationStatement {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      pattern: crate::ast::source::pattern::MatchingPattern::Id(
+      pattern: samlang_ast::source::pattern::MatchingPattern::Id(
         Id::from(heap.alloc_str_for_test("v")),
         (),
       ),

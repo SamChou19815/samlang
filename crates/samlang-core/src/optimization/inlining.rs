@@ -1,12 +1,12 @@
 use super::optimization_common::LocalValueContextForOptimization;
-use crate::ast::{
+use itertools::Itertools;
+use samlang_ast::{
   hir::Operator,
   mir::{
     Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression,
     GenenalLoopVariable, Statement, Type, VariableName, INT_TYPE, ZERO,
   },
 };
-use itertools::Itertools;
 use samlang_heap::{Heap, PStr};
 use std::collections::{HashMap, HashSet};
 
@@ -79,9 +79,9 @@ mod estimator {
 
   #[cfg(test)]
   mod tests {
-    use crate::{
-      ast::hir::Operator,
-      ast::mir::{
+    use samlang_ast::{
+      hir::Operator,
+      mir::{
         Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
         SymbolTable, Type, INT_TYPE, ZERO,
       },

@@ -1,10 +1,6 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{
-      source::{expr, test_builder, Id, Literal},
-      Location,
-    },
     checker::{
       ssa_analysis,
       type_::{test_type_builder, ISourceType},
@@ -14,6 +10,10 @@ mod tests {
     parser,
   };
   use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    source::{expr, test_builder, Id, Literal},
+    Location,
+  };
   use samlang_heap::{Heap, ModuleReference};
 
   #[test]

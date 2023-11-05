@@ -1,6 +1,6 @@
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement},
+use samlang_ast::{
+  hir::Operator,
+  mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement},
 };
 use samlang_heap::PStr;
 use std::collections::HashSet;

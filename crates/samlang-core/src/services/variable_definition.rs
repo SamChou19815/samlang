@@ -1,13 +1,13 @@
 use crate::{
-  ast::{
-    source::{
-      expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition,
-      Id, Module, OptionallyAnnotatedId, Toplevel,
-    },
-    Location,
-  },
   checker::{perform_ssa_analysis_on_module, SsaAnalysisResult},
   errors::ErrorSet,
+};
+use samlang_ast::{
+  source::{
+    expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
+    Module, OptionallyAnnotatedId, Toplevel,
+  },
+  Location,
 };
 use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
@@ -358,16 +358,12 @@ pub(super) fn apply_renaming(
 #[cfg(test)]
 mod tests {
   use super::{apply_expr_renaming, apply_renaming, DefinitionAndUses, VariableDefinitionLookup};
-  use crate::{
-    ast::{
-      source::{expr, Id, Literal, Module},
-      Location, Position,
-    },
-    errors::ErrorSet,
-    parser::parse_source_module_from_text,
-    printer,
-  };
+  use crate::{errors::ErrorSet, parser::parse_source_module_from_text, printer};
   use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    source::{expr, Id, Literal, Module},
+    Location, Position,
+  };
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   #[should_panic]

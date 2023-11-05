@@ -1,4 +1,4 @@
-use crate::ast::{
+use samlang_ast::{
   hir::Operator,
   lir::{Expression, Function, Sources, Statement, INT_TYPE},
   mir::FunctionName,
@@ -324,14 +324,14 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: FunctionNam
 
 #[cfg(test)]
 mod tests {
-  use crate::ast::{
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
     hir::{GlobalVariable, Operator},
     lir::{
       Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
     },
     mir::{FunctionName, SymbolTable},
   };
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[should_panic]
