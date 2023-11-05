@@ -202,17 +202,17 @@ pub(crate) mod pattern {
   use std::collections::BTreeMap;
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct TuplePatternElement<Base: Clone, T: Clone> {
-    pub(crate) pattern: Box<Base>,
+  pub(crate) struct TuplePatternElement<T: Clone> {
+    pub(crate) pattern: Box<MatchingPattern<T>>,
     pub(crate) type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct ObjectPatternElement<Base: Clone, T: Clone> {
+  pub(crate) struct ObjectPatternElement<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) field_order: usize,
     pub(crate) field_name: Id,
-    pub(crate) pattern: Box<Base>,
+    pub(crate) pattern: Box<MatchingPattern<T>>,
     pub(crate) shorthand: bool,
     pub(crate) type_: T,
   }
@@ -228,8 +228,8 @@ pub(crate) mod pattern {
 
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum MatchingPattern<T: Clone> {
-    Tuple(Location, Vec<TuplePatternElement<MatchingPattern<T>, T>>),
-    Object(Location, Vec<ObjectPatternElement<MatchingPattern<T>, T>>),
+    Tuple(Location, Vec<TuplePatternElement<T>>),
+    Object(Location, Vec<ObjectPatternElement<T>>),
     Variant(VariantPattern<T>),
     Id(Id, T),
     Wildcard(Location),
