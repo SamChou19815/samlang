@@ -275,7 +275,7 @@ Found 3 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),
-      cx.error_set.pretty_print_error_messages_no_frame(&heap).trim()
+      cx.error_set.pretty_print_error_messages_no_frame_for_test(&heap).trim()
     );
   }
 

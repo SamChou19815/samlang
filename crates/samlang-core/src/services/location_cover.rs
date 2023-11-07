@@ -376,7 +376,7 @@ mod tests {
     let mut sources = builtin_parsed_std_sources(heap);
     sources.insert(mod_ref, parsed);
     let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     for m in checked_sources.values() {
       for (i, line) in source_code.lines().enumerate() {
         let i = i as i32;

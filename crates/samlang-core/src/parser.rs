@@ -55,7 +55,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     parse_source_expression_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
   }
 
   #[test]
@@ -133,7 +133,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     parse_source_expression_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
-    assert_ne!("", error_set.pretty_print_error_messages_no_frame(&heap));
+    assert_ne!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
   }
 
   #[test]
@@ -257,7 +257,7 @@ mod tests {
 "#;
     let parsed =
       &parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     assert_eq!(1, parsed.imports.len());
     assert_eq!(
       vec![
@@ -456,7 +456,7 @@ Found 6 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),
-      error_set.pretty_print_error_messages_no_frame(&heap).trim()
+      error_set.pretty_print_error_messages_no_frame_for_test(&heap).trim()
     );
   }
 }

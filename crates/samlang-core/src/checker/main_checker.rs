@@ -9,7 +9,7 @@ use super::{
   type_system,
   typing_context::{LocalTypingContext, TypingContext},
 };
-use crate::errors::{ErrorSet, StackableError, TypeIncompatibilityNode};
+use crate::errors::{ErrorSet, StackableError};
 use itertools::Itertools;
 use samlang_ast::{
   source::{
@@ -1446,12 +1446,12 @@ fn check_class_member_conformance_with_signature(
     let actual_fn_type = FunctionType::from_annotation(&actual.type_);
     if !expected.type_.is_the_same_type(&actual_fn_type) {
       let mut error = StackableError::new();
-      error.add_type_error(TypeIncompatibilityNode {
-        lower_reason: actual_fn_type.reason,
-        lower_description: actual_fn_type.to_description(),
-        upper_reason: expected.type_.reason,
-        upper_description: expected.type_.to_description(),
-      });
+      error.add_type_incompatibility_error(
+        actual_fn_type.reason,
+        actual_fn_type.to_description(),
+        expected.type_.reason,
+        expected.type_.to_description(),
+      );
       error_set.report_stackable_error(actual.type_.location, error);
     }
   }

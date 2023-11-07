@@ -1055,7 +1055,7 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let (comment_store, e) =
       parse_source_expression_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     assert_eq!(
       expected,
       prettier::pretty_print(40, create_doc(&heap, &comment_store, &e)).trim_end()
@@ -1067,7 +1067,7 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let m =
       parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     assert_eq!(expected, format!("\n{}", pretty_print_source_module(&heap, 40, &m).trim_end()));
   }
 

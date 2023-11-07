@@ -446,15 +446,15 @@ hiya ouch [1].
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct TypeIncompatibilityNode {
-  pub(crate) lower_reason: Reason,
-  pub(crate) lower_description: Description,
-  pub(crate) upper_reason: Reason,
-  pub(crate) upper_description: Description,
+struct TypeIncompatibilityNode {
+  lower_reason: Reason,
+  lower_description: Description,
+  upper_reason: Reason,
+  upper_description: Description,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum IncompatibilityNode {
+enum IncompatibilityNode {
   Type(Box<TypeIncompatibilityNode>),
   FunctionParametersArity(usize, usize),
   TypeArgumentsArity(usize, usize),
@@ -475,8 +475,19 @@ impl StackableError {
     self.rev_stack.is_empty()
   }
 
-  pub(crate) fn add_type_error(&mut self, node: TypeIncompatibilityNode) {
-    self.rev_stack.push(IncompatibilityNode::Type(Box::new(node)));
+  pub(crate) fn add_type_incompatibility_error(
+    &mut self,
+    lower_reason: Reason,
+    lower_description: Description,
+    upper_reason: Reason,
+    upper_description: Description,
+  ) {
+    self.rev_stack.push(IncompatibilityNode::Type(Box::new(TypeIncompatibilityNode {
+      lower_reason,
+      lower_description,
+      upper_reason,
+      upper_description,
+    })));
   }
 
   pub(crate) fn add_fn_param_arity_error(&mut self, lower: usize, upper: usize) {
@@ -504,12 +515,12 @@ mod stackable_error_tests {
     stacked.add_fn_param_arity_error(0, 0);
     stacked.add_type_args_arity_error(0, 0);
     stacked.add_type_params_arity_error(0, 0);
-    stacked.add_type_error(super::TypeIncompatibilityNode {
-      lower_reason: Reason::dummy(),
-      lower_description: Description::AnyType,
-      upper_reason: Reason::dummy(),
-      upper_description: Description::AnyType,
-    });
+    stacked.add_type_incompatibility_error(
+      Reason::dummy(),
+      Description::AnyType,
+      Reason::dummy(),
+      Description::AnyType,
+    );
 
     assert!(!format!("{:?}", stacked).is_empty());
     assert!(stacked <= stacked);
@@ -851,7 +862,7 @@ impl ErrorSet {
   }
 
   #[cfg(test)]
-  pub(crate) fn pretty_print_from_grouped_error_messages(
+  pub(crate) fn pretty_print_from_grouped_error_messages_for_tests(
     heap: &Heap,
     sources: &HashMap<ModuleReference, String>,
     grouped_errors: &HashMap<ModuleReference, Vec<CompileTimeError>>,
@@ -864,7 +875,7 @@ impl ErrorSet {
   }
 
   #[cfg(test)]
-  pub(crate) fn pretty_print_error_messages_no_frame(&self, heap: &Heap) -> String {
+  pub(crate) fn pretty_print_error_messages_no_frame_for_test(&self, heap: &Heap) -> String {
     self.pretty_print_error_messages(heap, &HashMap::new())
   }
 
@@ -1061,12 +1072,12 @@ mod tests {
 
     stack.add_fn_param_arity_error(1, 2);
     stack.add_type_args_arity_error(1, 2);
-    stack.add_type_error(TypeIncompatibilityNode {
-      lower_reason: Reason::dummy(),
-      lower_description: Description::BoolType,
-      upper_reason: Reason::dummy(),
-      upper_description: Description::IntType,
-    });
+    stack.add_type_incompatibility_error(
+      Reason::dummy(),
+      Description::BoolType,
+      Reason::dummy(),
+      Description::IntType,
+    );
     assert!(!stack.is_empty());
   }
 
@@ -1076,7 +1087,7 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
 
     error_set.report_cannot_resolve_module_error(Location::dummy(), ModuleReference::DUMMY);
     assert_eq!(
@@ -1088,7 +1099,7 @@ Cannot resolve module `DUMMY`.
 Found 1 error.
 "#
       .trim(),
-      error_set.pretty_print_error_messages_no_frame(&heap)
+      error_set.pretty_print_error_messages_no_frame_for_test(&heap)
     );
     assert_eq!(
       (Location::dummy(), "Cannot resolve module `DUMMY`.".to_string(), vec![]),
@@ -1134,7 +1145,7 @@ Cannot resolve name `global`.
 
 Found 2 errors."#
         .trim(),
-      error_set.pretty_print_error_messages_no_frame(&heap)
+      error_set.pretty_print_error_messages_no_frame_for_test(&heap)
     );
 
     error_set.report_cannot_resolve_class_error(
@@ -1183,20 +1194,20 @@ Found 2 errors."#
     error_set.report_not_a_struct_error(Location::dummy(), Description::IntType);
     error_set.report_stackable_error(Location::dummy(), {
       let mut stacked = StackableError::new();
-      stacked.add_type_error(super::TypeIncompatibilityNode {
-        lower_reason: Reason::dummy(),
-        lower_description: Description::AnyType,
-        upper_reason: Reason::dummy(),
-        upper_description: Description::AnyType,
-      });
+      stacked.add_type_incompatibility_error(
+        Reason::dummy(),
+        Description::AnyType,
+        Reason::dummy(),
+        Description::AnyType,
+      );
       stacked.add_type_args_arity_error(0, 0);
       stacked.add_fn_param_arity_error(0, 0);
-      stacked.add_type_error(super::TypeIncompatibilityNode {
-        lower_reason: Reason::dummy(),
-        lower_description: Description::AnyType,
-        upper_reason: Reason::dummy(),
-        upper_description: Description::AnyType,
-      });
+      stacked.add_type_incompatibility_error(
+        Reason::dummy(),
+        Description::AnyType,
+        Reason::dummy(),
+        Description::AnyType,
+      );
       stacked
     });
     error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![]);
@@ -1334,7 +1345,7 @@ Found 23 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),
-      error_set.pretty_print_error_messages_no_frame(&heap).trim()
+      error_set.pretty_print_error_messages_no_frame_for_test(&heap).trim()
     );
     assert!(error_set.has_errors());
     assert_eq!(2, error_set.group_errors().len());

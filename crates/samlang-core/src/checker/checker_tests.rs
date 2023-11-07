@@ -543,7 +543,7 @@ mod tests {
 
     let (_, parsed) =
       parse_source_expression_from_text(source, ModuleReference::DUMMY, heap, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
 
     let mut temp_ssa_error_set = ErrorSet::new();
     let global_cx = sandbox_global_cx(heap, include_std);
