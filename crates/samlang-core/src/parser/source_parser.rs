@@ -1,12 +1,10 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
-use crate::{
-  ast::{
-    source::{expr::IfElseCondition, *},
-    Location, Position,
-  },
-  errors::ErrorSet,
-};
+use crate::errors::ErrorSet;
 use itertools::Itertools;
+use samlang_ast::{
+  source::{expr::IfElseCondition, *},
+  Location, Position,
+};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   cmp,
@@ -1752,10 +1750,10 @@ impl<'a> SourceParser<'a> {
 mod tests {
   use super::{post_process_block_comment, SourceParser};
   use crate::{
-    ast::Location,
     errors::ErrorSet,
     parser::lexer::{Token, TokenContent},
   };
+  use samlang_ast::Location;
   use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashSet;
 

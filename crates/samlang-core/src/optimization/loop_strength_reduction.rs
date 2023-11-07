@@ -2,11 +2,11 @@ use super::loop_induction_analysis::{
   merge_invariant_multiplication_for_loop_optimization, GeneralBasicInductionVariable,
   OptimizableWhileLoop,
 };
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{Expression, Statement, INT_TYPE},
-  Heap,
+use samlang_ast::{
+  hir::Operator,
+  mir::{Expression, Statement, INT_TYPE},
 };
+use samlang_heap::Heap;
 use std::collections::HashMap;
 
 pub(super) struct LoopStrengthReductionOptimizationResult {
@@ -86,16 +86,14 @@ pub(super) fn optimize(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::mir::{SymbolTable, VariableName, INT_TYPE, ONE},
-    optimization::loop_induction_analysis::{
-      BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName,
-      GeneralBasicInductionVariable, GuardOperator, OptimizableWhileLoop,
-      PotentialLoopInvariantExpression,
-    },
+  use crate::optimization::loop_induction_analysis::{
+    BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName,
+    GeneralBasicInductionVariable, GuardOperator, OptimizableWhileLoop,
+    PotentialLoopInvariantExpression,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_ast::mir::{SymbolTable, VariableName, INT_TYPE, ONE};
   use samlang_heap::{Heap, PStr};
 
   #[test]

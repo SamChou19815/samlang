@@ -1,21 +1,19 @@
 use super::hir::{GlobalVariable, Operator};
 use enum_as_inner::EnumAsInner;
+use itertools::Itertools;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct FunctionType {
-  pub(crate) argument_types: Vec<Type>,
-  pub(crate) return_type: Box<Type>,
+pub struct FunctionType {
+  pub argument_types: Vec<Type>,
+  pub return_type: Box<Type>,
 }
 
 impl FunctionType {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
-    use itertools::Itertools;
-
+  pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     format!(
       "({}) -> {}",
       self.argument_types.iter().map(|it| it.pretty_print(heap, table)).join(", "),
@@ -79,19 +77,18 @@ mod type_name_boilterplate_tests {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct TypeNameId(u32);
+pub struct TypeNameId(u32);
 
 impl TypeNameId {
-  pub(crate) const EMPTY: TypeNameId = TypeNameId(0);
-  pub(crate) const STR: TypeNameId = TypeNameId(1);
-  pub(crate) const PROCESS: TypeNameId = TypeNameId(2);
+  pub const EMPTY: TypeNameId = TypeNameId(0);
+  pub const STR: TypeNameId = TypeNameId(1);
+  pub const PROCESS: TypeNameId = TypeNameId(2);
 
   pub(super) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     table.type_name_lookup_table.get(self).unwrap().encoded(collector, heap, table);
   }
 
-  #[cfg(test)]
-  pub(crate) fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
     let mut collector = String::new();
     self.write_encoded(&mut collector, heap, table);
     collector
@@ -99,19 +96,25 @@ impl TypeNameId {
 }
 
 #[derive(Debug)]
-pub(crate) struct SymbolTable {
+pub struct SymbolTable {
   type_name_interning_table: HashMap<&'static TypeName, TypeNameId>,
   type_name_lookup_table: HashMap<TypeNameId, Box<TypeName>>,
 }
 
-impl SymbolTable {
-  pub(crate) fn new() -> SymbolTable {
+impl Default for SymbolTable {
+  fn default() -> Self {
     let mut table =
       Self { type_name_interning_table: HashMap::new(), type_name_lookup_table: HashMap::new() };
     table.create_type_name_internal(TypeName::EMPTY);
     table.create_type_name_internal(TypeName::STR);
     table.create_type_name_internal(TypeName::PROCESS);
     table
+  }
+}
+
+impl SymbolTable {
+  pub fn new() -> SymbolTable {
+    Self::default()
   }
 
   fn create_type_name_internal(&mut self, name: TypeName) -> TypeNameId {
@@ -129,12 +132,11 @@ impl SymbolTable {
     }
   }
 
-  #[cfg(test)]
-  pub(crate) fn create_type_name_for_test(&mut self, name: PStr) -> TypeNameId {
+  pub fn create_type_name_for_test(&mut self, name: PStr) -> TypeNameId {
     self.create_simple_type_name(ModuleReference::ROOT, name)
   }
 
-  pub(crate) fn create_simple_type_name(
+  pub fn create_simple_type_name(
     &mut self,
     module_reference: ModuleReference,
     type_name: PStr,
@@ -147,7 +149,7 @@ impl SymbolTable {
     })
   }
 
-  pub(crate) fn create_type_name_with_suffix(
+  pub fn create_type_name_with_suffix(
     &mut self,
     module_reference: ModuleReference,
     type_name: PStr,
@@ -161,15 +163,11 @@ impl SymbolTable {
     })
   }
 
-  pub(crate) fn create_main_type_name(&mut self, module_reference: ModuleReference) -> TypeNameId {
+  pub fn create_main_type_name(&mut self, module_reference: ModuleReference) -> TypeNameId {
     self.create_simple_type_name(module_reference, PStr::MAIN_TYPE)
   }
 
-  pub(crate) fn derived_type_name_with_subtype_tag(
-    &mut self,
-    id: TypeNameId,
-    tag: u32,
-  ) -> TypeNameId {
+  pub fn derived_type_name_with_subtype_tag(&mut self, id: TypeNameId, tag: u32) -> TypeNameId {
     let base = self.type_name_lookup_table.get(&id).unwrap();
     self.create_type_name_internal(TypeName {
       module_reference: base.module_reference,
@@ -179,11 +177,7 @@ impl SymbolTable {
     })
   }
 
-  pub(crate) fn derived_type_name_with_suffix(
-    &mut self,
-    id: TypeNameId,
-    suffix: Vec<Type>,
-  ) -> TypeNameId {
+  pub fn derived_type_name_with_suffix(&mut self, id: TypeNameId, suffix: Vec<Type>) -> TypeNameId {
     let base = self.type_name_lookup_table.get(&id).unwrap();
     self.create_type_name_internal(TypeName {
       module_reference: base.module_reference,
@@ -195,18 +189,17 @@ impl SymbolTable {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
-pub(crate) enum Type {
+pub enum Type {
   Int,
   Id(TypeNameId),
 }
 
 impl Type {
-  pub(crate) fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
+  pub fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
       Type::Int => "int".to_string(),
       Type::Id(id) => id.encoded_for_test(heap, table),
@@ -214,17 +207,16 @@ impl Type {
   }
 }
 
-pub(crate) const INT_TYPE: Type = Type::Int;
+pub const INT_TYPE: Type = Type::Int;
 
 #[derive(Debug, Clone)]
-pub(crate) struct ClosureTypeDefinition {
-  pub(crate) name: TypeNameId,
-  pub(crate) function_type: FunctionType,
+pub struct ClosureTypeDefinition {
+  pub name: TypeNameId,
+  pub function_type: FunctionType,
 }
 
 impl ClosureTypeDefinition {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     format!(
       "closure type {} = {}",
       self.name.encoded_for_test(heap, table),
@@ -234,17 +226,14 @@ impl ClosureTypeDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum EnumTypeDefinition {
+pub enum EnumTypeDefinition {
   Boxed(Vec<Type>),
   Unboxed(Type),
   Int,
 }
 
 impl EnumTypeDefinition {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
-    use itertools::Itertools;
-
+  pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match &self {
       EnumTypeDefinition::Boxed(types) => {
         format!("Boxed({})", types.iter().map(|it| it.pretty_print(heap, table)).join(", "))
@@ -256,22 +245,19 @@ impl EnumTypeDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumAsInner)]
-pub(crate) enum TypeDefinitionMappings {
+pub enum TypeDefinitionMappings {
   Struct(Vec<Type>),
   Enum(Vec<EnumTypeDefinition>),
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct TypeDefinition {
-  pub(crate) name: TypeNameId,
-  pub(crate) mappings: TypeDefinitionMappings,
+pub struct TypeDefinition {
+  pub name: TypeNameId,
+  pub mappings: TypeDefinitionMappings,
 }
 
 impl TypeDefinition {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
-    use itertools::Itertools;
-
+  pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match &self.mappings {
       TypeDefinitionMappings::Struct(types) => {
         format!(
@@ -290,63 +276,60 @@ impl TypeDefinition {
 }
 
 #[derive(Debug, Clone, Copy, Hash)]
-pub(crate) struct VariableName {
-  pub(crate) name: PStr,
-  pub(crate) type_: Type,
+pub struct VariableName {
+  pub name: PStr,
+  pub type_: Type,
 }
 
 impl VariableName {
-  pub(crate) fn new(name: PStr, type_: Type) -> VariableName {
+  pub fn new(name: PStr, type_: Type) -> VariableName {
     VariableName { name, type_ }
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     format!("({}: {})", self.name.as_str(heap), self.type_.pretty_print(heap, table))
   }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct FunctionName {
-  pub(crate) type_name: TypeNameId,
-  pub(crate) fn_name: PStr,
+pub struct FunctionName {
+  pub type_name: TypeNameId,
+  pub fn_name: PStr,
 }
 
 impl FunctionName {
-  pub(crate) const PROCESS_PRINTLN: FunctionName =
+  pub const PROCESS_PRINTLN: FunctionName =
     FunctionName { type_name: TypeNameId::PROCESS, fn_name: PStr::PRINTLN };
-  pub(crate) const PROCESS_PANIC: FunctionName =
+  pub const PROCESS_PANIC: FunctionName =
     FunctionName { type_name: TypeNameId::PROCESS, fn_name: PStr::PANIC };
 
-  pub(crate) const STR_FROM_INT: FunctionName =
+  pub const STR_FROM_INT: FunctionName =
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::FROM_INT };
-  pub(crate) const STR_TO_INT: FunctionName =
+  pub const STR_TO_INT: FunctionName =
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::TO_INT };
-  pub(crate) const STR_CONCAT: FunctionName =
+  pub const STR_CONCAT: FunctionName =
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::CONCAT };
 
-  pub(crate) const BUILTIN_MALLOC: FunctionName =
+  pub const BUILTIN_MALLOC: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::MALLOC_FN };
-  pub(crate) const BUILTIN_FREE: FunctionName =
+  pub const BUILTIN_FREE: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::FREE_FN };
-  pub(crate) const BUILTIN_INC_REF: FunctionName =
+  pub const BUILTIN_INC_REF: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::INC_REF_FN };
-  pub(crate) const BUILTIN_DEC_REF: FunctionName =
+  pub const BUILTIN_DEC_REF: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::DEC_REF_FN };
 
-  #[cfg(test)]
-  pub(crate) fn new_for_test(name: PStr) -> FunctionName {
+  pub fn new_for_test(name: PStr) -> FunctionName {
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: name }
   }
 
-  #[cfg(test)]
-  pub(crate) fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
     let mut builder = String::new();
     self.write_encoded(&mut builder, heap, table);
     builder
   }
 
-  pub(crate) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+  pub fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     collector.push('_');
     self.type_name.write_encoded(collector, heap, table);
     collector.push('$');
@@ -355,13 +338,13 @@ impl FunctionName {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FunctionNameExpression {
-  pub(crate) name: FunctionName,
-  pub(crate) type_: FunctionType,
+pub struct FunctionNameExpression {
+  pub name: FunctionName,
+  pub type_: FunctionType,
 }
 
 #[derive(Debug, Clone, Copy, EnumAsInner)]
-pub(crate) enum Expression {
+pub enum Expression {
   IntLiteral(i32),
   StringName(PStr),
   Variable(VariableName),
@@ -413,16 +396,15 @@ impl Hash for Expression {
 }
 
 impl Expression {
-  pub(crate) fn int(value: i32) -> Expression {
+  pub fn int(value: i32) -> Expression {
     Expression::IntLiteral(value)
   }
 
-  pub(crate) fn var_name(name: PStr, type_: Type) -> Expression {
+  pub fn var_name(name: PStr, type_: Type) -> Expression {
     Expression::Variable(VariableName { name, type_ })
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
       Expression::StringName(n) => n.as_str(heap).to_string(),
@@ -430,7 +412,7 @@ impl Expression {
     }
   }
 
-  pub(crate) fn convert_to_callee(self) -> Option<Callee> {
+  pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
       Expression::IntLiteral(_) | Expression::StringName(_) => None,
       Expression::Variable(v) => Some(Callee::Variable(v)),
@@ -438,26 +420,25 @@ impl Expression {
   }
 }
 
-pub(crate) const ZERO: Expression = Expression::IntLiteral(0);
-pub(crate) const ONE: Expression = Expression::IntLiteral(1);
+pub const ZERO: Expression = Expression::IntLiteral(0);
+pub const ONE: Expression = Expression::IntLiteral(1);
 
 #[derive(Debug, Clone)]
-pub(crate) struct Binary {
-  pub(crate) name: PStr,
-  pub(crate) operator: Operator,
-  pub(crate) e1: Expression,
-  pub(crate) e2: Expression,
+pub struct Binary {
+  pub name: PStr,
+  pub operator: Operator,
+  pub e1: Expression,
+  pub e2: Expression,
 }
 
 #[derive(Debug, Clone, EnumAsInner)]
-pub(crate) enum Callee {
+pub enum Callee {
   FunctionName(FunctionNameExpression),
   Variable(VariableName),
 }
 
 impl Callee {
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
       Callee::FunctionName(f) => f.name.encoded_for_test(heap, table),
       Callee::Variable(v) => v.debug_print(heap, table),
@@ -466,16 +447,15 @@ impl Callee {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GenenalLoopVariable {
-  pub(crate) name: PStr,
-  pub(crate) type_: Type,
-  pub(crate) initial_value: Expression,
-  pub(crate) loop_value: Expression,
+pub struct GenenalLoopVariable {
+  pub name: PStr,
+  pub type_: Type,
+  pub initial_value: Expression,
+  pub loop_value: Expression,
 }
 
 impl GenenalLoopVariable {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     format!(
       "{{name: {}, initial_value: {}, loop_value: {}}}",
       self.name.as_str(heap),
@@ -486,7 +466,7 @@ impl GenenalLoopVariable {
 }
 
 #[derive(Debug, Clone, EnumAsInner)]
-pub(crate) enum Statement {
+pub enum Statement {
   Binary(Binary),
   IndexedAccess {
     name: PStr,
@@ -544,7 +524,7 @@ pub(crate) enum Statement {
 }
 
 impl Statement {
-  pub(crate) fn binary_unwrapped(
+  pub fn binary_unwrapped(
     name: PStr,
     operator: Operator,
     e1: Expression,
@@ -558,7 +538,7 @@ impl Statement {
     }
   }
 
-  pub(crate) fn binary_flexible_unwrapped(
+  pub fn binary_flexible_unwrapped(
     name: PStr,
     operator: Operator,
     e1: Expression,
@@ -568,16 +548,11 @@ impl Statement {
     Self::binary_unwrapped(name, operator, e1, e2)
   }
 
-  pub(crate) fn binary(
-    name: PStr,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Statement {
+  pub fn binary(name: PStr, operator: Operator, e1: Expression, e2: Expression) -> Statement {
     Statement::Binary(Self::binary_unwrapped(name, operator, e1, e2))
   }
 
-  pub(crate) fn flexible_order_binary(
+  pub fn flexible_order_binary(
     operator: Operator,
     e1: Expression,
     e2: Expression,
@@ -632,7 +607,6 @@ impl Statement {
     }
   }
 
-  #[cfg(test)]
   fn debug_print_internal(
     &self,
     heap: &Heap,
@@ -641,8 +615,6 @@ impl Statement {
     break_collector: &Option<VariableName>,
     collector: &mut Vec<String>,
   ) {
-    use itertools::Itertools;
-
     match self {
       Statement::Binary(s) => {
         let e1 = s.e1.debug_print(heap, table);
@@ -842,33 +814,28 @@ impl Statement {
     }
   }
 
-  #[cfg(test)]
   fn debug_print_leveled(&self, heap: &Heap, table: &SymbolTable, level: usize) -> String {
     let mut collector = vec![];
     self.debug_print_internal(heap, table, level, &None, &mut collector);
     collector.join("").trim_end().to_string()
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
+  pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     self.debug_print_leveled(heap, table, 0)
   }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Function {
-  pub(crate) name: FunctionName,
-  pub(crate) parameters: Vec<PStr>,
-  pub(crate) type_: FunctionType,
-  pub(crate) body: Vec<Statement>,
-  pub(crate) return_value: Expression,
+pub struct Function {
+  pub name: FunctionName,
+  pub parameters: Vec<PStr>,
+  pub type_: FunctionType,
+  pub body: Vec<Statement>,
+  pub return_value: Expression,
 }
 
 impl Function {
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
-    use itertools::Itertools;
-
+  pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     let typed_parameters = self
       .parameters
       .iter()
@@ -893,20 +860,17 @@ impl Function {
 }
 
 #[derive(Debug)]
-pub(crate) struct Sources {
-  pub(crate) symbol_table: SymbolTable,
-  pub(crate) global_variables: Vec<GlobalVariable>,
-  pub(crate) closure_types: Vec<ClosureTypeDefinition>,
-  pub(crate) type_definitions: Vec<TypeDefinition>,
-  pub(crate) main_function_names: Vec<FunctionName>,
-  pub(crate) functions: Vec<Function>,
+pub struct Sources {
+  pub symbol_table: SymbolTable,
+  pub global_variables: Vec<GlobalVariable>,
+  pub closure_types: Vec<ClosureTypeDefinition>,
+  pub type_definitions: Vec<TypeDefinition>,
+  pub main_function_names: Vec<FunctionName>,
+  pub functions: Vec<Function>,
 }
 
 impl Sources {
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
-    use itertools::Itertools;
-
+  pub fn debug_print(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     for v in &self.global_variables {
       lines.push(format!("const {} = '{}';\n", v.name.as_str(heap), v.content.as_str(heap)));

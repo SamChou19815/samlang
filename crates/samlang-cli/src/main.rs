@@ -129,11 +129,11 @@ mod lsp {
   use tower_lsp::lsp_types::*;
   use tower_lsp::{Client, LanguageServer};
 
-  fn lsp_pos_to_samlang_pos(position: Position) -> samlang_core::ast::Position {
-    samlang_core::ast::Position(position.line as i32, position.character as i32)
+  fn lsp_pos_to_samlang_pos(position: Position) -> samlang_ast::Position {
+    samlang_ast::Position(position.line as i32, position.character as i32)
   }
 
-  fn samlang_loc_to_lsp_range(loc: &samlang_core::ast::Location) -> Range {
+  fn samlang_loc_to_lsp_range(loc: &samlang_ast::Location) -> Range {
     Range {
       start: Position { line: loc.start.0 as u32, character: loc.start.1 as u32 },
       end: Position { line: loc.end.0 as u32, character: loc.end.1 as u32 },
@@ -592,7 +592,7 @@ mod lsp {
     async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] code_action").await;
       let state = self.state.read().await;
-      let location = samlang_core::ast::Location {
+      let location = samlang_ast::Location {
         module_reference: self
           .convert_url_to_module_reference_readonly(&state.0.heap, &params.text_document.uri),
         start: lsp_pos_to_samlang_pos(params.range.start),

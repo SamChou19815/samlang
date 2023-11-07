@@ -1,24 +1,21 @@
 use enum_as_inner::EnumAsInner;
-#[cfg(test)]
 use itertools::Itertools;
 use samlang_heap::{ModuleReference, PStr};
 use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct TypeName {
+pub struct TypeName {
   /// When it is None, it is a generic type
-  pub(crate) module_reference: Option<ModuleReference>,
-  pub(crate) type_name: PStr,
+  pub module_reference: Option<ModuleReference>,
+  pub type_name: PStr,
 }
 
 impl TypeName {
-  #[cfg(test)]
-  pub(crate) fn new_for_test(name: PStr) -> TypeName {
+  pub fn new_for_test(name: PStr) -> TypeName {
     TypeName { module_reference: Some(ModuleReference::DUMMY), type_name: name }
   }
 
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     if let Some(mod_ref) = self.module_reference {
       format!("{}_{}", mod_ref.encoded(heap), self.type_name.as_str(heap))
     } else {
@@ -28,14 +25,13 @@ impl TypeName {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct IdType {
-  pub(crate) name: TypeName,
-  pub(crate) type_arguments: Vec<Type>,
+pub struct IdType {
+  pub name: TypeName,
+  pub type_arguments: Vec<Type>,
 }
 
 impl IdType {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     if self.type_arguments.is_empty() {
       self.name.pretty_print(heap)
     } else {
@@ -49,14 +45,13 @@ impl IdType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct FunctionType {
-  pub(crate) argument_types: Vec<Type>,
-  pub(crate) return_type: Box<Type>,
+pub struct FunctionType {
+  pub argument_types: Vec<Type>,
+  pub return_type: Box<Type>,
 }
 
 impl FunctionType {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     format!(
       "({}) -> {}",
       self.argument_types.iter().map(|it| it.pretty_print(heap)).join(", "),
@@ -66,48 +61,43 @@ impl FunctionType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
-pub(crate) enum Type {
+pub enum Type {
   Int,
   Id(IdType),
 }
 
 impl Type {
-  pub(crate) const fn new_generic_type(name: PStr) -> Type {
+  pub const fn new_generic_type(name: PStr) -> Type {
     Type::Id(IdType {
       name: TypeName { module_reference: None, type_name: name },
       type_arguments: vec![],
     })
   }
 
-  #[cfg(test)]
-  pub(crate) const fn new_id_unwrapped(name: PStr, type_arguments: Vec<Type>) -> IdType {
+  pub const fn new_id_unwrapped(name: PStr, type_arguments: Vec<Type>) -> IdType {
     IdType {
       name: TypeName { module_reference: Some(ModuleReference::DUMMY), type_name: name },
       type_arguments,
     }
   }
 
-  #[cfg(test)]
-  pub(crate) const fn new_id_no_targs_unwrapped(name: PStr) -> IdType {
+  pub const fn new_id_no_targs_unwrapped(name: PStr) -> IdType {
     Self::new_id_unwrapped(name, vec![])
   }
 
-  #[cfg(test)]
-  pub(crate) fn new_id(name: PStr, type_arguments: Vec<Type>) -> Type {
+  pub fn new_id(name: PStr, type_arguments: Vec<Type>) -> Type {
     Type::Id(Self::new_id_unwrapped(name, type_arguments))
   }
 
-  #[cfg(test)]
-  pub(crate) const fn new_id_no_targs(name: PStr) -> Type {
+  pub const fn new_id_no_targs(name: PStr) -> Type {
     Type::Id(Self::new_id_no_targs_unwrapped(name))
   }
 
-  pub(crate) fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
+  pub fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
       Type::Int => "int".to_string(),
       Type::Id(id) => id.pretty_print(heap),
@@ -115,24 +105,23 @@ impl Type {
   }
 }
 
-pub(crate) const INT_TYPE: Type = Type::Int;
-pub(crate) const STRING_TYPE: Type = Type::Id(IdType {
+pub const INT_TYPE: Type = Type::Int;
+pub const STRING_TYPE: Type = Type::Id(IdType {
   name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
   type_arguments: vec![],
 });
-pub(crate) const STRING_TYPE_REF: &Type = &Type::Id(IdType {
+pub const STRING_TYPE_REF: &Type = &Type::Id(IdType {
   name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
   type_arguments: vec![],
 });
 
 #[derive(Debug, Clone)]
-pub(crate) struct ClosureTypeDefinition {
-  pub(crate) name: TypeName,
-  pub(crate) type_parameters: Vec<PStr>,
-  pub(crate) function_type: FunctionType,
+pub struct ClosureTypeDefinition {
+  pub name: TypeName,
+  pub type_parameters: Vec<PStr>,
+  pub function_type: FunctionType,
 }
 
-#[cfg(test)]
 fn name_with_tparams(heap: &samlang_heap::Heap, name: TypeName, tparams: &Vec<PStr>) -> String {
   if tparams.is_empty() {
     name.pretty_print(heap)
@@ -142,8 +131,7 @@ fn name_with_tparams(heap: &samlang_heap::Heap, name: TypeName, tparams: &Vec<PS
 }
 
 impl ClosureTypeDefinition {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     format!(
       "closure type {} = {}",
       name_with_tparams(heap, self.name, &self.type_parameters),
@@ -153,21 +141,20 @@ impl ClosureTypeDefinition {
 }
 
 #[derive(Debug, Clone, EnumAsInner)]
-pub(crate) enum TypeDefinitionMappings {
+pub enum TypeDefinitionMappings {
   Struct(Vec<Type>),
   Enum(Vec<(PStr, Vec<Type>)>),
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct TypeDefinition {
-  pub(crate) name: TypeName,
-  pub(crate) type_parameters: Vec<PStr>,
-  pub(crate) mappings: TypeDefinitionMappings,
+pub struct TypeDefinition {
+  pub name: TypeName,
+  pub type_parameters: Vec<PStr>,
+  pub mappings: TypeDefinitionMappings,
 }
 
 impl TypeDefinition {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     let id_part = name_with_tparams(heap, self.name, &self.type_parameters);
     match &self.mappings {
       TypeDefinitionMappings::Struct(types) => {
@@ -194,7 +181,7 @@ impl TypeDefinition {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum Operator {
+pub enum Operator {
   MUL,
   DIV,
   MOD,
@@ -214,7 +201,7 @@ pub(crate) enum Operator {
 }
 
 impl Operator {
-  pub(crate) fn as_str(&self) -> &'static str {
+  pub fn as_str(&self) -> &'static str {
     match self {
       Operator::MUL => "*",
       Operator::DIV => "/",
@@ -237,9 +224,9 @@ impl Operator {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct VariableName {
-  pub(crate) name: PStr,
-  pub(crate) type_: Type,
+pub struct VariableName {
+  pub name: PStr,
+  pub type_: Type,
 }
 
 impl PartialEq for VariableName {
@@ -251,34 +238,32 @@ impl PartialEq for VariableName {
 impl Eq for VariableName {}
 
 impl VariableName {
-  pub(crate) fn new(name: PStr, type_: Type) -> VariableName {
+  pub fn new(name: PStr, type_: Type) -> VariableName {
     VariableName { name, type_ }
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     format!("({}: {})", self.name.as_str(heap), self.type_.pretty_print(heap))
   }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct FunctionName {
-  pub(crate) type_name: TypeName,
-  pub(crate) fn_name: PStr,
+pub struct FunctionName {
+  pub type_name: TypeName,
+  pub fn_name: PStr,
 }
 
 impl FunctionName {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     format!("{}${}", self.type_name.pretty_print(heap), self.fn_name.as_str(heap))
   }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FunctionNameExpression {
-  pub(crate) name: FunctionName,
-  pub(crate) type_: FunctionType,
-  pub(crate) type_arguments: Vec<Type>,
+pub struct FunctionNameExpression {
+  pub name: FunctionName,
+  pub type_: FunctionType,
+  pub type_arguments: Vec<Type>,
 }
 
 impl FunctionNameExpression {
@@ -287,8 +272,7 @@ impl FunctionNameExpression {
     FunctionNameExpression { name, type_, type_arguments: vec![] }
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     if self.type_arguments.is_empty() {
       self.name.pretty_print(heap)
     } else {
@@ -302,22 +286,22 @@ impl FunctionNameExpression {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
-pub(crate) enum Expression {
+pub enum Expression {
   IntLiteral(i32),
   StringName(PStr),
   Variable(VariableName),
 }
 
 impl Expression {
-  pub(crate) fn int(value: i32) -> Expression {
+  pub fn int(value: i32) -> Expression {
     Expression::IntLiteral(value)
   }
 
-  pub(crate) fn var_name(name: PStr, type_: Type) -> Expression {
+  pub fn var_name(name: PStr, type_: Type) -> Expression {
     Expression::Variable(VariableName { name, type_ })
   }
 
-  pub(crate) fn type_(&self) -> &Type {
+  pub fn type_(&self) -> &Type {
     match self {
       Expression::IntLiteral(_) => &INT_TYPE,
       Expression::StringName(_) => STRING_TYPE_REF,
@@ -325,8 +309,7 @@ impl Expression {
     }
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
       Expression::StringName(n) => n.as_str(heap).to_string(),
@@ -334,7 +317,7 @@ impl Expression {
     }
   }
 
-  pub(crate) fn convert_to_callee(self) -> Option<Callee> {
+  pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
       Expression::IntLiteral(_) | Expression::StringName(_) => None,
       Expression::Variable(v) => Some(Callee::Variable(v)),
@@ -342,18 +325,17 @@ impl Expression {
   }
 }
 
-pub(crate) const ZERO: Expression = Expression::IntLiteral(0);
-pub(crate) const ONE: Expression = Expression::IntLiteral(1);
+pub const ZERO: Expression = Expression::IntLiteral(0);
+pub const ONE: Expression = Expression::IntLiteral(1);
 
 #[derive(Debug, Clone, EnumAsInner)]
-pub(crate) enum Callee {
+pub enum Callee {
   FunctionName(FunctionNameExpression),
   Variable(VariableName),
 }
 
 impl Callee {
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
       Callee::FunctionName(f) => f.debug_print(heap),
       Callee::Variable(v) => v.debug_print(heap),
@@ -362,15 +344,15 @@ impl Callee {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GenenalLoopVariable {
-  pub(crate) name: PStr,
-  pub(crate) type_: Type,
-  pub(crate) initial_value: Expression,
-  pub(crate) loop_value: Expression,
+pub struct GenenalLoopVariable {
+  pub name: PStr,
+  pub type_: Type,
+  pub initial_value: Expression,
+  pub loop_value: Expression,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum Statement {
+pub enum Statement {
   Binary {
     name: PStr,
     operator: Operator,
@@ -447,7 +429,6 @@ pub(crate) enum Statement {
 }
 
 impl Statement {
-  #[cfg(test)]
   fn debug_print_internal(
     &self,
     heap: &samlang_heap::Heap,
@@ -691,32 +672,29 @@ impl Statement {
     }
   }
 
-  #[cfg(test)]
   fn debug_print_leveled(&self, heap: &samlang_heap::Heap, level: usize) -> String {
     let mut collector = vec![];
     self.debug_print_internal(heap, level, &None, &mut collector);
     collector.join("").trim_end().to_string()
   }
 
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     self.debug_print_leveled(heap, 0)
   }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Function {
-  pub(crate) name: FunctionName,
-  pub(crate) parameters: Vec<PStr>,
-  pub(crate) type_parameters: Vec<PStr>,
-  pub(crate) type_: FunctionType,
-  pub(crate) body: Vec<Statement>,
-  pub(crate) return_value: Expression,
+pub struct Function {
+  pub name: FunctionName,
+  pub parameters: Vec<PStr>,
+  pub type_parameters: Vec<PStr>,
+  pub type_: FunctionType,
+  pub body: Vec<Statement>,
+  pub return_value: Expression,
 }
 
 impl Function {
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     let typed_parameters = self
       .parameters
       .iter()
@@ -747,23 +725,22 @@ impl Function {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct GlobalVariable {
-  pub(crate) name: PStr,
-  pub(crate) content: PStr,
+pub struct GlobalVariable {
+  pub name: PStr,
+  pub content: PStr,
 }
 
 #[derive(Debug)]
-pub(crate) struct Sources {
-  pub(crate) global_variables: Vec<GlobalVariable>,
-  pub(crate) closure_types: Vec<ClosureTypeDefinition>,
-  pub(crate) type_definitions: Vec<TypeDefinition>,
-  pub(crate) main_function_names: Vec<FunctionName>,
-  pub(crate) functions: Vec<Function>,
+pub struct Sources {
+  pub global_variables: Vec<GlobalVariable>,
+  pub closure_types: Vec<ClosureTypeDefinition>,
+  pub type_definitions: Vec<TypeDefinition>,
+  pub main_function_names: Vec<FunctionName>,
+  pub functions: Vec<Function>,
 }
 
 impl Sources {
-  #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+  pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     let mut lines = vec![];
     for v in &self.global_variables {
       lines.push(format!("const {} = '{}';\n", v.name.as_str(heap), v.content.as_str(heap)));

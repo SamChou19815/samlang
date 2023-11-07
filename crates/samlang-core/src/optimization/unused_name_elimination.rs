@@ -1,9 +1,9 @@
-use crate::ast::mir::{
+use itertools::Itertools;
+use samlang_ast::mir::{
   Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
   GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
   TypeNameId,
 };
-use itertools::Itertools;
 use samlang_heap::PStr;
 use std::collections::{HashMap, HashSet};
 
@@ -247,16 +247,16 @@ pub(super) fn optimize_sources(sources: &mut Sources) {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::GlobalVariable,
-    ast::mir::{
+  use itertools::Itertools;
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::GlobalVariable,
+    mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
       FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
       TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE, ZERO,
     },
   };
-  use itertools::Itertools;
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[test]
@@ -384,13 +384,13 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::binary(
                 PStr::LOWER_A,
-                crate::ast::hir::Operator::GE,
+                samlang_ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
               s2: vec![Statement::binary(
                 PStr::LOWER_A,
-                crate::ast::hir::Operator::GE,
+                samlang_ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],

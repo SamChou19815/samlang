@@ -4,21 +4,21 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 use std::rc::Rc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CommentKind {
+pub enum CommentKind {
   LINE,
   BLOCK,
   DOC,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Comment {
-  pub(crate) location: Location,
-  pub(crate) kind: CommentKind,
-  pub(crate) text: PStr,
+pub struct Comment {
+  pub location: Location,
+  pub kind: CommentKind,
+  pub text: PStr,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) enum CommentsNode {
+pub enum CommentsNode {
   NoComment,
   Comments(Location, Vec<Comment>),
 }
@@ -26,14 +26,14 @@ pub(crate) enum CommentsNode {
 static EMPTY_COMMENTS: Vec<Comment> = vec![];
 
 impl CommentsNode {
-  pub(crate) fn iter(&self) -> std::slice::Iter<'_, Comment> {
+  pub fn iter(&self) -> std::slice::Iter<'_, Comment> {
     match self {
       CommentsNode::NoComment => EMPTY_COMMENTS.iter(),
       CommentsNode::Comments(_, comments) => comments.iter(),
     }
   }
 
-  pub(crate) fn from(comments: Vec<Comment>) -> CommentsNode {
+  pub fn from(comments: Vec<Comment>) -> CommentsNode {
     if !comments.is_empty() {
       let loc = comments.iter().map(|it| it.location).reduce(|l1, l2| l1.union(&l2)).unwrap();
       CommentsNode::Comments(loc, comments)
@@ -44,33 +44,33 @@ impl CommentsNode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct CommentReference(usize);
+pub struct CommentReference(usize);
 
-pub(crate) const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
+pub const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct CommentStore {
+pub struct CommentStore {
   store: Vec<CommentsNode>,
 }
 
 impl CommentStore {
-  pub(crate) fn new() -> CommentStore {
-    CommentStore { store: vec![CommentsNode::NoComment] }
+  pub fn new() -> CommentStore {
+    Self::default()
   }
 
-  pub(crate) fn all_comments(&self) -> &Vec<CommentsNode> {
+  pub fn all_comments(&self) -> &Vec<CommentsNode> {
     &self.store
   }
 
-  pub(crate) fn get(&self, reference: CommentReference) -> &CommentsNode {
+  pub fn get(&self, reference: CommentReference) -> &CommentsNode {
     &self.store[reference.0]
   }
 
-  pub(crate) fn get_mut(&mut self, reference: CommentReference) -> &mut CommentsNode {
+  pub fn get_mut(&mut self, reference: CommentReference) -> &mut CommentsNode {
     &mut self.store[reference.0]
   }
 
-  pub(crate) fn create_comment_reference(&mut self, comments: Vec<Comment>) -> CommentReference {
+  pub fn create_comment_reference(&mut self, comments: Vec<Comment>) -> CommentReference {
     let node = CommentsNode::from(comments);
     if matches!(node, CommentsNode::NoComment) {
       NO_COMMENT_REFERENCE
@@ -82,30 +82,36 @@ impl CommentStore {
   }
 }
 
+impl Default for CommentStore {
+  fn default() -> Self {
+    CommentStore { store: vec![CommentsNode::NoComment] }
+  }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Literal {
+pub enum Literal {
   Bool(bool),
   Int(i32),
   String(PStr),
 }
 
 impl Literal {
-  pub(crate) fn true_literal() -> Literal {
+  pub fn true_literal() -> Literal {
     Literal::Bool(true)
   }
-  pub(crate) fn false_literal() -> Literal {
+  pub fn false_literal() -> Literal {
     Literal::Bool(false)
   }
 
-  pub(crate) fn int_literal(i: i32) -> Literal {
+  pub fn int_literal(i: i32) -> Literal {
     Literal::Int(i)
   }
 
-  pub(crate) fn string_literal(s: PStr) -> Literal {
+  pub fn string_literal(s: PStr) -> Literal {
     Literal::String(s)
   }
 
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Self::Bool(true) => "true".to_string(),
       Self::Bool(false) => "false".to_string(),
@@ -115,12 +121,14 @@ impl Literal {
   }
 }
 
-pub(crate) mod annotation {
+pub mod annotation {
+  use samlang_heap::ModuleReference;
+
   use super::CommentReference;
-  use crate::{ast::Location, ModuleReference};
+  use crate::Location;
 
   #[derive(Copy, Clone, PartialEq, Eq)]
-  pub(crate) enum PrimitiveTypeKind {
+  pub enum PrimitiveTypeKind {
     Unit,
     Bool,
     Int,
@@ -139,23 +147,23 @@ pub(crate) mod annotation {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Id {
-    pub(crate) location: Location,
-    pub(crate) module_reference: ModuleReference,
-    pub(crate) id: super::Id,
-    pub(crate) type_arguments: Vec<T>,
+  pub struct Id {
+    pub location: Location,
+    pub module_reference: ModuleReference,
+    pub id: super::Id,
+    pub type_arguments: Vec<T>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Function {
-    pub(crate) location: Location,
-    pub(crate) associated_comments: CommentReference,
-    pub(crate) argument_types: Vec<T>,
-    pub(crate) return_type: Box<T>,
+  pub struct Function {
+    pub location: Location,
+    pub associated_comments: CommentReference,
+    pub argument_types: Vec<T>,
+    pub return_type: Box<T>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) enum T {
+  pub enum T {
     Primitive(Location, CommentReference, PrimitiveTypeKind),
     Id(Id),
     Generic(Location, super::Id),
@@ -163,7 +171,7 @@ pub(crate) mod annotation {
   }
 
   impl T {
-    pub(crate) fn location(&self) -> Location {
+    pub fn location(&self) -> Location {
       match self {
         T::Primitive(l, _, _) => *l,
         T::Id(annot) => annot.location,
@@ -172,7 +180,7 @@ pub(crate) mod annotation {
       }
     }
 
-    pub(crate) fn associated_comments(&self) -> CommentReference {
+    pub fn associated_comments(&self) -> CommentReference {
       match self {
         T::Primitive(_, c, _) => *c,
         T::Id(annot) => annot.id.associated_comments,
@@ -184,50 +192,50 @@ pub(crate) mod annotation {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Id {
-  pub(crate) loc: Location,
-  pub(crate) associated_comments: CommentReference,
-  pub(crate) name: PStr,
+pub struct Id {
+  pub loc: Location,
+  pub associated_comments: CommentReference,
+  pub name: PStr,
 }
 
 impl Id {
-  pub(crate) fn from(name: PStr) -> Id {
+  pub fn from(name: PStr) -> Id {
     Id { loc: Location::dummy(), associated_comments: NO_COMMENT_REFERENCE, name }
   }
 }
 
-pub(crate) mod pattern {
+pub mod pattern {
   use super::{Id, Location};
   use samlang_heap::PStr;
   use std::collections::BTreeMap;
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct TuplePatternElement<T: Clone> {
-    pub(crate) pattern: Box<MatchingPattern<T>>,
-    pub(crate) type_: T,
+  pub struct TuplePatternElement<T: Clone> {
+    pub pattern: Box<MatchingPattern<T>>,
+    pub type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct ObjectPatternElement<T: Clone> {
-    pub(crate) loc: Location,
-    pub(crate) field_order: usize,
-    pub(crate) field_name: Id,
-    pub(crate) pattern: Box<MatchingPattern<T>>,
-    pub(crate) shorthand: bool,
-    pub(crate) type_: T,
+  pub struct ObjectPatternElement<T: Clone> {
+    pub loc: Location,
+    pub field_order: usize,
+    pub field_name: Id,
+    pub pattern: Box<MatchingPattern<T>>,
+    pub shorthand: bool,
+    pub type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct VariantPattern<T: Clone> {
-    pub(crate) loc: Location,
-    pub(crate) tag_order: usize,
-    pub(crate) tag: Id,
-    pub(crate) data_variables: Vec<(MatchingPattern<T>, T)>,
-    pub(crate) type_: T,
+  pub struct VariantPattern<T: Clone> {
+    pub loc: Location,
+    pub tag_order: usize,
+    pub tag: Id,
+    pub data_variables: Vec<(MatchingPattern<T>, T)>,
+    pub type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) enum MatchingPattern<T: Clone> {
+  pub enum MatchingPattern<T: Clone> {
     Tuple(Location, Vec<TuplePatternElement<T>>),
     Object(Location, Vec<ObjectPatternElement<T>>),
     Variant(VariantPattern<T>),
@@ -236,7 +244,7 @@ pub(crate) mod pattern {
   }
 
   impl<T: Clone> MatchingPattern<T> {
-    pub(crate) fn loc(&self) -> &Location {
+    pub fn loc(&self) -> &Location {
       match self {
         Self::Tuple(loc, _)
         | Self::Object(loc, _)
@@ -246,7 +254,7 @@ pub(crate) mod pattern {
       }
     }
 
-    pub(crate) fn always_matching(&self) -> bool {
+    pub fn always_matching(&self) -> bool {
       match self {
         Self::Tuple(_, elements) => {
           for e in elements {
@@ -269,7 +277,7 @@ pub(crate) mod pattern {
       }
     }
 
-    pub(crate) fn bindings(&self) -> BTreeMap<PStr, &T> {
+    pub fn bindings(&self) -> BTreeMap<PStr, &T> {
       let mut map = BTreeMap::new();
       self.collect_bindings(&mut map);
       map
@@ -302,35 +310,34 @@ pub(crate) mod pattern {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct OptionallyAnnotatedId<T: Clone> {
-  pub(crate) name: Id,
-  pub(crate) type_: T,
-  pub(crate) annotation: Option<annotation::T>,
+pub struct OptionallyAnnotatedId<T: Clone> {
+  pub name: Id,
+  pub type_: T,
+  pub annotation: Option<annotation::T>,
 }
 
 #[derive(PartialEq, Eq)]
-pub(crate) struct AnnotatedId<T: Clone> {
-  pub(crate) name: Id,
-  pub(crate) type_: T,
-  pub(crate) annotation: annotation::T,
+pub struct AnnotatedId<T: Clone> {
+  pub name: Id,
+  pub type_: T,
+  pub annotation: annotation::T,
 }
 
-pub(crate) mod expr {
+pub mod expr {
   use super::super::loc::Location;
   use super::{annotation, pattern, CommentReference, Id, Literal};
   use samlang_heap::{ModuleReference, PStr};
   use std::collections::HashMap;
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct ExpressionCommon<T: Clone> {
-    pub(crate) loc: Location,
-    pub(crate) associated_comments: CommentReference,
-    pub(crate) type_: T,
+  pub struct ExpressionCommon<T: Clone> {
+    pub loc: Location,
+    pub associated_comments: CommentReference,
+    pub type_: T,
   }
 
   impl<T: Clone> ExpressionCommon<T> {
-    #[cfg(test)]
-    pub(crate) fn dummy(type_: T) -> ExpressionCommon<T> {
+    pub fn dummy(type_: T) -> ExpressionCommon<T> {
       ExpressionCommon {
         loc: Location::dummy(),
         associated_comments: super::NO_COMMENT_REFERENCE,
@@ -338,32 +345,32 @@ pub(crate) mod expr {
       }
     }
 
-    pub(crate) fn with_new_type<NT: Clone>(&self, type_: NT) -> ExpressionCommon<NT> {
+    pub fn with_new_type<NT: Clone>(&self, type_: NT) -> ExpressionCommon<NT> {
       ExpressionCommon { loc: self.loc, associated_comments: self.associated_comments, type_ }
     }
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct FieldAccess<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) explicit_type_arguments: Vec<annotation::T>,
-    pub(crate) inferred_type_arguments: Vec<T>,
-    pub(crate) object: Box<E<T>>,
-    pub(crate) field_name: Id,
-    pub(crate) field_order: i32,
+  pub struct FieldAccess<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub explicit_type_arguments: Vec<annotation::T>,
+    pub inferred_type_arguments: Vec<T>,
+    pub object: Box<E<T>>,
+    pub field_name: Id,
+    pub field_order: i32,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct MethodAccess<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) explicit_type_arguments: Vec<annotation::T>,
-    pub(crate) inferred_type_arguments: Vec<T>,
-    pub(crate) object: Box<E<T>>,
-    pub(crate) method_name: Id,
+  pub struct MethodAccess<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub explicit_type_arguments: Vec<annotation::T>,
+    pub inferred_type_arguments: Vec<T>,
+    pub object: Box<E<T>>,
+    pub method_name: Id,
   }
 
   #[derive(Copy, Clone, PartialEq, Eq)]
-  pub(crate) enum UnaryOperator {
+  pub enum UnaryOperator {
     NOT,
     NEG,
   }
@@ -378,21 +385,21 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Unary<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) operator: UnaryOperator,
-    pub(crate) argument: Box<E<T>>,
+  pub struct Unary<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub operator: UnaryOperator,
+    pub argument: Box<E<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Call<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) callee: Box<E<T>>,
-    pub(crate) arguments: Vec<E<T>>,
+  pub struct Call<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub callee: Box<E<T>>,
+    pub arguments: Vec<E<T>>,
   }
 
   #[derive(Copy, Clone, PartialEq, Eq)]
-  pub(crate) enum BinaryOperator {
+  pub enum BinaryOperator {
     MUL,
     DIV,
     MOD,
@@ -431,7 +438,7 @@ pub(crate) mod expr {
   }
 
   impl BinaryOperator {
-    pub(crate) fn precedence(&self) -> i32 {
+    pub fn precedence(&self) -> i32 {
       match self {
         BinaryOperator::MUL => 0,
         BinaryOperator::DIV => 0,
@@ -452,68 +459,68 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Binary<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) operator_preceding_comments: CommentReference,
-    pub(crate) operator: BinaryOperator,
-    pub(crate) e1: Box<E<T>>,
-    pub(crate) e2: Box<E<T>>,
+  pub struct Binary<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub operator_preceding_comments: CommentReference,
+    pub operator: BinaryOperator,
+    pub e1: Box<E<T>>,
+    pub e2: Box<E<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) enum IfElseCondition<T: Clone> {
+  pub enum IfElseCondition<T: Clone> {
     Expression(E<T>),
     Guard(super::pattern::MatchingPattern<T>, E<T>),
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct IfElse<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) condition: Box<IfElseCondition<T>>,
-    pub(crate) e1: Box<E<T>>,
-    pub(crate) e2: Box<E<T>>,
+  pub struct IfElse<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub condition: Box<IfElseCondition<T>>,
+    pub e1: Box<E<T>>,
+    pub e2: Box<E<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct VariantPatternToExpression<T: Clone> {
-    pub(crate) loc: Location,
-    pub(crate) pattern: pattern::MatchingPattern<T>,
-    pub(crate) body: Box<E<T>>,
+  pub struct VariantPatternToExpression<T: Clone> {
+    pub loc: Location,
+    pub pattern: pattern::MatchingPattern<T>,
+    pub body: Box<E<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Match<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) matched: Box<E<T>>,
-    pub(crate) cases: Vec<VariantPatternToExpression<T>>,
+  pub struct Match<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub matched: Box<E<T>>,
+    pub cases: Vec<VariantPatternToExpression<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Lambda<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) parameters: Vec<super::OptionallyAnnotatedId<T>>,
-    pub(crate) captured: HashMap<PStr, T>,
-    pub(crate) body: Box<E<T>>,
+  pub struct Lambda<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub parameters: Vec<super::OptionallyAnnotatedId<T>>,
+    pub captured: HashMap<PStr, T>,
+    pub body: Box<E<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct DeclarationStatement<T: Clone> {
-    pub(crate) loc: Location,
-    pub(crate) associated_comments: CommentReference,
-    pub(crate) pattern: super::pattern::MatchingPattern<T>,
-    pub(crate) annotation: Option<annotation::T>,
-    pub(crate) assigned_expression: Box<E<T>>,
+  pub struct DeclarationStatement<T: Clone> {
+    pub loc: Location,
+    pub associated_comments: CommentReference,
+    pub pattern: super::pattern::MatchingPattern<T>,
+    pub annotation: Option<annotation::T>,
+    pub assigned_expression: Box<E<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct Block<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) statements: Vec<DeclarationStatement<T>>,
-    pub(crate) expression: Option<Box<E<T>>>,
+  pub struct Block<T: Clone> {
+    pub common: ExpressionCommon<T>,
+    pub statements: Vec<DeclarationStatement<T>>,
+    pub expression: Option<Box<E<T>>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) enum E<T: Clone> {
+  pub enum E<T: Clone> {
     Literal(ExpressionCommon<T>, Literal),
     LocalId(ExpressionCommon<T>, Id),
     ClassId(ExpressionCommon<T>, ModuleReference, Id),
@@ -530,7 +537,7 @@ pub(crate) mod expr {
   }
 
   impl<T: Clone> E<T> {
-    pub(crate) fn common(&self) -> &ExpressionCommon<T> {
+    pub fn common(&self) -> &ExpressionCommon<T> {
       match self {
         E::Literal(common, _)
         | E::LocalId(common, _)
@@ -548,7 +555,7 @@ pub(crate) mod expr {
       }
     }
 
-    pub(crate) fn common_mut(&mut self) -> &mut ExpressionCommon<T> {
+    pub fn common_mut(&mut self) -> &mut ExpressionCommon<T> {
       match self {
         E::Literal(common, _)
         | E::LocalId(common, _)
@@ -566,15 +573,15 @@ pub(crate) mod expr {
       }
     }
 
-    pub(crate) fn loc(&self) -> Location {
+    pub fn loc(&self) -> Location {
       self.common().loc
     }
 
-    pub(crate) fn type_(&self) -> &T {
+    pub fn type_(&self) -> &T {
       &self.common().type_
     }
 
-    pub(crate) fn precedence(&self) -> i32 {
+    pub fn precedence(&self) -> i32 {
       match self {
         E::Literal(_, _) | E::LocalId(_, _) | E::ClassId(_, _, _) | E::Tuple(_, _) => 0,
         E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 1,
@@ -589,74 +596,73 @@ pub(crate) mod expr {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct TypeParameter {
-  pub(crate) loc: Location,
-  pub(crate) name: Id,
-  pub(crate) bound: Option<annotation::Id>,
+pub struct TypeParameter {
+  pub loc: Location,
+  pub name: Id,
+  pub bound: Option<annotation::Id>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct ClassMemberDeclaration {
-  pub(crate) loc: Location,
-  pub(crate) associated_comments: CommentReference,
-  pub(crate) is_public: bool,
-  pub(crate) is_method: bool,
-  pub(crate) name: Id,
-  pub(crate) type_parameters: Rc<Vec<TypeParameter>>,
-  pub(crate) type_: annotation::Function,
-  pub(crate) parameters: Rc<Vec<AnnotatedId<()>>>,
+pub struct ClassMemberDeclaration {
+  pub loc: Location,
+  pub associated_comments: CommentReference,
+  pub is_public: bool,
+  pub is_method: bool,
+  pub name: Id,
+  pub type_parameters: Rc<Vec<TypeParameter>>,
+  pub type_: annotation::Function,
+  pub parameters: Rc<Vec<AnnotatedId<()>>>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct ClassMemberDefinition<T: Clone> {
-  pub(crate) decl: ClassMemberDeclaration,
-  pub(crate) body: expr::E<T>,
+pub struct ClassMemberDefinition<T: Clone> {
+  pub decl: ClassMemberDeclaration,
+  pub body: expr::E<T>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct InterfaceDeclarationCommon<D, M> {
-  pub(crate) loc: Location,
-  pub(crate) associated_comments: CommentReference,
-  pub(crate) private: bool,
-  pub(crate) name: Id,
-  pub(crate) type_parameters: Vec<TypeParameter>,
+pub struct InterfaceDeclarationCommon<D, M> {
+  pub loc: Location,
+  pub associated_comments: CommentReference,
+  pub private: bool,
+  pub name: Id,
+  pub type_parameters: Vec<TypeParameter>,
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
-  pub(crate) extends_or_implements_nodes: Vec<annotation::Id>,
-  pub(crate) type_definition: D,
-  pub(crate) members: Vec<M>,
+  pub extends_or_implements_nodes: Vec<annotation::Id>,
+  pub type_definition: D,
+  pub members: Vec<M>,
 }
 
-pub(crate) type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMemberDeclaration>;
+pub type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMemberDeclaration>;
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct FieldDefinition {
-  pub(crate) name: Id,
-  pub(crate) annotation: annotation::T,
-  pub(crate) is_public: bool,
+pub struct FieldDefinition {
+  pub name: Id,
+  pub annotation: annotation::T,
+  pub is_public: bool,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct VariantDefinition {
-  pub(crate) name: Id,
-  pub(crate) associated_data_types: Vec<annotation::T>,
+pub struct VariantDefinition {
+  pub name: Id,
+  pub associated_data_types: Vec<annotation::T>,
 }
 
 #[derive(Clone, EnumAsInner, PartialEq, Eq)]
-pub(crate) enum TypeDefinition {
+pub enum TypeDefinition {
   Struct { loc: Location, fields: Vec<FieldDefinition> },
   Enum { loc: Location, variants: Vec<VariantDefinition> },
 }
 
-pub(crate) type ClassDefinition<T> =
-  InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition<T>>;
+pub type ClassDefinition<T> = InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition<T>>;
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) enum Toplevel<T: Clone> {
+pub enum Toplevel<T: Clone> {
   Interface(InterfaceDeclaration),
   Class(ClassDefinition<T>),
 }
 
-pub(crate) enum MemberDeclarationsIterator<'a, T: Clone> {
+pub enum MemberDeclarationsIterator<'a, T: Clone> {
   Class(std::slice::Iter<'a, ClassMemberDefinition<T>>),
   Interface(std::slice::Iter<'a, ClassMemberDeclaration>),
 }
@@ -673,63 +679,63 @@ impl<'a, T: Clone> Iterator for MemberDeclarationsIterator<'a, T> {
 }
 
 impl<T: Clone> Toplevel<T> {
-  pub(crate) fn is_class(&self) -> bool {
+  pub fn is_class(&self) -> bool {
     match self {
       Toplevel::Interface(_) => false,
       Toplevel::Class(_) => true,
     }
   }
 
-  pub(crate) fn loc(&self) -> Location {
+  pub fn loc(&self) -> Location {
     match self {
       Toplevel::Interface(i) => i.loc,
       Toplevel::Class(c) => c.loc,
     }
   }
 
-  pub(crate) fn associated_comments(&self) -> CommentReference {
+  pub fn associated_comments(&self) -> CommentReference {
     match self {
       Toplevel::Interface(i) => i.associated_comments,
       Toplevel::Class(c) => c.associated_comments,
     }
   }
 
-  pub(crate) fn is_private(&self) -> bool {
+  pub fn is_private(&self) -> bool {
     match self {
       Toplevel::Interface(i) => i.private,
       Toplevel::Class(c) => c.private,
     }
   }
 
-  pub(crate) fn name(&self) -> &Id {
+  pub fn name(&self) -> &Id {
     match self {
       Toplevel::Interface(i) => &i.name,
       Toplevel::Class(c) => &c.name,
     }
   }
 
-  pub(crate) fn type_parameters(&self) -> &Vec<TypeParameter> {
+  pub fn type_parameters(&self) -> &Vec<TypeParameter> {
     match self {
       Toplevel::Interface(i) => &i.type_parameters,
       Toplevel::Class(c) => &c.type_parameters,
     }
   }
 
-  pub(crate) fn extends_or_implements_nodes(&self) -> &Vec<annotation::Id> {
+  pub fn extends_or_implements_nodes(&self) -> &Vec<annotation::Id> {
     match self {
       Toplevel::Interface(i) => &i.extends_or_implements_nodes,
       Toplevel::Class(c) => &c.extends_or_implements_nodes,
     }
   }
 
-  pub(crate) fn type_definition(&self) -> Option<&TypeDefinition> {
+  pub fn type_definition(&self) -> Option<&TypeDefinition> {
     match self {
       Toplevel::Interface(_) => None,
       Toplevel::Class(c) => Some(&c.type_definition),
     }
   }
 
-  pub(crate) fn members_iter(&self) -> MemberDeclarationsIterator<T> {
+  pub fn members_iter(&self) -> MemberDeclarationsIterator<T> {
     match self {
       Toplevel::Interface(i) => MemberDeclarationsIterator::Interface(i.members.iter()),
       Toplevel::Class(c) => MemberDeclarationsIterator::Class(c.members.iter()),
@@ -738,31 +744,30 @@ impl<T: Clone> Toplevel<T> {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct ModuleMembersImport {
-  pub(crate) loc: Location,
-  pub(crate) imported_members: Vec<Id>,
-  pub(crate) imported_module: ModuleReference,
-  pub(crate) imported_module_loc: Location,
+pub struct ModuleMembersImport {
+  pub loc: Location,
+  pub imported_members: Vec<Id>,
+  pub imported_module: ModuleReference,
+  pub imported_module_loc: Location,
 }
 
 #[derive(Clone)]
-pub(crate) struct Module<T: Clone> {
-  pub(crate) comment_store: CommentStore,
-  pub(crate) imports: Vec<ModuleMembersImport>,
-  pub(crate) toplevels: Vec<Toplevel<T>>,
-  pub(crate) trailing_comments: CommentReference,
+pub struct Module<T: Clone> {
+  pub comment_store: CommentStore,
+  pub imports: Vec<ModuleMembersImport>,
+  pub toplevels: Vec<Toplevel<T>>,
+  pub trailing_comments: CommentReference,
 }
 
-#[cfg(test)]
-pub(crate) mod test_builder {
+pub mod test_builder {
   use super::super::loc::Location;
   use super::*;
   use samlang_heap::{ModuleReference, PStr};
 
-  pub(crate) struct CustomizedAstBuilder {}
+  pub struct CustomizedAstBuilder {}
 
   impl CustomizedAstBuilder {
-    pub(crate) fn any_annot(&self) -> annotation::T {
+    pub fn any_annot(&self) -> annotation::T {
       annotation::T::Primitive(
         Location::dummy(),
         NO_COMMENT_REFERENCE,
@@ -770,7 +775,7 @@ pub(crate) mod test_builder {
       )
     }
 
-    pub(crate) fn unit_annot(&self) -> annotation::T {
+    pub fn unit_annot(&self) -> annotation::T {
       annotation::T::Primitive(
         Location::dummy(),
         NO_COMMENT_REFERENCE,
@@ -778,7 +783,7 @@ pub(crate) mod test_builder {
       )
     }
 
-    pub(crate) fn bool_annot(&self) -> annotation::T {
+    pub fn bool_annot(&self) -> annotation::T {
       annotation::T::Primitive(
         Location::dummy(),
         NO_COMMENT_REFERENCE,
@@ -786,7 +791,7 @@ pub(crate) mod test_builder {
       )
     }
 
-    pub(crate) fn int_annot(&self) -> annotation::T {
+    pub fn int_annot(&self) -> annotation::T {
       annotation::T::Primitive(
         Location::dummy(),
         NO_COMMENT_REFERENCE,
@@ -794,7 +799,7 @@ pub(crate) mod test_builder {
       )
     }
 
-    pub(crate) fn string_annot(&self) -> annotation::T {
+    pub fn string_annot(&self) -> annotation::T {
       annotation::T::Id(annotation::Id {
         location: Location::dummy(),
         module_reference: ModuleReference::ROOT,
@@ -803,7 +808,7 @@ pub(crate) mod test_builder {
       })
     }
 
-    pub(crate) fn general_id_annot_unwrapped(
+    pub fn general_id_annot_unwrapped(
       &self,
       id: PStr,
       type_arguments: Vec<annotation::T>,
@@ -816,23 +821,19 @@ pub(crate) mod test_builder {
       }
     }
 
-    pub(crate) fn general_id_annot(
-      &self,
-      id: PStr,
-      type_arguments: Vec<annotation::T>,
-    ) -> annotation::T {
+    pub fn general_id_annot(&self, id: PStr, type_arguments: Vec<annotation::T>) -> annotation::T {
       annotation::T::Id(self.general_id_annot_unwrapped(id, type_arguments))
     }
 
-    pub(crate) fn simple_id_annot(&self, id: PStr) -> annotation::T {
+    pub fn simple_id_annot(&self, id: PStr) -> annotation::T {
       self.general_id_annot(id, vec![])
     }
 
-    pub(crate) fn generic_annot(&self, id: PStr) -> annotation::T {
+    pub fn generic_annot(&self, id: PStr) -> annotation::T {
       annotation::T::Generic(Location::dummy(), Id::from(id))
     }
 
-    pub(crate) fn fn_annot_unwrapped(
+    pub fn fn_annot_unwrapped(
       &self,
       argument_types: Vec<annotation::T>,
       return_type: annotation::T,
@@ -845,7 +846,7 @@ pub(crate) mod test_builder {
       }
     }
 
-    pub(crate) fn fn_annot(
+    pub fn fn_annot(
       &self,
       argument_types: Vec<annotation::T>,
       return_type: annotation::T,
@@ -854,7 +855,7 @@ pub(crate) mod test_builder {
     }
   }
 
-  pub(crate) fn create() -> CustomizedAstBuilder {
+  pub fn create() -> CustomizedAstBuilder {
     CustomizedAstBuilder {}
   }
 }

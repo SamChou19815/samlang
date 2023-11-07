@@ -6,7 +6,7 @@ use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PrimitiveType {
+pub enum PrimitiveType {
   Int,
   Any,
 }
@@ -21,13 +21,13 @@ impl PrimitiveType {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FunctionType {
-  pub(crate) argument_types: Vec<Type>,
-  pub(crate) return_type: Box<Type>,
+pub struct FunctionType {
+  pub argument_types: Vec<Type>,
+  pub return_type: Box<Type>,
 }
 
 impl FunctionType {
-  pub(crate) fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+  pub fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     collector.push('(');
     let mut iter = self.argument_types.iter().enumerate();
     if let Some((_, t)) = iter.next() {
@@ -46,18 +46,18 @@ impl FunctionType {
 }
 
 #[derive(Debug, Clone, EnumAsInner)]
-pub(crate) enum Type {
+pub enum Type {
   Primitive(PrimitiveType),
   Id(TypeNameId),
   Fn(FunctionType),
 }
 
 impl Type {
-  pub(crate) fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
+  pub fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
-  pub(crate) fn new_fn(argument_types: Vec<Type>, return_type: Type) -> Type {
+  pub fn new_fn(argument_types: Vec<Type>, return_type: Type) -> Type {
     Type::Fn(Self::new_fn_unwrapped(argument_types, return_type))
   }
 
@@ -69,7 +69,7 @@ impl Type {
     }
   }
 
-  pub(crate) fn is_the_same_type(&self, other: &Type) -> bool {
+  pub fn is_the_same_type(&self, other: &Type) -> bool {
     match (self, other) {
       (Type::Primitive(k1), Type::Primitive(k2)) => k1 == k2,
       (Type::Id(n1), Type::Id(n2)) => n1 == n2,
@@ -87,11 +87,11 @@ impl Type {
   }
 }
 
-pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
-pub(crate) const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
+pub const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
+pub const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 
 #[derive(Debug, Clone, EnumAsInner)]
-pub(crate) enum Expression {
+pub enum Expression {
   IntLiteral(i32),
   StringName(PStr),
   Variable(PStr, Type),
@@ -99,11 +99,11 @@ pub(crate) enum Expression {
 }
 
 impl Expression {
-  pub(crate) fn int(value: i32) -> Expression {
+  pub fn int(value: i32) -> Expression {
     Expression::IntLiteral(value)
   }
 
-  pub(crate) fn ref_countable(&self) -> bool {
+  pub fn ref_countable(&self) -> bool {
     match self {
       Expression::IntLiteral(_) | Expression::FnName(_, _) => false,
       Expression::StringName(_) => true,
@@ -120,17 +120,17 @@ impl Expression {
   }
 }
 
-pub(crate) const ZERO: Expression = Expression::IntLiteral(0);
-pub(crate) const ONE: Expression = Expression::IntLiteral(1);
+pub const ZERO: Expression = Expression::IntLiteral(0);
+pub const ONE: Expression = Expression::IntLiteral(1);
 
-pub(crate) struct GenenalLoopVariable {
-  pub(crate) name: PStr,
-  pub(crate) type_: Type,
-  pub(crate) initial_value: Expression,
-  pub(crate) loop_value: Expression,
+pub struct GenenalLoopVariable {
+  pub name: PStr,
+  pub type_: Type,
+  pub initial_value: Expression,
+  pub loop_value: Expression,
 }
 
-pub(crate) enum Statement {
+pub enum Statement {
   Binary {
     name: PStr,
     operator: Operator,
@@ -192,12 +192,7 @@ pub(crate) enum Statement {
 }
 
 impl Statement {
-  pub(crate) fn binary(
-    name: PStr,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Statement {
+  pub fn binary(name: PStr, operator: Operator, e1: Expression, e2: Expression) -> Statement {
     match (operator, &e2) {
       (Operator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
         Statement::Binary { name, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
@@ -457,12 +452,12 @@ impl Statement {
   }
 }
 
-pub(crate) struct Function {
-  pub(crate) name: FunctionName,
-  pub(crate) parameters: Vec<PStr>,
-  pub(crate) type_: FunctionType,
-  pub(crate) body: Vec<Statement>,
-  pub(crate) return_value: Expression,
+pub struct Function {
+  pub name: FunctionName,
+  pub parameters: Vec<PStr>,
+  pub type_: FunctionType,
+  pub body: Vec<Statement>,
+  pub return_value: Expression,
 }
 
 impl Function {
@@ -494,20 +489,20 @@ impl Function {
   }
 }
 
-pub(crate) struct TypeDefinition {
-  pub(crate) name: TypeNameId,
-  pub(crate) mappings: Vec<Type>,
+pub struct TypeDefinition {
+  pub name: TypeNameId,
+  pub mappings: Vec<Type>,
 }
 
-pub(crate) struct Sources {
-  pub(crate) symbol_table: SymbolTable,
-  pub(crate) global_variables: Vec<GlobalVariable>,
-  pub(crate) type_definitions: Vec<TypeDefinition>,
-  pub(crate) main_function_names: Vec<FunctionName>,
-  pub(crate) functions: Vec<Function>,
+pub struct Sources {
+  pub symbol_table: SymbolTable,
+  pub global_variables: Vec<GlobalVariable>,
+  pub type_definitions: Vec<TypeDefinition>,
+  pub main_function_names: Vec<FunctionName>,
+  pub functions: Vec<Function>,
 }
 
-pub(crate) fn ts_prolog() -> String {
+pub fn ts_prolog() -> String {
   let heap = &Heap::new();
   let table = &SymbolTable::new();
   let mut collector = String::new();
@@ -542,7 +537,7 @@ pub(crate) fn ts_prolog() -> String {
 }
 
 impl Sources {
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = ts_prolog();
 
     for v in &self.global_variables {

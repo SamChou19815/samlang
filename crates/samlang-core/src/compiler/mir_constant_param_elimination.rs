@@ -1,8 +1,8 @@
-use crate::ast::mir::{
+use itertools::Itertools;
+use samlang_ast::mir::{
   Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
   Sources, Statement, VariableName,
 };
-use itertools::Itertools;
 use samlang_heap::PStr;
 use std::collections::HashMap;
 
@@ -393,14 +393,14 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::Operator,
-    ast::mir::{
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::Operator,
+    mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
       GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_TYPE, ZERO,
     },
   };
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[test]

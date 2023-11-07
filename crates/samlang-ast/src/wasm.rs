@@ -1,7 +1,7 @@
 use super::{hir, mir};
 use samlang_heap::{Heap, PStr};
 
-pub(crate) enum InlineInstruction {
+pub enum InlineInstruction {
   Const(i32),
   Drop(Box<InlineInstruction>),
   LocalGet(PStr),
@@ -132,9 +132,9 @@ impl InlineInstruction {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct LabelId(pub(crate) u32);
+pub struct LabelId(pub u32);
 
-pub(crate) enum Instruction {
+pub enum Instruction {
   Inline(InlineInstruction),
   IfElse { condition: InlineInstruction, s1: Vec<Instruction>, s2: Vec<Instruction> },
   UnconditionalJump(LabelId),
@@ -217,16 +217,16 @@ fn print_function_type_string(collector: &mut String, count: usize) {
   }
 }
 
-pub(crate) struct Function {
-  pub(crate) name: mir::FunctionName,
-  pub(crate) parameters: Vec<PStr>,
-  pub(crate) local_variables: Vec<PStr>,
-  pub(crate) instructions: Vec<Instruction>,
+pub struct Function {
+  pub name: mir::FunctionName,
+  pub parameters: Vec<PStr>,
+  pub local_variables: Vec<PStr>,
+  pub instructions: Vec<Instruction>,
 }
 
-pub(crate) struct GlobalData {
-  pub(crate) constant_pointer: usize,
-  pub(crate) bytes: Vec<u8>,
+pub struct GlobalData {
+  pub constant_pointer: usize,
+  pub bytes: Vec<u8>,
 }
 
 fn byte_digit_to_char(byte: u8) -> char {
@@ -252,15 +252,15 @@ impl GlobalData {
   }
 }
 
-pub(crate) struct Module {
-  pub(crate) function_type_parameter_counts: Vec<usize>,
-  pub(crate) global_variables: Vec<GlobalData>,
-  pub(crate) exported_functions: Vec<mir::FunctionName>,
-  pub(crate) functions: Vec<Function>,
+pub struct Module {
+  pub function_type_parameter_counts: Vec<usize>,
+  pub global_variables: Vec<GlobalData>,
+  pub exported_functions: Vec<mir::FunctionName>,
+  pub functions: Vec<Function>,
 }
 
 impl Module {
-  pub(crate) fn pretty_print(&self, heap: &Heap, table: &mir::SymbolTable) -> String {
+  pub fn pretty_print(&self, heap: &Heap, table: &mir::SymbolTable) -> String {
     let mut collector = String::new();
     for count in &self.function_type_parameter_counts {
       collector.push_str("(type $");

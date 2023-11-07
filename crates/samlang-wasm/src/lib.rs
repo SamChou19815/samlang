@@ -91,7 +91,7 @@ struct AutoCompletionItem {
 }
 
 impl Range {
-  fn from(loc: &samlang_core::ast::Location) -> Range {
+  fn from(loc: &samlang_ast::Location) -> Range {
     Range {
       start_line: loc.start.0 + 1,
       start_col: loc.start.1 + 1,
@@ -138,7 +138,7 @@ pub fn query_type(source: String, line: i32, column: i32) -> JsValue {
   samlang_core::services::api::query::hover(
     state,
     &mod_ref,
-    samlang_core::ast::Position(line - 1, column - 1),
+    samlang_ast::Position(line - 1, column - 1),
   )
   .map(|result| {
     serde_wasm_bindgen::to_value(&TypeQueryResult {
@@ -161,7 +161,7 @@ pub fn query_definition_location(source: String, line: i32, column: i32) -> JsVa
   samlang_core::services::api::query::definition_location(
     state,
     &mod_ref,
-    samlang_core::ast::Position(line - 1, column - 1),
+    samlang_ast::Position(line - 1, column - 1),
   )
   .map(|loc| serde_wasm_bindgen::to_value(&Range::from(&loc)).unwrap())
   .unwrap_or(JsValue::NULL)
@@ -175,7 +175,7 @@ pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
     &(samlang_core::services::api::completion::auto_complete(
       state,
       &mod_ref,
-      samlang_core::ast::Position(line - 1, column - 1),
+      samlang_ast::Position(line - 1, column - 1),
     )
     .into_iter()
     .map(|item| AutoCompletionItem {

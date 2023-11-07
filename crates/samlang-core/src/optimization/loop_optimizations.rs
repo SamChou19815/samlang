@@ -3,12 +3,12 @@ use super::{
   loop_induction_analysis::{self, OptimizableWhileLoop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
 };
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_TYPE, ZERO},
-  common::take_mut,
-};
+use crate::common::take_mut;
 use itertools::Itertools;
+use samlang_ast::hir::Operator;
+use samlang_ast::mir::{
+  Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_TYPE, ZERO,
+};
 use samlang_heap::Heap;
 use std::collections::HashSet;
 
@@ -227,15 +227,15 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::Operator,
-    ast::mir::{
+  use itertools::Itertools;
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::Operator,
+    mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
   };
-  use itertools::Itertools;
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   fn assert_loop_optimized(

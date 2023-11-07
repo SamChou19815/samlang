@@ -2,12 +2,11 @@ use super::loop_induction_analysis::{
   merge_invariant_multiplication_for_loop_optimization, BasicInductionVariableWithLoopGuard,
   GuardOperator, OptimizableWhileLoop, PotentialLoopInvariantExpression,
 };
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{Callee, Expression, Statement, VariableName, INT_TYPE},
-  Heap,
-};
 use itertools::Itertools;
+use samlang_ast::{
+  hir::Operator,
+  mir::{Callee, Expression, Statement, VariableName, INT_TYPE},
+};
 
 pub(super) struct LoopInductionVariableEliminationResult {
   pub(super) prefix_statements: Vec<Statement>,
@@ -91,7 +90,7 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
 
 pub(super) fn optimize(
   optimizable_while_loop: OptimizableWhileLoop,
-  heap: &mut Heap,
+  heap: &mut samlang_heap::Heap,
 ) -> Result<LoopInductionVariableEliminationResult, OptimizableWhileLoop> {
   if optimizable_while_loop_uses_induction_var(&optimizable_while_loop) {
     return Result::Err(optimizable_while_loop);
@@ -192,19 +191,19 @@ pub(super) fn optimize(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::hir::Operator,
-    ast::mir::{
-      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-      SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
-    },
-    optimization::loop_induction_analysis::{
-      BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName, GuardOperator,
-      OptimizableWhileLoop, PotentialLoopInvariantExpression,
-    },
+  use crate::optimization::loop_induction_analysis::{
+    BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName, GuardOperator,
+    OptimizableWhileLoop, PotentialLoopInvariantExpression,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    hir::Operator,
+    mir::{
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
+      SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
+    },
+  };
   use samlang_heap::{Heap, PStr};
 
   #[test]

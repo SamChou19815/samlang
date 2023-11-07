@@ -1,14 +1,12 @@
-use crate::{
-  ast::{
-    hir::{
-      ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
-      TypeName,
-    },
-    source,
-  },
-  checker::type_,
-};
+use crate::checker::type_;
 use itertools::Itertools;
+use samlang_ast::{
+  hir::{
+    ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
+    TypeName,
+  },
+  source,
+};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{BTreeMap, HashMap, HashSet},
@@ -276,11 +274,9 @@ impl TypeLoweringManager {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    ast::{hir::INT_TYPE, source::test_builder, Location, Reason},
-    checker::type_::test_type_builder,
-  };
+  use crate::checker::type_::test_type_builder;
   use pretty_assertions::assert_eq;
+  use samlang_ast::{hir::INT_TYPE, source::test_builder, Location, Reason};
   use samlang_heap::PStr;
 
   #[test]

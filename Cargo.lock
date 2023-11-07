@@ -543,10 +543,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
+name = "samlang-ast"
+version = "0.9.1"
+dependencies = [
+ "enum-as-inner",
+ "enum-iterator",
+ "itertools",
+ "pretty_assertions",
+ "samlang-heap",
+]
+
+[[package]]
 name = "samlang-cli"
 version = "0.9.1"
 dependencies = [
  "pretty_assertions",
+ "samlang-ast",
  "samlang-core",
  "samlang-heap",
  "serde_json",
@@ -571,6 +583,7 @@ dependencies = [
  "itertools",
  "phf",
  "pretty_assertions",
+ "samlang-ast",
  "samlang-collections",
  "samlang-heap",
  "wasmi",
@@ -590,6 +603,7 @@ name = "samlang-wasm"
 version = "0.9.1"
 dependencies = [
  "js-sys",
+ "samlang-ast",
  "samlang-core",
  "samlang-heap",
  "serde",

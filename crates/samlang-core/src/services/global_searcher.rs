@@ -1,9 +1,7 @@
-use crate::{
-  ast::{
-    source::{annotation, expr, pattern, Module, Toplevel, TypeDefinition},
-    Location,
-  },
-  checker::type_::Type,
+use crate::checker::type_::Type;
+use samlang_ast::{
+  source::{annotation, expr, pattern, Module, Toplevel, TypeDefinition},
+  Location,
 };
 use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};

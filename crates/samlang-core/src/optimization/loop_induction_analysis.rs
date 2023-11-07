@@ -1,10 +1,10 @@
 use super::dead_code_elimination;
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{Binary, Expression, GenenalLoopVariable, Statement, Type, VariableName},
-};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
+use samlang_ast::{
+  hir::Operator,
+  mir::{Binary, Expression, GenenalLoopVariable, Statement, Type, VariableName},
+};
 use samlang_heap::PStr;
 use std::collections::{HashMap, HashSet};
 
@@ -25,7 +25,7 @@ impl PotentialLoopInvariantExpression {
 
 impl PotentialLoopInvariantExpression {
   #[cfg(test)]
-  fn debug_print(&self, heap: &crate::Heap, table: &crate::ast::mir::SymbolTable) -> String {
+  fn debug_print(&self, heap: &crate::Heap, table: &samlang_ast::mir::SymbolTable) -> String {
     self.to_expression().debug_print(heap, table)
   }
 }
@@ -81,7 +81,7 @@ impl BasicInductionVariableWithLoopGuard {
   pub(super) fn debug_print(
     &self,
     heap: &crate::Heap,
-    table: &crate::ast::mir::SymbolTable,
+    table: &samlang_ast::mir::SymbolTable,
   ) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, guard_operator: {:?}, guard_expression: {}}}",
@@ -106,7 +106,7 @@ impl GeneralBasicInductionVariable {
   pub(super) fn debug_print(
     &self,
     heap: &crate::Heap,
-    table: &crate::ast::mir::SymbolTable,
+    table: &samlang_ast::mir::SymbolTable,
   ) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}}}",
@@ -127,7 +127,7 @@ pub(super) struct GeneralBasicInductionVariableWithLoopValueCollector {
 
 impl GeneralBasicInductionVariableWithLoopValueCollector {
   #[cfg(test)]
-  fn debug_print(&self, heap: &crate::Heap, table: &crate::ast::mir::SymbolTable) -> String {
+  fn debug_print(&self, heap: &crate::Heap, table: &samlang_ast::mir::SymbolTable) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, loop_value_collector: {}}}",
       self.name.as_str(heap),
@@ -158,7 +158,7 @@ impl DerivedInductionVariableWithName {
   pub(super) fn debug_print(
     &self,
     heap: &crate::Heap,
-    table: &crate::ast::mir::SymbolTable,
+    table: &samlang_ast::mir::SymbolTable,
   ) -> String {
     format!(
       "{{name: {}, base_name: {}, multiplier: {}, immediate: {}}}",
@@ -667,10 +667,10 @@ pub(super) fn extract_optimizable_while_loop(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::mir::{
+  use pretty_assertions::assert_eq;
+  use samlang_ast::mir::{
     Callee, FunctionName, FunctionNameExpression, SymbolTable, INT_TYPE, ONE, ZERO,
   };
-  use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {

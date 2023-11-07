@@ -1,6 +1,5 @@
 use super::{dep_graph::DependencyGraph, gc::perform_gc_after_recheck};
 use crate::{
-  ast::source::Module,
   checker::{
     build_module_signature,
     type_::{GlobalSignature, Type},
@@ -10,6 +9,7 @@ use crate::{
   measure_time,
   parser::parse_source_module_from_text,
 };
+use samlang_ast::source::Module;
 use samlang_heap::{Heap, ModuleReference};
 use std::{
   collections::{HashMap, HashSet},

@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{Location, Position, Reason},
     checker::{
       ssa_analysis::SsaAnalysisResult,
       type_::{
@@ -15,6 +14,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_ast::{Location, Position, Reason};
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::{
     collections::{HashMap, HashSet},

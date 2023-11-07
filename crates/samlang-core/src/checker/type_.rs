@@ -1,12 +1,10 @@
-use crate::{
-  ast::{
-    source::{annotation, TypeParameter},
-    Description, Location, Reason,
-  },
-  Heap, ModuleReference,
-};
+use crate::{Heap, ModuleReference};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
+use samlang_ast::{
+  source::{annotation, TypeParameter},
+  Description, Location, Reason,
+};
 use samlang_heap::PStr;
 use std::{collections::HashMap, rc::Rc};
 
@@ -660,8 +658,8 @@ pub(crate) type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
 #[cfg(test)]
 mod type_tests {
   use super::*;
-  use crate::ast::source::{test_builder, Id};
   use pretty_assertions::assert_eq;
+  use samlang_ast::source::{test_builder, Id};
 
   #[test]
   fn boilterplate() {

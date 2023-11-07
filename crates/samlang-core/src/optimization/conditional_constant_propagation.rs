@@ -1,8 +1,8 @@
 use super::optimization_common::{
   if_else_or_null, single_if_or_null, IndexAccessBindedValue, LocalValueContextForOptimization,
 };
-use crate::{ast::hir::Operator, ast::mir::*};
 use itertools::Itertools;
+use samlang_ast::{hir::Operator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, PStr};
 
@@ -570,10 +570,8 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 #[cfg(test)]
 mod boilterplate_tests {
   use super::{optimize_callee, BinaryExpression};
-  use crate::{
-    ast::hir::Operator, ast::mir::*,
-    optimization::optimization_common::LocalValueContextForOptimization,
-  };
+  use crate::optimization::optimization_common::LocalValueContextForOptimization;
+  use samlang_ast::{hir::Operator, mir::*};
   use samlang_heap::{Heap, PStr};
 
   #[test]

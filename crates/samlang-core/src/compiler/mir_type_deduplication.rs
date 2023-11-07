@@ -1,9 +1,9 @@
-use crate::ast::mir::{
+use itertools::Itertools;
+use samlang_ast::mir::{
   Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function,
   FunctionNameExpression, FunctionType, Sources, Statement, Type, TypeDefinition,
   TypeDefinitionMappings, TypeNameId, VariableName,
 };
-use itertools::Itertools;
 use std::collections::HashMap;
 
 type State = HashMap<TypeNameId, TypeNameId>;
@@ -237,8 +237,8 @@ pub(super) fn deduplicate(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::mir::{FunctionName, SymbolTable, INT_TYPE, ONE, ZERO};
   use pretty_assertions::assert_eq;
+  use samlang_ast::mir::{FunctionName, SymbolTable, INT_TYPE, ONE, ZERO};
   use samlang_heap::{Heap, PStr};
 
   #[should_panic]
@@ -326,7 +326,7 @@ mod tests {
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
-            Statement::binary(PStr::UNDERSCORE, crate::ast::hir::Operator::PLUS, ZERO, ZERO),
+            Statement::binary(PStr::UNDERSCORE, samlang_ast::hir::Operator::PLUS, ZERO, ZERO),
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(PStr::LOWER_F),

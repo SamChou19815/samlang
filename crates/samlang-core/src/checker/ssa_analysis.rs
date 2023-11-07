@@ -1,14 +1,12 @@
-use crate::{
-  ast::{
-    source::{
-      annotation, expr, pattern, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
-      TypeDefinition, TypeParameter,
-    },
-    Location,
-  },
-  errors::ErrorSet,
-};
+use crate::errors::ErrorSet;
 use itertools::Itertools;
+use samlang_ast::{
+  source::{
+    annotation, expr, pattern, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
+    TypeDefinition, TypeParameter,
+  },
+  Location,
+};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{HashMap, HashSet};
 

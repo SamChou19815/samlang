@@ -1,4 +1,4 @@
-use crate::ast::hir::GlobalVariable;
+use samlang_ast::hir::GlobalVariable;
 use samlang_heap::{Heap, PStr};
 use std::collections::HashMap;
 

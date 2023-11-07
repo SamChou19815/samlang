@@ -5,13 +5,6 @@ use super::{
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
 use crate::{
-  ast::{
-    source::{
-      expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition,
-      Id, ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
-    },
-    Location, Position,
-  },
   checker::{
     type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},
     type_check_module,
@@ -20,6 +13,13 @@ use crate::{
   printer,
 };
 use itertools::Itertools;
+use samlang_ast::{
+  source::{
+    expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition, Id,
+    ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
+  },
+  Location, Position,
+};
 use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 

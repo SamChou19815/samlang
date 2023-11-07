@@ -1,10 +1,6 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{
-      source::{expr, Id, Literal, NO_COMMENT_REFERENCE},
-      Location, Reason,
-    },
     checker::{
       main_checker::type_check_expression_for_tests,
       ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
@@ -20,6 +16,10 @@ mod tests {
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
   use pretty_assertions::assert_eq;
+  use samlang_ast::{
+    source::{expr, Id, Literal, NO_COMMENT_REFERENCE},
+    Location, Reason,
+  };
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::{HashMap, HashSet};
 

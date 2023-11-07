@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod tests {
   use super::super::api::*;
-  use crate::{
-    ast::{Location, Position},
-    services::server_state::ServerState,
-  };
+  use crate::services::server_state::ServerState;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_ast::{Location, Position};
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
 

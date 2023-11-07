@@ -2,10 +2,9 @@ use super::loop_induction_analysis::{
   BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
   PotentialLoopInvariantExpression,
 };
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{Binary, Expression, Statement, INT_TYPE, ZERO},
-  Heap,
+use samlang_ast::{
+  hir::Operator,
+  mir::{Binary, Expression, Statement, INT_TYPE, ZERO},
 };
 
 fn analyze_number_of_iterations_to_break_less_than_guard(
@@ -60,7 +59,7 @@ fn analyze_number_of_iterations_to_break_guard(
 
 pub(super) fn optimize(
   optimizable_while_loop: &OptimizableWhileLoop,
-  heap: &mut Heap,
+  heap: &mut samlang_heap::Heap,
 ) -> Option<Vec<Statement>> {
   let BasicInductionVariableWithLoopGuard {
     name: basic_induction_variable_with_loop_guard_name,
@@ -147,15 +146,13 @@ pub(super) fn optimize(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_TYPE, ZERO},
-    optimization::loop_induction_analysis::{
-      BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,
-      OptimizableWhileLoop, PotentialLoopInvariantExpression,
-    },
+  use crate::optimization::loop_induction_analysis::{
+    BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,
+    OptimizableWhileLoop, PotentialLoopInvariantExpression,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_TYPE, ZERO};
   use samlang_heap::{Heap, PStr};
 
   #[test]

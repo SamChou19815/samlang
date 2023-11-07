@@ -1,5 +1,5 @@
-use crate::ast::{hir, lir, mir, wasm};
 use itertools::Itertools;
+use samlang_ast::{hir, lir, mir, wasm};
 use samlang_heap::{Heap, PStr};
 use std::collections::{BTreeSet, HashMap};
 
@@ -274,12 +274,12 @@ pub(super) fn compile_mir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
 
 #[cfg(test)]
 mod tests {
-  use crate::ast::{
+  use pretty_assertions::assert_eq;
+  use samlang_ast::{
     hir::{GlobalVariable, Operator},
     lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
     mir, wasm,
   };
-  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
   #[test]

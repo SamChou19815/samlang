@@ -3,7 +3,7 @@ use samlang_heap::{Heap, ModuleReference};
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Position(pub i32, pub i32);
 
-pub(crate) const DUMMY_POSITION: Position = Position(-1, -1);
+pub const DUMMY_POSITION: Position = Position(-1, -1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {
@@ -13,7 +13,7 @@ pub struct Location {
 }
 
 impl Location {
-  pub(crate) fn dummy() -> Location {
+  pub fn dummy() -> Location {
     Location {
       module_reference: ModuleReference::DUMMY,
       start: DUMMY_POSITION,
@@ -21,15 +21,15 @@ impl Location {
     }
   }
 
-  pub(crate) fn document_start(module_reference: ModuleReference) -> Location {
+  pub fn document_start(module_reference: ModuleReference) -> Location {
     Location { module_reference, start: Position(0, 0), end: Position(0, 0) }
   }
 
-  pub(crate) fn full_document(module_reference: ModuleReference) -> Location {
+  pub fn full_document(module_reference: ModuleReference) -> Location {
     Location { module_reference, start: Position(0, 0), end: Position(i32::MAX - 1, i32::MAX - 1) }
   }
 
-  pub(crate) fn from_pos(sl: i32, sc: i32, el: i32, ec: i32) -> Location {
+  pub fn from_pos(sl: i32, sc: i32, el: i32, ec: i32) -> Location {
     Location {
       module_reference: ModuleReference::DUMMY,
       start: Position(sl, sc),
@@ -52,11 +52,11 @@ impl Location {
     Location { module_reference: self.module_reference, start, end }
   }
 
-  pub(crate) fn pretty_print_without_file(&self) -> String {
+  pub fn pretty_print_without_file(&self) -> String {
     format!("{}:{}-{}:{}", self.start.0 + 1, self.start.1 + 1, self.end.0 + 1, self.end.1 + 1)
   }
 
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
     format!("{}:{}", self.module_reference.to_filename(heap), self.pretty_print_without_file())
   }
 }

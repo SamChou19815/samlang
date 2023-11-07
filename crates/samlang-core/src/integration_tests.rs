@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast, checker::type_check_sources, compiler, errors::ErrorSet, interpreter, optimization,
+    checker::type_check_sources, compiler, errors::ErrorSet, interpreter, optimization,
     parser::parse_source_module_from_text, printer,
   };
   use itertools::Itertools;
@@ -2417,7 +2417,7 @@ class Main {
       let actual = interpreter::run(
         heap,
         &lir_sources,
-        ast::mir::FunctionName { type_name: main_type_name, fn_name: PStr::MAIN_FN },
+        samlang_ast::mir::FunctionName { type_name: main_type_name, fn_name: PStr::MAIN_FN },
       );
       assert_eq!(test.expected_std, actual);
       // Replace with the following line for debugging
@@ -2441,13 +2441,15 @@ class Main {
       .unwrap()
       .define(
         "builtins",
-        &ast::mir::FunctionName::PROCESS_PRINTLN.encoded_for_test(heap, &lir_sources.symbol_table),
+        &samlang_ast::mir::FunctionName::PROCESS_PRINTLN
+          .encoded_for_test(heap, &lir_sources.symbol_table),
         Func::wrap(&mut store, builtin_println),
       )
       .unwrap()
       .define(
         "builtins",
-        &ast::mir::FunctionName::PROCESS_PANIC.encoded_for_test(heap, &lir_sources.symbol_table),
+        &samlang_ast::mir::FunctionName::PROCESS_PANIC
+          .encoded_for_test(heap, &lir_sources.symbol_table),
         Func::wrap(&mut store, wasm_builtin_panic),
       )
       .unwrap()
@@ -2458,7 +2460,7 @@ class Main {
     let mut expected_str = String::new();
     for test in &tests {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
-      let main_function_name = ast::mir::FunctionName {
+      let main_function_name = samlang_ast::mir::FunctionName {
         type_name: lir_sources.symbol_table.create_main_type_name(mod_ref),
         fn_name: PStr::MAIN_FN,
       }

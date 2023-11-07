@@ -1,11 +1,11 @@
-use crate::{
-  ast::hir::Operator,
-  ast::mir::{
+use itertools::Itertools;
+use samlang_ast::{
+  hir::Operator,
+  mir::{
     Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
     ZERO,
   },
 };
-use itertools::Itertools;
 use samlang_heap::{Heap, PStr};
 
 struct RewriteResult {
@@ -212,8 +212,8 @@ pub(super) fn optimize_function_by_tailrec_rewrite(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::mir::{FunctionNameExpression, SymbolTable, INT_TYPE};
   use pretty_assertions::assert_eq;
+  use samlang_ast::mir::{FunctionNameExpression, SymbolTable, INT_TYPE};
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {
     assert!(optimize_function_by_tailrec_rewrite_aux(heap, f).is_err())
