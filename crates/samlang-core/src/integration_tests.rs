@@ -2375,11 +2375,11 @@ class Main {
       let raw = printer::pretty_print_source_module(heap, 100, &module);
       let mut error_set = ErrorSet::new();
       sources.insert(mod_ref, parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set));
-      assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+      assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     }
     let mut error_set = ErrorSet::new();
     let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     assert!(checked_sources.len() == expected_sources_size);
   }
 
@@ -2401,7 +2401,7 @@ class Main {
       sources.insert(mod_ref, parsed);
     }
     let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);
     let optimized_mir_sources = optimization::optimize_sources(
       heap,

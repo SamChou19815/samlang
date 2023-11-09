@@ -1,5 +1,5 @@
 use super::type_::{FunctionType, ISourceType, NominalType, Type, TypeParameterSignature};
-use crate::errors::{ErrorSet, StackableError, TypeIncompatibilityNode};
+use crate::errors::{ErrorSet, StackableError};
 use samlang_ast::Reason;
 use samlang_heap::PStr;
 use std::{
@@ -63,12 +63,12 @@ fn assignability_check_visit(lower: &Type, upper: &Type, error_stack: &mut Stack
     }
     (_, _) => {}
   }
-  error_stack.add_type_error(TypeIncompatibilityNode {
-    lower_reason: *lower.get_reason(),
-    lower_description: lower.to_description(),
-    upper_reason: *upper.get_reason(),
-    upper_description: upper.to_description(),
-  });
+  error_stack.add_type_incompatibility_error(
+    *lower.get_reason(),
+    lower.to_description(),
+    *upper.get_reason(),
+    upper.to_description(),
+  );
   false
 }
 
@@ -158,12 +158,12 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
     }
     (_, _) => {}
   }
-  error_stack.add_type_error(TypeIncompatibilityNode {
-    lower_reason: *lower.get_reason(),
-    lower_description: lower.to_description(),
-    upper_reason: *upper.get_reason(),
-    upper_description: upper.to_description(),
-  });
+  error_stack.add_type_incompatibility_error(
+    *lower.get_reason(),
+    lower.to_description(),
+    *upper.get_reason(),
+    upper.to_description(),
+  );
   None
 }
 
@@ -367,8 +367,14 @@ mod tests {
     let mut error_set_2 = ErrorSet::new();
     error_set_2
       .report_stackable_error(Location::dummy(), super::type_meet(lower, upper).err().unwrap());
-    assert_eq!(expected.trim(), error_set_2.pretty_print_error_messages_no_frame(heap).trim());
-    assert_eq!(expected.trim(), error_set.pretty_print_error_messages_no_frame(heap).trim());
+    assert_eq!(
+      expected.trim(),
+      error_set_2.pretty_print_error_messages_no_frame_for_test(heap).trim()
+    );
+    assert_eq!(
+      expected.trim(),
+      error_set.pretty_print_error_messages_no_frame_for_test(heap).trim()
+    );
   }
 
   #[test]

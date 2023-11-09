@@ -107,7 +107,7 @@ impl ServerState {
 
   #[cfg(test)]
   pub(super) fn get_error_dump(&self) -> String {
-    ErrorSet::pretty_print_from_grouped_error_messages(
+    ErrorSet::pretty_print_from_grouped_error_messages_for_tests(
       &self.heap,
       &self.string_sources,
       &self.errors,
