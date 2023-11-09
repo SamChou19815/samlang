@@ -1,5 +1,5 @@
-use crate::errors::ErrorSet;
 use samlang_ast::source::Module;
+use samlang_errors::ErrorSet;
 use samlang_heap::ModuleReference;
 use std::collections::HashMap;
 

@@ -423,9 +423,10 @@ pub(super) fn compute_module_diff_edits(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{errors::ErrorSet, parser};
+  use crate::parser;
   use pretty_assertions::assert_eq;
   use samlang_ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE};
+  use samlang_errors::ErrorSet;
   use samlang_heap::PStr;
 
   #[test]

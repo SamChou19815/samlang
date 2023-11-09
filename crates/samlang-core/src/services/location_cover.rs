@@ -249,7 +249,6 @@ mod tests {
   use crate::{
     builtin_parsed_std_sources,
     checker::{type_::Type, type_check_sources},
-    errors::ErrorSet,
     parser::parse_source_module_from_text,
     Heap, ModuleReference,
   };
@@ -299,7 +298,7 @@ mod tests {
   #[test]
   fn searcher_coverage_test() {
     let heap = &mut Heap::new();
-    let mut error_set = ErrorSet::new();
+    let mut error_set = samlang_errors::ErrorSet::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["foo".to_string()]);
     let source_code = r#"class Foo(val a: int) {
       function bar(): int = 3

@@ -9,7 +9,6 @@ use crate::{
     type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},
     type_check_module,
   },
-  errors::{ErrorDetail, ErrorSet},
   printer,
 };
 use itertools::Itertools;
@@ -20,6 +19,7 @@ use samlang_ast::{
   },
   Location, Position,
 };
+use samlang_errors::{ErrorDetail, ErrorSet};
 use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 

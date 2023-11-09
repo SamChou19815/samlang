@@ -1,20 +1,18 @@
 #[cfg(test)]
 mod tests {
-  use crate::{
-    checker::{
-      ssa_analysis::SsaAnalysisResult,
-      type_::{
-        test_type_builder, EnumVariantDefinitionSignature, ISourceType, InterfaceSignature,
-        MemberSignature, ModuleSignature, NominalType, Type, TypeDefinitionSignature,
-        TypeParameterSignature,
-      },
-      typing_context::{LocalTypingContext, TypingContext},
+  use crate::checker::{
+    ssa_analysis::SsaAnalysisResult,
+    type_::{
+      test_type_builder, EnumVariantDefinitionSignature, ISourceType, InterfaceSignature,
+      MemberSignature, ModuleSignature, NominalType, Type, TypeDefinitionSignature,
+      TypeParameterSignature,
     },
-    errors::ErrorSet,
+    typing_context::{LocalTypingContext, TypingContext},
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Position, Reason};
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::{
     collections::{HashMap, HashSet},

@@ -1,5 +1,5 @@
-use super::errors::ErrorSet;
 use samlang_ast::source;
+use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::HashSet;
 

@@ -1,6 +1,6 @@
-use crate::errors::ErrorSet;
 use phf::phf_map;
 use samlang_ast::Location;
+use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 
 struct EOF();

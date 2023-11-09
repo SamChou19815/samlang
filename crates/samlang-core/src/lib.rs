@@ -8,7 +8,6 @@ use std::collections::{BTreeMap, HashMap};
 mod checker;
 mod common;
 mod compiler;
-pub mod errors;
 mod integration_tests;
 mod interpreter;
 mod optimization;
@@ -45,7 +44,7 @@ pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, Stri
 pub(crate) fn builtin_parsed_std_sources(
   heap: &mut Heap,
 ) -> HashMap<ModuleReference, samlang_ast::source::Module<()>> {
-  let mut error_set = errors::ErrorSet::new();
+  let mut error_set = samlang_errors::ErrorSet::new();
   let mut parsed_sources = HashMap::new();
   for (mod_ref, source) in builtin_std_raw_sources(heap) {
     let parsed = parser::parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
@@ -57,7 +56,7 @@ pub(crate) fn builtin_parsed_std_sources(
 
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
-  let mut error_set = errors::ErrorSet::new();
+  let mut error_set = samlang_errors::ErrorSet::new();
   let module = parser::parse_source_module_from_text(
     source,
     ModuleReference::DUMMY,
@@ -85,7 +84,7 @@ pub fn compile_sources(
   entry_module_references: Vec<ModuleReference>,
   enable_profiling: bool,
 ) -> Result<SourcesCompilationResult, String> {
-  let mut error_set = errors::ErrorSet::new();
+  let mut error_set = samlang_errors::ErrorSet::new();
   let mut parsed_sources = HashMap::new();
   crate::common::measure_time(enable_profiling, "Parsing", || {
     for (module_reference, source) in &source_handles {

@@ -1042,12 +1042,12 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
 mod tests {
   use super::*;
   use crate::{
-    errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
     printer::{prettier, pretty_print_source_module},
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::source::{expr, test_builder, CommentStore, Id};
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference};
 
   fn assert_reprint_expr(source: &str, expected: &str) {

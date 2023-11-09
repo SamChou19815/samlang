@@ -9,7 +9,6 @@ use super::{
   type_system,
   typing_context::{LocalTypingContext, TypingContext},
 };
-use crate::errors::{ErrorSet, StackableError};
 use itertools::Itertools;
 use samlang_ast::{
   source::{
@@ -18,6 +17,7 @@ use samlang_ast::{
   },
   Description, Location, Reason,
 };
+use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{BTreeSet, HashMap},

@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
 use itertools::Itertools;
 use samlang_ast::{Description, Location, Reason};
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -396,7 +397,29 @@ Line 13
 
     #[test]
     fn integration_test_text() {
-      let sources = HashMap::from([(ModuleReference::DUMMY, "Hello sam hi!".to_string())]);
+      let sources = HashMap::from([(
+        ModuleReference::DUMMY,
+        r#"Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!
+Hello sam hi!"#
+          .to_string(),
+      )]);
       let mut state = ErrorPrinterState::new(super::super::ErrorPrinterStyle::Text, &sources);
       let heap = &Heap::new();
 
@@ -406,12 +429,13 @@ Line 13
       state.push_str(" ouch ");
       state.print_optional_ref(heap, &Location::from_pos(1, 6, 0, 9));
       state.print_optional_ref(heap, &Location::from_pos(0, 10, 0, 12));
+      state.print_optional_ref(heap, &Location::from_pos(0, 10, 10, 12));
       state.push_str(".\n\n");
       state.flush_frames();
 
       assert_eq!(
         r#"
-hiya ouch [1].
+hiya ouch [1][2].
 
   1| Hello sam hi!
            ^^^
@@ -420,6 +444,22 @@ hiya ouch [1].
   -----------------------
   1| Hello sam hi!
                ^^
+
+  [2] DUMMY.sam:1:11-11:13
+  ------------------------
+                vvv
+   1| Hello sam hi!
+   2| Hello sam hi!
+   3| Hello sam hi!
+   4| Hello sam hi!
+   5| Hello sam hi!
+   6| Hello sam hi!
+   7| Hello sam hi!
+   8| Hello sam hi!
+   9| Hello sam hi!
+  10| Hello sam hi!
+  11| Hello sam hi!
+      ^^^^^^^^^^^^
 "#
         .trim(),
         state.consume().trim()
@@ -462,20 +502,26 @@ enum IncompatibilityNode {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct StackableError {
+pub struct StackableError {
   rev_stack: Vec<IncompatibilityNode>,
 }
 
-impl StackableError {
-  pub(crate) fn new() -> StackableError {
+impl Default for StackableError {
+  fn default() -> Self {
     StackableError { rev_stack: Vec::with_capacity(2) }
   }
+}
 
-  pub(crate) fn is_empty(&self) -> bool {
+impl StackableError {
+  pub fn new() -> StackableError {
+    StackableError::default()
+  }
+
+  pub fn is_empty(&self) -> bool {
     self.rev_stack.is_empty()
   }
 
-  pub(crate) fn add_type_incompatibility_error(
+  pub fn add_type_incompatibility_error(
     &mut self,
     lower_reason: Reason,
     lower_description: Description,
@@ -490,15 +536,15 @@ impl StackableError {
     })));
   }
 
-  pub(crate) fn add_fn_param_arity_error(&mut self, lower: usize, upper: usize) {
+  pub fn add_fn_param_arity_error(&mut self, lower: usize, upper: usize) {
     self.rev_stack.push(IncompatibilityNode::FunctionParametersArity(lower, upper));
   }
 
-  pub(crate) fn add_type_args_arity_error(&mut self, lower: usize, upper: usize) {
+  pub fn add_type_args_arity_error(&mut self, lower: usize, upper: usize) {
     self.rev_stack.push(IncompatibilityNode::TypeArgumentsArity(lower, upper));
   }
 
-  pub(crate) fn add_type_params_arity_error(&mut self, lower: usize, upper: usize) {
+  pub fn add_type_params_arity_error(&mut self, lower: usize, upper: usize) {
     self.rev_stack.push(IncompatibilityNode::TypeParametersArity(lower, upper));
   }
 }
@@ -530,7 +576,7 @@ mod stackable_error_tests {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum ErrorDetail {
+pub enum ErrorDetail {
   CannotResolveClass { module_reference: ModuleReference, name: PStr },
   CannotResolveMember { parent: Description, member: PStr },
   CannotResolveModule { module_reference: ModuleReference },
@@ -756,12 +802,12 @@ impl ErrorDetail {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CompileTimeError {
-  pub(crate) location: Location,
-  pub(crate) detail: ErrorDetail,
+  pub location: Location,
+  pub detail: ErrorDetail,
 }
 
 impl CompileTimeError {
-  pub(crate) fn is_syntax_error(&self) -> bool {
+  pub fn is_syntax_error(&self) -> bool {
     matches!(&self.detail, ErrorDetail::InvalidSyntax(_))
   }
 
@@ -795,25 +841,26 @@ impl CompileTimeError {
   }
 }
 
-pub(crate) struct ErrorSet {
+#[derive(Default)]
+pub struct ErrorSet {
   errors: BTreeSet<CompileTimeError>,
 }
 
 impl ErrorSet {
-  pub(crate) fn new() -> ErrorSet {
-    ErrorSet { errors: BTreeSet::new() }
+  pub fn new() -> ErrorSet {
+    ErrorSet::default()
   }
 
-  pub(crate) fn group_errors(self) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
+  pub fn group_errors(self) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
     let grouped = self.errors.into_iter().group_by(|e| e.location.module_reference);
     grouped.into_iter().map(|(k, v)| (k, v.collect_vec())).collect::<HashMap<_, _>>()
   }
 
-  pub(crate) fn has_errors(&self) -> bool {
+  pub fn has_errors(&self) -> bool {
     !self.errors.is_empty()
   }
 
-  pub(crate) fn errors(&self) -> Vec<&CompileTimeError> {
+  pub fn errors(&self) -> Vec<&CompileTimeError> {
     self.errors.iter().collect()
   }
 
@@ -853,7 +900,7 @@ impl ErrorSet {
     printer.consume()
   }
 
-  pub(crate) fn pretty_print_error_messages(
+  pub fn pretty_print_error_messages(
     &self,
     heap: &Heap,
     sources: &HashMap<ModuleReference, String>,
@@ -861,8 +908,7 @@ impl ErrorSet {
     self.error_messages(heap, ErrorPrinterStyle::Text, sources)
   }
 
-  #[cfg(test)]
-  pub(crate) fn pretty_print_from_grouped_error_messages_for_tests(
+  pub fn pretty_print_from_grouped_error_messages_for_tests(
     heap: &Heap,
     sources: &HashMap<ModuleReference, String>,
     grouped_errors: &HashMap<ModuleReference, Vec<CompileTimeError>>,
@@ -874,8 +920,7 @@ impl ErrorSet {
     printer.consume()
   }
 
-  #[cfg(test)]
-  pub(crate) fn pretty_print_error_messages_no_frame_for_test(&self, heap: &Heap) -> String {
+  pub fn pretty_print_error_messages_no_frame_for_test(&self, heap: &Heap) -> String {
     self.pretty_print_error_messages(heap, &HashMap::new())
   }
 
@@ -883,7 +928,7 @@ impl ErrorSet {
     self.errors.insert(CompileTimeError { location, detail });
   }
 
-  pub(crate) fn report_cannot_resolve_member_error(
+  pub fn report_cannot_resolve_member_error(
     &mut self,
     loc: Location,
     parent: Description,
@@ -892,7 +937,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveMember { parent, member })
   }
 
-  pub(crate) fn report_cannot_resolve_module_error(
+  pub fn report_cannot_resolve_module_error(
     &mut self,
     loc: Location,
     module_reference: ModuleReference,
@@ -900,7 +945,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveModule { module_reference })
   }
 
-  pub(crate) fn report_cannot_resolve_class_error(
+  pub fn report_cannot_resolve_class_error(
     &mut self,
     loc: Location,
     module_reference: ModuleReference,
@@ -909,32 +954,23 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveClass { module_reference, name })
   }
 
-  pub(crate) fn report_cannot_resolve_name_error(&mut self, loc: Location, name: PStr) {
+  pub fn report_cannot_resolve_name_error(&mut self, loc: Location, name: PStr) {
     self.report_error(loc, ErrorDetail::CannotResolveName { name })
   }
 
-  pub(crate) fn report_cyclic_type_definition_error(
-    &mut self,
-    type_loc: Location,
-    type_: Description,
-  ) {
+  pub fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: Description) {
     self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
   }
 
-  pub(crate) fn report_element_missing_error(
-    &mut self,
-    loc: Location,
-    parent: Description,
-    index: usize,
-  ) {
+  pub fn report_element_missing_error(&mut self, loc: Location, parent: Description, index: usize) {
     self.report_error(loc, ErrorDetail::ElementMissing { parent, index })
   }
 
-  pub(crate) fn report_illegal_function_in_interface(&mut self, loc: Location) {
+  pub fn report_illegal_function_in_interface(&mut self, loc: Location) {
     self.report_error(loc, ErrorDetail::IllegalFunctionInInterface);
   }
 
-  pub(crate) fn report_incompatible_subtype_error(
+  pub fn report_incompatible_subtype_error(
     &mut self,
     loc: Location,
     lower: Description,
@@ -943,7 +979,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::IncompatibleSubType { lower, upper })
   }
 
-  pub(crate) fn report_incompatible_type_kind_error(
+  pub fn report_incompatible_type_kind_error(
     &mut self,
     loc: Location,
     lower: Description,
@@ -952,11 +988,11 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::IncompatibleTypeKind { lower, upper })
   }
 
-  pub(crate) fn report_invalid_syntax_error(&mut self, loc: Location, reason: String) {
+  pub fn report_invalid_syntax_error(&mut self, loc: Location, reason: String) {
     self.report_error(loc, ErrorDetail::InvalidSyntax(reason))
   }
 
-  pub(crate) fn report_missing_class_member_definition_error(
+  pub fn report_missing_class_member_definition_error(
     &mut self,
     loc: Location,
     missing_definitions: Vec<PStr>,
@@ -964,7 +1000,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::MissingClassMemberDefinitions { missing_definitions })
   }
 
-  pub(crate) fn report_missing_export_error(
+  pub fn report_missing_export_error(
     &mut self,
     loc: Location,
     module_reference: ModuleReference,
@@ -973,7 +1009,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::MissingExport { module_reference, name })
   }
 
-  pub(crate) fn report_name_already_bound_error(
+  pub fn report_name_already_bound_error(
     &mut self,
     new_loc: Location,
     name: PStr,
@@ -982,7 +1018,7 @@ impl ErrorSet {
     self.report_error(new_loc, ErrorDetail::NameAlreadyBound { name, old_loc })
   }
 
-  pub(crate) fn report_non_exhausive_struct_binding_error(
+  pub fn report_non_exhausive_struct_binding_error(
     &mut self,
     loc: Location,
     missing_bindings: Vec<PStr>,
@@ -990,7 +1026,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveStructBinding { missing_bindings })
   }
 
-  pub(crate) fn report_non_exhausive_tuple_binding_error(
+  pub fn report_non_exhausive_tuple_binding_error(
     &mut self,
     loc: Location,
     expected_count: usize,
@@ -999,27 +1035,23 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count })
   }
 
-  pub(crate) fn report_non_exhausive_match_error(
-    &mut self,
-    loc: Location,
-    counter_example: Description,
-  ) {
+  pub fn report_non_exhausive_match_error(&mut self, loc: Location, counter_example: Description) {
     self.report_error(loc, ErrorDetail::NonExhausiveMatch { counter_example })
   }
 
-  pub(crate) fn report_not_an_enum_error(&mut self, loc: Location, description: Description) {
+  pub fn report_not_an_enum_error(&mut self, loc: Location, description: Description) {
     self.report_error(loc, ErrorDetail::NotAnEnum { description })
   }
 
-  pub(crate) fn report_not_a_struct_error(&mut self, loc: Location, description: Description) {
+  pub fn report_not_a_struct_error(&mut self, loc: Location, description: Description) {
     self.report_error(loc, ErrorDetail::NotAStruct { description })
   }
 
-  pub(crate) fn report_stackable_error(&mut self, loc: Location, stackable: StackableError) {
+  pub fn report_stackable_error(&mut self, loc: Location, stackable: StackableError) {
     self.report_error(loc, ErrorDetail::Stacked(stackable))
   }
 
-  pub(crate) fn report_type_parameter_mismatch_error(
+  pub fn report_type_parameter_mismatch_error(
     &mut self,
     loc: Location,
     expected: Vec<Description>,
@@ -1027,11 +1059,11 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
   }
 
-  pub(crate) fn report_underconstrained_error(&mut self, loc: Location) {
+  pub fn report_underconstrained_error(&mut self, loc: Location) {
     self.report_error(loc, ErrorDetail::Underconstrained)
   }
 
-  pub(crate) fn report_useless_pattern_error(&mut self, loc: Location, only_pattern: bool) {
+  pub fn report_useless_pattern_error(&mut self, loc: Location, only_pattern: bool) {
     self.report_error(loc, ErrorDetail::UselessPattern { only_pattern })
   }
 }
@@ -1039,7 +1071,6 @@ impl ErrorSet {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::checker::type_::{test_type_builder, ISourceType};
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
 
@@ -1085,7 +1116,6 @@ mod tests {
   fn error_message_tests() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let builder = test_type_builder::create();
 
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
 
@@ -1153,10 +1183,7 @@ Found 2 errors."#
       ModuleReference::DUMMY,
       heap.alloc_str_for_test("global"),
     );
-    error_set.report_cyclic_type_definition_error(
-      builder.int_type().get_reason().use_loc,
-      builder.int_type().to_description(),
-    );
+    error_set.report_cyclic_type_definition_error(Location::dummy(), Description::IntType);
     error_set.report_element_missing_error(Location::dummy(), Description::GeneralNominalType, 1);
     error_set.report_incompatible_type_kind_error(
       Location::dummy(),
@@ -1165,10 +1192,11 @@ Found 2 errors."#
     );
     error_set.report_incompatible_subtype_error(
       Location::dummy(),
-      builder.int_type().to_description(),
-      builder.bool_type().to_description(),
+      Description::IntType,
+      Description::BoolType,
     );
     error_set.report_invalid_syntax_error(Location::dummy(), "bad code".to_string());
+    error_set.report_illegal_function_in_interface(Location::dummy());
     error_set.report_cannot_resolve_member_error(
       Location::dummy(),
       Description::NominalType { name: heap.alloc_str_for_test("Foo"), type_args: vec![] },
@@ -1208,10 +1236,15 @@ Found 2 errors."#
         Reason::dummy(),
         Description::AnyType,
       );
+      stacked.add_type_params_arity_error(1, 2);
       stacked
     });
     error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![]);
     error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![Description::IntType]);
+    error_set.report_type_parameter_mismatch_error(
+      Location::dummy(),
+      vec![Description::IntType, Description::IntType],
+    );
     error_set.report_underconstrained_error(Location::dummy());
     error_set.report_useless_pattern_error(Location::dummy(), false);
     error_set.report_useless_pattern_error(Location::dummy(), true);
@@ -1240,6 +1273,11 @@ Type `int` has a cyclic definition.
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 Cannot access member of `nominal type` at index 1.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Function declarations are not allowed in interfaces.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1304,10 +1342,11 @@ Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-`any` is incompatible with `any`.
-- Function parameter arity of 0 is incompatible with function parameter arity of 0.
-  - Type argument arity of 0 is incompatible with type argument arity of 0.
-    - `any`  is incompatible with `any` .
+Type parameter arity of 1 is incompatible with type parameter arity of 2.
+- `any` is incompatible with `any`.
+  - Function parameter arity of 0 is incompatible with function parameter arity of 0.
+    - Type argument arity of 0 is incompatible with type argument arity of 0.
+      - `any`  is incompatible with `any` .
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1318,6 +1357,11 @@ Type parameter name mismatch. Expected empty type parameters.
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 Type parameter name mismatch. Expected exact match of `<int>`.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Type parameter name mismatch. Expected exact match of `<int, int>`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1341,7 +1385,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Cannot resolve name `global`.
 
 
-Found 23 errors.
+Found 25 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

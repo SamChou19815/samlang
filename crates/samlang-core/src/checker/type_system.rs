@@ -1,6 +1,6 @@
 use super::type_::{FunctionType, ISourceType, NominalType, Type, TypeParameterSignature};
-use crate::errors::{ErrorSet, StackableError};
 use samlang_ast::Reason;
+use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::PStr;
 use std::{
   collections::{HashMap, HashSet},
@@ -326,9 +326,10 @@ pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type
 #[cfg(test)]
 mod tests {
   use super::super::type_::{test_type_builder, Type, TypeParameterSignature};
-  use crate::{checker::type_::ISourceType, errors::ErrorSet};
+  use crate::checker::type_::ISourceType;
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Reason};
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, PStr};
   use std::{collections::HashMap, rc::Rc};
 

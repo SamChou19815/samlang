@@ -5,11 +5,11 @@ use crate::{
     type_::{GlobalSignature, Type},
     type_check_module, type_check_sources,
   },
-  errors::{CompileTimeError, ErrorSet},
   measure_time,
   parser::parse_source_module_from_text,
 };
 use samlang_ast::source::Module;
+use samlang_errors::{CompileTimeError, ErrorSet};
 use samlang_heap::{Heap, ModuleReference};
 use std::{
   collections::{HashMap, HashSet},

@@ -6,8 +6,8 @@ use super::{
   },
   type_system,
 };
-use crate::errors::{ErrorSet, StackableError};
 use samlang_ast::{Description, Location, Position, Reason};
+use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
