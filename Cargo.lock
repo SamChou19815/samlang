@@ -585,9 +585,20 @@ dependencies = [
  "pretty_assertions",
  "samlang-ast",
  "samlang-collections",
+ "samlang-errors",
  "samlang-heap",
  "wasmi",
  "wat",
+]
+
+[[package]]
+name = "samlang-errors"
+version = "0.9.1"
+dependencies = [
+ "itertools",
+ "pretty_assertions",
+ "samlang-ast",
+ "samlang-heap",
 ]
 
 [[package]]

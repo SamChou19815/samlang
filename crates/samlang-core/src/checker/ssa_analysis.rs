@@ -1,4 +1,3 @@
-use crate::errors::ErrorSet;
 use itertools::Itertools;
 use samlang_ast::{
   source::{
@@ -7,6 +6,7 @@ use samlang_ast::{
   },
   Location,
 };
+use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{HashMap, HashSet};
 

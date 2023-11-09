@@ -12,7 +12,6 @@ mod tests {
       type_check_sources, type_system,
       typing_context::{LocalTypingContext, TypingContext},
     },
-    errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
   use pretty_assertions::assert_eq;
@@ -20,6 +19,7 @@ mod tests {
     source::{expr, Id, Literal, NO_COMMENT_REFERENCE},
     Location, Reason,
   };
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::{HashMap, HashSet};
 

@@ -1,7 +1,4 @@
-use crate::{
-  checker::{perform_ssa_analysis_on_module, SsaAnalysisResult},
-  errors::ErrorSet,
-};
+use crate::checker::{perform_ssa_analysis_on_module, SsaAnalysisResult};
 use samlang_ast::{
   source::{
     expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
@@ -32,7 +29,7 @@ impl VariableDefinitionLookup {
     module_reference: ModuleReference,
     module: &Module<()>,
   ) -> VariableDefinitionLookup {
-    let mut error_set = ErrorSet::new();
+    let mut error_set = samlang_errors::ErrorSet::new();
     VariableDefinitionLookup(perform_ssa_analysis_on_module(
       module_reference,
       module,
@@ -358,7 +355,7 @@ pub(super) fn apply_renaming(
 #[cfg(test)]
 mod tests {
   use super::{apply_expr_renaming, apply_renaming, DefinitionAndUses, VariableDefinitionLookup};
-  use crate::{errors::ErrorSet, parser::parse_source_module_from_text, printer};
+  use crate::{parser::parse_source_module_from_text, printer};
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     source::{expr, Id, Literal, Module},
@@ -387,7 +384,7 @@ mod tests {
 
   fn parse(source: &str) -> (Heap, Module<()>) {
     let mut heap = Heap::new();
-    let mut error_set = ErrorSet::new();
+    let mut error_set = samlang_errors::ErrorSet::new();
     let module =
       parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert!(!error_set.has_errors());

@@ -272,9 +272,9 @@ pub(super) fn perform_gc_after_recheck(
 #[cfg(test)]
 mod tests {
   use crate::{
-    checker::type_check_sources, errors::ErrorSet, parser::parse_source_module_from_text, Heap,
-    ModuleReference,
+    checker::type_check_sources, parser::parse_source_module_from_text, Heap, ModuleReference,
   };
+  use samlang_errors::ErrorSet;
   use std::collections::HashMap;
 
   #[test]

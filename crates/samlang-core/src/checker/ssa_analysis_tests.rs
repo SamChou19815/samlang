@@ -6,7 +6,6 @@ mod tests {
       type_::{test_type_builder, ISourceType},
       typing_context::LocalTypingContext,
     },
-    errors::ErrorSet,
     parser,
   };
   use pretty_assertions::assert_eq;
@@ -14,6 +13,7 @@ mod tests {
     source::{expr, test_builder, Id, Literal},
     Location,
   };
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference};
 
   #[test]

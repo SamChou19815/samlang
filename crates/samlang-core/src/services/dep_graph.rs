@@ -56,7 +56,7 @@ impl DependencyGraph {
 
 #[cfg(test)]
 mod tests {
-  use crate::{errors::ErrorSet, parser::parse_source_module_from_text, Heap};
+  use crate::{parser::parse_source_module_from_text, Heap};
   use pretty_assertions::assert_eq;
   use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
@@ -70,7 +70,7 @@ mod tests {
     import { B } from B
     import { C } from C"#;
     let heap = &mut Heap::new();
-    let error_set = &mut ErrorSet::new();
+    let error_set = &mut samlang_errors::ErrorSet::new();
     let mod_ref_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
     let mod_ref_b = heap.alloc_module_reference_from_string_vec(vec!["B".to_string()]);
     let mod_ref_c = heap.alloc_module_reference_from_string_vec(vec!["C".to_string()]);

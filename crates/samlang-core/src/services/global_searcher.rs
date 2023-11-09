@@ -254,10 +254,10 @@ pub(super) fn search_modules_globally(
 #[cfg(test)]
 mod tests {
   use crate::{
-    builtin_parsed_std_sources, checker::type_check_sources, errors::ErrorSet,
-    parser::parse_source_module_from_text,
+    builtin_parsed_std_sources, checker::type_check_sources, parser::parse_source_module_from_text,
   };
   use pretty_assertions::assert_eq;
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, PStr};
   use std::collections::HashMap;
 

@@ -401,12 +401,12 @@ mod tests {
     checker::type_::{
       create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
     },
-    errors::ErrorSet,
     parser::parse_source_module_from_text,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::Reason;
+  use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
 
