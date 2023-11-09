@@ -253,9 +253,7 @@ pub(super) fn search_modules_globally(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    builtin_parsed_std_sources, checker::type_check_sources, parser::parse_source_module_from_text,
-  };
+  use crate::{builtin_parsed_std_sources, checker::type_check_sources};
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, PStr};
@@ -345,7 +343,8 @@ mod tests {
         Main.main()
       }
     }"#;
-    let parsed = parse_source_module_from_text(source, mod_ref, heap, &mut error_set);
+    let parsed =
+      samlang_parser::parse_source_module_from_text(source, mod_ref, heap, &mut error_set);
     let mut modules = builtin_parsed_std_sources(heap);
     modules.insert(mod_ref, parsed);
     let (checked_sources, _) = type_check_sources(&modules, &mut error_set);

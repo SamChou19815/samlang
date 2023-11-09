@@ -1,13 +1,11 @@
 #[cfg(test)]
 mod tests {
-  use crate::{
-    checker::type_check_sources, compiler, interpreter, optimization,
-    parser::parse_source_module_from_text, printer,
-  };
+  use crate::{checker::type_check_sources, compiler, interpreter, optimization, printer};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, PStr};
+  use samlang_parser::parse_source_module_from_text;
   use std::collections::HashMap;
   use wasmi::*;
 

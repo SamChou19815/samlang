@@ -1,12 +1,9 @@
 #[cfg(test)]
 mod tests {
-  use crate::{
-    checker::{
-      ssa_analysis,
-      type_::{test_type_builder, ISourceType},
-      typing_context::LocalTypingContext,
-    },
-    parser,
+  use super::super::{
+    ssa_analysis,
+    type_::{test_type_builder, ISourceType},
+    typing_context::LocalTypingContext,
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
@@ -56,7 +53,7 @@ mod tests {
   let {o1, o2 as o3} = {};
   o1 + o3
 }"#;
-    let (_, expr) = parser::parse_source_expression_from_text(
+    let (_, expr) = samlang_parser::parse_source_expression_from_text(
       expr_str,
       ModuleReference::DUMMY,
       &mut heap,
@@ -138,7 +135,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
 class MultiInvalidDef<T, T> {}
 "#;
-    let module = parser::parse_source_module_from_text(
+    let module = samlang_parser::parse_source_module_from_text(
       program_str,
       ModuleReference::DUMMY,
       &mut heap,

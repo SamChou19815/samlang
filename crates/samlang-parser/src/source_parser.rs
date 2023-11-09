@@ -20,23 +20,6 @@ fn unescape_quotes(source: &str) -> String {
   source.replace("\\\"", "\"")
 }
 
-fn post_process_block_comment(heap: &mut Heap, block_comment: &str) -> PStr {
-  heap.alloc_string(
-    block_comment
-      .split('\n')
-      .map(|line| {
-        let l = line.trim_start();
-        if l.starts_with('*') {
-          l.chars().skip(1).collect::<String>().trim().to_string()
-        } else {
-          l.trim_end().to_string()
-        }
-      })
-      .filter(|line| !line.is_empty())
-      .join(" "),
-  )
-}
-
 pub(super) struct SourceParser<'a> {
   tokens: Vec<Token>,
   comments_store: CommentStore,
@@ -206,51 +189,38 @@ impl<'a> SourceParser<'a> {
     let Token(location, content) = self.peek();
     self.consume();
     match content {
-      TokenContent::LowerId(id) | TokenContent::UpperId(id) => {
-        return (location, id);
+      TokenContent::LowerId(id) | TokenContent::UpperId(id) => (location, id),
+      _ => {
+        self.report(
+          location,
+          format!("Expected: identifier, actual: {}.", content.pretty_print(self.heap)),
+        );
+        (location, PStr::MISSING)
       }
-      _ => {}
     }
-    self.report(
-      location,
-      format!("Expected: identifier, actual: {}.", content.pretty_print(self.heap)),
-    );
-    (location, PStr::MISSING)
   }
 
   fn report(&mut self, loc: Location, reason: String) {
     self.error_set.report_invalid_syntax_error(loc, reason)
   }
 
-  fn parse_punctuation_separated_list<T, F: FnMut(&mut Self) -> T>(
+  fn parse_comma_separated_list_with_end_token<T, F: FnMut(&mut Self) -> T>(
     &mut self,
-    punctuation: TokenOp,
-    end_token: Option<TokenOp>,
+    end_token: TokenOp,
     parser: &mut F,
   ) -> Vec<T> {
     let mut collector = vec![parser(self)];
     while let Token(_, TokenContent::Operator(op)) = self.peek() {
-      if op != punctuation {
+      if op != TokenOp::COMMA {
         break;
       }
       self.consume();
-      match self.peek() {
-        Token(_, TokenContent::Operator(token_op)) if end_token == Some(token_op) => {
-          return collector
-        }
-        _ => {}
+      if self.peek().1 == TokenContent::Operator(end_token) {
+        return collector;
       }
       collector.push(parser(self));
     }
     collector
-  }
-
-  fn parse_comma_separated_list<T, F: FnMut(&mut Self) -> T>(
-    &mut self,
-    end_token: Option<TokenOp>,
-    parser: &mut F,
-  ) -> Vec<T> {
-    self.parse_punctuation_separated_list(TokenOp::COMMA, end_token, parser)
   }
 
   // SECTION 2: Source Parser
@@ -280,15 +250,21 @@ impl<'a> SourceParser<'a> {
     while let Token(import_start, TokenContent::Keyword(Keyword::IMPORT)) = self.peek() {
       self.consume();
       self.assert_and_consume_operator(TokenOp::LBRACE);
-      let imported_members =
-        self.parse_comma_separated_list(Some(TokenOp::RBRACE), &mut SourceParser::parse_upper_id);
+      let imported_members = self.parse_comma_separated_list_with_end_token(
+        TokenOp::RBRACE,
+        &mut SourceParser::parse_upper_id,
+      );
       self.assert_and_consume_operator(TokenOp::RBRACE);
       self.assert_and_consume_keyword(Keyword::FROM);
       let import_loc_start = self.peek().0;
-      let imported_module_parts =
-        self.parse_punctuation_separated_list(TokenOp::DOT, None, &mut |s: &mut Self| {
-          s.assert_and_consume_identifier().1
-        });
+      let imported_module_parts = {
+        let mut collector = vec![self.assert_and_consume_identifier().1];
+        while let Token(_, TokenContent::Operator(TokenOp::DOT)) = self.peek() {
+          self.consume();
+          collector.push(self.assert_and_consume_identifier().1);
+        }
+        collector
+      };
       let imported_module = self.heap.alloc_module_reference(imported_module_parts);
       let imported_module_loc = import_loc_start.union(&self.last_location());
       for variable in imported_members.iter() {
@@ -375,8 +351,10 @@ impl<'a> SourceParser<'a> {
     let (type_param_loc_start, type_param_loc_end, mut type_parameters) =
       if let Token(loc_start, TokenContent::Operator(TokenOp::LT)) = self.peek() {
         self.consume();
-        let type_params = self
-          .parse_comma_separated_list(Some(TokenOp::GT), &mut SourceParser::parse_type_parameter);
+        let type_params = self.parse_comma_separated_list_with_end_token(
+          TokenOp::GT,
+          &mut SourceParser::parse_type_parameter,
+        );
         let loc_end = self.assert_and_consume_operator(TokenOp::GT);
         (Some(loc_start), Some(loc_end), type_params)
       } else {
@@ -458,8 +436,10 @@ impl<'a> SourceParser<'a> {
     let name = self.parse_upper_id();
     let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
-      let type_params =
-        self.parse_comma_separated_list(Some(TokenOp::GT), &mut SourceParser::parse_type_parameter);
+      let type_params = self.parse_comma_separated_list_with_end_token(
+        TokenOp::GT,
+        &mut SourceParser::parse_type_parameter,
+      );
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
       type_params
     } else {
@@ -501,53 +481,30 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_extends_or_implements_nodes(&mut self) -> Vec<annotation::Id> {
-    self.parse_comma_separated_list(None, &mut |s: &mut Self| {
-      let id = s.parse_upper_id();
-      s.parse_identifier_annot(id)
-    })
+    let id = self.parse_upper_id();
+    let mut collector = vec![self.parse_identifier_annot(id)];
+    while let Token(_, TokenContent::Operator(TokenOp::COMMA)) = self.peek() {
+      self.consume();
+      let id = self.parse_upper_id();
+      collector.push(self.parse_identifier_annot(id));
+    }
+    collector
   }
 
   fn parse_type_definition_inner(&mut self) -> TypeDefinition {
     if let Token(_, TokenContent::UpperId(_)) = self.peek() {
-      let mut variants =
-        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-          let name = s.parse_upper_id();
-          if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = s.peek() {
-            s.consume();
-            let associated_data_types = s
-              .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-                s.parse_annotation()
-              });
-
-            if let Some(node) = associated_data_types.get(MAX_VARIANT_SIZE) {
-              s.error_set.report_invalid_syntax_error(
-                node.location(),
-                format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
-              );
-            }
-            s.assert_and_consume_operator(TokenOp::RPAREN);
-            VariantDefinition { name, associated_data_types }
-          } else {
-            VariantDefinition { name, associated_data_types: vec![] }
-          }
-        });
+      let mut variants = self.parse_comma_separated_list_with_end_token(
+        TokenOp::RPAREN,
+        &mut SourceParser::parse_variant_definition,
+      );
       variants.truncate(MAX_VARIANT_SIZE);
       // Location is later patched by the caller
       TypeDefinition::Enum { loc: Location::dummy(), variants }
     } else {
-      let mut fields =
-        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-          let mut is_public = true;
-          if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
-            is_public = false;
-            s.consume();
-          }
-          s.assert_and_consume_keyword(Keyword::VAL);
-          let name = s.parse_lower_id();
-          s.assert_and_consume_operator(TokenOp::COLON);
-          let annotation = s.parse_annotation();
-          FieldDefinition { name, annotation, is_public }
-        });
+      let mut fields = self.parse_comma_separated_list_with_end_token(
+        TokenOp::RPAREN,
+        &mut Self::parse_field_definition,
+      );
       if let Some(node) = fields.get(MAX_STRUCT_SIZE) {
         self.error_set.report_invalid_syntax_error(
           node.name.loc,
@@ -557,6 +514,41 @@ impl<'a> SourceParser<'a> {
       fields.truncate(MAX_STRUCT_SIZE);
       // Location is later patched by the caller
       TypeDefinition::Struct { loc: Location::dummy(), fields }
+    }
+  }
+
+  fn parse_field_definition(&mut self) -> FieldDefinition {
+    let mut is_public = true;
+    if let TokenContent::Keyword(Keyword::PRIVATE) = self.peek().1 {
+      is_public = false;
+      self.consume();
+    }
+    self.assert_and_consume_keyword(Keyword::VAL);
+    let name = self.parse_lower_id();
+    self.assert_and_consume_operator(TokenOp::COLON);
+    let annotation = self.parse_annotation();
+    FieldDefinition { name, annotation, is_public }
+  }
+
+  fn parse_variant_definition(&mut self) -> VariantDefinition {
+    let name = self.parse_upper_id();
+    if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = self.peek() {
+      self.consume();
+      let associated_data_types = self.parse_comma_separated_list_with_end_token(
+        TokenOp::RPAREN,
+        &mut SourceParser::parse_annotation,
+      );
+
+      if let Some(node) = associated_data_types.get(MAX_VARIANT_SIZE) {
+        self.error_set.report_invalid_syntax_error(
+          node.location(),
+          format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
+        );
+      }
+      self.assert_and_consume_operator(TokenOp::RPAREN);
+      VariantDefinition { name, associated_data_types }
+    } else {
+      VariantDefinition { name, associated_data_types: vec![] }
     }
   }
 
@@ -608,9 +600,10 @@ impl<'a> SourceParser<'a> {
     }
     let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
-      let type_params = self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
-        s.parse_type_parameter()
-      });
+      let type_params = self.parse_comma_separated_list_with_end_token(
+        TokenOp::GT,
+        &mut SourceParser::parse_type_parameter,
+      );
       self.assert_and_consume_operator(TokenOp::GT);
       type_params
     } else {
@@ -623,12 +616,7 @@ impl<'a> SourceParser<'a> {
     let parameters = if let TokenContent::Operator(TokenOp::RPAREN) = self.peek().1 {
       vec![]
     } else {
-      self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-        let name = s.parse_lower_id();
-        s.assert_and_consume_operator(TokenOp::COLON);
-        let annotation = s.parse_annotation();
-        AnnotatedId { name, type_: (), annotation }
-      })
+      self.parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut Self::parse_annotated_id)
     };
     self.assert_and_consume_operator(TokenOp::RPAREN);
     self.assert_and_consume_operator(TokenOp::COLON);
@@ -978,8 +966,9 @@ impl<'a> SourceParser<'a> {
           self.consume();
           field_preceding_comments.append(&mut self.collect_preceding_comments());
           let (field_loc, field_name) = match self.peek() {
-            Token(_, TokenContent::LowerId(_) | TokenContent::UpperId(_)) => {
-              self.assert_and_consume_identifier()
+            Token(l, TokenContent::LowerId(id) | TokenContent::UpperId(id)) => {
+              self.consume();
+              (l, id)
             }
             Token(l, t) => {
               self.report(l, format!("Expected identifier, but get {}", t.pretty_print(self.heap)));
@@ -991,10 +980,10 @@ impl<'a> SourceParser<'a> {
             if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
               field_preceding_comments.append(&mut self.collect_preceding_comments());
               self.assert_and_consume_operator(TokenOp::LT);
-              let type_args = self
-                .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
-                  s.parse_annotation()
-                });
+              let type_args = self.parse_comma_separated_list_with_end_token(
+                TokenOp::GT,
+                &mut SourceParser::parse_annotation,
+              );
               loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
               type_args
             } else {
@@ -1025,9 +1014,10 @@ impl<'a> SourceParser<'a> {
             if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = self.peek() {
               vec![]
             } else {
-              self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-                s.parse_expression_with_ending_comments()
-              })
+              self.parse_comma_separated_list_with_end_token(
+                TokenOp::RPAREN,
+                &mut SourceParser::parse_expression_with_ending_comments,
+              )
             };
           let loc =
             function_expression.loc().union(&self.assert_and_consume_operator(TokenOp::RPAREN));
@@ -1177,16 +1167,10 @@ impl<'a> SourceParser<'a> {
           // (id: ... definitely a lambda
           TokenContent::Operator(TokenOp::COLON) => {
             self.unconsume();
-            let parameters =
-              self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-                let name = s.parse_lower_id();
-                if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
-                  s.consume();
-                  OptionallyAnnotatedId { name, type_: (), annotation: Some(s.parse_annotation()) }
-                } else {
-                  OptionallyAnnotatedId { name, type_: (), annotation: None }
-                }
-              });
+            let parameters = self.parse_comma_separated_list_with_end_token(
+              TokenOp::RPAREN,
+              &mut Self::parse_optionally_annotated_id,
+            );
             self.assert_and_consume_operator(TokenOp::RPAREN);
             self.assert_and_consume_operator(TokenOp::ARROW);
             let body = self.parse_expression();
@@ -1284,20 +1268,10 @@ impl<'a> SourceParser<'a> {
               self.consume();
               if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
                 self.unconsume();
-                let rest_parameters =
-                  self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-                    let name = s.parse_lower_id();
-                    if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
-                      s.consume();
-                      OptionallyAnnotatedId {
-                        name,
-                        type_: (),
-                        annotation: Some(s.parse_annotation()),
-                      }
-                    } else {
-                      OptionallyAnnotatedId { name, type_: (), annotation: None }
-                    }
-                  });
+                let rest_parameters = self.parse_comma_separated_list_with_end_token(
+                  TokenOp::RPAREN,
+                  &mut Self::parse_optionally_annotated_id,
+                );
                 let parameters = parameters_or_tuple_elements_cover
                   .into_iter()
                   .map(|name| OptionallyAnnotatedId { name, type_: (), annotation: None })
@@ -1322,10 +1296,10 @@ impl<'a> SourceParser<'a> {
               }
               self.unconsume();
             }
-            let rest_tuple_elements = self
-              .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-                s.parse_expression()
-              });
+            let rest_tuple_elements = self.parse_comma_separated_list_with_end_token(
+              TokenOp::RPAREN,
+              &mut SourceParser::parse_expression,
+            );
             let mut tuple_elements = parameters_or_tuple_elements_cover
               .into_iter()
               .map(|name| {
@@ -1395,10 +1369,10 @@ impl<'a> SourceParser<'a> {
         }
         self.unconsume();
       }
-      let mut expressions = self
-        .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-          s.parse_expression()
-        });
+      let mut expressions = self.parse_comma_separated_list_with_end_token(
+        TokenOp::RPAREN,
+        &mut SourceParser::parse_expression,
+      );
       if let Some(node) = expressions.get(MAX_STRUCT_SIZE) {
         self.error_set.report_invalid_syntax_error(
           node.loc(),
@@ -1496,12 +1470,16 @@ impl<'a> SourceParser<'a> {
     }
   }
 
+  fn parse_matching_pattern_with_unit(&mut self) -> (pattern::MatchingPattern<()>, ()) {
+    (self.parse_matching_pattern(), ())
+  }
+
   pub(super) fn parse_matching_pattern(&mut self) -> pattern::MatchingPattern<()> {
     let peeked = self.peek();
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
       self.consume();
       let destructured_names =
-        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+        self.parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut |s: &mut Self| {
           pattern::TuplePatternElement { pattern: Box::new(s.parse_matching_pattern()), type_: () }
         });
       let end_location = self.assert_and_consume_operator(TokenOp::RPAREN);
@@ -1510,7 +1488,7 @@ impl<'a> SourceParser<'a> {
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
       self.consume();
       let destructured_names =
-        self.parse_comma_separated_list(Some(TokenOp::RBRACE), &mut |s: &mut Self| {
+        self.parse_comma_separated_list_with_end_token(TokenOp::RBRACE, &mut |s: &mut Self| {
           let field_name = s.parse_lower_id();
           let (pattern, loc, shorthand) =
             if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
@@ -1539,10 +1517,10 @@ impl<'a> SourceParser<'a> {
       let (data_variables, loc) =
         if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = self.peek() {
           self.assert_and_consume_operator(TokenOp::LPAREN);
-          let data_variables = self
-            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-              (s.parse_matching_pattern(), ())
-            });
+          let data_variables = self.parse_comma_separated_list_with_end_token(
+            TokenOp::RPAREN,
+            &mut Self::parse_matching_pattern_with_unit,
+          );
           let end_loc = self.assert_and_consume_operator(TokenOp::RPAREN);
           (data_variables, peeked_loc.union(&end_loc))
         } else {
@@ -1613,6 +1591,28 @@ impl<'a> SourceParser<'a> {
     comments
   }
 
+  fn parse_annotated_id(&mut self) -> AnnotatedId<()> {
+    let name = self.parse_lower_id();
+    self.assert_and_consume_operator(TokenOp::COLON);
+    let annotation = self.parse_annotation();
+    AnnotatedId { name, type_: (), annotation }
+  }
+
+  fn parse_optionally_annotated_id(&mut self) -> OptionallyAnnotatedId<()> {
+    let name = self.parse_lower_id();
+    let annotation = self.parse_optional_annotation();
+    OptionallyAnnotatedId { name, type_: (), annotation }
+  }
+
+  fn parse_optional_annotation(&mut self) -> Option<annotation::T> {
+    if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
+      self.consume();
+      Some(self.parse_annotation())
+    } else {
+      None
+    }
+  }
+
   pub(super) fn parse_annotation(&mut self) -> annotation::T {
     let associated_comments = self.collect_preceding_comments();
     let peeked = self.peek();
@@ -1659,10 +1659,10 @@ impl<'a> SourceParser<'a> {
           self.consume();
           vec![]
         } else {
-          let types = self
-            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-              s.parse_annotation()
-            });
+          let types = self.parse_comma_separated_list_with_end_token(
+            TokenOp::RPAREN,
+            &mut SourceParser::parse_annotation,
+          );
           self.assert_and_consume_operator(TokenOp::RPAREN);
           types
         };
@@ -1722,8 +1722,10 @@ impl<'a> SourceParser<'a> {
     let (type_arguments, location) =
       if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
         self.consume();
-        let types = self
-          .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_annotation());
+        let types = self.parse_comma_separated_list_with_end_token(
+          TokenOp::GT,
+          &mut SourceParser::parse_annotation,
+        );
         let location = identifier.loc.union(&self.assert_and_consume_operator(TokenOp::GT));
         (types, location)
       } else {
@@ -1748,18 +1750,12 @@ impl<'a> SourceParser<'a> {
 
 #[cfg(test)]
 mod tests {
-  use super::{post_process_block_comment, SourceParser};
-  use crate::parser::lexer::{Token, TokenContent};
+  use super::super::lexer::{Token, TokenContent};
+  use super::SourceParser;
   use samlang_ast::Location;
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashSet;
-
-  #[test]
-  fn processor_test() {
-    let mut heap = Heap::new();
-    assert_eq!("/* ff dd*/", post_process_block_comment(&mut heap, "/*\n*ff\n*dd*/").as_str(&heap));
-  }
 
   #[test]
   fn base_tests_1() {
@@ -1768,6 +1764,7 @@ mod tests {
     let mut parser =
       SourceParser::new(vec![], &mut heap, &mut error_set, ModuleReference::DUMMY, HashSet::new());
 
+    parser.assert_and_consume_identifier();
     parser.consume();
     parser.peek();
 
@@ -1787,7 +1784,15 @@ mod tests {
       HashSet::new(),
     );
 
+    parser.simple_peek();
+    parser.consume();
     parser.position = 100;
+    parser.simple_peek();
+    parser.consume();
+    parser.simple_peek();
+    parser.position = 2;
+    parser.simple_peek();
+    parser.consume();
     parser.consume();
   }
 

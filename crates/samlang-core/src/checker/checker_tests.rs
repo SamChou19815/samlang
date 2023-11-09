@@ -1,18 +1,15 @@
 #[cfg(test)]
 mod tests {
-  use crate::{
-    checker::{
-      main_checker::type_check_expression_for_tests,
-      ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
-      type_::{
-        create_builtin_module_signature, test_type_builder, EnumVariantDefinitionSignature,
-        FunctionType, GlobalSignature, InterfaceSignature, MemberSignature, ModuleSignature,
-        StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
-      },
-      type_check_sources, type_system,
-      typing_context::{LocalTypingContext, TypingContext},
+  use super::super::{
+    main_checker::type_check_expression_for_tests,
+    ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
+    type_::{
+      create_builtin_module_signature, test_type_builder, EnumVariantDefinitionSignature,
+      FunctionType, GlobalSignature, InterfaceSignature, MemberSignature, ModuleSignature,
+      StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
     },
-    parser::{parse_source_expression_from_text, parse_source_module_from_text},
+    type_check_sources, type_system,
+    typing_context::{LocalTypingContext, TypingContext},
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
@@ -541,8 +538,12 @@ mod tests {
   ) -> String {
     let mut error_set = ErrorSet::new();
 
-    let (_, parsed) =
-      parse_source_expression_from_text(source, ModuleReference::DUMMY, heap, &mut error_set);
+    let (_, parsed) = samlang_parser::parse_source_expression_from_text(
+      source,
+      ModuleReference::DUMMY,
+      heap,
+      &mut error_set,
+    );
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
 
     let mut temp_ssa_error_set = ErrorSet::new();
@@ -3331,7 +3332,8 @@ Found 5 errors.
     let mut unchecked_sources = HashMap::new();
     for (mod_ref_str, source) in sources {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![mod_ref_str.to_string()]);
-      let parsed = parse_source_module_from_text(source, mod_ref, &mut heap, &mut error_set);
+      let parsed =
+        samlang_parser::parse_source_module_from_text(source, mod_ref, &mut heap, &mut error_set);
       string_sources.insert(mod_ref, source.to_string());
       unchecked_sources.insert(mod_ref, parsed);
     }

@@ -1,3 +1,6 @@
+#![allow(clippy::upper_case_acronyms)]
+#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
+
 use samlang_ast::source;
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -11,7 +14,7 @@ fn builtin_classes() -> HashSet<PStr> {
   HashSet::from([PStr::PROCESS_TYPE, PStr::STR_TYPE])
 }
 
-pub(crate) fn parse_source_module_from_text(
+pub fn parse_source_module_from_text(
   text: &str,
   module_reference: ModuleReference,
   heap: &mut Heap,
@@ -28,7 +31,7 @@ pub(crate) fn parse_source_module_from_text(
   parser.parse_module()
 }
 
-pub(crate) fn parse_source_expression_from_text(
+pub fn parse_source_expression_from_text(
   text: &str,
   module_reference: ModuleReference,
   heap: &mut Heap,
@@ -102,7 +105,9 @@ mod tests {
     expect_good_expr("false || true");
     expect_good_expr("\"hello\"::\"world\"");
     expect_good_expr("if (true) then 3 else bar");
-    expect_good_expr("if let {foo as {bar as (Fizz(baz), Buzz, _), boo}} = true then 3 else bar");
+    expect_good_expr(
+      "if let {foo as {bar as (Fizz(baz,), Buzz, (_,)), boo},} = true then 3 else bar",
+    );
     expect_good_expr("match (this) { None(_) -> 0, Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> match this { None(_) -> 1 } Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> {}, Some(d) -> d }");
@@ -111,7 +116,10 @@ mod tests {
     expect_good_expr("(a, b: () -> int, c: Type) -> 3");
     expect_good_expr("(a, b, c: () -> int, d: Type) -> 3");
     expect_good_expr("(a, b: () -> int, c, d: Type) -> 3");
+    expect_good_expr("(a, b: () -> unit) -> 3");
+    expect_good_expr("(a, b: () -> unit) -> 3");
     expect_good_expr("(a, b, c.a)");
+    expect_good_expr("(a, b, c)");
     expect_good_expr("() -> 3");
     expect_good_expr("(foo) -> 3");
     expect_good_expr("(foo: bool) -> 3");
@@ -148,6 +156,7 @@ mod tests {
     expect_bad_expr("SomeClass.<>foo");
     expect_bad_expr("SomeClass.<foo");
     expect_bad_expr("SomeClass.");
+    expect_bad_expr("SomeClass.3");
     expect_bad_expr("ForTests.assertIntEquals(2444a, 1)");
     expect_bad_expr(".");
     expect_bad_expr(",");
@@ -169,6 +178,8 @@ mod tests {
     expect_bad_expr("(: int) -> 3");
     expect_bad_expr("(:) -> 3");
     expect_bad_expr("(a:) -> 3");
+    expect_bad_expr("(a:_) -> 3");
+    expect_bad_expr("(a, b:_) -> 3");
     expect_bad_expr("{ let a = /* empty */");
     expect_bad_expr("{ let a = /* empty */ }");
     expect_bad_expr("{ let  = 3 }");
@@ -186,13 +197,14 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let text = r#"
     // Adapted from website
-    import { Foo, Bar } from Path.To
+    import { Foo, Bar } from Path.To;
+    import { Foo, Bar, } from Path.To
 
     interface Foo {}
 
     interface Bar<T> {}
 
-    interface Baz : Bar<int> {
+    interface Baz : Bar<int, A<(A) -> int>> {
       function foo(): () -> Str
       method bar(baz: bool): int
     }
@@ -214,8 +226,9 @@ mod tests {
     class A(val a: () -> int) : Baz
     class A(val a: (Str) -> int) : Baz
 
-    class TParamFixParserTest {
+    class TParamFixParserTest : A, A<(A) -> int> {
       function <T: Foo<T>, R: Bar<(A) -> int>> f(): unit = {}
+      function g(a: int, b: () -> unit): unit = {}
     }
 
     /**
@@ -224,9 +237,11 @@ mod tests {
     private class Option<T>(None, Some(T)) {
       function <T> getNone(): Option<T> = Option.None({})
       function <T> getSome(d: T): Option<T> = Option.Some(d)
-      method <R> map(f: (T) -> R): Option<R> =
+      method <R,> map(f: (T) -> R): Option<R> =
         match (this) {
           None -> Option.None({}),
+          Wat1(d, _, e,) -> 2,
+          Wat2(d,) -> (1,2,3,),
           Some(d) -> Option.Some(f(d)),
         }
     }
@@ -258,7 +273,7 @@ mod tests {
     let parsed =
       &parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
-    assert_eq!(1, parsed.imports.len());
+    assert_eq!(2, parsed.imports.len());
     assert_eq!(
       vec![
         "Main",
@@ -292,7 +307,7 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let text = r#"
     // Adapted from website
-    import { Foo, Bar } from path.To;
+    import { Foo, bar } from path.To;
 
     private interface A {
       private function main: Str =
@@ -309,6 +324,8 @@ mod tests {
     interface {
       function main: Str =
     }
+
+    class DD(private d: Str) {}
 
     class TypeInference(val : Str, val foo: ) {
       function notAnnotated(bad: ):  = {
@@ -328,7 +345,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
-    import {Foo} from 3.2
+    import {Foo} from a.2
     import {Bar} from +.3
 
     class {

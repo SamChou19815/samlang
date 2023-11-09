@@ -6,7 +6,6 @@ use crate::{
     type_check_module, type_check_sources,
   },
   measure_time,
-  parser::parse_source_module_from_text,
 };
 use samlang_ast::source::Module;
 use samlang_errors::{CompileTimeError, ErrorSet};
@@ -38,7 +37,15 @@ impl ServerState {
       let parsed_modules = string_sources
         .iter()
         .map(|(mod_ref, text)| {
-          (*mod_ref, parse_source_module_from_text(text, *mod_ref, &mut heap, &mut error_set))
+          (
+            *mod_ref,
+            samlang_parser::parse_source_module_from_text(
+              text,
+              *mod_ref,
+              &mut heap,
+              &mut error_set,
+            ),
+          )
         })
         .collect::<HashMap<_, _>>();
       let dep_graph = DependencyGraph::new(&parsed_modules);
@@ -118,8 +125,12 @@ impl ServerState {
     let mut error_set = ErrorSet::new();
     let initial_update_set = updates.iter().map(|(m, _)| *m).collect::<HashSet<_>>();
     for (mod_ref, source_code) in updates {
-      let parsed =
-        parse_source_module_from_text(&source_code, mod_ref, &mut self.heap, &mut error_set);
+      let parsed = samlang_parser::parse_source_module_from_text(
+        &source_code,
+        mod_ref,
+        &mut self.heap,
+        &mut error_set,
+      );
       self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed));
       self.string_sources.insert(mod_ref, source_code);
       self.parsed_modules.insert(mod_ref, parsed);
@@ -137,8 +148,12 @@ impl ServerState {
     for (old_mod_ref, new_mod_ref) in renames {
       if let Some(source) = self.string_sources.remove(&old_mod_ref) {
         self.parsed_modules.remove(&old_mod_ref).unwrap();
-        let parsed =
-          parse_source_module_from_text(&source, new_mod_ref, &mut self.heap, &mut error_set);
+        let parsed = samlang_parser::parse_source_module_from_text(
+          &source,
+          new_mod_ref,
+          &mut self.heap,
+          &mut error_set,
+        );
         self.string_sources.insert(new_mod_ref, source);
         self.parsed_modules.insert(new_mod_ref, parsed);
         let mod_cx = self.global_cx.remove(&old_mod_ref).unwrap();
