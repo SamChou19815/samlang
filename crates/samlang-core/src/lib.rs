@@ -1,15 +1,12 @@
 #![allow(clippy::expect_fun_call)]
 #![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
 
-pub use common::measure_time;
 use samlang_heap::{Heap, ModuleReference, PStr};
 pub use samlang_parser::builtin_std_raw_sources;
 use std::collections::{BTreeMap, HashMap};
 
-mod common;
 mod integration_tests;
 mod interpreter;
-pub mod services;
 
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
@@ -43,7 +40,7 @@ pub fn compile_sources(
 ) -> Result<SourcesCompilationResult, String> {
   let mut error_set = samlang_errors::ErrorSet::new();
   let mut parsed_sources = HashMap::new();
-  crate::common::measure_time(enable_profiling, "Parsing", || {
+  samlang_profiling::measure_time(enable_profiling, "Parsing", || {
     for (module_reference, source) in &source_handles {
       let parsed = samlang_parser::parse_source_module_from_text(
         source,
@@ -62,7 +59,7 @@ pub fn compile_sources(
       ));
     }
   }
-  let checked_sources = measure_time(enable_profiling, "Type checking", || {
+  let checked_sources = samlang_profiling::measure_time(enable_profiling, "Type checking", || {
     samlang_checker::type_check_sources(&parsed_sources, &mut error_set).0
   });
   let errors = error_set.pretty_print_error_messages(heap, &source_handles);
@@ -70,23 +67,26 @@ pub fn compile_sources(
     return Err(errors);
   }
 
-  let unoptimized_mir_sources = measure_time(enable_profiling, "Compile to MIR", || {
-    samlang_compiler::compile_sources_to_mir(heap, &checked_sources)
-  });
-  let optimized_mir_sources = measure_time(enable_profiling, "Optimize MIR", || {
-    samlang_optimization::optimize_sources(
-      heap,
-      unoptimized_mir_sources,
-      &samlang_optimization::ALL_ENABLED_CONFIGURATION,
-    )
-  });
-  let mut lir_sources = measure_time(enable_profiling, "Compile to LIR", || {
+  let unoptimized_mir_sources =
+    samlang_profiling::measure_time(enable_profiling, "Compile to MIR", || {
+      samlang_compiler::compile_sources_to_mir(heap, &checked_sources)
+    });
+  let optimized_mir_sources =
+    samlang_profiling::measure_time(enable_profiling, "Optimize MIR", || {
+      samlang_optimization::optimize_sources(
+        heap,
+        unoptimized_mir_sources,
+        &samlang_optimization::ALL_ENABLED_CONFIGURATION,
+      )
+    });
+  let mut lir_sources = samlang_profiling::measure_time(enable_profiling, "Compile to LIR", || {
     samlang_compiler::compile_mir_to_lir(heap, optimized_mir_sources)
   });
   let common_ts_code = lir_sources.pretty_print(heap);
-  let (wat_text, wasm_file) = measure_time(enable_profiling, "Compile to WASM", || {
-    samlang_compiler::compile_lir_to_wasm(heap, &lir_sources)
-  });
+  let (wat_text, wasm_file) =
+    samlang_profiling::measure_time(enable_profiling, "Compile to WASM", || {
+      samlang_compiler::compile_lir_to_wasm(heap, &lir_sources)
+    });
 
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {

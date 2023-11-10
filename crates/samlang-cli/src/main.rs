@@ -113,7 +113,6 @@ mod utils {
 
 mod lsp {
   use super::*;
-  use samlang_core::services;
   use std::collections::HashMap;
   use tokio::sync::RwLock;
   use tower_lsp::jsonrpc::Result;
@@ -137,7 +136,7 @@ mod lsp {
     state: RwLock<WrappedState>,
   }
 
-  struct WrappedState(services::server_state::ServerState);
+  struct WrappedState(samlang_services::server_state::ServerState);
 
   impl WrappedState {
     fn update(&mut self, absolute_source_path: &Path, updates: Vec<(Url, String)>) {
@@ -235,7 +234,7 @@ mod lsp {
     pub(super) fn new(
       client: Client,
       absolute_source_path: PathBuf,
-      state: services::server_state::ServerState,
+      state: samlang_services::server_state::ServerState,
     ) -> Backend {
       Backend { client, absolute_source_path, state: RwLock::new(WrappedState(state)) }
     }
@@ -428,8 +427,9 @@ mod lsp {
         &state.0.heap,
         &params.text_document_position.text_document.uri,
       );
+      use samlang_services::completion;
       Ok(Some(CompletionResponse::Array(
-        samlang_core::services::api::completion::auto_complete(
+        samlang_services::completion::auto_complete(
           &state.0,
           &mod_ref,
           lsp_pos_to_samlang_pos(params.text_document_position.position),
@@ -438,14 +438,12 @@ mod lsp {
         .map(|item| CompletionItem {
           label: item.label,
           kind: Some(match item.kind {
-            services::api::completion::CompletionItemKind::Method => CompletionItemKind::METHOD,
-            services::api::completion::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
-            services::api::completion::CompletionItemKind::Field => CompletionItemKind::FIELD,
-            services::api::completion::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
-            services::api::completion::CompletionItemKind::Class => CompletionItemKind::CLASS,
-            services::api::completion::CompletionItemKind::Interface => {
-              CompletionItemKind::INTERFACE
-            }
+            completion::CompletionItemKind::Method => CompletionItemKind::METHOD,
+            completion::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
+            completion::CompletionItemKind::Field => CompletionItemKind::FIELD,
+            completion::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
+            completion::CompletionItemKind::Class => CompletionItemKind::CLASS,
+            completion::CompletionItemKind::Interface => CompletionItemKind::INTERFACE,
           }),
           detail: Some(item.detail),
           insert_text: Some(item.insert_text),
@@ -470,7 +468,7 @@ mod lsp {
         &params.text_document_position_params.text_document.uri,
       );
       Ok(
-        samlang_core::services::api::query::hover(
+        samlang_services::query::hover(
           &state.0,
           &mod_ref,
           lsp_pos_to_samlang_pos(params.text_document_position_params.position),
@@ -501,7 +499,7 @@ mod lsp {
         &params.text_document_position_params.text_document.uri,
       );
       Ok(
-        samlang_core::services::api::query::signature_help(
+        samlang_services::query::signature_help(
           &state.0,
           &mod_ref,
           lsp_pos_to_samlang_pos(params.text_document_position_params.position),
@@ -539,7 +537,7 @@ mod lsp {
         &params.text_document_position_params.text_document.uri,
       );
       Ok(
-        samlang_core::services::api::query::definition_location(
+        samlang_services::query::definition_location(
           &state.0,
           &mod_ref,
           lsp_pos_to_samlang_pos(params.text_document_position_params.position),
@@ -565,7 +563,7 @@ mod lsp {
         &params.text_document_position.text_document.uri,
       );
       Ok(Some(
-        samlang_core::services::api::query::all_references(
+        samlang_services::query::all_references(
           &state.0,
           &mod_ref,
           lsp_pos_to_samlang_pos(params.text_document_position.position),
@@ -590,10 +588,10 @@ mod lsp {
         end: lsp_pos_to_samlang_pos(params.range.end),
       };
       Ok(Some(
-        samlang_core::services::api::rewrite::code_actions(&state.0, location)
+        samlang_services::rewrite::code_actions(&state.0, location)
           .into_iter()
           .map(|code_action| match code_action {
-            services::api::rewrite::CodeAction::Quickfix { title, edits } => {
+            samlang_services::rewrite::CodeAction::Quickfix { title, edits } => {
               CodeActionOrCommand::CodeAction(CodeAction {
                 title,
                 kind: Some(CodeActionKind::QUICKFIX),
@@ -629,7 +627,7 @@ mod lsp {
       let mod_ref =
         self.convert_url_to_module_reference_readonly(&state.0.heap, &params.text_document.uri);
       Ok(
-        samlang_core::services::api::rewrite::format_entire_document(&state.0, &mod_ref)
+        samlang_services::rewrite::format_entire_document(&state.0, &mod_ref)
           .map(|new_text| vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text }]),
       )
     }
@@ -642,7 +640,7 @@ mod lsp {
         &params.text_document_position.text_document.uri,
       );
       Ok(
-        samlang_core::services::api::rewrite::rename(
+        samlang_services::rewrite::rename(
           &mut state.0,
           &mod_ref,
           lsp_pos_to_samlang_pos(params.text_document_position.position),
@@ -667,7 +665,7 @@ mod lsp {
       let state = self.state.read().await;
       let mod_ref =
         self.convert_url_to_module_reference_readonly(&state.0.heap, &params.text_document.uri);
-      Ok(samlang_core::services::api::query::folding_ranges(&state.0, &mod_ref).map(|ranges| {
+      Ok(samlang_services::query::folding_ranges(&state.0, &mod_ref).map(|ranges| {
         ranges
           .into_iter()
           .map(|location| FoldingRange {
@@ -705,7 +703,7 @@ mod runners {
   }
 
   fn compile_single(enable_profiling: bool) {
-    samlang_core::measure_time(enable_profiling, "Full run", || {
+    samlang_profiling::measure_time(enable_profiling, "Full run", || {
       let configuration = utils::get_configuration();
       let heap = &mut samlang_heap::Heap::new();
       let entry_module_references = configuration
@@ -718,7 +716,7 @@ mod runners {
         })
         .collect::<Vec<_>>();
       let collected_sources =
-        samlang_core::measure_time(enable_profiling, "Collecting sources", || {
+        samlang_profiling::measure_time(enable_profiling, "Collecting sources", || {
           utils::collect_sources(&configuration, heap)
         });
       match samlang_core::compile_sources(
@@ -823,8 +821,7 @@ mod runners {
       {
         let mut heap = samlang_heap::Heap::new();
         let collected_sources = utils::collect_sources(&configuration, &mut heap);
-        let state =
-          samlang_core::services::server_state::ServerState::new(heap, true, collected_sources);
+        let state = samlang_services::server_state::ServerState::new(heap, true, collected_sources);
         let (service, socket) =
           LspService::new(|client| lsp::Backend::new(client, absolute_source_path, state));
 

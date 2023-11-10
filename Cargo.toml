@@ -3,14 +3,16 @@ members = [
   "crates/samlang-ast",
   "crates/samlang-checker",
   "crates/samlang-cli",
-  "crates/samlang-core",
   "crates/samlang-collections",
   "crates/samlang-compiler",
+  "crates/samlang-core",
   "crates/samlang-errors",
   "crates/samlang-heap",
   "crates/samlang-optimization",
   "crates/samlang-parser",
   "crates/samlang-printer",
+  "crates/samlang-profiling",
+  "crates/samlang-services",
   "crates/samlang-wasm",
 ]
 resolver = "2"

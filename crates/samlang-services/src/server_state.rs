@@ -1,5 +1,4 @@
 use super::{dep_graph::DependencyGraph, gc::perform_gc_after_recheck};
-use crate::measure_time;
 use samlang_ast::source::Module;
 use samlang_checker::{
   build_module_signature,
@@ -30,7 +29,7 @@ impl ServerState {
     enable_profiling: bool,
     string_sources: HashMap<ModuleReference, String>,
   ) -> ServerState {
-    measure_time(enable_profiling, "LSP Init", || {
+    samlang_profiling::measure_time(enable_profiling, "LSP Init", || {
       let mut error_set = ErrorSet::new();
       let parsed_modules = string_sources
         .iter()
@@ -89,7 +88,7 @@ impl ServerState {
     }
 
     // GC
-    measure_time(self.enable_profiling, "GC", || {
+    samlang_profiling::measure_time(self.enable_profiling, "GC", || {
       perform_gc_after_recheck(
         &mut self.heap,
         &self.checked_modules,

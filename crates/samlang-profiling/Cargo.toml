@@ -1,0 +1,4 @@
+[package]
+name = "samlang-profiling"
+version = "0.9.1"
+edition = "2021"
