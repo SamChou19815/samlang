@@ -554,6 +554,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "samlang-checker"
+version = "0.9.1"
+dependencies = [
+ "enum-as-inner",
+ "itertools",
+ "phf",
+ "pretty_assertions",
+ "samlang-ast",
+ "samlang-collections",
+ "samlang-errors",
+ "samlang-heap",
+ "samlang-parser",
+]
+
+[[package]]
 name = "samlang-cli"
 version = "0.9.1"
 dependencies = [
@@ -582,6 +597,7 @@ dependencies = [
  "itertools",
  "pretty_assertions",
  "samlang-ast",
+ "samlang-checker",
  "samlang-collections",
  "samlang-errors",
  "samlang-heap",

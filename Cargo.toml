@@ -1,8 +1,10 @@
 [workspace]
 members = [
+  "crates/samlang-ast",
+  "crates/samlang-checker",
+  "crates/samlang-cli",
   "crates/samlang-core",
   "crates/samlang-collections",
-  "crates/samlang-cli",
   "crates/samlang-errors",
   "crates/samlang-parser",
   "crates/samlang-heap",

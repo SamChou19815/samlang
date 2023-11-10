@@ -1,4 +1,3 @@
-use crate::checker::type_;
 use itertools::Itertools;
 use samlang_ast::{
   hir::{
@@ -7,6 +6,7 @@ use samlang_ast::{
   },
   source,
 };
+use samlang_checker::type_;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{BTreeMap, HashMap, HashSet},
@@ -274,9 +274,9 @@ impl TypeLoweringManager {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::checker::type_::test_type_builder;
   use pretty_assertions::assert_eq;
   use samlang_ast::{hir::INT_TYPE, source::test_builder, Location, Reason};
+  use samlang_checker::type_::test_type_builder;
   use samlang_heap::PStr;
 
   #[test]

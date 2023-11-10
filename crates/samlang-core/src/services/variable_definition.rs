@@ -1,4 +1,3 @@
-use crate::checker::{perform_ssa_analysis_on_module, SsaAnalysisResult};
 use samlang_ast::{
   source::{
     expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
@@ -6,6 +5,7 @@ use samlang_ast::{
   },
   Location,
 };
+use samlang_checker::{perform_ssa_analysis_on_module, SsaAnalysisResult};
 use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 

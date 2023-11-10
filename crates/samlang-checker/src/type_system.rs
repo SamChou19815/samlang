@@ -259,7 +259,6 @@ pub(super) fn solve_multiple_type_constrains(
 pub(super) struct TypeConstraintSolution {
   pub(super) solved_substitution: HashMap<PStr, Rc<Type>>,
   pub(super) solved_generic_type: Rc<Type>,
-  pub(super) solved_contextually_typed_concrete_type: Rc<Type>,
 }
 
 pub(super) fn solve_type_constraints(
@@ -279,18 +278,13 @@ pub(super) fn solve_type_constraints(
     });
   }
   let solved_generic_type = subst_type(generic, &solved_substitution);
-  let solved_contextually_typed_concrete_type = match type_meet(concrete, &solved_generic_type) {
-    Ok(t) => Rc::new(t),
+  match type_meet(concrete, &solved_generic_type) {
+    Ok(_) => {}
     Err(stackable) => {
       error_set.report_stackable_error(concrete.get_reason().use_loc, stackable);
-      Rc::new(concrete.clone())
     }
   };
-  TypeConstraintSolution {
-    solved_substitution,
-    solved_generic_type,
-    solved_contextually_typed_concrete_type,
-  }
+  TypeConstraintSolution { solved_substitution, solved_generic_type }
 }
 
 pub(super) fn subst_nominal_type(
@@ -693,43 +687,36 @@ Found 1 error.
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
-    let super::TypeConstraintSolution {
-      solved_substitution: _,
-      solved_generic_type,
-      solved_contextually_typed_concrete_type,
-    } = super::solve_type_constraints(
-      &builder.fun_type(
-        vec![
-          builder.fun_type(
-            vec![Rc::new(Type::Any(Reason::dummy(), true))],
-            Rc::new(Type::Any(Reason::dummy(), false)),
-          ),
-          builder.int_type(),
+    let super::TypeConstraintSolution { solved_substitution: _, solved_generic_type } =
+      super::solve_type_constraints(
+        &builder.fun_type(
+          vec![
+            builder.fun_type(
+              vec![Rc::new(Type::Any(Reason::dummy(), true))],
+              Rc::new(Type::Any(Reason::dummy(), false)),
+            ),
+            builder.int_type(),
+          ],
+          builder.unit_type(),
+        ),
+        &builder.fun_type(
+          vec![
+            builder.fun_type(
+              vec![builder.generic_type(PStr::UPPER_A)],
+              builder.generic_type(PStr::UPPER_A),
+            ),
+            builder.generic_type(PStr::UPPER_B),
+          ],
+          builder.unit_type(),
+        ),
+        &vec![
+          TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+          TypeParameterSignature { name: PStr::UPPER_B, bound: None },
         ],
-        builder.unit_type(),
-      ),
-      &builder.fun_type(
-        vec![
-          builder.fun_type(
-            vec![builder.generic_type(PStr::UPPER_A)],
-            builder.generic_type(PStr::UPPER_A),
-          ),
-          builder.generic_type(PStr::UPPER_B),
-        ],
-        builder.unit_type(),
-      ),
-      &vec![
-        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
-        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
-      ],
-      &mut error_set,
-    );
+        &mut error_set,
+      );
 
     assert_eq!("((any) -> any, int) -> unit", solved_generic_type.pretty_print(&heap));
-    assert_eq!(
-      "((any) -> any, int) -> unit",
-      solved_contextually_typed_concrete_type.pretty_print(&heap)
-    );
     assert!(!error_set.has_errors());
   }
 
@@ -739,40 +726,33 @@ Found 1 error.
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
-    let super::TypeConstraintSolution {
-      solved_substitution: _,
-      solved_generic_type,
-      solved_contextually_typed_concrete_type,
-    } = super::solve_type_constraints(
-      &builder.fun_type(
-        vec![
-          builder.fun_type(
-            vec![Rc::new(Type::Any(Reason::dummy(), false))],
-            Rc::new(Type::Any(Reason::dummy(), true)),
-          ),
-          builder.int_type(),
-        ],
-        builder.unit_type(),
-      ),
-      &builder.fun_type(
-        vec![
-          builder.fun_type(
-            vec![builder.simple_nominal_type(PStr::UPPER_A)],
-            builder.simple_nominal_type(PStr::UPPER_A),
-          ),
-          builder.generic_type(PStr::UPPER_B),
-        ],
-        builder.unit_type(),
-      ),
-      &vec![TypeParameterSignature { name: PStr::UPPER_B, bound: None }],
-      &mut error_set,
-    );
+    let super::TypeConstraintSolution { solved_substitution: _, solved_generic_type } =
+      super::solve_type_constraints(
+        &builder.fun_type(
+          vec![
+            builder.fun_type(
+              vec![Rc::new(Type::Any(Reason::dummy(), false))],
+              Rc::new(Type::Any(Reason::dummy(), true)),
+            ),
+            builder.int_type(),
+          ],
+          builder.unit_type(),
+        ),
+        &builder.fun_type(
+          vec![
+            builder.fun_type(
+              vec![builder.simple_nominal_type(PStr::UPPER_A)],
+              builder.simple_nominal_type(PStr::UPPER_A),
+            ),
+            builder.generic_type(PStr::UPPER_B),
+          ],
+          builder.unit_type(),
+        ),
+        &vec![TypeParameterSignature { name: PStr::UPPER_B, bound: None }],
+        &mut error_set,
+      );
 
     assert_eq!("((A) -> A, int) -> unit", solved_generic_type.pretty_print(&heap));
-    assert_eq!(
-      "((A) -> A, int) -> unit",
-      solved_contextually_typed_concrete_type.pretty_print(&heap)
-    );
     assert!(!error_set.has_errors());
   }
 }

@@ -522,7 +522,7 @@ mod tests {
       ),
     ]);
     if include_std {
-      for (mod_ref, sig) in super::super::global_signature::create_std_signatures(heap) {
+      for (mod_ref, sig) in super::super::global_signature::create_std_signatures_for_test(heap) {
         sigs.insert(mod_ref, sig);
       }
     }
@@ -1465,6 +1465,12 @@ Found 1 error.
     );
     assert_checks(heap, "Test.helloWorld(\"\")", &builder.unit_type());
     assert_checks(heap, "Test.init(true, 3).fff()", &builder.string_type());
+    assert_checks(heap, "Test.helloWorldWithTypeParameters({})", &builder.unit_type());
+    assert_checks(
+      heap,
+      "Test.helloWorldWithTypeParameters(Test.helloWorldWithTypeParameters(1))",
+      &builder.unit_type(),
+    );
     assert_checks(heap, "((i: int) -> true)(3)", &builder.bool_type());
 
     assert_errors(
@@ -1646,6 +1652,22 @@ There is not enough context information to decide the type of this expression.
 
   1| Test.init(true, 3).bazWithTypeParam(1)
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
+    );
+    assert_errors(
+      heap,
+      "Test.helloWorldWithTypeParameters(Process.panic(\"\"))",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:35-1:52
+
+There is not enough context information to decide the type of this expression.
+
+  1| Test.helloWorldWithTypeParameters(Process.panic(""))
+                                       ^^^^^^^^^^^^^^^^^
 
 
 Found 1 error.
@@ -2796,6 +2818,7 @@ let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
 let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t then 1 else 2;
 let _ = (t: Test2) -> if let {s} = t then 1 else 2;
+let _ = (t: Test2) -> if let (s) = t then 1 else 2;
 let _ = if let F = 1 then 1 else 2;
 }"#,
       &builder.unit_type(),
@@ -2890,15 +2913,23 @@ Error ---------------------------------- DUMMY.sam:7:30-7:33
                                   ^^^
 
 
-Error ---------------------------------- DUMMY.sam:8:16-8:17
+Error ---------------------------------- DUMMY.sam:8:30-8:33
+
+`Test2` is not an instance of a struct class.
+
+  8| let _ = (t: Test2) -> if let (s) = t then 1 else 2;
+                                  ^^^
+
+
+Error ---------------------------------- DUMMY.sam:9:16-9:17
 
 `int` is not an instance of an enum class.
 
-  8| let _ = if let F = 1 then 1 else 2;
+  9| let _ = if let F = 1 then 1 else 2;
                     ^
 
 
-Found 12 errors.
+Found 13 errors.
 "#,
       "Test2",
       false,

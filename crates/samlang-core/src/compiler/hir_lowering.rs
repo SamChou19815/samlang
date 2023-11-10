@@ -7,9 +7,9 @@ use super::{
   mir_constant_param_elimination, mir_generics_specialization, mir_tail_recursion_rewrite,
   mir_type_deduplication,
 };
-use crate::checker::type_;
 use itertools::Itertools;
 use samlang_ast::{hir, mir, source};
+use samlang_checker::type_;
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
@@ -1389,13 +1389,10 @@ pub(crate) fn compile_sources_to_mir(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    checker::type_::{self, test_type_builder},
-    compiler::{
-      hir_lowering::ExpressionLoweringManager,
-      hir_string_manager::StringManager,
-      hir_type_conversion::{SynthesizedTypes, TypeLoweringManager, TypeSynthesizer},
-    },
+  use crate::compiler::{
+    hir_lowering::ExpressionLoweringManager,
+    hir_string_manager::StringManager,
+    hir_type_conversion::{SynthesizedTypes, TypeLoweringManager, TypeSynthesizer},
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
@@ -1404,6 +1401,7 @@ mod tests {
     source::{self, test_builder, CommentStore, NO_COMMENT_REFERENCE},
     Location, Reason,
   };
+  use samlang_checker::type_::{self, test_type_builder};
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::{
     collections::{HashMap, HashSet},

@@ -1,8 +1,8 @@
-use crate::checker::type_::Type;
 use samlang_ast::{
   source::{annotation, expr, pattern, Module, Toplevel, TypeDefinition},
   Location,
 };
+use samlang_checker::type_::Type;
 use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
@@ -253,7 +253,6 @@ pub(super) fn search_modules_globally(
 
 #[cfg(test)]
 mod tests {
-  use crate::{builtin_parsed_std_sources, checker::type_check_sources};
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, PStr};
@@ -345,9 +344,9 @@ mod tests {
     }"#;
     let parsed =
       samlang_parser::parse_source_module_from_text(source, mod_ref, heap, &mut error_set);
-    let mut modules = builtin_parsed_std_sources(heap);
+    let mut modules = samlang_parser::builtin_parsed_std_sources_for_tests(heap);
     modules.insert(mod_ref, parsed);
-    let (checked_sources, _) = type_check_sources(&modules, &mut error_set);
+    let (checked_sources, _) = samlang_checker::type_check_sources(&modules, &mut error_set);
     assert_eq!(
       r#"
 Error ---------------------------------- foo.sam:33:24-33:44

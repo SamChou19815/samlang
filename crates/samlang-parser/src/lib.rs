@@ -4,7 +4,7 @@
 use samlang_ast::source;
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 mod lexer;
 mod lexer_test;
@@ -46,6 +46,44 @@ pub fn parse_source_expression_from_text(
     builtins,
   );
   parser.parse_expression_with_comment_store()
+}
+
+pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, String> {
+  let mut sources = HashMap::new();
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "list".to_string()]),
+    include_str!("../../../std/list.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "map".to_string()]),
+    include_str!("../../../std/map.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "option".to_string()]),
+    include_str!("../../../std/option.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "result".to_string()]),
+    include_str!("../../../std/result.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "tuples".to_string()]),
+    include_str!("../../../std/tuples.sam").to_string(),
+  );
+  sources
+}
+
+pub fn builtin_parsed_std_sources_for_tests(
+  heap: &mut Heap,
+) -> HashMap<ModuleReference, samlang_ast::source::Module<()>> {
+  let mut error_set = samlang_errors::ErrorSet::new();
+  let mut parsed_sources = HashMap::new();
+  for (mod_ref, source) in builtin_std_raw_sources(heap) {
+    let parsed = parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
+    parsed_sources.insert(mod_ref, parsed);
+  }
+  assert!(!error_set.has_errors());
+  parsed_sources
 }
 
 #[cfg(test)]

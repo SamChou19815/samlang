@@ -1,13 +1,11 @@
 use super::{dep_graph::DependencyGraph, gc::perform_gc_after_recheck};
-use crate::{
-  checker::{
-    build_module_signature,
-    type_::{GlobalSignature, Type},
-    type_check_module, type_check_sources,
-  },
-  measure_time,
-};
+use crate::measure_time;
 use samlang_ast::source::Module;
+use samlang_checker::{
+  build_module_signature,
+  type_::{GlobalSignature, Type},
+  type_check_module, type_check_sources,
+};
 use samlang_errors::{CompileTimeError, ErrorSet};
 use samlang_heap::{Heap, ModuleReference};
 use std::{

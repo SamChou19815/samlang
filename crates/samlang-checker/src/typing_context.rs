@@ -11,7 +11,7 @@ use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
-pub(crate) struct LocalTypingContext {
+pub struct LocalTypingContext {
   type_map: HashMap<Location, Rc<Type>>,
   ssa_analysis_result: ssa_analysis::SsaAnalysisResult,
 }
@@ -34,10 +34,7 @@ impl LocalTypingContext {
     }
   }
 
-  pub(crate) fn possibly_in_scope_local_variables(
-    &self,
-    position: Position,
-  ) -> Vec<(&PStr, &Type)> {
+  pub fn possibly_in_scope_local_variables(&self, position: Position) -> Vec<(&PStr, &Type)> {
     let mut collector = vec![];
     for (scope_loc, map) in &self.ssa_analysis_result.local_scoped_def_locs {
       if scope_loc.contains_position(position) {

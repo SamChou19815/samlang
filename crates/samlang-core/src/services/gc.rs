@@ -1,10 +1,8 @@
-use crate::{
-  checker::type_::{FunctionType, NominalType, Type},
-  Heap, ModuleReference,
-};
 use samlang_ast::source::{
   annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter,
 };
+use samlang_checker::type_::{FunctionType, NominalType, Type};
+use samlang_heap::{Heap, ModuleReference};
 use std::{collections::HashMap, rc::Rc};
 
 fn mark_annot(heap: &mut Heap, type_: &annotation::T) {
@@ -271,8 +269,8 @@ pub(super) fn perform_gc_after_recheck(
 
 #[cfg(test)]
 mod tests {
-  use crate::{checker::type_check_sources, Heap, ModuleReference};
   use samlang_errors::ErrorSet;
+  use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashMap;
 
   #[test]
@@ -361,8 +359,10 @@ mod tests {
       heap,
       &mut error_set,
     );
-    let (checked_sources, _) =
-      type_check_sources(&HashMap::from([(ModuleReference::DUMMY, parsed)]), &mut error_set);
+    let (checked_sources, _) = samlang_checker::type_check_sources(
+      &HashMap::from([(ModuleReference::DUMMY, parsed)]),
+      &mut error_set,
+    );
     super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::ROOT]);
     super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::DUMMY]);
     assert_eq!("", heap.debug_unmarked_strings());

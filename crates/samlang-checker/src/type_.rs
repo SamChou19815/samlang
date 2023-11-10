@@ -1,15 +1,14 @@
-use crate::{Heap, ModuleReference};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_ast::{
   source::{annotation, TypeParameter},
   Description, Location, Reason,
 };
-use samlang_heap::PStr;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub(crate) enum PrimitiveTypeKind {
+pub enum PrimitiveTypeKind {
   Unit,
   Bool,
   Int,
@@ -26,7 +25,7 @@ impl ToString for PrimitiveTypeKind {
 }
 
 impl PrimitiveTypeKind {
-  pub(crate) fn to_description(self) -> Description {
+  pub fn to_description(self) -> Description {
     match self {
       PrimitiveTypeKind::Unit => Description::UnitType,
       PrimitiveTypeKind::Bool => Description::BoolType,
@@ -35,19 +34,19 @@ impl PrimitiveTypeKind {
   }
 }
 
-pub(crate) trait ISourceType {
+pub trait ISourceType {
   fn pretty_print(&self, heap: &Heap) -> String;
   fn to_description(&self) -> Description;
   fn is_the_same_type(&self, other: &Self) -> bool;
 }
 
 #[derive(Clone)]
-pub(crate) struct NominalType {
-  pub(crate) reason: Reason,
-  pub(crate) is_class_statics: bool,
-  pub(crate) module_reference: ModuleReference,
-  pub(crate) id: PStr,
-  pub(crate) type_arguments: Vec<Rc<Type>>,
+pub struct NominalType {
+  pub reason: Reason,
+  pub is_class_statics: bool,
+  pub module_reference: ModuleReference,
+  pub id: PStr,
+  pub type_arguments: Vec<Rc<Type>>,
 }
 
 impl ISourceType for NominalType {
@@ -89,7 +88,7 @@ impl ISourceType for NominalType {
 }
 
 impl NominalType {
-  pub(crate) fn reposition(self, use_loc: Location) -> NominalType {
+  pub fn reposition(self, use_loc: Location) -> NominalType {
     NominalType {
       reason: self.reason.to_use_reason(use_loc),
       is_class_statics: self.is_class_statics,
@@ -99,7 +98,7 @@ impl NominalType {
     }
   }
 
-  pub(crate) fn from_annotation(annotation: &annotation::Id) -> NominalType {
+  pub fn from_annotation(annotation: &annotation::Id) -> NominalType {
     NominalType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       is_class_statics: false,
@@ -115,10 +114,10 @@ impl NominalType {
 }
 
 #[derive(Clone)]
-pub(crate) struct FunctionType {
-  pub(crate) reason: Reason,
-  pub(crate) argument_types: Vec<Rc<Type>>,
-  pub(crate) return_type: Rc<Type>,
+pub struct FunctionType {
+  pub reason: Reason,
+  pub argument_types: Vec<Rc<Type>>,
+  pub return_type: Rc<Type>,
 }
 
 impl ISourceType for FunctionType {
@@ -148,7 +147,7 @@ impl ISourceType for FunctionType {
 }
 
 impl FunctionType {
-  pub(crate) fn reposition(self, use_loc: Location) -> FunctionType {
+  pub fn reposition(self, use_loc: Location) -> FunctionType {
     FunctionType {
       reason: self.reason.to_use_reason(use_loc),
       argument_types: self.argument_types,
@@ -156,7 +155,7 @@ impl FunctionType {
     }
   }
 
-  pub(crate) fn from_annotation(annotation: &annotation::Function) -> FunctionType {
+  pub fn from_annotation(annotation: &annotation::Function) -> FunctionType {
     FunctionType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       argument_types: annotation
@@ -170,7 +169,7 @@ impl FunctionType {
 }
 
 #[derive(Clone, EnumAsInner)]
-pub(crate) enum Type {
+pub enum Type {
   Any(Reason, bool), // bool: is_placeholder
   Primitive(Reason, PrimitiveTypeKind),
   Nominal(NominalType),
@@ -214,17 +213,17 @@ impl ISourceType for Type {
 }
 
 impl Type {
-  pub(crate) fn unit_type(reason: Reason) -> Type {
+  pub fn unit_type(reason: Reason) -> Type {
     Type::Primitive(reason, PrimitiveTypeKind::Unit)
   }
-  pub(crate) fn bool_type(reason: Reason) -> Type {
+  pub fn bool_type(reason: Reason) -> Type {
     Type::Primitive(reason, PrimitiveTypeKind::Bool)
   }
-  pub(crate) fn int_type(reason: Reason) -> Type {
+  pub fn int_type(reason: Reason) -> Type {
     Type::Primitive(reason, PrimitiveTypeKind::Int)
   }
 
-  pub(crate) fn get_reason(&self) -> &Reason {
+  pub fn get_reason(&self) -> &Reason {
     match self {
       Self::Any(reason, _) => reason,
       Self::Primitive(reason, _) => reason,
@@ -234,7 +233,7 @@ impl Type {
     }
   }
 
-  pub(crate) fn reposition(&self, use_loc: Location) -> Type {
+  pub fn reposition(&self, use_loc: Location) -> Type {
     match self {
       Self::Any(reason, is_placeholder) => {
         Type::Any(reason.to_use_reason(use_loc), *is_placeholder)
@@ -262,7 +261,7 @@ impl Type {
     }
   }
 
-  pub(crate) fn from_annotation(annotation: &annotation::T) -> Type {
+  pub fn from_annotation(annotation: &annotation::T) -> Type {
     match annotation {
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Unit) => {
         Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Unit)
@@ -284,13 +283,13 @@ impl Type {
 }
 
 #[derive(Clone)]
-pub(crate) struct TypeParameterSignature {
-  pub(crate) name: PStr,
-  pub(crate) bound: Option<NominalType>,
+pub struct TypeParameterSignature {
+  pub name: PStr,
+  pub bound: Option<NominalType>,
 }
 
 impl TypeParameterSignature {
-  pub(crate) fn from_list(type_parameters: &[TypeParameter]) -> Vec<TypeParameterSignature> {
+  pub fn from_list(type_parameters: &[TypeParameter]) -> Vec<TypeParameterSignature> {
     let mut tparam_sigs = vec![];
     for tparam in type_parameters {
       tparam_sigs.push(TypeParameterSignature {
@@ -301,15 +300,15 @@ impl TypeParameterSignature {
     tparam_sigs
   }
 
-  pub(crate) fn to_description(&self) -> Description {
+  pub fn to_description(&self) -> Description {
     Description::TypeParameter(self.name, self.bound.as_ref().map(|t| Box::new(t.to_description())))
   }
 
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
     self.to_description().pretty_print(heap)
   }
 
-  pub(crate) fn pretty_print_list(list: &Vec<TypeParameterSignature>, heap: &Heap) -> String {
+  pub fn pretty_print_list(list: &Vec<TypeParameterSignature>, heap: &Heap) -> String {
     if list.is_empty() {
       "".to_string()
     } else {
@@ -318,27 +317,26 @@ impl TypeParameterSignature {
   }
 }
 
-#[cfg(test)]
-pub(crate) mod test_type_builder {
+pub mod test_type_builder {
   use super::*;
 
-  pub(crate) struct CustomizedTypeBuilder {
+  pub struct CustomizedTypeBuilder {
     reason: Reason,
     module_reference: ModuleReference,
   }
 
   impl CustomizedTypeBuilder {
-    pub(crate) fn unit_type(&self) -> Rc<Type> {
+    pub fn unit_type(&self) -> Rc<Type> {
       Rc::new(Type::unit_type(self.reason))
     }
-    pub(crate) fn bool_type(&self) -> Rc<Type> {
+    pub fn bool_type(&self) -> Rc<Type> {
       Rc::new(Type::bool_type(self.reason))
     }
-    pub(crate) fn int_type(&self) -> Rc<Type> {
+    pub fn int_type(&self) -> Rc<Type> {
       Rc::new(Type::int_type(self.reason))
     }
 
-    pub(crate) fn string_type(&self) -> Rc<Type> {
+    pub fn string_type(&self) -> Rc<Type> {
       Rc::new(Type::Nominal(NominalType {
         reason: self.reason,
         is_class_statics: false,
@@ -348,7 +346,7 @@ pub(crate) mod test_type_builder {
       }))
     }
 
-    pub(crate) fn simple_nominal_type_unwrapped(&self, id: PStr) -> NominalType {
+    pub fn simple_nominal_type_unwrapped(&self, id: PStr) -> NominalType {
       NominalType {
         reason: self.reason,
         is_class_statics: false,
@@ -358,7 +356,7 @@ pub(crate) mod test_type_builder {
       }
     }
 
-    pub(crate) fn general_nominal_type_unwrapped(
+    pub fn general_nominal_type_unwrapped(
       &self,
       id: PStr,
       type_arguments: Vec<Rc<Type>>,
@@ -372,41 +370,37 @@ pub(crate) mod test_type_builder {
       }
     }
 
-    pub(crate) fn simple_nominal_type(&self, id: PStr) -> Rc<Type> {
+    pub fn simple_nominal_type(&self, id: PStr) -> Rc<Type> {
       Rc::new(Type::Nominal(self.simple_nominal_type_unwrapped(id)))
     }
 
-    pub(crate) fn general_nominal_type(&self, id: PStr, type_arguments: Vec<Rc<Type>>) -> Rc<Type> {
+    pub fn general_nominal_type(&self, id: PStr, type_arguments: Vec<Rc<Type>>) -> Rc<Type> {
       Rc::new(Type::Nominal(self.general_nominal_type_unwrapped(id, type_arguments)))
     }
 
-    pub(crate) fn generic_type(&self, id: PStr) -> Rc<Type> {
+    pub fn generic_type(&self, id: PStr) -> Rc<Type> {
       Rc::new(Type::Generic(self.reason, id))
     }
 
-    pub(crate) fn fun_type(
-      &self,
-      argument_types: Vec<Rc<Type>>,
-      return_type: Rc<Type>,
-    ) -> Rc<Type> {
-      Rc::new(Type::Fn(FunctionType { reason: self.reason.clone(), argument_types, return_type }))
+    pub fn fun_type(&self, argument_types: Vec<Rc<Type>>, return_type: Rc<Type>) -> Rc<Type> {
+      Rc::new(Type::Fn(FunctionType { reason: self.reason, argument_types, return_type }))
     }
   }
 
-  pub(crate) fn create() -> CustomizedTypeBuilder {
+  pub fn create() -> CustomizedTypeBuilder {
     CustomizedTypeBuilder { reason: Reason::dummy(), module_reference: ModuleReference::DUMMY }
   }
 }
 
-pub(crate) struct MemberSignature {
-  pub(crate) is_public: bool,
-  pub(crate) type_parameters: Vec<TypeParameterSignature>,
-  pub(crate) type_: FunctionType,
+pub struct MemberSignature {
+  pub is_public: bool,
+  pub type_parameters: Vec<TypeParameterSignature>,
+  pub type_: FunctionType,
 }
 
 impl MemberSignature {
   #[cfg(test)]
-  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+  pub fn to_string(&self, heap: &Heap) -> String {
     let access_str = if self.is_public { "public" } else { "private" };
     let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
     format!("{} {}{}", access_str, tparam_str, self.type_.pretty_print(heap))
@@ -449,6 +443,7 @@ impl MemberSignature {
     )
   }
 
+  #[cfg(test)]
   pub(super) fn create_private_builtin_function(
     name: PStr,
     argument_types: Vec<Rc<Type>>,
@@ -464,7 +459,7 @@ impl MemberSignature {
     )
   }
 
-  pub(crate) fn pretty_print(&self, name: &str, heap: &Heap) -> String {
+  pub fn pretty_print(&self, name: &str, heap: &Heap) -> String {
     let access_str = if self.is_public { "public" } else { "private" };
     let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
     format!("{} {}{}{}", access_str, name, tparam_str, self.type_.pretty_print(heap))
@@ -479,18 +474,18 @@ impl MemberSignature {
   }
 }
 
-pub(crate) struct InterfaceSignature {
-  pub(crate) private: bool,
-  pub(crate) type_definition: Option<TypeDefinitionSignature>,
-  pub(crate) functions: HashMap<PStr, MemberSignature>,
-  pub(crate) methods: HashMap<PStr, MemberSignature>,
-  pub(crate) type_parameters: Vec<TypeParameterSignature>,
-  pub(crate) super_types: Vec<NominalType>,
+pub struct InterfaceSignature {
+  pub private: bool,
+  pub type_definition: Option<TypeDefinitionSignature>,
+  pub functions: HashMap<PStr, MemberSignature>,
+  pub methods: HashMap<PStr, MemberSignature>,
+  pub type_parameters: Vec<TypeParameterSignature>,
+  pub super_types: Vec<NominalType>,
 }
 
 impl InterfaceSignature {
   #[cfg(test)]
-  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+  pub fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push(format!(
       "{}{} {} : [{}]",
@@ -515,25 +510,25 @@ impl InterfaceSignature {
   }
 }
 
-pub(crate) struct StructItemDefinitionSignature {
-  pub(crate) name: PStr,
-  pub(crate) type_: Rc<Type>,
-  pub(crate) is_public: bool,
+pub struct StructItemDefinitionSignature {
+  pub name: PStr,
+  pub type_: Rc<Type>,
+  pub is_public: bool,
 }
 
-pub(crate) struct EnumVariantDefinitionSignature {
-  pub(crate) name: PStr,
-  pub(crate) types: Vec<Rc<Type>>,
+pub struct EnumVariantDefinitionSignature {
+  pub name: PStr,
+  pub types: Vec<Rc<Type>>,
 }
 
 #[derive(EnumAsInner)]
-pub(crate) enum TypeDefinitionSignature {
+pub enum TypeDefinitionSignature {
   Struct(Vec<StructItemDefinitionSignature>),
   Enum(Vec<EnumVariantDefinitionSignature>),
 }
 
 impl TypeDefinitionSignature {
-  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+  pub fn to_string(&self, heap: &Heap) -> String {
     let mut collector = vec![];
     match self {
       TypeDefinitionSignature::Struct(items) => {
@@ -567,13 +562,13 @@ impl TypeDefinitionSignature {
   }
 }
 
-pub(crate) struct ModuleSignature {
-  pub(crate) interfaces: HashMap<PStr, InterfaceSignature>,
+pub struct ModuleSignature {
+  pub interfaces: HashMap<PStr, InterfaceSignature>,
 }
 
 impl ModuleSignature {
   #[cfg(test)]
-  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+  pub fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push("\ninterfaces:".to_string());
     for (name, i) in self.interfaces.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
@@ -583,7 +578,7 @@ impl ModuleSignature {
   }
 }
 
-pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
+pub fn create_builtin_module_signature() -> ModuleSignature {
   ModuleSignature {
     interfaces: HashMap::from([
       (
@@ -653,7 +648,7 @@ pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
   }
 }
 
-pub(crate) type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
+pub type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
 
 #[cfg(test)]
 mod type_tests {

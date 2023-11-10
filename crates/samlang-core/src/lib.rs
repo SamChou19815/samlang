@@ -3,9 +3,9 @@
 
 pub use common::measure_time;
 use samlang_heap::{Heap, ModuleReference, PStr};
+pub use samlang_parser::builtin_std_raw_sources;
 use std::collections::{BTreeMap, HashMap};
 
-mod checker;
 mod common;
 mod compiler;
 mod integration_tests;
@@ -13,46 +13,6 @@ mod interpreter;
 mod optimization;
 mod printer;
 pub mod services;
-
-pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, String> {
-  let mut sources = HashMap::new();
-  sources.insert(
-    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "list".to_string()]),
-    include_str!("../../../std/list.sam").to_string(),
-  );
-  sources.insert(
-    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "map".to_string()]),
-    include_str!("../../../std/map.sam").to_string(),
-  );
-  sources.insert(
-    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "option".to_string()]),
-    include_str!("../../../std/option.sam").to_string(),
-  );
-  sources.insert(
-    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "result".to_string()]),
-    include_str!("../../../std/result.sam").to_string(),
-  );
-  sources.insert(
-    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "tuples".to_string()]),
-    include_str!("../../../std/tuples.sam").to_string(),
-  );
-  sources
-}
-
-#[cfg(test)]
-pub(crate) fn builtin_parsed_std_sources(
-  heap: &mut Heap,
-) -> HashMap<ModuleReference, samlang_ast::source::Module<()>> {
-  let mut error_set = samlang_errors::ErrorSet::new();
-  let mut parsed_sources = HashMap::new();
-  for (mod_ref, source) in builtin_std_raw_sources(heap) {
-    let parsed =
-      samlang_parser::parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
-    parsed_sources.insert(mod_ref, parsed);
-  }
-  assert!(!error_set.has_errors());
-  parsed_sources
-}
 
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
@@ -106,7 +66,7 @@ pub fn compile_sources(
     }
   }
   let checked_sources = measure_time(enable_profiling, "Type checking", || {
-    checker::type_check_sources(&parsed_sources, &mut error_set).0
+    samlang_checker::type_check_sources(&parsed_sources, &mut error_set).0
   });
   let errors = error_set.pretty_print_error_messages(heap, &source_handles);
   if error_set.has_errors() {
