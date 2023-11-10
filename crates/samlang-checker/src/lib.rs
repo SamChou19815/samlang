@@ -1,3 +1,5 @@
+#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
+
 use samlang_ast::source::Module;
 use samlang_errors::ErrorSet;
 use samlang_heap::ModuleReference;
@@ -14,18 +16,18 @@ mod pattern_matching;
 mod ssa_analysis;
 mod ssa_analysis_tests;
 /// Definition of internal type language.
-pub(crate) mod type_;
+pub mod type_;
 /// All the core type checker rules in one place.
 mod type_system;
 /// All the typing context in one place.
 mod typing_context;
 mod typing_context_tests;
 
-pub(crate) use global_signature::build_module_signature;
-pub(crate) use main_checker::type_check_module;
-pub(crate) use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
+pub use global_signature::build_module_signature;
+pub use main_checker::type_check_module;
+pub use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
 
-pub(crate) fn type_check_sources(
+pub fn type_check_sources(
   sources: &HashMap<ModuleReference, Module<()>>,
   error_set: &mut ErrorSet,
 ) -> (HashMap<ModuleReference, Module<std::rc::Rc<type_::Type>>>, type_::GlobalSignature) {

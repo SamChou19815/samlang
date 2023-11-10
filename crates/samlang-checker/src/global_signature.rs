@@ -1,6 +1,6 @@
 use super::{
   type_::{
-    EnumVariantDefinitionSignature, FunctionType, GlobalSignature, ISourceType, InterfaceSignature,
+    EnumVariantDefinitionSignature, FunctionType, GlobalSignature, InterfaceSignature,
     MemberSignature, ModuleSignature, NominalType, StructItemDefinitionSignature, Type,
     TypeDefinitionSignature, TypeParameterSignature,
   },
@@ -11,13 +11,13 @@ use samlang_ast::{
   source::{Module, Toplevel, TypeDefinition},
   Reason,
 };
-use samlang_heap::{Heap, ModuleReference, PStr};
+use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{HashMap, HashSet},
   rc::Rc,
 };
 
-pub(crate) fn build_module_signature(
+pub fn build_module_signature(
   module_reference: ModuleReference,
   module: &Module<()>,
 ) -> ModuleSignature {
@@ -140,14 +140,16 @@ pub(crate) fn build_module_signature(
 }
 
 #[cfg(test)]
-pub(crate) fn create_std_signatures(heap: &mut Heap) -> HashMap<ModuleReference, ModuleSignature> {
-  crate::builtin_parsed_std_sources(heap)
+pub(super) fn create_std_signatures_for_test(
+  heap: &mut samlang_heap::Heap,
+) -> HashMap<ModuleReference, ModuleSignature> {
+  samlang_parser::builtin_parsed_std_sources_for_tests(heap)
     .into_iter()
     .map(|(mod_ref, parsed)| (mod_ref, build_module_signature(mod_ref, &parsed)))
     .collect()
 }
 
-pub(crate) fn build_global_signature(
+pub fn build_global_signature(
   sources: &HashMap<ModuleReference, Module<()>>,
   builtin_module_types: ModuleSignature,
 ) -> GlobalSignature {
@@ -173,7 +175,10 @@ pub(super) struct SuperTypesResolutionResult {
 }
 
 impl SuperTypesResolutionResult {
-  fn debug_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
+    use super::type_::ISourceType;
+
     format!(
       "resolved: [{}], is_cyclic: {}",
       self.types.iter().map(|it| it.pretty_print(heap)).join(", "),

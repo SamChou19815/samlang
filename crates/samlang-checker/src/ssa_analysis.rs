@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use samlang_ast::{
   source::{
     annotation, expr, pattern, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
@@ -7,7 +6,7 @@ use samlang_ast::{
   Location,
 };
 use samlang_errors::ErrorSet;
-use samlang_heap::{Heap, ModuleReference, PStr};
+use samlang_heap::{ModuleReference, PStr};
 use std::collections::{HashMap, HashSet};
 
 struct SsaLocalStackedContext {
@@ -412,17 +411,19 @@ impl<'a> SsaAnalysisState<'a> {
   }
 }
 
-pub(crate) struct SsaAnalysisResult {
-  pub(crate) unbound_names: HashSet<PStr>,
-  pub(crate) invalid_defines: HashSet<Location>,
-  pub(crate) use_define_map: HashMap<Location, Location>,
-  pub(crate) def_to_use_map: HashMap<Location, Vec<Location>>,
-  pub(crate) local_scoped_def_locs: HashMap<Location, HashMap<PStr, Location>>,
-  pub(crate) lambda_captures: HashMap<Location, HashMap<PStr, Location>>,
+pub struct SsaAnalysisResult {
+  pub unbound_names: HashSet<PStr>,
+  pub invalid_defines: HashSet<Location>,
+  pub use_define_map: HashMap<Location, Location>,
+  pub def_to_use_map: HashMap<Location, Vec<Location>>,
+  pub local_scoped_def_locs: HashMap<Location, HashMap<PStr, Location>>,
+  pub lambda_captures: HashMap<Location, HashMap<PStr, Location>>,
 }
 
 impl SsaAnalysisResult {
-  pub(super) fn to_string(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  pub(super) fn to_string(&self, heap: &samlang_heap::Heap) -> String {
+    use itertools::Itertools;
     format!(
       "Unbound names: [{}]\nInvalid defines: [{}]\nLocally Scoped Defs:\n{}\nLambda Capture Locs: [{}]\ndef_to_use_map:\n{}",
       self.unbound_names.iter().map(|n| n.as_str(heap)).join(", "),
@@ -473,6 +474,7 @@ impl SsaAnalysisResult {
   }
 }
 
+#[cfg(test)]
 pub(super) fn perform_ssa_analysis_on_expression(
   module_reference: ModuleReference,
   expression: &expr::E<()>,
@@ -483,7 +485,7 @@ pub(super) fn perform_ssa_analysis_on_expression(
   SsaAnalysisResult::from(state)
 }
 
-pub(crate) fn perform_ssa_analysis_on_module(
+pub fn perform_ssa_analysis_on_module(
   module_reference: ModuleReference,
   module: &Module<()>,
   error_set: &mut ErrorSet,

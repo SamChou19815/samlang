@@ -84,6 +84,7 @@ impl AbstractPatternNode {
     Self(Rc::new(AbstractPatternNodeInner::StructLike { variant, elements: list(elements) }))
   }
 
+  #[cfg(test)]
   pub(super) fn enum_(c: VariantPatternConstructor) -> Self {
     Self(Rc::new(AbstractPatternNodeInner::StructLike {
       variant: Some(c),
@@ -95,6 +96,7 @@ impl AbstractPatternNode {
     Self(Rc::new(AbstractPatternNodeInner::Or(Vec::with_capacity(0))))
   }
 
+  #[cfg(test)]
   pub(super) fn or(possibilities: Vec<AbstractPatternNode>) -> Self {
     Self(Rc::new(AbstractPatternNodeInner::Or(possibilities)))
   }

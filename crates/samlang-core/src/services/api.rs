@@ -4,13 +4,7 @@ use super::{
   server_state::ServerState,
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
-use crate::{
-  checker::{
-    type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},
-    type_check_module,
-  },
-  printer,
-};
+use crate::printer;
 use itertools::Itertools;
 use samlang_ast::{
   source::{
@@ -18,6 +12,10 @@ use samlang_ast::{
     ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
   },
   Location, Position,
+};
+use samlang_checker::{
+  type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},
+  type_check_module,
 };
 use samlang_errors::{ErrorDetail, ErrorSet};
 use samlang_heap::{ModuleReference, PStr};
@@ -551,11 +549,9 @@ pub mod rewrite {
 }
 
 pub mod completion {
-  use std::collections::HashSet;
-
-  use crate::checker::type_::TypeDefinitionSignature;
-
   use super::*;
+  use samlang_checker::type_::TypeDefinitionSignature;
+  use std::collections::HashSet;
 
   #[derive(Debug)]
   pub enum CompletionItemKind {

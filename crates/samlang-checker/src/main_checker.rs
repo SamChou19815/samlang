@@ -437,16 +437,13 @@ fn check_member_with_unresolved_tparams(
       if let Type::Fn(fun_hint) = hint {
         if fun_hint.argument_types.len() == method_type_info.type_.argument_types.len() {
           // Hint matches the shape and can be useful.
-          let type_system::TypeConstraintSolution {
-            solved_generic_type,
-            solved_substitution,
-            solved_contextually_typed_concrete_type: _,
-          } = type_system::solve_type_constraints(
-            hint,
-            &Type::Fn(method_type_info.type_.clone()),
-            &method_type_info.type_parameters,
-            cx.error_set,
-          );
+          let type_system::TypeConstraintSolution { solved_generic_type, solved_substitution } =
+            type_system::solve_type_constraints(
+              hint,
+              &Type::Fn(method_type_info.type_.clone()),
+              &method_type_info.type_parameters,
+              cx.error_set,
+            );
           let common = expression.common.with_new_type(solved_generic_type);
           let inferred_type_arguments = method_type_info
             .type_parameters
@@ -1457,7 +1454,7 @@ fn check_class_member_conformance_with_signature(
   }
 }
 
-pub(crate) fn type_check_module(
+pub fn type_check_module(
   module_reference: ModuleReference,
   module: &Module<()>,
   global_cx: &GlobalSignature,

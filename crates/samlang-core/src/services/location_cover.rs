@@ -1,12 +1,9 @@
-use crate::{
-  checker::type_::{FunctionType, Type},
-  ModuleReference,
-};
 use samlang_ast::{
   source::{expr, pattern, Module, Toplevel},
   Location, Position,
 };
-use samlang_heap::PStr;
+use samlang_checker::type_::{FunctionType, Type};
+use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 
 pub(super) enum LocationCoverSearchResult<'a> {
@@ -246,16 +243,12 @@ pub(super) fn search_module_locally(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    builtin_parsed_std_sources,
-    checker::{type_::Type, type_check_sources},
-    Heap, ModuleReference,
-  };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     source::{expr, Id, NO_COMMENT_REFERENCE},
     Location, Position, Reason,
   };
+  use samlang_heap::{Heap, ModuleReference};
   use std::rc::Rc;
 
   #[test]
@@ -266,7 +259,7 @@ mod tests {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          type_: Rc::new(Type::Any(Reason::dummy(), false)),
+          type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
         },
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
@@ -274,7 +267,7 @@ mod tests {
           expr::ExpressionCommon {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            type_: Rc::new(Type::Any(Reason::dummy(), false)),
+            type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
           },
           Id::from(heap.alloc_str_for_test("id")),
         )),
@@ -372,9 +365,9 @@ mod tests {
     }"#;
     let parsed =
       samlang_parser::parse_source_module_from_text(source_code, mod_ref, heap, &mut error_set);
-    let mut sources = builtin_parsed_std_sources(heap);
+    let mut sources = samlang_parser::builtin_parsed_std_sources_for_tests(heap);
     sources.insert(mod_ref, parsed);
-    let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
+    let (checked_sources, _) = samlang_checker::type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     for m in checked_sources.values() {
       for (i, line) in source_code.lines().enumerate() {

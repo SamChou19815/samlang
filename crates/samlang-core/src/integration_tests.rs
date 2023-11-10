@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::{checker::type_check_sources, compiler, interpreter, optimization, printer};
+  use crate::{compiler, interpreter, optimization, printer};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
@@ -1155,10 +1155,10 @@ Found 51 errors.
         parse_source_module_from_text(t.source_code, mod_ref, heap, &mut error_set),
       );
     }
-    for (mod_ref, parsed) in crate::builtin_parsed_std_sources(heap) {
+    for (mod_ref, parsed) in samlang_parser::builtin_parsed_std_sources_for_tests(heap) {
       parsed_sources.insert(mod_ref, parsed);
     }
-    type_check_sources(&parsed_sources, &mut error_set);
+    samlang_checker::type_check_sources(&parsed_sources, &mut error_set);
     assert_eq!(
       expected_errors.trim(),
       error_set.pretty_print_error_messages(heap, &string_sources).trim()
@@ -2367,7 +2367,7 @@ class Main {
         )
       })
       .collect_vec();
-    let mut sources = crate::builtin_parsed_std_sources(heap);
+    let mut sources = samlang_parser::builtin_parsed_std_sources_for_tests(heap);
     let expected_sources_size = sources.len() + handles.len();
     for (mod_ref, text) in handles {
       let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
@@ -2377,7 +2377,7 @@ class Main {
       assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     }
     let mut error_set = ErrorSet::new();
-    let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
+    let (checked_sources, _) = samlang_checker::type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     assert!(checked_sources.len() == expected_sources_size);
   }
@@ -2396,10 +2396,10 @@ class Main {
         (mod_ref, parse_source_module_from_text(it.source_code, mod_ref, heap, &mut error_set))
       })
       .collect::<HashMap<_, _>>();
-    for (mod_ref, parsed) in crate::builtin_parsed_std_sources(heap) {
+    for (mod_ref, parsed) in samlang_parser::builtin_parsed_std_sources_for_tests(heap) {
       sources.insert(mod_ref, parsed);
     }
-    let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
+    let (checked_sources, _) = samlang_checker::type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);
     let optimized_mir_sources = optimization::optimize_sources(
