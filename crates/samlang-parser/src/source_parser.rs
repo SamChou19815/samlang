@@ -687,7 +687,12 @@ impl<'a> SourceParser<'a> {
       let match_expression = self.parse_expression_with_ending_comments();
       self.assert_and_consume_operator(TokenOp::LBRACE);
       let mut matching_list = vec![self.parse_pattern_to_expression()];
-      while !matches!(self.peek().1, TokenContent::Operator(TokenOp::RBRACE)) {
+      while matches!(
+        self.peek().1,
+        TokenContent::Operator(TokenOp::LBRACE | TokenOp::LPAREN)
+          | TokenContent::LowerId(_)
+          | TokenContent::UpperId(_)
+      ) {
         matching_list.push(self.parse_pattern_to_expression());
       }
       let loc = peeked_loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
@@ -1516,7 +1521,7 @@ impl<'a> SourceParser<'a> {
       let tag = Id { loc: peeked_loc, associated_comments: NO_COMMENT_REFERENCE, name: id };
       let (data_variables, loc) =
         if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = self.peek() {
-          self.assert_and_consume_operator(TokenOp::LPAREN);
+          self.consume();
           let data_variables = self.parse_comma_separated_list_with_end_token(
             TokenOp::RPAREN,
             &mut Self::parse_matching_pattern_with_unit,

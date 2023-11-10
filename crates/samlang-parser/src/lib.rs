@@ -213,6 +213,7 @@ mod tests {
     expect_bad_expr("match (this) { | None _  }");
     expect_bad_expr("match (this) { |  _ -> }");
     expect_bad_expr("match (this) { |  -> }");
+    expect_bad_expr("");
     expect_bad_expr("(: int) -> 3");
     expect_bad_expr("(:) -> 3");
     expect_bad_expr("(a:) -> 3");
@@ -227,6 +228,11 @@ mod tests {
     expect_bad_expr("{ let {foo, as baz}: Type = 3; }");
     expect_bad_expr("{ let {foo, bar as }: Type = 3; }");
     expect_bad_expr("{ let a: () ->  = 3; a }");
+  }
+
+  #[test]
+  fn infinite_loop_regression_test() {
+    expect_bad_expr("match");
   }
 
   #[test]
