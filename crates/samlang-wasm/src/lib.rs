@@ -101,10 +101,10 @@ impl Range {
   }
 }
 
-fn new_state(source: String) -> samlang_core::services::server_state::ServerState {
+fn new_state(source: String) -> samlang_services::server_state::ServerState {
   let mut heap = samlang_heap::Heap::new();
   let sources = demo_sources(&mut heap, source);
-  samlang_core::services::server_state::ServerState::new(heap, false, sources)
+  samlang_services::server_state::ServerState::new(heap, false, sources)
 }
 
 #[wasm_bindgen(js_name=typeCheck)]
@@ -135,30 +135,26 @@ pub fn type_check(source: String) -> JsValue {
 pub fn query_type(source: String, line: i32, column: i32) -> JsValue {
   let state = &mut new_state(source);
   let mod_ref = demo_mod_ref(&mut state.heap);
-  samlang_core::services::api::query::hover(
-    state,
-    &mod_ref,
-    samlang_ast::Position(line - 1, column - 1),
-  )
-  .map(|result| {
-    serde_wasm_bindgen::to_value(&TypeQueryResult {
-      range: Range::from(&result.location),
-      contents: result
-        .contents
-        .into_iter()
-        .map(|c| TypeQueryContent { language: c.language.to_string(), value: c.value })
-        .collect(),
+  samlang_services::query::hover(state, &mod_ref, samlang_ast::Position(line - 1, column - 1))
+    .map(|result| {
+      serde_wasm_bindgen::to_value(&TypeQueryResult {
+        range: Range::from(&result.location),
+        contents: result
+          .contents
+          .into_iter()
+          .map(|c| TypeQueryContent { language: c.language.to_string(), value: c.value })
+          .collect(),
+      })
+      .unwrap()
     })
-    .unwrap()
-  })
-  .unwrap_or(JsValue::NULL)
+    .unwrap_or(JsValue::NULL)
 }
 
 #[wasm_bindgen(js_name=queryDefinitionLocation)]
 pub fn query_definition_location(source: String, line: i32, column: i32) -> JsValue {
   let state = &mut new_state(source);
   let mod_ref = demo_mod_ref(&mut state.heap);
-  samlang_core::services::api::query::definition_location(
+  samlang_services::query::definition_location(
     state,
     &mod_ref,
     samlang_ast::Position(line - 1, column - 1),
@@ -172,7 +168,7 @@ pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
   let state = &mut new_state(source);
   let mod_ref = demo_mod_ref(&mut state.heap);
   serde_wasm_bindgen::to_value(
-    &(samlang_core::services::api::completion::auto_complete(
+    &(samlang_services::completion::auto_complete(
       state,
       &mod_ref,
       samlang_ast::Position(line - 1, column - 1),

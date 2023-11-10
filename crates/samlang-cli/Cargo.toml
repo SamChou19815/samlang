@@ -8,6 +8,8 @@ pretty_assertions = "1.3.0"
 samlang-ast = { path = "../samlang-ast" }
 samlang-core = { path = "../samlang-core" }
 samlang-heap = { path = "../samlang-heap" }
+samlang-profiling = { path = "../samlang-profiling" }
+samlang-services = { path = "../samlang-services" }
 serde_json = "1.0"
 tokio = { version = "1.28.2", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
 tower-lsp = "0.18.0"

@@ -1,9 +1,19 @@
-use super::{
-  global_searcher::search_modules_globally,
-  location_cover::{search_module_locally, LocationCoverSearchResult},
-  server_state::ServerState,
-  variable_definition::{apply_renaming, VariableDefinitionLookup},
-};
+mod api_tests;
+// A service to compute the minimal diff between two ASTs
+mod ast_differ;
+/// A service to maintain up-to-date dependency graph
+mod dep_graph;
+/// A service to perform garbage collection on heaps
+mod gc;
+/// A service to perform global search for find references
+mod global_searcher;
+/// A service to find the smallest cover of a meaningful AST node
+mod location_cover;
+/// The internal state of a long-running language server
+pub mod server_state;
+/// A service to power go-to-definition requests
+mod variable_definition;
+
 use itertools::Itertools;
 use samlang_ast::{
   source::{
@@ -24,12 +34,12 @@ mod state_searcher_utils {
   use super::*;
 
   pub(super) fn search_at_pos<'a>(
-    state: &'a ServerState,
+    state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
     stop_at_call: bool,
-  ) -> Option<LocationCoverSearchResult<'a>> {
-    search_module_locally(
+  ) -> Option<location_cover::LocationCoverSearchResult<'a>> {
+    location_cover::search_module_locally(
       *module_reference,
       state.checked_modules.get(module_reference)?,
       position,
@@ -38,7 +48,7 @@ mod state_searcher_utils {
   }
 
   pub(super) fn find_toplevel<'a>(
-    state: &'a ServerState,
+    state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     class_name: &PStr,
   ) -> Option<&'a Toplevel<Rc<Type>>> {
@@ -51,7 +61,7 @@ mod state_searcher_utils {
   }
 
   pub(super) fn find_interface_type<'a>(
-    state: &'a ServerState,
+    state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     class_name: &PStr,
   ) -> Option<&'a InterfaceSignature> {
@@ -59,7 +69,7 @@ mod state_searcher_utils {
   }
 
   pub(super) fn find_type_def<'a>(
-    state: &'a ServerState,
+    state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     class_name: &PStr,
   ) -> Option<&'a TypeDefinition> {
@@ -67,7 +77,7 @@ mod state_searcher_utils {
   }
 
   pub(super) fn find_field_def<'a>(
-    state: &'a ServerState,
+    state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     class_name: &PStr,
     field_name: &PStr,
@@ -78,7 +88,7 @@ mod state_searcher_utils {
   }
 
   pub(super) fn find_class_member<'a>(
-    state: &'a ServerState,
+    state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     class_name: &PStr,
     member_name: &PStr,
@@ -89,7 +99,7 @@ mod state_searcher_utils {
   }
 
   pub(super) fn find_class_name(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> PStr {
@@ -141,12 +151,12 @@ pub mod query {
   }
 
   pub fn hover(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<TypeQueryResult> {
     match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
-      LocationCoverSearchResult::PropertyName(
+      location_cover::LocationCoverSearchResult::PropertyName(
         loc,
         fetched_function_module_reference,
         class_name,
@@ -172,7 +182,7 @@ pub mod query {
           ),
         ))
       }
-      LocationCoverSearchResult::InterfaceMemberName {
+      location_cover::LocationCoverSearchResult::InterfaceMemberName {
         loc,
         module_reference: fetched_function_module_reference,
         class_name,
@@ -205,7 +215,11 @@ pub mod query {
           Some(query_result_with_optional_document(state, loc, type_content, None))
         }
       }
-      LocationCoverSearchResult::ToplevelName(loc, module_reference, class_name) => {
+      location_cover::LocationCoverSearchResult::ToplevelName(
+        loc,
+        module_reference,
+        class_name,
+      ) => {
         let type_content = TypeQueryContent {
           language: "samlang",
           value: format!("class {}", class_name.as_str(&state.heap)),
@@ -224,22 +238,26 @@ pub mod query {
           ),
         ))
       }
-      LocationCoverSearchResult::Expression(expr::E::Literal(common, _)) => Some(TypeQueryResult {
-        contents: vec![TypeQueryContent {
-          language: "samlang",
-          value: common.type_.pretty_print(&state.heap),
-        }],
-        location: common.loc,
-      }),
+      location_cover::LocationCoverSearchResult::Expression(expr::E::Literal(common, _)) => {
+        Some(TypeQueryResult {
+          contents: vec![TypeQueryContent {
+            language: "samlang",
+            value: common.type_.pretty_print(&state.heap),
+          }],
+          location: common.loc,
+        })
+      }
       // Don't return results of arbitrary expressions
-      LocationCoverSearchResult::Expression(_) => None,
-      LocationCoverSearchResult::TypedName(location, _, type_, _) => Some(TypeQueryResult {
-        contents: vec![TypeQueryContent {
-          language: "samlang",
-          value: type_.pretty_print(&state.heap),
-        }],
-        location,
-      }),
+      location_cover::LocationCoverSearchResult::Expression(_) => None,
+      location_cover::LocationCoverSearchResult::TypedName(location, _, type_, _) => {
+        Some(TypeQueryResult {
+          contents: vec![TypeQueryContent {
+            language: "samlang",
+            value: type_.pretty_print(&state.heap),
+          }],
+          location,
+        })
+      }
     }
   }
 
@@ -251,7 +269,7 @@ pub mod query {
   }
 
   fn query_result_with_optional_document(
-    state: &ServerState,
+    state: &server_state::ServerState,
     location: Location,
     type_content: TypeQueryContent,
     document_opt: Option<PStr>,
@@ -268,7 +286,7 @@ pub mod query {
   }
 
   pub fn folding_ranges(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
   ) -> Option<Vec<Location>> {
     let module = state.checked_modules.get(module_reference)?;
@@ -284,7 +302,7 @@ pub mod query {
   }
 
   pub fn all_references(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Vec<Location> {
@@ -297,50 +315,51 @@ pub mod query {
   }
 
   fn all_references_opt(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Vec<Location>> {
-    match search_module_locally(
+    match location_cover::search_module_locally(
       *module_reference,
       state.checked_modules.get(module_reference)?,
       position,
       false,
     )? {
-      LocationCoverSearchResult::Expression(_) => None,
-      LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => {
-        Some(search_modules_globally(
-          &state.checked_modules,
-          &super::super::global_searcher::GlobalNameSearchRequest::Property(
-            mod_ref, class_name, field_name,
-          ),
-        ))
-      }
-      LocationCoverSearchResult::InterfaceMemberName {
+      location_cover::LocationCoverSearchResult::Expression(_) => None,
+      location_cover::LocationCoverSearchResult::PropertyName(
+        _,
+        mod_ref,
+        class_name,
+        field_name,
+      ) => Some(global_searcher::search_modules_globally(
+        &state.checked_modules,
+        &global_searcher::GlobalNameSearchRequest::Property(mod_ref, class_name, field_name),
+      )),
+      location_cover::LocationCoverSearchResult::InterfaceMemberName {
         loc: _,
         module_reference: mod_ref,
         class_name,
         fn_name: member_name,
         is_method,
         type_: _,
-      } => Some(search_modules_globally(
+      } => Some(global_searcher::search_modules_globally(
         &state.checked_modules,
-        &super::super::global_searcher::GlobalNameSearchRequest::InterfaceMember(
+        &global_searcher::GlobalNameSearchRequest::InterfaceMember(
           mod_ref,
           class_name,
           member_name,
           is_method,
         ),
       )),
-      LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
-        Some(search_modules_globally(
+      location_cover::LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
+        Some(global_searcher::search_modules_globally(
           &state.checked_modules,
-          &super::super::global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
+          &global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
         ))
       }
-      LocationCoverSearchResult::TypedName(loc, _, _, _) => {
+      location_cover::LocationCoverSearchResult::TypedName(loc, _, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(*module_reference, module)
+        variable_definition::VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.all_locations())
       }
@@ -348,16 +367,21 @@ pub mod query {
   }
 
   pub fn definition_location(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Location> {
     match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
-      LocationCoverSearchResult::Expression(_) => None,
-      LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => Some(
+      location_cover::LocationCoverSearchResult::Expression(_) => None,
+      location_cover::LocationCoverSearchResult::PropertyName(
+        _,
+        mod_ref,
+        class_name,
+        field_name,
+      ) => Some(
         state_searcher_utils::find_field_def(state, &mod_ref, &class_name, &field_name)?.name.loc,
       ),
-      LocationCoverSearchResult::InterfaceMemberName {
+      location_cover::LocationCoverSearchResult::InterfaceMemberName {
         loc: _,
         module_reference: mod_ref,
         class_name,
@@ -367,12 +391,12 @@ pub mod query {
       } => Some(
         state_searcher_utils::find_class_member(state, &mod_ref, &class_name, &member_name)?.loc,
       ),
-      LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
+      location_cover::LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
         Some(state_searcher_utils::find_toplevel(state, &mod_ref, &class_name)?.loc())
       }
-      LocationCoverSearchResult::TypedName(loc, _, _, _) => {
+      location_cover::LocationCoverSearchResult::TypedName(loc, _, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(*module_reference, module)
+        variable_definition::VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.definition_location)
       }
@@ -380,12 +404,12 @@ pub mod query {
   }
 
   pub fn signature_help(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<SignatureHelpResult> {
     match state_searcher_utils::search_at_pos(state, module_reference, position, true) {
-      Some(LocationCoverSearchResult::Expression(expr::E::Call(call)))
+      Some(location_cover::LocationCoverSearchResult::Expression(expr::E::Call(call)))
         if !call.callee.loc().contains_position(position) =>
       {
         let signature = call.callee.type_().as_fn()?;
@@ -426,7 +450,7 @@ pub mod query {
 }
 
 pub mod rewrite {
-  use super::super::ast_differ::compute_module_diff_edits;
+  use super::ast_differ::compute_module_diff_edits;
   use super::*;
 
   #[derive(Debug, PartialEq, Eq)]
@@ -435,7 +459,7 @@ pub mod rewrite {
   }
 
   pub fn format_entire_document(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
   ) -> Option<String> {
     let module = state.parsed_modules.get(module_reference)?;
@@ -448,7 +472,7 @@ pub mod rewrite {
   }
 
   pub fn rename(
-    state: &mut ServerState,
+    state: &mut server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
     new_name: &str,
@@ -461,20 +485,24 @@ pub mod rewrite {
     }
     let def_or_use_loc =
       match state_searcher_utils::search_at_pos(state, module_reference, position, false) {
-        Some(LocationCoverSearchResult::TypedName(loc, _, _, _)) => loc,
-        Some(LocationCoverSearchResult::Expression(e)) => e.loc(),
+        Some(location_cover::LocationCoverSearchResult::TypedName(loc, _, _, _)) => loc,
+        Some(location_cover::LocationCoverSearchResult::Expression(e)) => e.loc(),
         _ => return None,
       };
 
     let module = state.parsed_modules.get(module_reference).unwrap();
-    let def_and_uses = VariableDefinitionLookup::new(*module_reference, module)
-      .find_all_definition_and_uses(&def_or_use_loc)?;
-    let renamed =
-      apply_renaming(module, &def_and_uses, state.heap.alloc_string(new_name.to_string()));
+    let def_and_uses =
+      variable_definition::VariableDefinitionLookup::new(*module_reference, module)
+        .find_all_definition_and_uses(&def_or_use_loc)?;
+    let renamed = variable_definition::apply_renaming(
+      module,
+      &def_and_uses,
+      state.heap.alloc_string(new_name.to_string()),
+    );
     Some(samlang_printer::pretty_print_source_module(&state.heap, 100, &renamed))
   }
 
-  pub fn code_actions(state: &ServerState, location: Location) -> Vec<CodeAction> {
+  pub fn code_actions(state: &server_state::ServerState, location: Location) -> Vec<CodeAction> {
     let mut actions = vec![];
     for error in state.errors.get(&location.module_reference).iter().flat_map(|it| it.iter()) {
       match &error.detail {
@@ -501,7 +529,7 @@ pub mod rewrite {
   }
 
   fn generate_auto_import_code_action(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: ModuleReference,
     dummy_location: Location,
     imported_module: ModuleReference,
@@ -524,7 +552,7 @@ pub mod rewrite {
   }
 
   pub(super) fn generate_auto_import_edits(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: ModuleReference,
     dummy_location: Location,
     imported_module: ModuleReference,
@@ -576,7 +604,7 @@ pub mod completion {
   }
 
   pub fn auto_complete(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Vec<AutoCompletionItem> {
@@ -584,13 +612,13 @@ pub mod completion {
   }
 
   fn autocomplete_opt(
-    state: &ServerState,
+    state: &server_state::ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Vec<AutoCompletionItem>> {
     let (instance_mod_ref, instance_class_name) =
       match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
-        LocationCoverSearchResult::InterfaceMemberName {
+        location_cover::LocationCoverSearchResult::InterfaceMemberName {
           loc: _,
           module_reference: module_ref,
           class_name,
@@ -615,7 +643,7 @@ pub mod completion {
             },
           );
         }
-        LocationCoverSearchResult::TypedName(_, _, _, false) => {
+        location_cover::LocationCoverSearchResult::TypedName(_, _, _, false) => {
           let parsed = state.parsed_modules.get(module_reference).unwrap();
           let (_, local_cx) =
             type_check_module(*module_reference, parsed, &state.global_cx, &mut ErrorSet::new());
@@ -636,7 +664,7 @@ pub mod completion {
               .collect(),
           );
         }
-        LocationCoverSearchResult::ToplevelName(_, _, _) => {
+        location_cover::LocationCoverSearchResult::ToplevelName(_, _, _) => {
           let ast = state.checked_modules.get(module_reference).unwrap();
           let available_names = ast
             .imports
@@ -683,7 +711,7 @@ pub mod completion {
             items.into_iter().sorted_by_key(|(n, _)| *n).map(|(_, item)| item).collect(),
           );
         }
-        LocationCoverSearchResult::InterfaceMemberName {
+        location_cover::LocationCoverSearchResult::InterfaceMemberName {
           loc: _,
           module_reference: module_ref,
           class_name,
@@ -691,7 +719,7 @@ pub mod completion {
           is_method: true,
           type_: _,
         }
-        | LocationCoverSearchResult::PropertyName(_, module_ref, class_name, _) => {
+        | location_cover::LocationCoverSearchResult::PropertyName(_, module_ref, class_name, _) => {
           (module_ref, class_name)
         }
         _ => return None,
@@ -730,7 +758,7 @@ pub mod completion {
   }
 
   fn get_completion_result_from_type_info(
-    state: &ServerState,
+    state: &server_state::ServerState,
     name: &str,
     type_information: &MemberSignature,
     kind: CompletionItemKind,

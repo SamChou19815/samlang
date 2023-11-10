@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use super::super::api::*;
-  use super::super::server_state::ServerState;
+  use super::super::*;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Position};
@@ -23,7 +22,7 @@ mod tests {
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([
@@ -137,7 +136,7 @@ class Test1(val a: int) {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([
@@ -191,7 +190,7 @@ class Test2(val a: int) {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([
@@ -233,7 +232,7 @@ class Test2(val a: int) {
   fn query_def_loc_test_2() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -288,7 +287,7 @@ Cannot resolve name `a`.
     let test1_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([
@@ -468,7 +467,7 @@ Cannot resolve name `c`.
   fn query_folding_ranges_tests() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -523,7 +522,7 @@ class Main {
   fn query_signature_help_tests() {
     let heap = Heap::new();
     let mod_ref = ModuleReference::DUMMY;
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -586,7 +585,7 @@ class Main {
   fn reformat_good_program_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -614,7 +613,7 @@ class Main {
   fn reformat_bad_program_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -640,7 +639,7 @@ class Developer(
   fn rename_bad_identifier_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let mut state = ServerState::new(heap, false, HashMap::new());
+    let mut state = server_state::ServerState::new(heap, false, HashMap::new());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "3").is_none());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "A3").is_none());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "a3").is_none());
@@ -650,7 +649,7 @@ class Developer(
   fn rename_not_found_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let mut state = ServerState::new(
+    let mut state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -676,7 +675,7 @@ class Test1 {
   fn rename_variable_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let mut state = ServerState::new(
+    let mut state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -715,8 +714,11 @@ class Test {
   fn error_quickfix_test1() {
     let heap = Heap::new();
     // Intentional syntax error
-    let state =
-      ServerState::new(heap, false, HashMap::from([(ModuleReference::DUMMY, "dfsf".to_string())]));
+    let state = server_state::ServerState::new(
+      heap,
+      false,
+      HashMap::from([(ModuleReference::DUMMY, "dfsf".to_string())]),
+    );
     assert!(rewrite::code_actions(&state, Location::from_pos(0, 1, 0, 2)).is_empty());
   }
 
@@ -724,7 +726,7 @@ class Test {
   fn error_quickfix_test2() {
     let mut heap = Heap::new();
     let mod_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([
@@ -765,7 +767,7 @@ class Foo {
   fn error_quickfix_test3() {
     let mut heap = Heap::new();
     let mod_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([
@@ -804,7 +806,7 @@ class Foo {}
   fn autocomplete_test_1() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -890,7 +892,7 @@ sam [kind=Function, detail=sam(): Developer]"#,
   fn autocomplete_test_2() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       heap,
       false,
       HashMap::from([(
@@ -935,14 +937,18 @@ projects [kind=Field, detail=List<Str>]"#,
   #[test]
   fn autocomplete_test_3() {
     let mod_ref = ModuleReference::DUMMY;
-    let state = ServerState::new(Heap::new(), false, HashMap::from([(mod_ref, ".".to_string())]));
+    let state = server_state::ServerState::new(
+      Heap::new(),
+      false,
+      HashMap::from([(mod_ref, ".".to_string())]),
+    );
     assert!(completion::auto_complete(&state, &mod_ref, Position(0, 1)).is_empty());
   }
 
   #[test]
   fn autocomplete_test_4() {
     let mod_ref = ModuleReference::DUMMY;
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       Heap::new(),
       false,
       HashMap::from([(
@@ -961,7 +967,7 @@ class Main {
   #[test]
   fn autocomplete_test_5() {
     let mod_ref = ModuleReference::DUMMY;
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       Heap::new(),
       false,
       HashMap::from([(
@@ -981,7 +987,7 @@ class Main {
   fn autocomplete_test_6() {
     let heap = &mut Heap::new();
     let mod_ref = heap.alloc_module_reference(vec![PStr::UPPER_A]);
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       Heap::new(),
       false,
       HashMap::from([
@@ -1047,7 +1053,7 @@ println [kind=Function, detail=println(a0: Str): unit]
   #[test]
   fn autocomplete_test_7() {
     let mod_ref = ModuleReference::DUMMY;
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       Heap::new(),
       false,
       HashMap::from([(
@@ -1066,7 +1072,7 @@ class Main {
   #[test]
   fn autocomplete_test_8() {
     let mod_ref = ModuleReference::DUMMY;
-    let state = ServerState::new(
+    let state = server_state::ServerState::new(
       Heap::new(),
       false,
       HashMap::from([(

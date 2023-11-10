@@ -576,6 +576,8 @@ dependencies = [
  "samlang-ast",
  "samlang-core",
  "samlang-heap",
+ "samlang-profiling",
+ "samlang-services",
  "serde_json",
  "tokio",
  "tower-lsp",
@@ -614,13 +616,13 @@ dependencies = [
  "pretty_assertions",
  "samlang-ast",
  "samlang-checker",
- "samlang-collections",
  "samlang-compiler",
  "samlang-errors",
  "samlang-heap",
  "samlang-optimization",
  "samlang-parser",
  "samlang-printer",
+ "samlang-profiling",
  "wasmi",
  "wat",
 ]
@@ -685,6 +687,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "samlang-profiling"
+version = "0.9.1"
+
+[[package]]
+name = "samlang-services"
+version = "0.9.1"
+dependencies = [
+ "itertools",
+ "pretty_assertions",
+ "samlang-ast",
+ "samlang-checker",
+ "samlang-errors",
+ "samlang-heap",
+ "samlang-parser",
+ "samlang-printer",
+ "samlang-profiling",
+]
+
+[[package]]
 name = "samlang-wasm"
 version = "0.9.1"
 dependencies = [
@@ -692,6 +713,7 @@ dependencies = [
  "samlang-ast",
  "samlang-core",
  "samlang-heap",
+ "samlang-services",
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",
