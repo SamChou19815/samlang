@@ -86,7 +86,7 @@ pub(super) fn optimize(
 
 #[cfg(test)]
 mod tests {
-  use crate::optimization::loop_induction_analysis::{
+  use super::super::loop_induction_analysis::{
     BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName,
     GeneralBasicInductionVariable, GuardOperator, OptimizableWhileLoop,
     PotentialLoopInvariantExpression,

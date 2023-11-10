@@ -426,8 +426,7 @@ pub mod query {
 }
 
 pub mod rewrite {
-  use crate::services::ast_differ::compute_module_diff_edits;
-
+  use super::super::ast_differ::compute_module_diff_edits;
   use super::*;
 
   #[derive(Debug, PartialEq, Eq)]

@@ -1,6 +1,8 @@
-use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
-use crate::{common::take_mut, Heap};
+use super::optimization_common::{
+  take_mut, BinaryBindedValue, BindedValue, IndexAccessBindedValue,
+};
 use samlang_ast::mir::{Binary, Function, Statement};
+use samlang_heap::Heap;
 use std::collections::BTreeSet;
 
 fn intersection_of(

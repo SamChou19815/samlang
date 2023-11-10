@@ -10,7 +10,6 @@ mod common;
 mod compiler;
 mod integration_tests;
 mod interpreter;
-mod optimization;
 pub mod services;
 
 pub fn reformat_source(source: &str) -> String {
@@ -76,10 +75,10 @@ pub fn compile_sources(
     compiler::compile_sources_to_mir(heap, &checked_sources)
   });
   let optimized_mir_sources = measure_time(enable_profiling, "Optimize MIR", || {
-    optimization::optimize_sources(
+    samlang_optimization::optimize_sources(
       heap,
       unoptimized_mir_sources,
-      &optimization::ALL_ENABLED_CONFIGURATION,
+      &samlang_optimization::ALL_ENABLED_CONFIGURATION,
     )
   });
   let mut lir_sources = measure_time(enable_profiling, "Compile to LIR", || {
@@ -119,11 +118,9 @@ require('./__samlang_loader__.js')(binary).{}();
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
-
   use pretty_assertions::assert_eq;
-
-  use crate::Heap;
+  use samlang_heap::Heap;
+  use std::collections::HashMap;
 
   #[test]
   fn reformat_tests() {

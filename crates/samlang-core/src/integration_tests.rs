@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::{compiler, interpreter, optimization};
+  use crate::{compiler, interpreter};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
@@ -2402,10 +2402,10 @@ class Main {
     let (checked_sources, _) = samlang_checker::type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);
-    let optimized_mir_sources = optimization::optimize_sources(
+    let optimized_mir_sources = samlang_optimization::optimize_sources(
       heap,
       unoptimized_mir_sources,
-      &optimization::ALL_ENABLED_CONFIGURATION,
+      &samlang_optimization::ALL_ENABLED_CONFIGURATION,
     );
     let mut lir_sources = compiler::compile_mir_to_lir(heap, optimized_mir_sources);
     // Uncomment the following line to read the source

@@ -1,3 +1,5 @@
+#![cfg_attr(test, allow(clippy::clone_on_copy))]
+
 mod common_subexpression_elimination;
 mod conditional_constant_propagation;
 mod conditional_constant_propagation_tests;
@@ -16,27 +18,26 @@ mod loop_strength_reduction;
 mod optimization_common;
 mod unused_name_elimination;
 
-pub(super) struct OptimizationConfiguration {
-  pub(super) does_perform_local_value_numbering: bool,
-  pub(super) does_perform_common_sub_expression_elimination: bool,
-  pub(super) does_perform_loop_optimization: bool,
-  pub(super) does_perform_inlining: bool,
+pub struct OptimizationConfiguration {
+  pub does_perform_local_value_numbering: bool,
+  pub does_perform_common_sub_expression_elimination: bool,
+  pub does_perform_loop_optimization: bool,
+  pub does_perform_inlining: bool,
 }
 
-pub(super) const ALL_ENABLED_CONFIGURATION: OptimizationConfiguration = OptimizationConfiguration {
+pub const ALL_ENABLED_CONFIGURATION: OptimizationConfiguration = OptimizationConfiguration {
   does_perform_local_value_numbering: true,
   does_perform_common_sub_expression_elimination: true,
   does_perform_loop_optimization: true,
   does_perform_inlining: true,
 };
 
-pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
-  OptimizationConfiguration {
-    does_perform_local_value_numbering: false,
-    does_perform_common_sub_expression_elimination: false,
-    does_perform_loop_optimization: false,
-    does_perform_inlining: false,
-  };
+pub const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration = OptimizationConfiguration {
+  does_perform_local_value_numbering: false,
+  does_perform_common_sub_expression_elimination: false,
+  does_perform_loop_optimization: false,
+  does_perform_inlining: false,
+};
 
 fn optimize_function_for_one_round(
   function: &mut samlang_ast::mir::Function,
@@ -79,7 +80,7 @@ fn optimize_functions_for_rounds(
   }
 }
 
-pub(super) fn optimize_sources(
+pub fn optimize_sources(
   heap: &mut samlang_heap::Heap,
   mut sources: samlang_ast::mir::Sources,
   configuration: &OptimizationConfiguration,

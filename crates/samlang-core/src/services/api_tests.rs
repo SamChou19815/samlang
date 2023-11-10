@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use super::super::api::*;
-  use crate::services::server_state::ServerState;
+  use super::super::server_state::ServerState;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Position};

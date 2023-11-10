@@ -601,6 +601,7 @@ dependencies = [
  "samlang-collections",
  "samlang-errors",
  "samlang-heap",
+ "samlang-optimization",
  "samlang-parser",
  "samlang-printer",
  "wasmi",
@@ -623,6 +624,21 @@ version = "0.9.1"
 dependencies = [
  "itertools",
  "pretty_assertions",
+]
+
+[[package]]
+name = "samlang-optimization"
+version = "0.9.1"
+dependencies = [
+ "enum-as-inner",
+ "itertools",
+ "pretty_assertions",
+ "samlang-ast",
+ "samlang-collections",
+ "samlang-errors",
+ "samlang-heap",
+ "samlang-printer",
+ "wat",
 ]
 
 [[package]]

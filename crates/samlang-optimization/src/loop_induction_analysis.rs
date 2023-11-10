@@ -25,7 +25,11 @@ impl PotentialLoopInvariantExpression {
 
 impl PotentialLoopInvariantExpression {
   #[cfg(test)]
-  fn debug_print(&self, heap: &crate::Heap, table: &samlang_ast::mir::SymbolTable) -> String {
+  fn debug_print(
+    &self,
+    heap: &samlang_heap::Heap,
+    table: &samlang_ast::mir::SymbolTable,
+  ) -> String {
     self.to_expression().debug_print(heap, table)
   }
 }
@@ -80,7 +84,7 @@ impl BasicInductionVariableWithLoopGuard {
   #[cfg(test)]
   pub(super) fn debug_print(
     &self,
-    heap: &crate::Heap,
+    heap: &samlang_heap::Heap,
     table: &samlang_ast::mir::SymbolTable,
   ) -> String {
     format!(
@@ -105,7 +109,7 @@ impl GeneralBasicInductionVariable {
   #[cfg(test)]
   pub(super) fn debug_print(
     &self,
-    heap: &crate::Heap,
+    heap: &samlang_heap::Heap,
     table: &samlang_ast::mir::SymbolTable,
   ) -> String {
     format!(
@@ -127,7 +131,11 @@ pub(super) struct GeneralBasicInductionVariableWithLoopValueCollector {
 
 impl GeneralBasicInductionVariableWithLoopValueCollector {
   #[cfg(test)]
-  fn debug_print(&self, heap: &crate::Heap, table: &samlang_ast::mir::SymbolTable) -> String {
+  fn debug_print(
+    &self,
+    heap: &samlang_heap::Heap,
+    table: &samlang_ast::mir::SymbolTable,
+  ) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, loop_value_collector: {}}}",
       self.name.as_str(heap),
@@ -157,7 +165,7 @@ impl DerivedInductionVariableWithName {
   #[cfg(test)]
   pub(super) fn debug_print(
     &self,
-    heap: &crate::Heap,
+    heap: &samlang_heap::Heap,
     table: &samlang_ast::mir::SymbolTable,
   ) -> String {
     format!(
@@ -324,13 +332,6 @@ fn get_loop_invariant_expression_opt(
       }
     }
   }
-}
-
-fn expression_is_loop_invariant(
-  expression: &Expression,
-  non_loop_invariant_variables: &HashSet<PStr>,
-) -> bool {
-  get_loop_invariant_expression_opt(expression, non_loop_invariant_variables).is_some()
 }
 
 fn try_merge_into_derived_induction_variable_without_swap(
@@ -674,7 +675,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let table = &SymbolTable::new();
 
     get_guard_operator(Operator::LT, false).unwrap().invert().clone().invert().to_op();
@@ -710,7 +711,7 @@ mod tests {
 
   #[test]
   fn merge_invariant_multiplication_for_loop_optimization_tests() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let table = &SymbolTable::new();
 
     assert_eq!(
@@ -765,7 +766,7 @@ mod tests {
 
   #[test]
   fn merge_variable_addition_into_derived_induction_variable_test() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
 
     assert!(merge_variable_addition_into_derived_induction_variable(
       &DerivedInductionVariable {
@@ -802,29 +803,8 @@ mod tests {
   }
 
   #[test]
-  fn loop_invariant_tests() {
-    assert!(!expression_is_loop_invariant(
-      &Expression::StringName(PStr::LOWER_B),
-      &HashSet::from([PStr::LOWER_A])
-    ));
-    assert!(!expression_is_loop_invariant(
-      &Expression::StringName(PStr::LOWER_B),
-      &HashSet::from([PStr::LOWER_A])
-    ));
-    assert!(expression_is_loop_invariant(&ZERO, &HashSet::from([PStr::LOWER_A])));
-    assert!(expression_is_loop_invariant(
-      &Expression::var_name(PStr::LOWER_B, INT_TYPE),
-      &HashSet::from([PStr::LOWER_A])
-    ));
-    assert!(!expression_is_loop_invariant(
-      &Expression::var_name(PStr::LOWER_A, INT_TYPE),
-      &HashSet::from([PStr::LOWER_A])
-    ));
-  }
-
-  #[test]
   fn extract_basic_induction_variables_tests() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let table = &mut SymbolTable::new();
 
     assert!(extract_basic_induction_variables(
@@ -947,7 +927,7 @@ mod tests {
 
   #[test]
   fn extract_derived_induction_variables_tests() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let table = &SymbolTable::new();
 
     assert_eq!(
@@ -1416,7 +1396,7 @@ mod tests {
 
   #[test]
   fn remove_dead_code_inside_loop_coverage_test() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
 
     remove_dead_code_inside_loop(
       &vec![
@@ -1439,7 +1419,7 @@ mod tests {
 
   #[test]
   fn extract_loop_guard_structure_rejection_rests() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let table = &mut SymbolTable::new();
 
     let non_loop_invariant_variables =
@@ -1760,7 +1740,7 @@ mod tests {
 
   #[test]
   fn extract_optimizable_while_loop_rejection_tests() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
 
     assert!(extract_optimizable_while_loop(
       (
@@ -1871,7 +1851,7 @@ mod tests {
 
   #[test]
   fn extract_optimizable_while_loop_acceptance_test() {
-    let heap = &mut crate::Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let table = &SymbolTable::new();
 
     let OptimizableWhileLoop {
