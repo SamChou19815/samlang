@@ -590,6 +590,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "samlang-compiler"
+version = "0.9.1"
+dependencies = [
+ "enum-as-inner",
+ "itertools",
+ "pretty_assertions",
+ "samlang-ast",
+ "samlang-checker",
+ "samlang-collections",
+ "samlang-errors",
+ "samlang-heap",
+ "samlang-parser",
+ "wat",
+]
+
+[[package]]
 name = "samlang-core"
 version = "0.9.1"
 dependencies = [
@@ -599,6 +615,7 @@ dependencies = [
  "samlang-ast",
  "samlang-checker",
  "samlang-collections",
+ "samlang-compiler",
  "samlang-errors",
  "samlang-heap",
  "samlang-optimization",

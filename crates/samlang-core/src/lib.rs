@@ -1,4 +1,4 @@
-#![allow(dead_code, clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
+#![allow(clippy::expect_fun_call)]
 #![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
 
 pub use common::measure_time;
@@ -7,7 +7,6 @@ pub use samlang_parser::builtin_std_raw_sources;
 use std::collections::{BTreeMap, HashMap};
 
 mod common;
-mod compiler;
 mod integration_tests;
 mod interpreter;
 pub mod services;
@@ -72,7 +71,7 @@ pub fn compile_sources(
   }
 
   let unoptimized_mir_sources = measure_time(enable_profiling, "Compile to MIR", || {
-    compiler::compile_sources_to_mir(heap, &checked_sources)
+    samlang_compiler::compile_sources_to_mir(heap, &checked_sources)
   });
   let optimized_mir_sources = measure_time(enable_profiling, "Optimize MIR", || {
     samlang_optimization::optimize_sources(
@@ -82,11 +81,11 @@ pub fn compile_sources(
     )
   });
   let mut lir_sources = measure_time(enable_profiling, "Compile to LIR", || {
-    compiler::compile_mir_to_lir(heap, optimized_mir_sources)
+    samlang_compiler::compile_mir_to_lir(heap, optimized_mir_sources)
   });
   let common_ts_code = lir_sources.pretty_print(heap);
   let (wat_text, wasm_file) = measure_time(enable_profiling, "Compile to WASM", || {
-    compiler::compile_lir_to_wasm(heap, &lir_sources)
+    samlang_compiler::compile_lir_to_wasm(heap, &lir_sources)
   });
 
   let mut text_code_results = BTreeMap::new();

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::{compiler, interpreter};
+  use crate::interpreter;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
@@ -2401,13 +2401,13 @@ class Main {
     }
     let (checked_sources, _) = samlang_checker::type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
-    let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);
+    let unoptimized_mir_sources = samlang_compiler::compile_sources_to_mir(heap, &checked_sources);
     let optimized_mir_sources = samlang_optimization::optimize_sources(
       heap,
       unoptimized_mir_sources,
       &samlang_optimization::ALL_ENABLED_CONFIGURATION,
     );
-    let mut lir_sources = compiler::compile_mir_to_lir(heap, optimized_mir_sources);
+    let mut lir_sources = samlang_compiler::compile_mir_to_lir(heap, optimized_mir_sources);
     // Uncomment the following line to read the source
     // panic!("{}", lir_sources.pretty_print(heap));
     for test in &tests {
@@ -2423,7 +2423,7 @@ class Main {
       // assert_eq!(test.expected_std, actual, "{}", test.name);
     }
 
-    let (_, wasm_module) = compiler::compile_lir_to_wasm(heap, &lir_sources);
+    let (_, wasm_module) = samlang_compiler::compile_lir_to_wasm(heap, &lir_sources);
     let engine = Engine::default();
     let module = Module::new(&engine, &mut &wasm_module[..]).unwrap();
     let mut store = Store::new(&engine, vec![]);

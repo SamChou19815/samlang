@@ -3,17 +3,11 @@ use samlang_ast::{hir, mir};
 use samlang_heap::{Heap, PStr};
 use std::collections::{HashMap, HashSet};
 
-enum EnumSpecializationKind {
-  Unboxed,
-  Int,
-}
-
 struct Rewriter {
   original_closure_defs: HashMap<hir::TypeName, hir::ClosureTypeDefinition>,
   original_type_defs: HashMap<hir::TypeName, hir::TypeDefinition>,
   original_functions: HashMap<mir::FunctionName, hir::Function>,
   used_string_names: HashSet<PStr>,
-  specialized_subtypes: HashMap<PStr, EnumSpecializationKind>,
   specialized_type_definition_names: HashSet<mir::TypeNameId>,
   specialized_function_names: HashSet<mir::FunctionName>,
   specialized_closure_definitions: Vec<mir::ClosureTypeDefinition>,
@@ -681,7 +675,6 @@ pub(super) fn perform_generics_specialization(
       })
       .collect(),
     used_string_names: HashSet::new(),
-    specialized_subtypes: HashMap::new(),
     specialized_type_definition_names: HashSet::new(),
     specialized_function_names: HashSet::new(),
     specialized_closure_definitions: vec![],
@@ -1344,6 +1337,17 @@ sources.mains = [_DUMMY_I$main]
                 s2: vec![],
                 final_assignments: vec![],
               },
+              hir::Statement::ConditionalDestructure {
+                test_expr: hir::Expression::var_name(
+                  PStr::LOWER_B,
+                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum3")),
+                ),
+                tag: 1,
+                bindings: vec![Some((PStr::LOWER_A, hir::INT_TYPE))],
+                s1: vec![],
+                s2: vec![],
+                final_assignments: vec![],
+              },
               hir::Statement::EnumInit {
                 enum_variable_name: PStr::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum2")),
@@ -1378,6 +1382,12 @@ sources.mains = [_DUMMY_I$main]
                 s2: vec![],
                 final_assignments: vec![],
               },
+              hir::Statement::EnumInit {
+                enum_variable_name: PStr::LOWER_B,
+                enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum2")),
+                tag: 1,
+                associated_data_list: vec![],
+              },
             ],
             return_value: hir::ZERO,
           },
@@ -1394,8 +1404,8 @@ object type DUMMY_J = [int]
 variant type DUMMY_I_int__Str = [int, int]
 variant type DUMMY_I__Str__Str = [int, int]
 variant type DUMMY_Enum = [Unboxed(DUMMY_J), int]
-variant type DUMMY_Enum2 = [Boxed(int, int), int]
 variant type DUMMY_Enum3 = [Boxed(int, DUMMY_J), Boxed(int, DUMMY_J), int]
+variant type DUMMY_Enum2 = [Boxed(int, int), int]
 function _DUMMY_I$main(): int {
   let finalV: int;
   if 1 {
@@ -1435,21 +1445,29 @@ function _DUMMY_I$main(): int {
   if (_t7: int) {
   } else {
   }
-  let _t8: DUMMY_Enum2$_Sub0 = [1, 0];
-  let b = (_t8: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
-  let _t9: DUMMY_Enum3$_Sub0 = [1, 0];
-  let b = (_t9: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
-  let _t10: int = (b: DUMMY_Enum2)[0];
-  let _t11 = (_t10: int) == 1;
-  if (_t11: int) {
-    let _t12 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
+  let _t8: int = (b: DUMMY_Enum3)[0];
+  let _t9 = (_t8: int) == 3;
+  if (_t9: int) {
+    let _t10 = (b: DUMMY_Enum3) as DUMMY_Enum3$_Sub1;
+    let a: int = (_t10: DUMMY_Enum3$_Sub1)[1];
   } else {
   }
-  let _t13 = (b: DUMMY_Enum2) as int;
-  let _t14 = (_t13: int) == 3;
+  let _t11: DUMMY_Enum2$_Sub0 = [1, 0];
+  let b = (_t11: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
+  let _t12: DUMMY_Enum3$_Sub0 = [1, 0];
+  let b = (_t12: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
+  let _t13: int = (b: DUMMY_Enum2)[0];
+  let _t14 = (_t13: int) == 1;
   if (_t14: int) {
+    let _t15 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
   } else {
   }
+  let _t16 = (b: DUMMY_Enum2) as int;
+  let _t17 = (_t16: int) == 3;
+  if (_t17: int) {
+  } else {
+  }
+  let b = 3 as DUMMY_Enum2;
   return 0;
 }
 

@@ -45,16 +45,14 @@ fn variable_of_mir_expr(expression: &lir::Expression) -> Option<PStr> {
 struct LoweringManager<'a> {
   heap: &'a mut Heap,
   closure_defs: &'a BTreeMap<mir::TypeNameId, lir::FunctionType>,
-  type_defs: &'a BTreeMap<mir::TypeNameId, mir::TypeDefinition>,
 }
 
 impl<'a> LoweringManager<'a> {
   fn new(
     heap: &'a mut Heap,
     closure_defs: &'a BTreeMap<mir::TypeNameId, lir::FunctionType>,
-    type_defs: &'a BTreeMap<mir::TypeNameId, mir::TypeDefinition>,
   ) -> LoweringManager<'a> {
-    LoweringManager { heap, closure_defs, type_defs }
+    LoweringManager { heap, closure_defs }
   }
 
   fn lower_function(
@@ -671,7 +669,7 @@ fn generate_dec_ref_fn() -> lir::Function {
   }
 }
 
-pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Sources {
+pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Sources {
   let mut type_defs = vec![];
   let mut closure_def_map = BTreeMap::new();
   let mut type_def_map = BTreeMap::new();
@@ -730,7 +728,7 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
   }
   let mut functions = functions
     .into_iter()
-    .map(|f| LoweringManager::new(heap, &closure_def_map, &type_def_map).lower_function(f))
+    .map(|f| LoweringManager::new(heap, &closure_def_map).lower_function(f))
     .collect_vec();
   functions.push(generate_inc_ref_fn());
   functions.push(generate_dec_ref_fn());
