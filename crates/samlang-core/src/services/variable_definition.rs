@@ -355,7 +355,6 @@ pub(super) fn apply_renaming(
 #[cfg(test)]
 mod tests {
   use super::{apply_expr_renaming, apply_renaming, DefinitionAndUses, VariableDefinitionLookup};
-  use crate::printer;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     source::{expr, Id, Literal, Module},
@@ -531,7 +530,7 @@ interface Foo {}
 
 interface Foo
 "#,
-      printer::pretty_print_source_module(&heap, 60, &renamed)
+      samlang_printer::pretty_print_source_module(&heap, 60, &renamed)
     );
   }
 
@@ -547,7 +546,7 @@ interface Foo
       &lookup.find_all_definition_and_uses(&location).unwrap(),
       heap.alloc_str_for_test("renAmeD"),
     );
-    assert_eq!(expected, printer::pretty_print_source_module(&heap, 60, &renamed));
+    assert_eq!(expected, samlang_printer::pretty_print_source_module(&heap, 60, &renamed));
   }
 
   #[test]

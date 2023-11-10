@@ -1,4 +1,3 @@
-use crate::printer;
 use itertools::Itertools;
 use samlang_ast::{
   source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
@@ -250,11 +249,17 @@ impl DiffNode<'_> {
 
   fn printed(&self, heap: &Heap, comment_store: &CommentStore) -> String {
     match self {
-      DiffNode::Annotation(n) => printer::pretty_print_annotation(heap, 100, comment_store, n),
-      DiffNode::Expression(n) => printer::pretty_print_expression(heap, 100, comment_store, n),
-      DiffNode::Statement(n) => printer::pretty_print_statement(heap, 100, comment_store, n),
-      DiffNode::Import(n) => printer::pretty_print_import(heap, 100, n),
-      DiffNode::Toplevel(n) => printer::pretty_print_toplevel(heap, 100, comment_store, n),
+      DiffNode::Annotation(n) => {
+        samlang_printer::pretty_print_annotation(heap, 100, comment_store, n)
+      }
+      DiffNode::Expression(n) => {
+        samlang_printer::pretty_print_expression(heap, 100, comment_store, n)
+      }
+      DiffNode::Statement(n) => {
+        samlang_printer::pretty_print_statement(heap, 100, comment_store, n)
+      }
+      DiffNode::Import(n) => samlang_printer::pretty_print_import(heap, 100, n),
+      DiffNode::Toplevel(n) => samlang_printer::pretty_print_toplevel(heap, 100, comment_store, n),
     }
   }
 }
@@ -415,7 +420,7 @@ pub(super) fn compute_module_diff_edits(
   } else {
     vec![(
       Location::full_document(module_reference),
-      printer::pretty_print_source_module(heap, 100, new),
+      samlang_printer::pretty_print_source_module(heap, 100, new),
     )]
   }
 }

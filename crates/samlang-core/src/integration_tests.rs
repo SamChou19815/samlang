@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::{compiler, interpreter, optimization, printer};
+  use crate::{compiler, interpreter, optimization};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
@@ -2371,7 +2371,7 @@ class Main {
     let expected_sources_size = sources.len() + handles.len();
     for (mod_ref, text) in handles {
       let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
-      let raw = printer::pretty_print_source_module(heap, 100, &module);
+      let raw = samlang_printer::pretty_print_source_module(heap, 100, &module);
       let mut error_set = ErrorSet::new();
       sources.insert(mod_ref, parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set));
       assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
