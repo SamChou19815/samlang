@@ -325,8 +325,8 @@ pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type
 
 #[cfg(test)]
 mod tests {
+  use super::super::type_::ISourceType;
   use super::super::type_::{test_type_builder, Type, TypeParameterSignature};
-  use crate::checker::type_::ISourceType;
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Reason};
   use samlang_errors::ErrorSet;

@@ -271,9 +271,7 @@ pub(super) fn perform_gc_after_recheck(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    checker::type_check_sources, parser::parse_source_module_from_text, Heap, ModuleReference,
-  };
+  use crate::{checker::type_check_sources, Heap, ModuleReference};
   use samlang_errors::ErrorSet;
   use std::collections::HashMap;
 
@@ -281,7 +279,7 @@ mod tests {
   fn mark_coverage_test() {
     let heap = &mut Heap::new();
     let mut error_set = ErrorSet::new();
-    let parsed = parse_source_module_from_text(
+    let parsed = samlang_parser::parse_source_module_from_text(
       r#"import {Foo, Bar} from Module.Reference
 
       class Foo(val a: int) {

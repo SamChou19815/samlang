@@ -4,6 +4,7 @@ members = [
   "crates/samlang-collections",
   "crates/samlang-cli",
   "crates/samlang-errors",
+  "crates/samlang-parser",
   "crates/samlang-heap",
   "crates/samlang-wasm",
 ]

@@ -393,15 +393,12 @@ pub(super) fn resolve_all_method_signatures(
 
 #[cfg(test)]
 mod tests {
+  use super::super::type_::{
+    create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
+  };
   use super::{
     resolve_all_member_names, resolve_all_method_signatures, resolve_all_transitive_super_types,
     resolve_function_signature, resolve_method_signature,
-  };
-  use crate::{
-    checker::type_::{
-      create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
-    },
-    parser::parse_source_module_from_text,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
@@ -430,8 +427,12 @@ class Foo2(A(Str), B(int)): Bar {
 
 interface Hiya {}
 "#;
-    let module =
-      parse_source_module_from_text(source_code, ModuleReference::DUMMY, heap, &mut error_set);
+    let module = samlang_parser::parse_source_module_from_text(
+      source_code,
+      ModuleReference::DUMMY,
+      heap,
+      &mut error_set,
+    );
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     let builtin_cx = create_builtin_module_signature();
     let global_cx =
@@ -496,8 +497,12 @@ interface ConflictExtends2 {
 
 interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
 "#;
-    let module =
-      parse_source_module_from_text(source_code, ModuleReference::DUMMY, heap, &mut error_set);
+    let module = samlang_parser::parse_source_module_from_text(
+      source_code,
+      ModuleReference::DUMMY,
+      heap,
+      &mut error_set,
+    );
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     let builtin_cx = create_builtin_module_signature();
     super::build_global_signature(&HashMap::from([(ModuleReference::DUMMY, module)]), builtin_cx)

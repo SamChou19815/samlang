@@ -11,7 +11,6 @@ mod compiler;
 mod integration_tests;
 mod interpreter;
 mod optimization;
-mod parser;
 mod printer;
 pub mod services;
 
@@ -47,7 +46,8 @@ pub(crate) fn builtin_parsed_std_sources(
   let mut error_set = samlang_errors::ErrorSet::new();
   let mut parsed_sources = HashMap::new();
   for (mod_ref, source) in builtin_std_raw_sources(heap) {
-    let parsed = parser::parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
+    let parsed =
+      samlang_parser::parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
     parsed_sources.insert(mod_ref, parsed);
   }
   assert!(!error_set.has_errors());
@@ -57,7 +57,7 @@ pub(crate) fn builtin_parsed_std_sources(
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
   let mut error_set = samlang_errors::ErrorSet::new();
-  let module = parser::parse_source_module_from_text(
+  let module = samlang_parser::parse_source_module_from_text(
     source,
     ModuleReference::DUMMY,
     &mut heap,
@@ -88,8 +88,12 @@ pub fn compile_sources(
   let mut parsed_sources = HashMap::new();
   crate::common::measure_time(enable_profiling, "Parsing", || {
     for (module_reference, source) in &source_handles {
-      let parsed =
-        parser::parse_source_module_from_text(source, *module_reference, heap, &mut error_set);
+      let parsed = samlang_parser::parse_source_module_from_text(
+        source,
+        *module_reference,
+        heap,
+        &mut error_set,
+      );
       parsed_sources.insert(*module_reference, parsed);
     }
   });

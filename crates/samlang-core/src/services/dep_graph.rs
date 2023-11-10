@@ -56,8 +56,9 @@ impl DependencyGraph {
 
 #[cfg(test)]
 mod tests {
-  use crate::{parser::parse_source_module_from_text, Heap};
   use pretty_assertions::assert_eq;
+  use samlang_heap::Heap;
+  use samlang_parser::parse_source_module_from_text;
   use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
   #[test]

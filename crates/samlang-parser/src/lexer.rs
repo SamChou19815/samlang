@@ -445,7 +445,7 @@ impl TokenOp {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum TokenContent {
   Keyword(Keyword),
   Operator(TokenOp),
@@ -482,6 +482,7 @@ impl TokenContent {
 pub(super) struct Token(pub(super) Location, pub(super) TokenContent);
 
 impl Token {
+  #[cfg(test)]
   pub(super) fn pretty_print(&self, heap: &Heap) -> String {
     let Token(loc, content) = self;
     format!("{}: {}", loc.pretty_print(heap), content.pretty_print(heap))

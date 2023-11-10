@@ -249,7 +249,6 @@ mod tests {
   use crate::{
     builtin_parsed_std_sources,
     checker::{type_::Type, type_check_sources},
-    parser::parse_source_module_from_text,
     Heap, ModuleReference,
   };
   use pretty_assertions::assert_eq;
@@ -371,7 +370,8 @@ mod tests {
         Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
       )))
     }"#;
-    let parsed = parse_source_module_from_text(source_code, mod_ref, heap, &mut error_set);
+    let parsed =
+      samlang_parser::parse_source_module_from_text(source_code, mod_ref, heap, &mut error_set);
     let mut sources = builtin_parsed_std_sources(heap);
     sources.insert(mod_ref, parsed);
     let (checked_sources, _) = type_check_sources(&sources, &mut error_set);

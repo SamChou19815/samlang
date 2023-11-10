@@ -423,7 +423,6 @@ pub(super) fn compute_module_diff_edits(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::parser;
   use pretty_assertions::assert_eq;
   use samlang_ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE};
   use samlang_errors::ErrorSet;
@@ -541,10 +540,18 @@ mod tests {
   fn produce_module_diff(old_source: &str, new_source: &str) -> Vec<(String, String)> {
     let heap = &mut Heap::new();
     let error_set = &mut ErrorSet::new();
-    let old =
-      parser::parse_source_module_from_text(old_source, ModuleReference::DUMMY, heap, error_set);
-    let new =
-      parser::parse_source_module_from_text(new_source, ModuleReference::DUMMY, heap, error_set);
+    let old = samlang_parser::parse_source_module_from_text(
+      old_source,
+      ModuleReference::DUMMY,
+      heap,
+      error_set,
+    );
+    let new = samlang_parser::parse_source_module_from_text(
+      new_source,
+      ModuleReference::DUMMY,
+      heap,
+      error_set,
+    );
     assert!(!error_set.has_errors());
     compute_module_diff_edits(heap, ModuleReference::DUMMY, &old, &new)
       .into_iter()

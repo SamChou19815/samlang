@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::checker::{
+  use super::super::{
     ssa_analysis::SsaAnalysisResult,
     type_::{
       test_type_builder, EnumVariantDefinitionSignature, ISourceType, InterfaceSignature,
