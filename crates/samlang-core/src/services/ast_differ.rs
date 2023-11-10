@@ -175,7 +175,7 @@ mod list_differ {
 
   #[cfg(test)]
   mod tests {
-    use crate::services::ast_differ::ChangeWithoutLoc;
+    use super::ChangeWithoutLoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 

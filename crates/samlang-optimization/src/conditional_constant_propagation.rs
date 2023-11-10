@@ -569,8 +569,8 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 
 #[cfg(test)]
 mod boilterplate_tests {
+  use super::super::optimization_common::LocalValueContextForOptimization;
   use super::{optimize_callee, BinaryExpression};
-  use crate::optimization::optimization_common::LocalValueContextForOptimization;
   use samlang_ast::{hir::Operator, mir::*};
   use samlang_heap::{Heap, PStr};
 

@@ -13,6 +13,12 @@ fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<TypeNameId>) {
   }
 }
 
+fn collect_types_for_type_set(types: &[Type], type_set: &mut HashSet<TypeNameId>) {
+  for t in types {
+    collect_for_type_set(t, type_set);
+  }
+}
+
 fn collect_used_names_from_expression(
   str_name_set: &mut HashSet<PStr>,
   type_set: &mut HashSet<TypeNameId>,
@@ -134,9 +140,7 @@ fn get_other_functions_used_by_given_function(
     &mut type_set,
     &function.body,
   );
-  for t in &function.type_.argument_types {
-    collect_for_type_set(t, &mut type_set);
-  }
+  collect_types_for_type_set(&function.type_.argument_types, &mut type_set);
   collect_for_type_set(&function.type_.return_type, &mut type_set);
   collect_used_names_from_expression(&mut name_set, &mut type_set, &function.return_value);
   fn_name_set.remove(&function.name);
@@ -156,9 +160,7 @@ fn analyze_all_used_names(
   let mut type_def_map = HashMap::new();
   for d in closure_types {
     let mut type_set = HashSet::new();
-    for t in &d.function_type.argument_types {
-      collect_for_type_set(t, &mut type_set);
-    }
+    collect_types_for_type_set(&d.function_type.argument_types, &mut type_set);
     collect_for_type_set(&d.function_type.return_type, &mut type_set);
     type_def_map.insert(d.name, type_set);
   }
@@ -166,17 +168,13 @@ fn analyze_all_used_names(
     let mut type_set = HashSet::new();
     match &d.mappings {
       TypeDefinitionMappings::Struct(ts) => {
-        for t in ts {
-          collect_for_type_set(t, &mut type_set);
-        }
+        collect_types_for_type_set(ts, &mut type_set);
       }
       TypeDefinitionMappings::Enum(variants) => {
         for variant in variants {
           match variant {
             EnumTypeDefinition::Boxed(ts) => {
-              for t in ts {
-                collect_for_type_set(t, &mut type_set);
-              }
+              collect_types_for_type_set(ts, &mut type_set);
             }
             EnumTypeDefinition::Unboxed(t) => collect_for_type_set(t, &mut type_set),
             EnumTypeDefinition::Int => {}
@@ -195,34 +193,30 @@ fn analyze_all_used_names(
       used_functions_map.get(&fn_name)
     {
       for used_fn in fn_used_by_this_function {
-        if !used_fn_names.contains(used_fn) {
-          used_fn_names.insert(*used_fn);
+        if used_fn_names.insert(*used_fn) {
           stack.push(*used_fn);
         }
       }
       for used_str in str_used_by_this_function {
-        if !used_str_names.contains(used_str) {
-          used_str_names.insert(*used_str);
-        }
+        used_str_names.insert(*used_str);
       }
     }
   }
 
   let mut used_types = HashSet::new();
   let mut used_types_worklist_stack = vec![];
-  for used_fn_name in &used_fn_names {
-    if let Some((_, _, types)) = used_functions_map.get(used_fn_name) {
-      for t in types {
-        if let Some(more_used_types) = type_def_map.get(t) {
-          used_types_worklist_stack.append(&mut more_used_types.iter().cloned().collect())
-        }
-        used_types.insert(*t);
+  for (_, _, types) in
+    used_fn_names.iter().filter_map(|used_fn_name| used_functions_map.get(used_fn_name))
+  {
+    for t in types {
+      used_types_worklist_stack.push(*t);
+      if let Some(more_used_types) = type_def_map.get(t) {
+        used_types_worklist_stack.append(&mut more_used_types.iter().copied().collect())
       }
     }
   }
   while let Some(additional_used_type) = used_types_worklist_stack.pop() {
-    if !used_types.contains(&additional_used_type) {
-      used_types.insert(additional_used_type);
+    if used_types.insert(additional_used_type) {
       for t in type_def_map.get(&additional_used_type).into_iter().flatten() {
         used_types_worklist_stack.push(*t);
       }
@@ -297,7 +291,7 @@ mod tests {
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Bar")),
           mappings: TypeDefinitionMappings::Struct(vec![Type::Id(
-            table.create_type_name_for_test(heap.alloc_str_for_test("Bar")),
+            table.create_type_name_for_test(heap.alloc_str_for_test("RefByType")),
           )]),
         },
         TypeDefinition {
@@ -312,8 +306,27 @@ mod tests {
             EnumTypeDefinition::Boxed(vec![INT_TYPE]),
           ]),
         },
+        TypeDefinition {
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("RefByType")),
+          mappings: TypeDefinitionMappings::Struct(vec![Type::Id(
+            table.create_type_name_for_test(heap.alloc_str_for_test("RefByType2")),
+          )]),
+        },
+        TypeDefinition {
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("RefByType2")),
+          mappings: TypeDefinitionMappings::Struct(vec![Type::Id(
+            table.create_type_name_for_test(heap.alloc_str_for_test("RefByType3")),
+          )]),
+        },
+        TypeDefinition {
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("RefByType3")),
+          mappings: TypeDefinitionMappings::Struct(vec![]),
+        },
       ],
-      main_function_names: vec![FunctionName::new_for_test(PStr::MAIN_FN)],
+      main_function_names: vec![
+        FunctionName::new_for_test(PStr::MAIN_FN),
+        FunctionName::new_for_test(heap.alloc_str_for_test("dddddd")),
+      ],
       functions: vec![
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
@@ -447,7 +460,7 @@ mod tests {
       sources.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
     assert_eq!(
-      vec!["_Foo", "_Bar"],
+      vec!["_Foo", "_Bar", "_RefByType", "_RefByType2", "_RefByType3"],
       sources
         .type_definitions
         .iter()

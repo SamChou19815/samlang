@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::optimization::local_value_numbering;
+  use super::super::local_value_numbering;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{

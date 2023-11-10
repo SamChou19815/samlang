@@ -1389,7 +1389,7 @@ pub(crate) fn compile_sources_to_mir(
 
 #[cfg(test)]
 mod tests {
-  use crate::compiler::{
+  use super::super::{
     hir_lowering::ExpressionLoweringManager,
     hir_string_manager::StringManager,
     hir_type_conversion::{SynthesizedTypes, TypeLoweringManager, TypeSynthesizer},

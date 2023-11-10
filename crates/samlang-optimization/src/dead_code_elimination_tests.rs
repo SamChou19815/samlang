@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use crate::optimization::dead_code_elimination;
+  use super::super::dead_code_elimination;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{

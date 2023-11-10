@@ -2,8 +2,8 @@ use super::{
   dead_code_elimination, loop_algebraic_optimization,
   loop_induction_analysis::{self, OptimizableWhileLoop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
+  optimization_common::take_mut,
 };
-use crate::common::take_mut;
 use itertools::Itertools;
 use samlang_ast::hir::Operator;
 use samlang_ast::mir::{
