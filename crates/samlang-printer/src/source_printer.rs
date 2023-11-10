@@ -1041,7 +1041,10 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::printer::{prettier, pretty_print_source_module};
+  use crate::{
+    prettier, pretty_print_annotation, pretty_print_expression, pretty_print_import,
+    pretty_print_source_module, pretty_print_statement, pretty_print_toplevel,
+  };
   use pretty_assertions::assert_eq;
   use samlang_ast::source::{expr, test_builder, CommentStore, Id};
   use samlang_errors::ErrorSet;
@@ -1065,6 +1068,31 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let m =
       parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
+    for n in &m.imports {
+      pretty_print_import(&heap, 40, n);
+    }
+    for n in &m.toplevels {
+      pretty_print_toplevel(&heap, 40, &m.comment_store, n);
+      match n {
+        Toplevel::Interface(_) => {}
+        Toplevel::Class(c) => {
+          for member in &c.members {
+            for p in member.decl.parameters.as_ref().iter() {
+              pretty_print_annotation(&heap, 40, &m.comment_store, &p.annotation);
+            }
+            pretty_print_expression(&heap, 40, &m.comment_store, &member.body);
+            if let expr::E::Block(expr::Block { common: _, statements, expression: _ }) =
+              &member.body
+            {
+              for stmt in statements {
+                pretty_print_statement(&heap, 40, &m.comment_store, stmt);
+              }
+            }
+          }
+        }
+      }
+    }
+
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     assert_eq!(expected, format!("\n{}", pretty_print_source_module(&heap, 40, &m).trim_end()));
   }
@@ -1084,6 +1112,13 @@ mod tests {
     assert_reprint_expr("hi", "hi");
     assert_reprint_expr("this", "this");
     assert_reprint_expr("ClassName.classMember", "ClassName.classMember");
+    assert_reprint_expr(
+      "ClassName.classMember.classMember.classMember.classMember",
+      r#"ClassName.classMember
+  .classMember
+  .classMember
+  .classMember"#,
+    );
     assert_reprint_expr("ClassName.classMember<A,B>", "ClassName.classMember<A, B>");
     assert_reprint_expr(
       "/* a */ ClassName./* b */  /* c */ classMember<A,B>",
@@ -1140,6 +1175,14 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       r#"(
   match foo {
     None(_) -> 1,
+  }
+).bar"#,
+    );
+    assert_reprint_expr(
+      "(match foo {None(_)->{}}).bar",
+      r#"(
+  match foo {
+    None(_) -> {  }
   }
 ).bar"#,
     );

@@ -1,7 +1,7 @@
 mod prettier;
 mod source_printer;
 
-pub(crate) fn pretty_print_annotation(
+pub fn pretty_print_annotation(
   heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &samlang_ast::source::CommentStore,
@@ -13,7 +13,7 @@ pub(crate) fn pretty_print_annotation(
   )
 }
 
-pub(crate) fn pretty_print_expression(
+pub fn pretty_print_expression(
   heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &samlang_ast::source::CommentStore,
@@ -25,7 +25,7 @@ pub(crate) fn pretty_print_expression(
   )
 }
 
-pub(crate) fn pretty_print_statement(
+pub fn pretty_print_statement(
   heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &samlang_ast::source::CommentStore,
@@ -37,7 +37,7 @@ pub(crate) fn pretty_print_statement(
   )
 }
 
-pub(crate) fn pretty_print_import(
+pub fn pretty_print_import(
   heap: &samlang_heap::Heap,
   available_width: usize,
   import: &samlang_ast::source::ModuleMembersImport,
@@ -48,7 +48,7 @@ pub(crate) fn pretty_print_import(
   )
 }
 
-pub(crate) fn pretty_print_toplevel(
+pub fn pretty_print_toplevel(
   heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &samlang_ast::source::CommentStore,
@@ -60,7 +60,7 @@ pub(crate) fn pretty_print_toplevel(
   )
 }
 
-pub(crate) fn pretty_print_source_module(
+pub fn pretty_print_source_module(
   heap: &samlang_heap::Heap,
   available_width: usize,
   module: &samlang_ast::source::Module<()>,

@@ -4,7 +4,6 @@ use super::{
   server_state::ServerState,
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
-use crate::printer;
 use itertools::Itertools;
 use samlang_ast::{
   source::{
@@ -445,7 +444,7 @@ pub mod rewrite {
     if errors.iter().any(|e| e.is_syntax_error()) {
       None
     } else {
-      Some(printer::pretty_print_source_module(&state.heap, 100, module))
+      Some(samlang_printer::pretty_print_source_module(&state.heap, 100, module))
     }
   }
 
@@ -473,7 +472,7 @@ pub mod rewrite {
       .find_all_definition_and_uses(&def_or_use_loc)?;
     let renamed =
       apply_renaming(module, &def_and_uses, state.heap.alloc_string(new_name.to_string()));
-    Some(printer::pretty_print_source_module(&state.heap, 100, &renamed))
+    Some(samlang_printer::pretty_print_source_module(&state.heap, 100, &renamed))
   }
 
   pub fn code_actions(state: &ServerState, location: Location) -> Vec<CodeAction> {

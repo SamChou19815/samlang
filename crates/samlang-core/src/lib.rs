@@ -11,7 +11,6 @@ mod compiler;
 mod integration_tests;
 mod interpreter;
 mod optimization;
-mod printer;
 pub mod services;
 
 pub fn reformat_source(source: &str) -> String {
@@ -26,7 +25,7 @@ pub fn reformat_source(source: &str) -> String {
   if error_set.has_errors() {
     source.to_string()
   } else {
-    printer::pretty_print_source_module(&heap, 100, &module)
+    samlang_printer::pretty_print_source_module(&heap, 100, &module)
   }
 }
 

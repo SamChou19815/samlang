@@ -6,8 +6,9 @@ members = [
   "crates/samlang-core",
   "crates/samlang-collections",
   "crates/samlang-errors",
-  "crates/samlang-parser",
   "crates/samlang-heap",
+  "crates/samlang-parser",
+  "crates/samlang-printer",
   "crates/samlang-wasm",
 ]
 resolver = "2"
