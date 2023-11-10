@@ -228,6 +228,7 @@ mod list_differ {
   }
 }
 
+#[allow(dead_code)]
 enum DiffNode<'a> {
   Annotation(&'a annotation::T),
   Expression(&'a expr::E<()>),

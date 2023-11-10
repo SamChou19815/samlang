@@ -1,11 +1,15 @@
+#[cfg(test)]
 use samlang_ast::{
   hir::Operator,
   lir::{Expression, Function, Sources, Statement, INT_TYPE},
   mir::FunctionName,
 };
+#[cfg(test)]
 use samlang_heap::{Heap, PStr};
+#[cfg(test)]
 use std::collections::HashMap;
 
+#[cfg(test)]
 struct Memory<'a> {
   heap: &'a mut Heap,
   program_heap: &'a mut [u8],
@@ -17,6 +21,7 @@ struct Memory<'a> {
   println_collector: Vec<String>,
 }
 
+#[cfg(test)]
 impl<'a> Memory<'a> {
   fn push_stack(&mut self) {
     self.stacks.push(HashMap::new());
@@ -89,6 +94,7 @@ impl<'a> Memory<'a> {
   }
 }
 
+#[cfg(test)]
 fn eval_expr(mem: &mut Memory, expr: &Expression) -> i32 {
   match expr {
     Expression::IntLiteral(i) => *i,
@@ -98,10 +104,12 @@ fn eval_expr(mem: &mut Memory, expr: &Expression) -> i32 {
   }
 }
 
+#[cfg(test)]
 fn eval_arguments(mem: &mut Memory, arguments: &[Expression]) -> Vec<i32> {
   arguments.iter().map(|e| eval_expr(mem, e)).collect()
 }
 
+#[cfg(test)]
 fn eval_stmt(
   mem: &mut Memory,
   id_to_functions: &HashMap<i32, &Function>,
@@ -216,6 +224,7 @@ fn eval_stmt(
   }
 }
 
+#[cfg(test)]
 fn eval_stmts(
   mem: &mut Memory,
   id_to_functions: &HashMap<i32, &Function>,
@@ -230,6 +239,7 @@ fn eval_stmts(
   Ok(())
 }
 
+#[cfg(test)]
 fn eval_fun_call(
   mem: &mut Memory,
   id_to_functions: &HashMap<i32, &Function>,
@@ -280,6 +290,7 @@ fn eval_fun_call(
   v
 }
 
+#[cfg(test)]
 pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: FunctionName) -> String {
   let program_heap = (&mut vec![1u8; 20000]) as &mut [u8];
   let mut stack = vec![];

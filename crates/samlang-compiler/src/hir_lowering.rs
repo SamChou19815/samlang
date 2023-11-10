@@ -69,13 +69,11 @@ struct ExpressionLoweringManager<'a> {
   // Immutable states
   heap: &'a mut Heap,
   module_reference: &'a ModuleReference,
-  encoded_function_name: hir::FunctionName,
   defined_variables: Vec<(PStr, hir::Type)>,
   type_definition_mapping: &'a HashMap<hir::TypeName, hir::TypeDefinition>,
   type_lowering_manager: &'a mut TypeLoweringManager,
   string_manager: &'a mut StringManager,
   // Mutable states
-  next_temp_var_id: i32,
   next_synthetic_fn_id_manager: &'a mut NextSyntheticFnIdManager,
   variable_cx: LoweringContext,
   synthetic_functions: Vec<hir::Function>,
@@ -85,7 +83,6 @@ impl<'a> ExpressionLoweringManager<'a> {
   #[allow(clippy::too_many_arguments)]
   fn new(
     module_reference: &'a ModuleReference,
-    encoded_function_name: hir::FunctionName,
     defined_variables: Vec<(PStr, hir::Type)>,
     type_definition_mapping: &'a HashMap<hir::TypeName, hir::TypeDefinition>,
     heap: &'a mut Heap,
@@ -100,12 +97,10 @@ impl<'a> ExpressionLoweringManager<'a> {
     ExpressionLoweringManager {
       heap,
       module_reference,
-      encoded_function_name,
       defined_variables,
       type_definition_mapping,
       type_lowering_manager,
       string_manager,
-      next_temp_var_id: 0,
       next_synthetic_fn_id_manager,
       variable_cx,
       synthetic_functions: vec![],
@@ -924,7 +919,6 @@ impl<'a> ExpressionLoweringManager<'a> {
     let LoweringResult { statements: mut lowered_s, expression: lowered_e } =
       ExpressionLoweringManager::new(
         self.module_reference,
-        fn_name,
         parameters
           .into_iter()
           .zip(fun_type_without_cx_argument_types.iter().cloned())
@@ -1244,7 +1238,6 @@ fn compile_sources_with_generics_preserved(
             .collect_vec();
             let manager = ExpressionLoweringManager::new(
               module_reference,
-              function_name,
               main_function_parameter_with_types.clone(),
               &type_def_mappings,
               heap,
@@ -1293,7 +1286,6 @@ fn compile_sources_with_generics_preserved(
               .collect_vec();
             let manager = ExpressionLoweringManager::new(
               module_reference,
-              function_name,
               main_function_parameter_with_types.clone(),
               &type_def_mappings,
               heap,
@@ -1375,7 +1367,7 @@ fn optimize_by_tail_rec_rewrite(heap: &mut Heap, sources: mir::Sources) -> mir::
   }
 }
 
-pub(crate) fn compile_sources_to_mir(
+pub fn compile_sources_to_mir(
   heap: &mut Heap,
   sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
 ) -> mir::Sources {
@@ -1452,13 +1444,6 @@ mod tests {
     ]);
     let manager = ExpressionLoweringManager::new(
       &mod_ref,
-      hir::FunctionName {
-        type_name: hir::TypeName {
-          module_reference: Some(ModuleReference::DUMMY),
-          type_name: heap.alloc_str_for_test("Dummy"),
-        },
-        fn_name: heap.alloc_str_for_test("fn_name"),
-      },
       vec![
         (
           heap.alloc_str_for_test("_this"),
@@ -2134,6 +2119,36 @@ return (_t1: _$SyntheticIDType0);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        condition: Box::new(source::expr::IfElseCondition::Expression(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          source::Literal::Bool(true),
+        ))),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
+      }),
+      heap,
+      "return (_this: DUMMY_Dummy);",
+    );
+
+    let heap = &mut Heap::new();
+    assert_expr_correctly_lowered(
+      &source::expr::E::IfElse(source::expr::IfElse {
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        condition: Box::new(source::expr::IfElseCondition::Expression(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          source::Literal::Bool(false),
+        ))),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
+      }),
+      heap,
+      "return (_this: DUMMY_Dummy);",
+    );
+
+    let heap = &mut Heap::new();
+    assert_expr_correctly_lowered(
+      &source::expr::E::IfElse(source::expr::IfElse {
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Expression(dummy_source_this(heap))),
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -2381,10 +2396,28 @@ return (_t9: DUMMY_Dummy);"#,
               tag: source::Id::from(PStr::EMPTY),
               data_variables: vec![
                 (
-                  source::pattern::MatchingPattern::Id(
-                    source::Id::from(heap.alloc_str_for_test("bar")),
-                    builder.int_type(),
-                  ),
+                  source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                    loc: Location::dummy(),
+                    tag_order: 0,
+                    tag: source::Id::from(PStr::EMPTY),
+                    data_variables: vec![
+                      (
+                        source::pattern::MatchingPattern::Id(
+                          source::Id::from(heap.alloc_str_for_test("bar")),
+                          builder.int_type(),
+                        ),
+                        builder.int_type(),
+                      ),
+                      (
+                        source::pattern::MatchingPattern::Id(
+                          source::Id::from(heap.alloc_str_for_test("baz")),
+                          builder.int_type(),
+                        ),
+                        builder.int_type(),
+                      ),
+                    ],
+                    type_: builder.int_type(),
+                  }),
                   builder.int_type(),
                 ),
                 (
@@ -2443,19 +2476,31 @@ _t2 = (_t3: int);
 let _t5: int;
 let _t6: int;
 let [_t7: int, _t8: int] if tagof((_this: DUMMY_Dummy))==0 {
-  _t5 = (_t7: int);
-  _t6 = (_t8: int);
-  _t9 = 1;
+  let [_t9: int, _t10: int] if tagof((_t7: int))==0 {
+    _t5 = (_t9: int);
+    _t6 = (_t10: int);
+    _t11 = 1;
+  } else {
+    _t11 = 0;
+  }
+  let _t12: int;
+  if (_t11: int) {
+    _t6 = (_t8: int);
+    _t12 = 1;
+  } else {
+    _t12 = 0;
+  }
+  _t13 = (_t12: int);
 } else {
-  _t9 = 0;
+  _t13 = 0;
 }
-let _t10: int;
-if (_t9: int) {
-  _t10 = (_t5: int);
+let _t14: int;
+if (_t13: int) {
+  _t14 = (_t5: int);
 } else {
-  _t10 = (_this: DUMMY_Dummy);
+  _t14 = (_this: DUMMY_Dummy);
 }
-return (_t10: int);"#,
+return (_t14: int);"#,
     );
 
     let heap = &mut Heap::new();

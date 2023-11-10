@@ -1,4 +1,4 @@
-#![allow(dead_code, clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
+#![allow(clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
 #![cfg_attr(coverage_nightly, feature(no_coverage))]
 
 use std::{
@@ -50,15 +50,6 @@ mod utils {
   ) -> Option<samlang_heap::ModuleReference> {
     file_path_to_module_reference_parts(absolute_source_path, absolute_file_path)
       .map(|parts| heap.alloc_module_reference_from_string_vec(parts))
-  }
-
-  pub(super) fn file_path_to_module_reference_read(
-    heap: &mut samlang_heap::Heap,
-    absolute_source_path: &Path,
-    absolute_file_path: &Path,
-  ) -> Option<samlang_heap::ModuleReference> {
-    file_path_to_module_reference_parts(absolute_source_path, absolute_file_path)
-      .and_then(|parts| heap.get_allocated_module_reference_opt(parts))
   }
 
   fn walk(

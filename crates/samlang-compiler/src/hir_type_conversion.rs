@@ -135,7 +135,8 @@ pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Typ
   }
 }
 
-pub(super) fn fn_type_application(
+#[cfg(test)]
+fn fn_type_application(
   fn_type: &FunctionType,
   replacement_map: &HashMap<PStr, Type>,
 ) -> FunctionType {
