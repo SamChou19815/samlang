@@ -246,7 +246,7 @@ impl<'a> TypingContext<'a> {
       nominal_type.module_reference,
       nominal_type.id,
     )
-    .filter(|it| !it.private)?;
+    .filter(|it| !it.private || nominal_type.module_reference == self.current_module_reference)?;
     if nominal_type.is_class_statics {
       let resolved = global_signature::resolve_function_signature(
         self.global_signature,
