@@ -2114,7 +2114,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   method iter(f: (T) -> unit): unit =
     match (this) {
-      Nil(_) -> {  }
+      Nil(_) -> {  },
       Cons(pair) -> {
         let (v, rest) = pair;
         let _ = f(v);

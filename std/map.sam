@@ -128,7 +128,7 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     match this {
       Empty -> Process.panic("Bad tree"),
       Leaf(_, _) -> Process.panic("Bad tree"),
-      Node(_, k, v, l, r) -> { (k, v, l, r) }
+      Node(_, k, v, l, r) -> (k, v, l, r),
     }
 
   private function <K: Comparable<K>, V> balanced(l: Map<K, V>, k: K, v: V, r: Map<K, V>): Map<

@@ -7,7 +7,7 @@ class Option<T>(None, Some(T)) {
       Some(a) -> match optionB {
         None -> Option.None(),
         Some(b) -> Option.Some((a, b)),
-      }
+      },
     }
 
   method isSome(): bool =
@@ -42,7 +42,7 @@ class Option<T>(None, Some(T)) {
 
   method iter(f: (T) -> unit): unit =
     match this {
-      None -> {  }
+      None -> {  },
       Some(v) -> f(v),
     }
 

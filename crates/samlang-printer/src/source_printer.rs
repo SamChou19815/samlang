@@ -581,9 +581,7 @@ fn create_doc_without_preceding_comment(
         list.push(matching_pattern_to_document(heap, &case.pattern));
         list.push(Document::Text(rcs(" -> ")));
         list.push(create_doc(heap, comment_store, &case.body));
-        if !matches!(case.body.deref(), expr::E::Block(_) | expr::E::Match(_)) {
-          list.push(Document::Text(rcs(",")))
-        }
+        list.push(Document::Text(rcs(",")));
         list.push(Document::Line);
       }
       list.pop();
@@ -1182,7 +1180,7 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       "(match foo {None(_)->{}}).bar",
       r#"(
   match foo {
-    None(_) -> {  }
+    None(_) -> {  },
   }
 ).bar"#,
     );
