@@ -282,8 +282,8 @@ mod tests {
 
       method matchExample(): unit =
         match (this) {
-          None(_) -> {}
-          Some(a) -> {}
+          None(_) -> {},
+          Some(a) -> {},
         }
     }
 

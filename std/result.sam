@@ -34,12 +34,12 @@ class Result<T, E>(Ok(T), Error(E)) {
   method iter(f: (T) -> unit): unit =
     match this {
       Ok(v) -> f(v),
-      Error(_) -> {  }
+      Error(_) -> {  },
     }
 
   method iterError(f: (E) -> unit): unit =
     match this {
-      Ok(_) -> {  }
+      Ok(_) -> {  },
       Error(e) -> f(e),
     }
 

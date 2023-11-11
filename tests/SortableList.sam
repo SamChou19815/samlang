@@ -19,11 +19,11 @@ class List<T: Comparable<T>>(Nil, Cons(T, List<T>)) {
 
   method iter(f: (T) -> unit): unit =
     match this {
-      Nil -> {  }
+      Nil -> {  },
       Cons(v, rest) -> {
         let _ = f(v);
         rest.iter(f)
-      }
+      },
     }
 
   method sort(): List<T> =
@@ -33,7 +33,7 @@ class List<T: Comparable<T>>(Nil, Cons(T, List<T>)) {
       Cons(_, Cons(_, _)) -> {
         let (l1, l2) = this.split(List.nil<T>(), List.nil<T>());
         l1.sort().merge(l2.sort())
-      }
+      },
     }
 
   private method merge(other: List<T>): List<T> =
@@ -42,13 +42,13 @@ class List<T: Comparable<T>>(Nil, Cons(T, List<T>)) {
       (_, Nil) -> this,
       (Cons(h1, t1), Cons(h2, t2)) -> {
         if h1.compare(h2) < 0 then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
-      }
+      },
     }
 
   private method split(y: List<T>, z: List<T>): Pair<List<T>, List<T>> =
     match this {
       Nil -> Pair.init(y, z),
-      Cons(x, rest) -> { rest.split(z, y.cons(x)) }
+      Cons(x, rest) -> rest.split(z, y.cons(x)),
     }
 }
 

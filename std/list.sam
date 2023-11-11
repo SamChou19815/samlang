@@ -22,13 +22,13 @@ class List<T>(Nil, Cons(T, List<T>)) {
       Cons(v, rest) -> {
         let filteredRest = rest.filter(f);
         if f(v) then List.Cons(v, filteredRest) else filteredRest
-      }
+      },
     }
 
   method <R> map(f: (T) -> R): List<R> =
     match this {
       Nil -> List.Nil(),
-      Cons(v, rest) -> { List.Cons(f(v), rest.map(f)) }
+      Cons(v, rest) -> List.Cons(f(v), rest.map(f)),
     }
 
   method <R> filterMap(f: (T) -> Option<R>): List<R> =
@@ -40,16 +40,16 @@ class List<T>(Nil, Cons(T, List<T>)) {
           None -> mappedRest,
           Some(mapped) -> List.Cons(mapped, mappedRest),
         }
-      }
+      },
     }
 
   method iter(f: (T) -> unit): unit =
     match this {
-      Nil -> {  }
+      Nil -> {  },
       Cons(v, rest) -> {
         let _ = f(v);
         rest.iter(f)
-      }
+      },
     }
 
   method contains(element: T, equal: (T, T) -> bool): bool =
@@ -82,7 +82,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
       Cons(v, rest) -> match f(v) {
         Some(r) -> Option.Some(r),
         None -> rest.findMap(f),
-      }
+      },
     }
 
   method append(other: List<T>): List<T> =
@@ -94,13 +94,13 @@ class List<T>(Nil, Cons(T, List<T>)) {
   method <A> fold(f: (A, T) -> A, acc: A): A =
     match this {
       Nil -> acc,
-      Cons(v, rest) -> { rest.fold(f, f(acc, v)) }
+      Cons(v, rest) -> rest.fold(f, f(acc, v)),
     }
 
   method <A> foldRight(f: (T, A) -> A, init: A): A =
     match this {
       Nil -> init,
-      Cons(v, rest) -> { rest.foldRight(f, f(v, init)) }
+      Cons(v, rest) -> rest.foldRight(f, f(v, init)),
     }
 
   method <R> bind(f: (T) -> List<R>): List<R> =
@@ -114,6 +114,6 @@ class List<T>(Nil, Cons(T, List<T>)) {
   private method reverseWithAccumulator(acc: List<T>): List<T> =
     match this {
       Nil -> acc,
-      Cons(v, rest) -> { rest.reverseWithAccumulator(List.Cons(v, acc)) }
+      Cons(v, rest) -> rest.reverseWithAccumulator(List.Cons(v, acc)),
     }
 }

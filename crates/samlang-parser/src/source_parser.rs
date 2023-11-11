@@ -689,7 +689,7 @@ impl<'a> SourceParser<'a> {
       let mut matching_list = vec![self.parse_pattern_to_expression()];
       while matches!(
         self.peek().1,
-        TokenContent::Operator(TokenOp::LBRACE | TokenOp::LPAREN)
+        TokenContent::Operator(TokenOp::LBRACE | TokenOp::LPAREN | TokenOp::UNDERSCORE)
           | TokenContent::LowerId(_)
           | TokenContent::UpperId(_)
       ) {
@@ -714,16 +714,11 @@ impl<'a> SourceParser<'a> {
     let pattern = self.parse_matching_pattern();
     self.assert_and_consume_operator(TokenOp::ARROW);
     let expression = self.parse_expression();
-    let mut loc = pattern.loc().union(&expression.loc());
-    if matches!(expression, expr::E::Block(_) | expr::E::Match(_))
-      || matches!(self.peek().1, TokenContent::Operator(TokenOp::RBRACE))
-    {
-      if matches!(self.peek().1, TokenContent::Operator(TokenOp::COMMA)) {
-        loc = loc.union(&self.assert_and_consume_operator(TokenOp::COMMA));
-      }
+    let loc = if matches!(self.peek().1, TokenContent::Operator(TokenOp::RBRACE)) {
+      pattern.loc().union(&expression.loc())
     } else {
-      loc = loc.union(&self.assert_and_consume_operator(TokenOp::COMMA));
-    }
+      pattern.loc().union(&self.assert_and_consume_operator(TokenOp::COMMA))
+    };
     expr::VariantPatternToExpression { loc, pattern, body: Box::new(expression) }
   }
 

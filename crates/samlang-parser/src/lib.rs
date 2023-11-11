@@ -147,7 +147,7 @@ mod tests {
       "if let {foo as {bar as (Fizz(baz,), Buzz, (_,)), boo},} = true then 3 else bar",
     );
     expect_good_expr("match (this) { None(_) -> 0, Some(d) -> d }");
-    expect_good_expr("match (this) { None(_) -> match this { None(_) -> 1 } Some(d) -> d }");
+    expect_good_expr("match (this) { None(_) -> match this { None(_) -> 1 }, Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> {}, Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> 0, Some(d) -> d, }");
     expect_good_expr("(a, b: int, c: Type) -> 3");
