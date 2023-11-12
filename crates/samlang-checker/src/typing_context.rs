@@ -206,9 +206,15 @@ impl<'a> TypingContext<'a> {
         self.error_set.report_stackable_error(nominal_type.reason.use_loc, error);
         return;
       }
+      let subst_mapping = interface_type_parameters
+        .iter()
+        .zip(&nominal_type.type_arguments)
+        .map(|(tparam, targ)| (tparam.name, targ.clone()))
+        .collect::<HashMap<_, _>>();
       for (tparam, targ) in interface_type_parameters.into_iter().zip(&nominal_type.type_arguments)
       {
         if let Some(bound) = tparam.bound {
+          let bound = type_system::subst_nominal_type(&bound, &subst_mapping);
           if !self.is_subtype_with_id_upper(targ, &bound) {
             self.error_set.report_incompatible_subtype_error(
               targ.get_reason().use_loc,
