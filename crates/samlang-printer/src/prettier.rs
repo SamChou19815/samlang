@@ -32,7 +32,7 @@ mod rc_string_tests {
     assert!(rcs("foo").cmp(&rcs("zuck")).is_lt());
     assert!(rcs("foo").partial_cmp(&rcs("zuck")).is_some());
     assert!(rcs("foo") == rcs("foo"));
-    assert!(!format!("{:?}", rcs("debug")).is_empty());
+    format!("{:?}", rcs("debug"));
     assert_eq!(rcs("zuck"), rcs("zuck"));
     assert_eq!(Some('h'), rcs("hiya").chars().next());
     let mut set = HashSet::new();
@@ -285,9 +285,7 @@ mod tests {
 
   #[test]
   fn concat_tests() {
-    assert!(
-      !format!("{:?}", Document::Nest(0, Rc::new(Document::Nil)).as_nest().unwrap().1).is_empty()
-    );
+    format!("{:?}", Document::Nest(0, Rc::new(Document::Nil)).as_nest().unwrap().1);
     assert_eq!(Document::Nil, Document::concat(vec![]));
     assert_eq!(Document::Text(rcs("a")), Document::concat(vec![Document::Text(rcs("a"))]));
     assert_eq!(

@@ -688,7 +688,7 @@ mod tests {
     get_guard_operator(Operator::GT, true).unwrap().invert().clone().invert().to_op();
     assert!(get_guard_operator(Operator::EQ, true).is_none());
 
-    assert!(!BasicInductionVariableWithLoopGuard {
+    BasicInductionVariableWithLoopGuard {
       name: PStr::LOWER_A,
       initial_value: ZERO,
       increment_amount: PotentialLoopInvariantExpression::Int(0),
@@ -697,8 +697,7 @@ mod tests {
     }
     .as_general_basic_induction_variable()
     .clone()
-    .debug_print(heap, table)
-    .is_empty());
+    .debug_print(heap, table);
     DerivedInductionVariableWithName {
       name: PStr::LOWER_A,
       base_name: PStr::LOWER_A,

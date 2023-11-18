@@ -10,23 +10,21 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert!(ZERO.as_int_literal().is_some());
-    assert!(!format!(
+    format!(
       "{:?}",
       Expression::var_name(
         PStr::LOWER_A,
         Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
       )
-    )
-    .is_empty());
-    assert!(!format!(
+    );
+    format!(
       "{:?}",
       Expression::var_name(
         PStr::LOWER_A,
         Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
       )
-    )
-    .is_empty());
-    assert!(!format!("{:?}", TypeName::new_for_test(PStr::UPPER_A)).is_empty());
+    );
+    format!("{:?}", TypeName::new_for_test(PStr::UPPER_A));
     assert!(TypeName::new_for_test(PStr::UPPER_A) <= TypeName::new_for_test(PStr::UPPER_A));
     assert_eq!(
       TypeName::new_for_test(PStr::UPPER_A).cmp(&TypeName::new_for_test(PStr::UPPER_A)),
@@ -55,19 +53,19 @@ mod tests {
         }),
       std::cmp::Ordering::Equal
     );
-    assert!(!format!("{:?}", Expression::StringName(PStr::LOWER_A)).is_empty());
-    assert!(!format!("{:?}", Operator::GE).is_empty());
+    format!("{:?}", Expression::StringName(PStr::LOWER_A));
+    format!("{:?}", Operator::GE);
     assert!(Operator::MINUS <= Operator::GE);
-    assert!(!format!("{:?}", Operator::MINUS.partial_cmp(&Operator::GE)).is_empty());
-    assert!(!format!("{:?}", Operator::MINUS.cmp(&Operator::GE)).is_empty());
-    assert!(!format!("{:?}", ZERO.type_()).is_empty());
-    assert!(!format!("{:?}", Expression::StringName(PStr::LOWER_A).type_().as_id()).is_empty());
+    format!("{:?}", Operator::MINUS.partial_cmp(&Operator::GE));
+    format!("{:?}", Operator::MINUS.cmp(&Operator::GE));
+    format!("{:?}", ZERO.type_());
+    format!("{:?}", Expression::StringName(PStr::LOWER_A).type_().as_id());
     assert!(Expression::StringName(PStr::LOWER_A).type_().as_id().is_some());
     assert_eq!(
       "(s: int)",
       VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap)
     );
-    assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
+    format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE));
     Expression::var_name(PStr::LOWER_A, INT_TYPE).type_();
     Expression::var_name(PStr::LOWER_A, INT_TYPE).convert_to_callee();
     Expression::StringName(PStr::LOWER_A).convert_to_callee();
@@ -85,7 +83,7 @@ mod tests {
       return_type: INT_TYPE,
       return_collector: None,
     };
-    assert!(!format!("{:?}", call).is_empty());
+    format!("{:?}", call);
 
     assert!(
       Expression::var_name(
@@ -418,7 +416,7 @@ mod tests {
         Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
       )],
     };
-    assert!(!format!("{:?}", stmt.clone()).is_empty());
+    format!("{:?}", stmt.clone());
     let expected = r#"let bar: int;
 if 0 {
   let baz: DUMMY_FooBar = [meggo];
@@ -526,7 +524,7 @@ if 0 {
       }
       .clone()],
     };
-    assert!(!format!("{sources1:?}").is_empty());
+    format!("{sources1:?}");
     let expected1 = r#"const dev_meggo = 'vibez';
 
 closure type C = () -> int

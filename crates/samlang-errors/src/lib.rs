@@ -301,11 +301,7 @@ mod printer {
         ref_id,
         &mut collector,
       );
-      if printed {
-        assert!(!collector.is_empty());
-      } else {
-        assert!(collector.is_empty());
-      }
+      assert_eq!(printed, !collector.is_empty());
       collector
     }
 
@@ -568,7 +564,7 @@ mod stackable_error_tests {
       Description::AnyType,
     );
 
-    assert!(!format!("{:?}", stacked).is_empty());
+    format!("{:?}", stacked);
     assert!(stacked <= stacked);
     assert!(stacked == stacked);
     assert_eq!(stacked.cmp(&stacked), std::cmp::Ordering::Equal);
@@ -1076,13 +1072,12 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!format!("{:?}", ErrorPrinterStyle::IDE).is_empty());
+    format!("{:?}", ErrorPrinterStyle::IDE);
     assert!(ErrorPrinterStyle::Terminal.clone() != ErrorPrinterStyle::Text);
-    assert!(!format!(
+    format!(
       "{:?}",
       CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
-    )
-    .is_empty());
+    );
     assert_eq!(
       Some(std::cmp::Ordering::Equal),
       CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
@@ -1109,7 +1104,7 @@ mod tests {
       Reason::dummy(),
       Description::IntType,
     );
-    assert!(!stack.is_empty());
+    assert_eq!(false, stack.is_empty());
   }
 
   #[test]

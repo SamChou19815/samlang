@@ -390,7 +390,7 @@ mod tests {
       &mut heap,
       &mut error_set,
     );
-    assert!(!error_set.has_errors());
+    assert_eq!(false, error_set.has_errors());
     (heap, module)
   }
 

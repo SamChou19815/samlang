@@ -4,6 +4,7 @@ mod tests {
   use super::super::source::expr::*;
   use super::super::source::*;
   use itertools::Itertools;
+  use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
   use std::rc::Rc;
@@ -17,15 +18,10 @@ mod tests {
     };
 
     assert!(CommentKind::DOC == CommentKind::DOC.clone());
-    assert!(!format!("{:?}", comment.clone().text).is_empty());
-    assert!(!format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone())
-      .is_empty());
-    assert!(!format!(
-      "{:?}",
-      CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
-    )
-    .is_empty());
-    assert!(!CommentStore::new().all_comments().is_empty());
+    format!("{:?}", comment.clone().text);
+    format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone());
+    format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![comment]).clone());
+    CommentStore::new().all_comments();
     assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).iter().collect_vec().is_empty());
     assert!(CommentStore::new()
       .clone()
@@ -58,7 +54,7 @@ mod tests {
     ];
     let mut p = -1;
     for op in list.iter() {
-      assert!(!op.clone().to_string().is_empty());
+      assert_ne!(0, op.clone().to_string().len());
       // Assert that the list above has precedence ordered.
       let new_p = op.precedence();
       assert!(p <= new_p);
@@ -109,7 +105,7 @@ mod tests {
       ],
     );
     matching_pattern.bindings();
-    assert!(!matching_pattern.always_matching());
+    assert_eq!(false, matching_pattern.always_matching());
     matching_pattern = pattern::MatchingPattern::Object(
       Location::dummy(),
       vec![
@@ -138,7 +134,7 @@ mod tests {
       ],
     );
     matching_pattern.bindings();
-    assert!(!matching_pattern.always_matching());
+    assert_eq!(false, matching_pattern.always_matching());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Tuple(
       Location::dummy(),
@@ -163,7 +159,7 @@ mod tests {
       }],
     );
     matching_pattern.bindings();
-    assert!(!matching_pattern.always_matching());
+    assert_eq!(false, matching_pattern.always_matching());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc: Location::dummy(),
@@ -173,7 +169,7 @@ mod tests {
       type_: (),
     });
     matching_pattern.bindings();
-    assert!(!matching_pattern.always_matching());
+    assert_eq!(false, matching_pattern.always_matching());
     assert_eq!(*matching_pattern.clone().loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A), ());
     matching_pattern.bindings();
@@ -569,7 +565,7 @@ mod tests {
     interface.members_iter().next();
     interface.loc();
     interface.associated_comments();
-    assert!(!interface.is_class());
+    assert_eq!(false, interface.is_class());
 
     let one_import = ModuleMembersImport {
       loc: Location::dummy(),

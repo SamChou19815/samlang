@@ -100,11 +100,11 @@ mod tests {
     );
 
     let (a, b) = cx.run_in_synthesis_mode(|cx| cx.in_synthesis_mode());
-    assert!(a);
-    assert!(!b);
+    assert_eq!(true, a);
+    assert_eq!(false, b);
 
     let (_, c) = cx.run_in_synthesis_mode(|cx| cx.mk_underconstrained_any_type(Reason::dummy()));
-    assert!(c);
+    assert_eq!(true, c);
   }
 
   #[test]
@@ -145,32 +145,52 @@ mod tests {
     );
 
     // Non-id lower type
-    assert!(!cx.is_subtype(&builder.int_type(), &builder.simple_nominal_type(PStr::UPPER_B)));
+    assert_eq!(
+      false,
+      cx.is_subtype(&builder.int_type(), &builder.simple_nominal_type(PStr::UPPER_B))
+    );
     // Non-existent type
-    assert!(!cx.is_subtype(
-      &builder.simple_nominal_type(PStr::UPPER_B),
-      &builder.simple_nominal_type(PStr::UPPER_C)
-    ));
+    assert_eq!(
+      false,
+      cx.is_subtype(
+        &builder.simple_nominal_type(PStr::UPPER_B),
+        &builder.simple_nominal_type(PStr::UPPER_C)
+      )
+    );
     // Type-args length mismatch
-    assert!(!cx.is_subtype(
-      &builder.simple_nominal_type(PStr::UPPER_A),
-      &builder.simple_nominal_type(PStr::UPPER_B)
-    ));
+    assert_eq!(
+      false,
+      cx.is_subtype(
+        &builder.simple_nominal_type(PStr::UPPER_A),
+        &builder.simple_nominal_type(PStr::UPPER_B)
+      )
+    );
     // Type-args mismatch
-    assert!(!cx.is_subtype(
-      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
-      &builder.general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.int_type()])
-    ));
-    assert!(!cx.is_subtype(
-      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
-      &builder
-        .general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.string_type()])
-    ));
+    assert_eq!(
+      false,
+      cx.is_subtype(
+        &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+        &builder
+          .general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.int_type()])
+      )
+    );
+    assert_eq!(
+      false,
+      cx.is_subtype(
+        &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+        &builder
+          .general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.string_type()])
+      )
+    );
     // Good
-    assert!(cx.is_subtype(
-      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.string_type()]),
-      &builder.general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.int_type()])
-    ));
+    assert_eq!(
+      true,
+      cx.is_subtype(
+        &builder.general_nominal_type(PStr::UPPER_A, vec![builder.string_type()]),
+        &builder
+          .general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.int_type()])
+      )
+    );
   }
 
   #[test]
@@ -415,13 +435,17 @@ Found 3 errors.
       ],
     );
 
-    assert!(!cx.class_exists(ModuleReference::DUMMY, heap.alloc_str_for_test("s")));
-    assert!(!cx.class_exists(
-      heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-      PStr::UPPER_A
-    ));
-    assert!(cx
-      .get_method_type(
+    assert_eq!(false, cx.class_exists(ModuleReference::DUMMY, heap.alloc_str_for_test("s")));
+    assert_eq!(
+      false,
+      cx.class_exists(
+        heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
+        PStr::UPPER_A
+      )
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -432,9 +456,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -445,9 +471,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -458,9 +486,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
-      .is_some());
-    assert!(cx
-      .get_method_type(
+      .is_some()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -471,9 +501,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f2"),
         Location::dummy()
       )
-      .is_some());
-    assert!(cx
-      .get_method_type(
+      .is_some()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -484,9 +516,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f3"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -497,9 +531,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m1"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -510,9 +546,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m2"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -523,9 +561,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m3"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -536,9 +576,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
-      .is_some());
-    assert!(cx
-      .get_method_type(
+      .is_some()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -549,9 +591,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f2"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -562,9 +606,11 @@ Found 3 errors.
         heap.alloc_str_for_test("f3"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -575,9 +621,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m1"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -588,9 +636,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m2"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -601,9 +651,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m3"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
@@ -614,9 +666,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m2"),
         Location::dummy(),
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
@@ -627,9 +681,11 @@ Found 3 errors.
         heap.alloc_str_for_test("m3"),
         Location::dummy(),
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert_eq!(
+      true,
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
@@ -640,7 +696,8 @@ Found 3 errors.
         heap.alloc_str_for_test("m3"),
         Location::dummy(),
       )
-      .is_none());
+      .is_none()
+    );
 
     assert_eq!(
       "public <C>(int, int) -> int",

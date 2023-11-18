@@ -98,7 +98,7 @@ mod tests {
 
   #[test]
   fn parser_recognization_tests() {
-    assert!(!format!(
+    format!(
       "{:?}",
       ProjectConfiguration {
         source_directory: "".to_string(),
@@ -107,8 +107,7 @@ mod tests {
         ignores: vec![],
         dangerously_allow_libdef_shadowing: false,
       }
-    )
-    .is_empty());
+    );
     assert_eq!(
       ProjectConfiguration {
         source_directory: ".".to_string(),

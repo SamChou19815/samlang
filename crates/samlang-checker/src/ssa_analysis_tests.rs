@@ -59,7 +59,7 @@ mod tests {
       &mut heap,
       &mut error_set,
     );
-    assert!(!error_set.has_errors());
+    assert_eq!(false, error_set.has_errors());
     let expected = r#"
 Unbound names: [Foo]
 Invalid defines: [14:7-14:8]
@@ -141,7 +141,7 @@ class MultiInvalidDef<T, T> {}
       &mut heap,
       &mut error_set,
     );
-    assert!(!error_set.has_errors());
+    assert_eq!(false, error_set.has_errors());
     let expected = r#"
 Unbound names: []
 Invalid defines: [23:26-23:27]

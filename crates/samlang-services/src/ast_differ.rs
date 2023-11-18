@@ -558,7 +558,7 @@ mod tests {
       heap,
       error_set,
     );
-    assert!(!error_set.has_errors());
+    assert_eq!(false, error_set.has_errors());
     compute_module_diff_edits(heap, ModuleReference::DUMMY, &old, &new)
       .into_iter()
       .map(|(loc, edit)| (loc.pretty_print_without_file(), edit))

@@ -1018,39 +1018,69 @@ m2: public () -> any
   fn test_equality_test() {
     let builder = test_type_builder::create();
 
-    assert!(!builder.unit_type().is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A)));
+    assert_eq!(
+      false,
+      builder.unit_type().is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A))
+    );
 
-    assert!(Type::Any(Reason::dummy(), true).is_the_same_type(&Type::Any(Reason::dummy(), false)));
-    assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
-    assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
+    assert_eq!(
+      true,
+      Type::Any(Reason::dummy(), true).is_the_same_type(&Type::Any(Reason::dummy(), false))
+    );
+    assert_eq!(true, builder.unit_type().is_the_same_type(&builder.unit_type()));
+    assert_eq!(false, builder.unit_type().is_the_same_type(&builder.int_type()));
 
     assert!(builder
       .simple_nominal_type(PStr::UPPER_A)
       .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A)));
-    assert!(!builder
-      .simple_nominal_type(PStr::UPPER_A)
-      .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_B)));
-    assert!(builder
-      .general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])));
-    assert!(!builder
-      .general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()])));
-    assert!(!builder
-      .simple_nominal_type(PStr::UPPER_A)
-      .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])));
+    assert_eq!(
+      false,
+      builder
+        .simple_nominal_type(PStr::UPPER_A)
+        .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_B))
+    );
+    assert_eq!(
+      true,
+      builder
+        .general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])
+        .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()]))
+    );
+    assert_eq!(
+      false,
+      builder
+        .general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])
+        .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]))
+    );
+    assert_eq!(
+      false,
+      builder
+        .simple_nominal_type(PStr::UPPER_A)
+        .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()]))
+    );
 
-    assert!(builder
-      .fun_type(vec![builder.unit_type()], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type())));
-    assert!(!builder
-      .fun_type(vec![], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type())));
-    assert!(!builder
-      .fun_type(vec![builder.unit_type()], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.int_type())));
-    assert!(!builder
-      .fun_type(vec![builder.unit_type()], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.int_type()], builder.string_type())));
+    assert_eq!(
+      true,
+      builder
+        .fun_type(vec![builder.unit_type()], builder.string_type())
+        .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type()))
+    );
+    assert_eq!(
+      false,
+      builder
+        .fun_type(vec![], builder.string_type())
+        .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type()))
+    );
+    assert_eq!(
+      false,
+      builder
+        .fun_type(vec![builder.unit_type()], builder.string_type())
+        .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.int_type()))
+    );
+    assert_eq!(
+      false,
+      builder
+        .fun_type(vec![builder.unit_type()], builder.string_type())
+        .is_the_same_type(&builder.fun_type(vec![builder.int_type()], builder.string_type()))
+    );
   }
 }

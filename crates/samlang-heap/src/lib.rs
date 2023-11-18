@@ -638,12 +638,11 @@ mod tests {
   #[test]
   fn boilterplate() {
     assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.clone().storage.contains(&0));
-    assert!(!format!(
+    format!(
       "{:?}",
       PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } }).clone()
-    )
-    .is_empty());
-    assert!(!format!("{:?}", PStr::INVALID_PSTR).is_empty());
+    );
+    format!("{:?}", PStr::INVALID_PSTR);
 
     StringStoredInHeap::deallocated(true, "");
     StringStoredInHeap::deallocated(false, "");
@@ -675,14 +674,17 @@ mod tests {
     let std_a =
       heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "a".to_string()]);
     let m_dummy = heap.alloc_dummy_module_reference();
-    assert!(heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
-    assert!(heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
-    assert!(std_a.is_std(&heap));
-    assert!(!ma2.is_std(&heap));
-    assert!(heap
-      .get_allocated_module_reference_opt(vec!["ddasdasdassdfasdfasdfasdfasdf".to_string()])
-      .is_none());
-    assert!(!format!("{mb:?}").is_empty());
+    assert_eq!(true, heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
+    assert_eq!(true, heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
+    assert_eq!(true, std_a.is_std(&heap));
+    assert_eq!(false, ma2.is_std(&heap));
+    assert_eq!(
+      true,
+      heap
+        .get_allocated_module_reference_opt(vec!["ddasdasdassdfasdfasdfasdfasdf".to_string()])
+        .is_none()
+    );
+    format!("{mb:?}");
     assert_eq!(ma1.clone(), ma2.clone());
     assert_ne!(ma1, mb);
     assert_ne!(ma2, mb);

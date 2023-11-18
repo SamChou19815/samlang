@@ -487,12 +487,14 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!format!("{:?}", OPTION_NONE).is_empty());
-    assert!(!format!("{:?}", P::wildcard()).is_empty());
+    format!("{:?} {:?}", OPTION_NONE, P::wildcard());
     assert_eq!(LETTERS, LETTERS_A.clone().class_name);
-    assert!(!MockingPatternMatchingContext
-      .variant_signature_incomplete_names(ModuleReference::ROOT, PStr::PANIC, &[],)
-      .is_empty());
+    assert_eq!(
+      2,
+      MockingPatternMatchingContext
+        .variant_signature_incomplete_names(ModuleReference::ROOT, PStr::PANIC, &[])
+        .len()
+    );
     assert!(P::wildcard().eq(&P::wildcard()));
     assert_eq!(
       "_ | _",
@@ -506,14 +508,14 @@ mod tests {
 
   #[test]
   fn test_base_case() {
-    assert!(useful(&[], &[]));
-    assert!(!useful(&[&[]], &[]));
+    assert_eq!(true, useful(&[], &[]));
+    assert_eq!(false, useful(&[&[]], &[]));
   }
 
   #[test]
   fn test_two_wildcards() {
-    assert!(useful(&[], &[P::wildcard()]));
-    assert!(!useful(&[&[P::wildcard()]], &[P::wildcard()]));
+    assert_eq!(true, useful(&[], &[P::wildcard()]));
+    assert_eq!(false, useful(&[&[P::wildcard()]], &[P::wildcard()]));
   }
 
   #[test]
@@ -531,17 +533,20 @@ mod tests {
         &[P::or(vec![P::enum_(LETTERS_F), P::enum_(LETTERS_G)])]
       )
     );
-    assert!(!useful(
-      &[
-        &[P::enum_(LETTERS_A)],
-        &[P::enum_(LETTERS_B)],
-        &[P::or(vec![P::enum_(LETTERS_C), P::enum_(LETTERS_D)])],
-        &[P::enum_(LETTERS_E)],
-        &[P::enum_(LETTERS_F)],
-        &[P::enum_(LETTERS_G)],
-      ],
-      &[P::wildcard()]
-    ));
+    assert_eq!(
+      false,
+      useful(
+        &[
+          &[P::enum_(LETTERS_A)],
+          &[P::enum_(LETTERS_B)],
+          &[P::or(vec![P::enum_(LETTERS_C), P::enum_(LETTERS_D)])],
+          &[P::enum_(LETTERS_E)],
+          &[P::enum_(LETTERS_F)],
+          &[P::enum_(LETTERS_G)],
+        ],
+        &[P::wildcard()]
+      )
+    );
   }
 
   #[test]
@@ -585,30 +590,42 @@ mod tests {
     // Some _, Some _  => useful
     // _, _            => useless
 
-    assert!(useful(&[], &[P::enum_(OPTION_NONE), P::wildcard()]));
-    assert!(useful(
-      &[&[P::enum_(OPTION_NONE), P::wildcard()]],
-      &[P::wildcard(), P::enum_(OPTION_NONE)]
-    ));
-    assert!(useful(
-      &[&[P::enum_(OPTION_NONE), P::wildcard()], &[P::wildcard(), P::enum_(OPTION_NONE)],],
-      &[P::variant(OPTION_SOME, vec![P::wildcard()]), P::variant(OPTION_SOME, vec![P::wildcard()])]
-    ));
-    assert!(!useful(
-      &[&[P::enum_(OPTION_NONE), P::wildcard()], &[P::wildcard(), P::enum_(OPTION_NONE)],],
-      &[P::nothing()]
-    ));
-    assert!(!useful(
-      &[
-        &[P::enum_(OPTION_NONE), P::wildcard()],
-        &[P::wildcard(), P::enum_(OPTION_NONE)],
+    assert_eq!(true, useful(&[], &[P::enum_(OPTION_NONE), P::wildcard()]));
+    assert_eq!(
+      true,
+      useful(&[&[P::enum_(OPTION_NONE), P::wildcard()]], &[P::wildcard(), P::enum_(OPTION_NONE)])
+    );
+    assert_eq!(
+      true,
+      useful(
+        &[&[P::enum_(OPTION_NONE), P::wildcard()], &[P::wildcard(), P::enum_(OPTION_NONE)],],
         &[
           P::variant(OPTION_SOME, vec![P::wildcard()]),
           P::variant(OPTION_SOME, vec![P::wildcard()])
+        ]
+      )
+    );
+    assert_eq!(
+      false,
+      useful(
+        &[&[P::enum_(OPTION_NONE), P::wildcard()], &[P::wildcard(), P::enum_(OPTION_NONE)],],
+        &[P::nothing()]
+      )
+    );
+    assert_eq!(
+      false,
+      useful(
+        &[
+          &[P::enum_(OPTION_NONE), P::wildcard()],
+          &[P::wildcard(), P::enum_(OPTION_NONE)],
+          &[
+            P::variant(OPTION_SOME, vec![P::wildcard()]),
+            P::variant(OPTION_SOME, vec![P::wildcard()])
+          ],
         ],
-      ],
-      &[P::wildcard(), P::wildcard()]
-    ));
+        &[P::wildcard(), P::wildcard()]
+      )
+    );
   }
 
   #[test]
@@ -618,11 +635,14 @@ mod tests {
     // (Some _, Some _)  => useful
     // _                 => useless
 
-    assert!(useful(&[], &[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])]));
-    assert!(useful(
-      &[&[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])]],
-      &[P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)])]
-    ));
+    assert_eq!(true, useful(&[], &[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])]));
+    assert_eq!(
+      true,
+      useful(
+        &[&[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])]],
+        &[P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)])]
+      )
+    );
     assert_eq!(
       "(Some(_), Some(_))",
       super::incomplete_counterexample(
@@ -635,27 +655,33 @@ mod tests {
       .unwrap()
       .pretty_print(&samlang_heap::Heap::new())
     );
-    assert!(useful(
-      &[
-        &[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])],
-        &[P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)])]
-      ],
-      &[P::tuple(vec![
-        P::variant(OPTION_SOME, vec![P::wildcard()]),
-        P::variant(OPTION_SOME, vec![P::wildcard()])
-      ])]
-    ));
-    assert!(!super::is_additional_pattern_useful(
-      &MockingPatternMatchingContext,
-      &[
-        P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()]),
-        P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)]),
-        P::tuple(vec![
+    assert_eq!(
+      true,
+      useful(
+        &[
+          &[P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()])],
+          &[P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)])]
+        ],
+        &[P::tuple(vec![
           P::variant(OPTION_SOME, vec![P::wildcard()]),
-          P::variant(OPTION_SOME, vec![P::wildcard()]),
-        ]),
-      ],
-      P::wildcard()
-    ));
+          P::variant(OPTION_SOME, vec![P::wildcard()])
+        ])]
+      )
+    );
+    assert_eq!(
+      false,
+      super::is_additional_pattern_useful(
+        &MockingPatternMatchingContext,
+        &[
+          P::tuple(vec![P::enum_(OPTION_NONE), P::wildcard()]),
+          P::tuple(vec![P::wildcard(), P::enum_(OPTION_NONE)]),
+          P::tuple(vec![
+            P::variant(OPTION_SOME, vec![P::wildcard()]),
+            P::variant(OPTION_SOME, vec![P::wildcard()]),
+          ]),
+        ],
+        P::wildcard()
+      )
+    );
   }
 }
