@@ -868,10 +868,6 @@ fn interface_to_doc(
     extends_or_implements_node_to_doc(heap, comment_store, &interface.extends_or_implements_nodes),
   ];
 
-  if interface.members.is_empty() {
-    return documents;
-  }
-
   documents.push(Document::Text(rcs(" {")));
   for member in &interface.members {
     documents.push(Document::Nest(
@@ -941,10 +937,6 @@ fn class_to_doc(
     },
     extends_or_implements_node_to_doc(heap, comment_store, &class.extends_or_implements_nodes),
   ];
-
-  if class.members.is_empty() {
-    return documents;
-  }
 
   documents.push(Document::Text(rcs(" {")));
   for member in &class.members {
@@ -1419,9 +1411,9 @@ class Empty2 : Foo
 class Main { function main(): unit = {} }
 "#,
       r#"
-interface Foo
+interface Foo {}
 
-interface Foo2 : Foo
+interface Foo2 : Foo {}
 
 private interface Bar<
   /* comment */
@@ -1431,9 +1423,9 @@ private interface Bar<
   function baz(): int
 }
 
-class Empty
+class Empty {}
 
-class Empty2 : Foo
+class Empty2 : Foo {}
 
 class Main {
   function main(): unit = {  }
@@ -1562,7 +1554,7 @@ class Obj(
 }
 
 /** short line */
-private class A(val a: int)
+private class A(val a: int) {}
 
 /**
  * some very very very very very very
@@ -1570,7 +1562,7 @@ private class A(val a: int)
  * very very very very very long
  * document string
  */
-class Main"#,
+class Main {}"#,
     );
   }
 }

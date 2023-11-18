@@ -528,7 +528,7 @@ interface Foo {}
   }
 }
 
-interface Foo
+interface Foo {}
 "#,
       samlang_printer::pretty_print_source_module(&heap, 60, &renamed)
     );
