@@ -89,6 +89,7 @@ pub(super) fn single_if_or_null(
 #[cfg(test)]
 mod tests {
   use super::*;
+  use pretty_assertions::assert_eq;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]
@@ -118,10 +119,10 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(if_else_or_null(ZERO, vec![], vec![], vec![]).is_none());
-    assert!(if_else_or_null(ZERO, vec![], vec![Statement::Break(ZERO)], vec![]).is_some());
-    assert!(single_if_or_null(ZERO, false, vec![]).is_empty());
-    assert!(!single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
+    assert_eq!(true, if_else_or_null(ZERO, vec![], vec![], vec![]).is_none());
+    assert_eq!(true, if_else_or_null(ZERO, vec![], vec![Statement::Break(ZERO)], vec![]).is_some());
+    assert_eq!(true, single_if_or_null(ZERO, false, vec![]).is_empty());
+    assert_eq!(false, single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
     let bv1 = BindedValue::IndexedAccess(
       IndexAccessBindedValue { type_: INT_TYPE, pointer_expression: ZERO, index: 0 }.clone(),
@@ -133,8 +134,8 @@ mod tests {
     let _ = bv2.clone();
     assert_eq!(Some(std::cmp::Ordering::Equal), bv1.partial_cmp(&bv1));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv2.partial_cmp(&bv2));
-    assert!(bv1.eq(&bv1));
-    assert!(bv2.eq(&bv2));
+    assert_eq!(true, bv1.eq(&bv1));
+    assert_eq!(true, bv2.eq(&bv2));
     let mut hasher = DefaultHasher::new();
     bv1.hash(&mut hasher);
     bv2.hash(&mut hasher);

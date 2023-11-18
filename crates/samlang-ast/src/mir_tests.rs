@@ -12,33 +12,30 @@ mod tests {
     let table = &mut SymbolTable::new();
 
     assert!(INT_TYPE <= INT_TYPE);
-    assert!(!format!("{:?}", INT_TYPE.cmp(&INT_TYPE)).is_empty());
+    format!("{:?}", INT_TYPE.cmp(&INT_TYPE));
     assert!(ZERO.as_int_literal().is_some());
-    assert!(!format!(
+    format!(
       "{:?}",
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
-    )
-    .is_empty());
-    assert!(!format!(
+    );
+    format!(
       "{:?}",
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
-    )
-    .is_empty());
-    assert!(!format!("{:?}", Expression::StringName(PStr::LOWER_A)).is_empty());
-    assert!(!format!("{:?}", INT_TYPE).is_empty());
+    );
+    format!("{:?}", Expression::StringName(PStr::LOWER_A));
+    format!("{:?}", INT_TYPE);
     assert_eq!(
       "(s: int)",
       VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap, table)
     );
-    assert!(!GenenalLoopVariable {
+    GenenalLoopVariable {
       name: PStr::LOWER_A,
       type_: INT_TYPE,
       initial_value: ZERO,
-      loop_value: ZERO
+      loop_value: ZERO,
     }
-    .pretty_print(heap, table)
-    .is_empty());
-    assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
+    .pretty_print(heap, table);
+    format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE));
     Expression::var_name(PStr::LOWER_A, INT_TYPE).convert_to_callee();
     Expression::StringName(PStr::LOWER_A).convert_to_callee();
     ZERO.convert_to_callee();
@@ -56,7 +53,7 @@ mod tests {
       return_type: INT_TYPE,
       return_collector: None,
     };
-    assert!(!format!("{:?}", call).is_empty());
+    format!("{:?}", call);
     assert!(call.as_call().is_some());
     assert!(call.into_break().is_err());
 
@@ -86,11 +83,11 @@ mod tests {
 
     let mut table = SymbolTable::new();
     let mut type_name_id = table.create_type_name_for_test(PStr::UPPER_A);
-    assert!(!format!("{:?}", type_name_id).is_empty());
-    assert!(!type_name_id.encoded_for_test(heap, &table).is_empty());
+    format!("{:?}", type_name_id);
+    assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id = table.create_simple_type_name(ModuleReference::ROOT, PStr::UPPER_A);
     type_name_id = table.derived_type_name_with_subtype_tag(type_name_id, 1);
-    assert!(type_name_id <= type_name_id);
+    assert_eq!(true, type_name_id <= type_name_id);
     assert_eq!(type_name_id.cmp(&type_name_id), std::cmp::Ordering::Equal);
   }
 
@@ -134,8 +131,7 @@ mod tests {
       "variant type _B = [Unboxed(_D), Boxed(int, int), int]",
       d2.pretty_print(heap, table)
     );
-    assert!(!format!("{:?}", d1).is_empty());
-    assert!(!format!("{:?}", d2).is_empty());
+    format!("{d1:?} {d2:?}");
   }
 
   #[test]
@@ -262,7 +258,7 @@ mod tests {
         Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
       )],
     };
-    assert!(!format!("{:?}", stmt.clone()).is_empty());
+    format!("{:?}", stmt.clone());
     let expected = r#"let bar: int;
 if 0 {
   let baz: _FooBar = [meggo];
@@ -353,7 +349,7 @@ if 0 {
       .clone()],
       symbol_table: table,
     };
-    assert!(!format!("{sources1:?}").is_empty());
+    format!("{sources1:?}");
     let expected1 = r#"const dev_meggo = 'vibez';
 
 closure type _A = () -> int

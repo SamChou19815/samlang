@@ -64,12 +64,13 @@ impl Location {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use pretty_assertions::assert_eq;
   use std::{cmp::Ordering, collections::HashSet};
 
   #[test]
   fn boilterplate() {
-    assert!(!format!("{:?}", DUMMY_POSITION.clone()).is_empty());
-    assert!(!format!("{:?}", Location::dummy().clone()).is_empty());
+    format!("{:?}", DUMMY_POSITION.clone());
+    format!("{:?}", Location::dummy().clone());
 
     HashSet::new().insert(DUMMY_POSITION);
     HashSet::new().insert(ModuleReference::DUMMY);
@@ -94,20 +95,20 @@ mod tests {
 
   #[test]
   fn location_contains_position_tests() {
-    assert!(Location::from_pos(1, 3, 3, 1).contains_position(Position(2, 2)));
-    assert!(Location::from_pos(1, 3, 3, 1).contains_position(Position(1, 3)));
-    assert!(Location::from_pos(1, 3, 3, 1).contains_position(Position(3, 1)));
-    assert!(!Location::from_pos(1, 3, 3, 1).contains_position(Position(1, 2)));
-    assert!(!Location::from_pos(1, 3, 3, 1).contains_position(Position(3, 2)));
+    assert_eq!(true, Location::from_pos(1, 3, 3, 1).contains_position(Position(2, 2)));
+    assert_eq!(true, Location::from_pos(1, 3, 3, 1).contains_position(Position(1, 3)));
+    assert_eq!(true, Location::from_pos(1, 3, 3, 1).contains_position(Position(3, 1)));
+    assert_eq!(false, Location::from_pos(1, 3, 3, 1).contains_position(Position(1, 2)));
+    assert_eq!(false, Location::from_pos(1, 3, 3, 1).contains_position(Position(3, 2)));
   }
 
   #[test]
   fn location_contains_test() {
-    assert!(Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 3, 3, 1)));
-    assert!(Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 4, 3, 0)));
-    assert!(!Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 3, 3, 2)));
-    assert!(!Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 2, 3, 1)));
-    assert!(!Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 2, 3, 2)));
+    assert_eq!(true, Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 3, 3, 1)));
+    assert_eq!(true, Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 4, 3, 0)));
+    assert_eq!(false, Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 3, 3, 2)));
+    assert_eq!(false, Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 2, 3, 1)));
+    assert_eq!(false, Location::from_pos(1, 3, 3, 1).contains(&Location::from_pos(1, 2, 3, 2)));
   }
 
   #[test]

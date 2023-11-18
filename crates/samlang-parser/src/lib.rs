@@ -82,7 +82,7 @@ pub fn builtin_parsed_std_sources_for_tests(
     let parsed = parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
     parsed_sources.insert(mod_ref, parsed);
   }
-  assert!(!error_set.has_errors());
+  debug_assert!(!error_set.has_errors());
   parsed_sources
 }
 

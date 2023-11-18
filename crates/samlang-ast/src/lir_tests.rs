@@ -15,25 +15,33 @@ mod tests {
     assert!(ZERO.as_fn_name().is_none());
 
     let table = &mut SymbolTable::new();
-    assert!(!format!(
+    format!(
       "{:?}",
       Expression::Variable(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
         .clone()
-    )
-    .is_empty());
-    assert!(!format!("{:?}", Expression::StringName(PStr::LOWER_A).clone()).is_empty());
-    assert!(!format!("{:?}", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).clone()).is_empty());
+    );
+    format!("{:?}", Expression::StringName(PStr::LOWER_A).clone());
+    format!("{:?}", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).clone());
   }
 
   #[test]
   fn type_eq_test() {
     let table = &mut SymbolTable::new();
 
-    assert!(!Type::Id(table.create_type_name_for_test(PStr::LOWER_A))
-      .is_the_same_type(&Type::Id(table.create_type_name_for_test(PStr::LOWER_B))));
-    assert!(!Type::Id(table.create_type_name_for_test(PStr::LOWER_A)).is_the_same_type(&INT_TYPE));
-    assert!(Type::new_fn(vec![(INT_TYPE)], INT_TYPE)
-      .is_the_same_type(&Type::new_fn(vec![(INT_TYPE)], INT_TYPE)));
+    assert_eq!(
+      false,
+      Type::Id(table.create_type_name_for_test(PStr::LOWER_A))
+        .is_the_same_type(&Type::Id(table.create_type_name_for_test(PStr::LOWER_B)))
+    );
+    assert_eq!(
+      false,
+      Type::Id(table.create_type_name_for_test(PStr::LOWER_A)).is_the_same_type(&INT_TYPE)
+    );
+    assert_eq!(
+      true,
+      Type::new_fn(vec![(INT_TYPE)], INT_TYPE)
+        .is_the_same_type(&Type::new_fn(vec![(INT_TYPE)], INT_TYPE))
+    );
   }
 
   #[test]

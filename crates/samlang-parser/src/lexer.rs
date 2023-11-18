@@ -625,6 +625,9 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!super::KEYWORDS.values().map(|it| it.as_str()).join("\n").is_empty());
+    pretty_assertions::assert_eq!(
+      false,
+      super::KEYWORDS.values().map(|it| it.as_str()).join("\n").is_empty()
+    );
   }
 }

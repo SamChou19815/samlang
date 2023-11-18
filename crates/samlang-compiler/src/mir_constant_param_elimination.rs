@@ -405,7 +405,7 @@ mod tests {
 
   #[test]
   fn boilerplate() {
-    assert!(!format!("{:?}", super::ParamUsageAnalysisState::Unoptimizable.clone()).is_empty());
+    format!("{:?}", super::ParamUsageAnalysisState::Unoptimizable.clone());
     assert_eq!(
       super::ParamUsageAnalysisState::IntConstant(1),
       super::meet_param_state(

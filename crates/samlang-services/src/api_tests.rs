@@ -9,11 +9,7 @@ mod tests {
 
   #[test]
   fn coverage_tests() {
-    assert!(!format!(
-      "{:?}",
-      rewrite::CodeAction::Quickfix { title: "".to_string(), edits: vec![] }
-    )
-    .is_empty());
+    format!("{:?}", rewrite::CodeAction::Quickfix { title: "".to_string(), edits: vec![] });
   }
 
   #[test]

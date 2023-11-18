@@ -331,20 +331,26 @@ mod tests {
   fn contains_placeholder_test() {
     let builder = test_type_builder::create();
 
-    assert!(super::contains_placeholder(&builder.fun_type(
-      vec![
-        builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
-        builder.generic_type(PStr::UPPER_B)
-      ],
-      Rc::new(super::Type::Any(Reason::dummy(), true))
-    )));
-    assert!(!super::contains_placeholder(&builder.fun_type(
-      vec![
-        builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
-        builder.generic_type(PStr::UPPER_B)
-      ],
-      builder.int_type()
-    )));
+    assert_eq!(
+      true,
+      super::contains_placeholder(&builder.fun_type(
+        vec![
+          builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+          builder.generic_type(PStr::UPPER_B)
+        ],
+        Rc::new(super::Type::Any(Reason::dummy(), true))
+      ))
+    );
+    assert_eq!(
+      false,
+      super::contains_placeholder(&builder.fun_type(
+        vec![
+          builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+          builder.generic_type(PStr::UPPER_B)
+        ],
+        builder.int_type()
+      ))
+    );
   }
 
   fn assert_successful_meet(lower: &Type, upper: &Type, heap: &Heap, expected: &str) {
@@ -717,7 +723,7 @@ Found 1 error.
       );
 
     assert_eq!("((any) -> any, int) -> unit", solved_generic_type.pretty_print(&heap));
-    assert!(!error_set.has_errors());
+    assert_eq!(false, error_set.has_errors());
   }
 
   #[test]
@@ -753,6 +759,6 @@ Found 1 error.
       );
 
     assert_eq!("((A) -> A, int) -> unit", solved_generic_type.pretty_print(&heap));
-    assert!(!error_set.has_errors());
+    assert_eq!(false, error_set.has_errors());
   }
 }

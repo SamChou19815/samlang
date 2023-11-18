@@ -49,6 +49,6 @@ pub(super) fn get_logo() -> &'static str {
 mod tests {
   #[test]
   fn coverage() {
-    assert!(!super::get_logo().is_empty())
+    assert!(super::get_logo().len() > 2)
   }
 }
