@@ -1,6 +1,6 @@
 import { Pair } from std.tuples;
 
-interface Useless
+interface Useless {}
 
 interface Comparable<T> : Useless {
   method compare(other: T): int

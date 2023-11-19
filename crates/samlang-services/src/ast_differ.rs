@@ -536,7 +536,7 @@ mod tests {
       members: vec![],
     });
     assert_eq!(
-      "interface A",
+      "interface A {}",
       Change::Replace(DiffNode::Toplevel(&toplevel), DiffNode::Toplevel(&toplevel))
         .to_edit(heap, &CommentStore::new())
         .1
@@ -577,7 +577,7 @@ mod tests {
     assert_eq!(
       vec![(
         Location::full_document(ModuleReference::DUMMY).pretty_print_without_file(),
-        "/* B */\nclass A\n".to_string()
+        "/* B */\nclass A {}\n".to_string()
       )],
       produce_module_diff("/* A */ class A {}", "/* B */ class A {}")
     );
@@ -600,27 +600,27 @@ mod tests {
       produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nimport {Foo} from Bar")
     );
     assert_eq!(
-      vec![("1:1-1:1".to_string(), "class A".to_string())],
+      vec![("1:1-1:1".to_string(), "class A {}".to_string())],
       produce_module_diff("", "class A {}")
     );
     assert_eq!(
-      vec![("1:22-1:22".to_string(), "class A".to_string())],
+      vec![("1:22-1:22".to_string(), "class A {}".to_string())],
       produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nclass A {}")
     );
     assert_eq!(
-      vec![("1:1-1:11".to_string(), "class B".to_string())],
+      vec![("1:1-1:11".to_string(), "class B {}".to_string())],
       produce_module_diff("class A {}", "class B {}")
     );
     assert_eq!(
-      vec![("1:1-1:11".to_string(), "interface A".to_string())],
+      vec![("1:1-1:11".to_string(), "interface A {}".to_string())],
       produce_module_diff("class A {}", "interface A {}")
     );
     assert_eq!(
-      vec![("1:11-1:11".to_string(), "class B".to_string())],
+      vec![("1:11-1:11".to_string(), "class B {}".to_string())],
       produce_module_diff("class A {}", "class A {}\nclass B {}")
     );
     assert_eq!(
-      vec![("2:1-2:1".to_string(), "class A".to_string())],
+      vec![("2:1-2:1".to_string(), "class A {}".to_string())],
       produce_module_diff(
         "          \nclass B {}\nclass C {}\nclass D {}",
         "class A {}\nclass B {}\nclass C {}\nclass D {}"
