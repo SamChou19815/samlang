@@ -48,6 +48,8 @@ Test Name: LoopOptimization
 118
 124
 ========================================
+Test Name: MapTests
+========================================
 Test Name: MathFunctions
 ========================================
 Test Name: PrintHelloWorld

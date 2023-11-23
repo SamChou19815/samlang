@@ -51,6 +51,14 @@ pub fn parse_source_expression_from_text(
 pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, String> {
   let mut sources = HashMap::new();
   sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "boxed".to_string()]),
+    include_str!("../../../std/boxed.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "interfaces".to_string()]),
+    include_str!("../../../std/interfaces.sam").to_string(),
+  );
+  sources.insert(
     heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "list".to_string()]),
     include_str!("../../../std/list.sam").to_string(),
   );
