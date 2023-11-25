@@ -7,4 +7,6 @@ class ForTests {
     if actual == expected then {  } else {
       Process.panic("Actual: " :: Str.fromInt(actual) :: ", expected: " :: Str.fromInt(expected))
     }
+
+  function assertBool(b: bool, message: Str): unit = if b then {  } else { Process.panic(message) }
 }

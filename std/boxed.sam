@@ -1,0 +1,11 @@
+import { Comparable } from std.interfaces;
+
+class Int(val value: int) : Comparable<Int> {
+  method compare(other: Int): int = this.value - other.value
+}
+
+class Bool(val value: bool) : Comparable<Bool> {
+  method intValue(): int = if this.value then 1 else 0
+
+  method compare(other: Bool): int = this.intValue() - other.intValue()
+}

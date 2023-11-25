@@ -1,10 +1,7 @@
+import { Comparable } from std.interfaces;
 import { Pair } from std.tuples;
 
 interface Useless {}
-
-interface Comparable<T> : Useless {
-  method compare(other: T): int
-}
 
 class BoxedInt(val i: int) : Comparable<BoxedInt>, Useless {
   method compare(other: BoxedInt): int = this.i - other.i

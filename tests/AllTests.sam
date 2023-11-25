@@ -11,6 +11,7 @@ import { EvaluationOrder } from tests.EvaluationOrder;
 import { GC } from tests.GC;
 import { IntToString } from tests.IntToString;
 import { LoopOptimization } from tests.LoopOptimization;
+import { MapTests } from tests.MapTests;
 import { MathFunctions } from tests.MathFunctions;
 import { PrintHelloWorld } from tests.PrintHelloWorld;
 import { SortableListTest } from tests.SortableList;
@@ -39,6 +40,7 @@ class Main {
       .cons(TestCase.init("GC", GC.run))
       .cons(TestCase.init("IntToString", IntToString.run))
       .cons(TestCase.init("LoopOptimization", LoopOptimization.run))
+      .cons(TestCase.init("MapTests", MapTests.run))
       .cons(TestCase.init("MathFunctions", MathFunctions.run))
       .cons(TestCase.init("PrintHelloWorld", PrintHelloWorld.run))
       .cons(TestCase.init("SortableList", SortableListTest.run))

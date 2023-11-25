@@ -1,0 +1,28 @@
+import { Int } from std.boxed;
+import { Map } from std.map;
+import { ForTests } from tests.StdLib;
+
+private class MapInsertAndGetTests {
+  private function keyMirrorIntMapHelper(acc: Map<Int, int>, n: int): Map<Int, int> =
+    if n == 0 then { acc } else {
+      let boxedN = Int.init(n);
+      MapInsertAndGetTests.keyMirrorIntMapHelper(acc.insert(boxedN, n).insert(boxedN, n), n - 1)
+    }
+
+  private function validatekeyMirrorIntMapHelper(map: Map<Int, int>, n: int): unit =
+    if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+      let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), n);
+      MapInsertAndGetTests.validatekeyMirrorIntMapHelper(map, n - 1)
+    }
+
+  function run(): unit = {
+    let map = MapInsertAndGetTests.keyMirrorIntMapHelper(Map.empty(), 100);
+    let _ = MapInsertAndGetTests.validatekeyMirrorIntMapHelper(map, 100);
+  }
+}
+
+class MapTests {
+  function run(): unit = {
+    let _ = MapInsertAndGetTests.run();
+  }
+}

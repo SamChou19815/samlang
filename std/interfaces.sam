@@ -1,0 +1,3 @@
+interface Comparable<T> {
+  method compare(other: T): int
+}
