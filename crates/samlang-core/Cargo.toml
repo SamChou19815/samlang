@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 enum-as-inner = "0.5.1"
-itertools = "0.11.0"
+itertools = "0.12.0"
 samlang-ast = { path = "../samlang-ast" }
 samlang-checker = { path = "../samlang-checker" }
 samlang-compiler = { path = "../samlang-compiler" }
