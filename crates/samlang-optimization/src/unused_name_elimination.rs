@@ -278,6 +278,10 @@ mod tests {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
+        ClosureTypeDefinition {
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("RefByType")),
+          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        },
       ],
       type_definitions: vec![
         TypeDefinition {
@@ -463,6 +467,14 @@ mod tests {
       vec!["_Foo", "_Bar", "_RefByType", "_RefByType2", "_RefByType3"],
       sources
         .type_definitions
+        .iter()
+        .map(|it| it.name.encoded_for_test(heap, &sources.symbol_table))
+        .collect_vec()
+    );
+    assert_eq!(
+      vec!["_Foo", "_RefByType"],
+      sources
+        .closure_types
         .iter()
         .map(|it| it.name.encoded_for_test(heap, &sources.symbol_table))
         .collect_vec()

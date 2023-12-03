@@ -293,6 +293,13 @@ mod tests {
           name: table.create_type_name_for_test(PStr::UPPER_B),
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
+        ClosureTypeDefinition {
+          name: table.create_type_name_for_test(PStr::UPPER_C),
+          function_type: Type::new_fn_unwrapped(
+            vec![],
+            Type::Id(table.create_type_name_for_test(PStr::UPPER_C)),
+          ),
+        },
       ],
       type_definitions: vec![
         TypeDefinition {
@@ -380,6 +387,7 @@ mod tests {
     let actual = deduplicate(sources).debug_print(heap);
     assert_eq!(
       r#"closure type _A = () -> int
+closure type _C = () -> _C
 object type _C = [int, _Str]
 variant type _E = [Boxed(int), Unboxed(int), int]
 function __$main(): int {
