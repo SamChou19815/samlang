@@ -70,6 +70,7 @@ mod tests {
     );
     let mut hasher = DefaultHasher::new();
     ZERO.hash(&mut hasher);
+    Expression::StringName(PStr::LOWER_A).hash(&mut hasher);
     Expression::var_name(PStr::LOWER_A, INT_TYPE).hash(&mut hasher);
     Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
       .hash(&mut hasher);

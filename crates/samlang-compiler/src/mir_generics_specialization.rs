@@ -1529,6 +1529,22 @@ sources.mains = [_DUMMY_I$main]"#,
               vec![hir::INT_TYPE, hir::INT_TYPE],
             )]),
           },
+          hir::TypeDefinition {
+            name: hir::TypeName::new_for_test(PStr::UPPER_K),
+            type_parameters: vec![],
+            mappings: hir::TypeDefinitionMappings::Enum(vec![
+              (PStr::UPPER_A, vec![hir::INT_TYPE]),
+              (PStr::UPPER_B, vec![hir::INT_TYPE]),
+            ]),
+          },
+          hir::TypeDefinition {
+            name: hir::TypeName::new_for_test(heap.alloc_str_for_test("StrOption")),
+            type_parameters: vec![],
+            mappings: hir::TypeDefinitionMappings::Enum(vec![
+              (PStr::UPPER_A, vec![hir::Type::new_id_no_targs(PStr::UPPER_K)]),
+              (PStr::UPPER_B, vec![]),
+            ]),
+          },
         ],
         main_function_names: vec![hir::FunctionName {
           type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
@@ -1593,7 +1609,10 @@ sources.mains = [_DUMMY_I$main]"#,
                   name: heap.alloc_str_for_test("v"),
                   type_: hir::INT_TYPE,
                 }),
-                arguments: vec![],
+                arguments: vec![hir::Expression::var_name(
+                  PStr::LOWER_B,
+                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("StrOption")),
+                )],
                 return_type: hir::Type::new_id_no_targs(PStr::UPPER_J),
                 return_collector: None,
               },
@@ -1606,6 +1625,8 @@ sources.mains = [_DUMMY_I$main]"#,
       r#"
 object type DUMMY_J = [DUMMY_I_int_int]
 variant type DUMMY_I_int_int = [int, int]
+variant type DUMMY_StrOption = [Unboxed(DUMMY_K), int]
+variant type DUMMY_K = [Boxed(int, int), Boxed(int, int)]
 function _DUMMY_I$creatorJ(): DUMMY_J {
   let v1: DUMMY_I_int_int = [];
   let v2: DUMMY_J = [0, 0];
@@ -1614,7 +1635,7 @@ function _DUMMY_I$creatorJ(): DUMMY_J {
 
 function _DUMMY_I$main(): int {
   _DUMMY_I$creatorJ();
-  (v: int)();
+  (v: int)((b: DUMMY_StrOption));
   return creatorJ;
 }
 
