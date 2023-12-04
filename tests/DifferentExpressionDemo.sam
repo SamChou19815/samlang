@@ -4,6 +4,26 @@ import { ForTests } from tests.StdLib;
 
 class Foo(val a: int) {
   function bar(): int = 3
+
+  function matchExample(opt: Option<int>): int =
+    match opt {
+      None -> 42,
+      Some(a) -> a,
+    }
+}
+
+class FooOrFoo(F1(Foo), F2(Foo)) {
+  function f1(): FooOrFoo = FooOrFoo.F1(Foo.init(1))
+
+  function f2(): FooOrFoo = FooOrFoo.F2(Foo.init(2))
+
+  function intValue(): int = FooOrFoo.f1().getInt() + FooOrFoo.f2().getInt()
+
+  method getInt(): int =
+    match this {
+      F1(foo) -> foo.a,
+      F2(foo) -> foo.a,
+    }
 }
 
 class Obj(val d: int, val e: int) {

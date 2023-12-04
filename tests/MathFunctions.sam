@@ -9,9 +9,17 @@ class MathFunctions {
   private function uselessRecursion(n: int): unit =
     if n == 0 then {  } else MathFunctions.uselessRecursion(n - 1)
 
+  private function isEven(n: int): bool = if n == 0 then true else MathFunctions.isOdd(n - 1)
+
+  private function isOdd(n: int): bool = if n == 0 then false else MathFunctions.isEven(n - 1)
+
+  function mutuallyRecursiveTest(): unit =
+    if !MathFunctions.isEven(3) && MathFunctions.isOdd(3) then {  } else Process.panic("BAD")
+
   function run(): unit = {
     let _ = ForTests.assertIntEquals(24, MathFunctions.factorial(4));
     let _ = ForTests.assertIntEquals(55, MathFunctions.fib(10));
     let _ = MathFunctions.uselessRecursion(20);
+    let _ = MathFunctions.mutuallyRecursiveTest();
   }
 }

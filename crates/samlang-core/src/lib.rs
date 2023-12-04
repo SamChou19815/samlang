@@ -6,7 +6,6 @@ pub use samlang_parser::builtin_std_raw_sources;
 use std::collections::{BTreeMap, HashMap};
 
 mod integration_tests;
-mod interpreter;
 
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
@@ -196,7 +195,71 @@ Found 2 errors.
       heap,
       HashMap::from([(
         mod_ref_demo,
-        "class Main { function main(): unit = Process.println(\"hello world\") }".to_string()
+        r#"
+class Foo(val a: int) {}
+
+class Option<T>(None, Some(T)) {}
+
+class List(Nil(unit), Cons(int, List)) {
+  function of(i: int): List = List.Cons(
+    i,
+    List.Nil({  })
+  )
+}
+
+class FooOrFoo(F1(Foo), F2(Foo)) {
+  function f1(): FooOrFoo = FooOrFoo.F1(Foo.init(1))
+  function f2(): FooOrFoo = FooOrFoo.F2(Foo.init(2))
+
+  function intValue(): int = FooOrFoo.f1().getInt() + FooOrFoo.f2().getInt()
+
+  method getInt(): int =
+    match (this) {
+      F1(foo) -> foo.a,
+      F2(foo) -> foo.a,
+    }
+}
+
+class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
+  function print(): unit = {
+    let f = (v2: int) -> (
+      if (v2 + 1 == 3) then
+        GenericObject.init(3, v2)
+      else
+        GenericObject.init(3, 42)
+    );
+    let _ = Process.println(Str.fromInt(f(2).v2)); // print 2
+    let _ = Process.println(Str.fromInt(f(3).v2)); // print 42
+  }
+}
+
+class Main {
+  function nestedVal(): int = {
+    let _ = List.of(1);
+    let veryOpt = Option.Some(Option.Some(Option.Some(Foo.init(1))));
+    let opt = match veryOpt {
+      None -> 0,
+      Some(v1) -> match v1 {
+        None -> 1,
+        Some(v2) -> match v2 {
+          None -> 2,
+          Some(v3) -> 3, // <- get this
+        }
+      },
+    };
+    let _ = Option.Some(FooOrFoo.f1());
+    opt // 3
+  }
+
+  function main(): unit = {
+    let _ = Process.println(Str.fromInt(
+      39 + Main.nestedVal() + FooOrFoo.intValue() - FooOrFoo.intValue()
+    ));
+    let _ = GenericObject.print();
+  }
+}
+"#
+        .to_string()
       )]),
       vec![mod_ref_demo],
       false,

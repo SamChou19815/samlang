@@ -2,19 +2,25 @@ import { List } from std.list;
 import { AndOrInsideIf } from tests.AndOrInsideIf;
 import { Benchmark } from tests.Benchmark;
 import { BlockInIfElse } from tests.BlockInIfElse;
+import { BuiltinStringTest } from tests.BuiltinStringTest;
 import { CSETest } from tests.CSETest;
 import { ConstantFoldingTest } from tests.ConstantFoldingTest;
+import { CorrectOp } from tests.CorrectOp;
 import { DevMeggo } from tests.DevMeggo;
 import { DifferentExpressionDemo } from tests.DifferentExpressionDemo;
 import { DifferentModulesDemo } from tests.DifferentModulesDemo;
+import { Empty } from tests.Empty;
 import { EvaluationOrder } from tests.EvaluationOrder;
 import { GC } from tests.GC;
+import { IfElseTests } from tests.IfElseTests;
 import { IntToString } from tests.IntToString;
 import { LoopOptimization } from tests.LoopOptimization;
 import { MapTests } from tests.MapTests;
 import { MathFunctions } from tests.MathFunctions;
 import { PrintHelloWorld } from tests.PrintHelloWorld;
+import { ShortCircuitAndOr } from tests.ShortCircuitAndOr;
 import { SortableListTest } from tests.SortableList;
+import { VariousSyntaxForms } from tests.VariousSyntaxForms;
 
 class TestCase(val name: Str, val runner: () -> unit) {
   method run(): unit = {
@@ -31,19 +37,25 @@ class Main {
       .cons(TestCase.init("AndOrInsideIf", AndOrInsideIf.run))
       .cons(TestCase.init("Benchmark", Benchmark.run))
       .cons(TestCase.init("BlockInIfElse", BlockInIfElse.run))
+      .cons(TestCase.init("BuiltinStringTest", BuiltinStringTest.run))
       .cons(TestCase.init("ConstantFoldingTest", ConstantFoldingTest.run))
+      .cons(TestCase.init("CorrectOp", CorrectOp.run))
       .cons(TestCase.init("CSETest", CSETest.run))
       .cons(TestCase.init("DevMeggo", DevMeggo.run))
       .cons(TestCase.init("DifferentExpressionDemo", DifferentExpressionDemo.run))
       .cons(TestCase.init("DifferentModulesDemo", DifferentModulesDemo.run))
+      .cons(TestCase.init("Empty", Empty.run))
       .cons(TestCase.init("EvaluationOrder", EvaluationOrder.run))
       .cons(TestCase.init("GC", GC.run))
+      .cons(TestCase.init("IfElseTests", IfElseTests.run))
       .cons(TestCase.init("IntToString", IntToString.run))
       .cons(TestCase.init("LoopOptimization", LoopOptimization.run))
       .cons(TestCase.init("MapTests", MapTests.run))
       .cons(TestCase.init("MathFunctions", MathFunctions.run))
       .cons(TestCase.init("PrintHelloWorld", PrintHelloWorld.run))
+      .cons(TestCase.init("ShortCircuitAndOr", ShortCircuitAndOr.run))
       .cons(TestCase.init("SortableList", SortableListTest.run))
+      .cons(TestCase.init("VariousSyntaxForms", VariousSyntaxForms.run))
       .reverse()
 
   function main(): unit = {
