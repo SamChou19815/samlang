@@ -1,0 +1,116 @@
+class ShortCircuitAndOr {
+  function printAndReturn(b: bool, i: int): bool = {
+    let _ = Process.println(Str.fromInt(i));
+    b
+  }
+
+  function printlnBool(b: bool): unit =
+    if b then Process.println("true") else Process.println("false")
+
+  function testAndShortCircuitInExpression(): unit = {
+    let b1 = ShortCircuitAndOr.printAndReturn(true, 0) && ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    );
+    // [0] [1]
+    let _ = ShortCircuitAndOr.printlnBool(b1);
+    // false
+    let b2 = ShortCircuitAndOr.printAndReturn(true, 0) && ShortCircuitAndOr.printAndReturn(true, 1);
+    // [0] [1]
+    let _ = ShortCircuitAndOr.printlnBool(b2);
+    // true
+    let b3 = ShortCircuitAndOr.printAndReturn(false, 0) && ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    );
+    // [0]
+    let _ = ShortCircuitAndOr.printlnBool(b3);
+    // false
+    let b4 = ShortCircuitAndOr.printAndReturn(false, 0) && ShortCircuitAndOr.printAndReturn(
+      true,
+      1
+    );
+    // [0]
+    let _ = ShortCircuitAndOr.printlnBool(b4);
+  }
+
+  function testOrShortCircuitInExpression(): unit = {
+    let b1 = ShortCircuitAndOr.printAndReturn(true, 0) || ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    );
+    // [0]
+    let _ = ShortCircuitAndOr.printlnBool(b1);
+    // true
+    let b2 = ShortCircuitAndOr.printAndReturn(true, 0) || ShortCircuitAndOr.printAndReturn(true, 1);
+    // [0]
+    let _ = ShortCircuitAndOr.printlnBool(b2);
+    // true
+    let b3 = ShortCircuitAndOr.printAndReturn(false, 0) || ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    );
+    // [0] [1]
+    let _ = ShortCircuitAndOr.printlnBool(b3);
+    // false
+    let b4 = ShortCircuitAndOr.printAndReturn(false, 0) || ShortCircuitAndOr.printAndReturn(
+      true,
+      1
+    );
+    // [0] [1]
+    let _ = ShortCircuitAndOr.printlnBool(b4);
+  }
+
+  function testAndShortCircuitInIf(): unit = {
+    // [0] [1]
+    let _ = if ShortCircuitAndOr.printAndReturn(true, 0) && ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    ) then { Process.panic<unit>("Ah") } else {  };
+    // [0] [1]
+    let _ = if ShortCircuitAndOr.printAndReturn(true, 0) && ShortCircuitAndOr.printAndReturn(
+      true,
+      1
+    ) then {  } else { Process.panic("Ah") };
+    // [0]
+    let _ = if ShortCircuitAndOr.printAndReturn(false, 0) && ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    ) then { Process.panic<unit>("Ah") } else {  };
+    // [0]
+    let _ = if ShortCircuitAndOr.printAndReturn(false, 0) && ShortCircuitAndOr.printAndReturn(
+      true,
+      1
+    ) then { Process.panic<unit>("Ah") } else {  };
+  }
+
+  function testOrShortCircuitInIf(): unit = {
+    // [0]
+    let _ = if ShortCircuitAndOr.printAndReturn(true, 0) || ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    ) then {  } else { Process.panic("Ah") };
+    // [0]
+    let _ = if ShortCircuitAndOr.printAndReturn(true, 0) || ShortCircuitAndOr.printAndReturn(
+      true,
+      1
+    ) then {  } else { Process.panic("Ah") };
+    // [0] [1]
+    let _ = if ShortCircuitAndOr.printAndReturn(false, 0) || ShortCircuitAndOr.printAndReturn(
+      false,
+      1
+    ) then { Process.panic<unit>("Ah") } else {  };
+    // [0] [1]
+    let _ = if ShortCircuitAndOr.printAndReturn(false, 0) || ShortCircuitAndOr.printAndReturn(
+      true,
+      1
+    ) then {  } else { Process.panic("Ah") };
+  }
+
+  function run(): unit = {
+    let _ = ShortCircuitAndOr.testAndShortCircuitInExpression();
+    let _ = ShortCircuitAndOr.testOrShortCircuitInExpression();
+    let _ = ShortCircuitAndOr.testAndShortCircuitInIf();
+    let _ = ShortCircuitAndOr.testOrShortCircuitInIf();
+  }
+}

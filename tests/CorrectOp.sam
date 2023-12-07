@@ -1,0 +1,65 @@
+class CorrectOp {
+  function crash(a: Str, b: Str): unit = {
+    let _ = Process.println("different:");
+    let _ = Process.println("a:");
+    let _ = Process.println(a);
+    let _ = Process.println("b:");
+    let _ = Process.println(b);
+    let _ = Process.panic<unit>("crash!");
+  }
+
+  function checkInt(a: int, b: int): unit =
+    if a == b then {  } else CorrectOp.crash(Str.fromInt(a), Str.fromInt(b))
+
+  function boolToString(b: bool): Str = if b then "true" else "false"
+
+  function checkBool(a: bool, b: bool): unit =
+    if a == b then {  } else CorrectOp.crash(CorrectOp.boolToString(a), CorrectOp.boolToString(b))
+
+  function checkAll(): unit = {
+    let _ = CorrectOp.checkInt(42, 21 * 2);
+    let _ = CorrectOp.checkInt(42, 84 / 2);
+    let _ = CorrectOp.checkInt(42, 91 % 49);
+    let _ = CorrectOp.checkInt(42, 20 + 22);
+    let _ = CorrectOp.checkInt(42, 50 - 8);
+    let _ = CorrectOp.checkBool(false, false);
+    let _ = CorrectOp.checkBool(true, true);
+    let _ = CorrectOp.checkBool(false, false && false);
+    let _ = CorrectOp.checkBool(false, true && false);
+    let _ = CorrectOp.checkBool(false, false && true);
+    let _ = CorrectOp.checkBool(true, true && true);
+    let _ = CorrectOp.checkBool(false, false || false);
+    let _ = CorrectOp.checkBool(true, true || false);
+    let _ = CorrectOp.checkBool(true, false || true);
+    let _ = CorrectOp.checkBool(true, true || true);
+    let _ = CorrectOp.checkBool(true, 42 < 50);
+    let _ = CorrectOp.checkBool(false, 42 > 42);
+    let _ = CorrectOp.checkBool(false, 42 > 50);
+    let _ = CorrectOp.checkBool(true, 42 <= 42);
+    let _ = CorrectOp.checkBool(true, 42 <= 43);
+    let _ = CorrectOp.checkBool(false, 42 <= 41);
+    let _ = CorrectOp.checkBool(true, 50 > 42);
+    let _ = CorrectOp.checkBool(false, 42 < 42);
+    let _ = CorrectOp.checkBool(false, 50 < 42);
+    let _ = CorrectOp.checkBool(true, 42 >= 42);
+    let _ = CorrectOp.checkBool(true, 43 >= 42);
+    let _ = CorrectOp.checkBool(false, 41 >= 42);
+    let _ = CorrectOp.checkBool(true, 1 == 1);
+    let _ = CorrectOp.checkBool(false, 1 == 2);
+    let _ = CorrectOp.checkBool(false, 1 != 1);
+    let _ = CorrectOp.checkBool(true, 1 != 2);
+    let _ = CorrectOp.checkBool(true, true == true);
+    let _ = CorrectOp.checkBool(false, true == false);
+    let _ = CorrectOp.checkBool(false, true != true);
+    let _ = CorrectOp.checkBool(true, true != false);
+    let c = 21;
+    let _ = CorrectOp.checkInt(-42, -(c * 2));
+    // prevent constant folding!
+    let _ = CorrectOp.checkBool(true, !false);
+    let _ = CorrectOp.checkBool(false, !true);
+  }
+
+  function run(): unit = {
+    let _ = CorrectOp.checkAll();
+  }
+}

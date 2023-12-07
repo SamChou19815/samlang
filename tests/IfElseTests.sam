@@ -1,0 +1,35 @@
+import { ForTests } from tests.StdLib;
+
+class IfElseTests {
+  private function consistencyTest(): unit = {
+    let a = if true then if false then 10000 else 3 else 4;
+    let b = if false then 4 else if true then 3 else 20000;
+    let _ = ForTests.assertIntEquals(3, a);
+    let _ = ForTests.assertIntEquals(3, a);
+    if a != b then Process.panic("Not OK") else {  }
+  }
+
+  private function unreachableTest1(): unit = {
+    let i = 2;
+    let j = 3;
+    if i > j then { Process.panic("shouldn't reach here") } else if j < i then {
+      Process.panic("shouldn't reach here")
+    } else if i < 0 then { Process.panic("shouldn't reach here") } else {  }
+  }
+
+  private function unreachableTest2(): unit = {
+    let i = 3;
+    let j = 2;
+    if i > j then {  } else if j < i then {
+      Process.panic("shouldn't reach here")
+    } else if i < 0 then { Process.panic("shouldn't reach here") } else {
+      Process.panic("shouldn't reach here")
+    }
+  }
+
+  function run(): unit = {
+    let _ = IfElseTests.consistencyTest();
+    let _ = IfElseTests.unreachableTest1();
+    let _ = IfElseTests.unreachableTest2();
+  }
+}
