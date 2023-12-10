@@ -5,8 +5,6 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 pub use samlang_parser::builtin_std_raw_sources;
 use std::collections::{BTreeMap, HashMap};
 
-mod integration_tests;
-
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
   let mut error_set = samlang_errors::ErrorSet::new();
