@@ -684,20 +684,32 @@ mod lsp {
 mod runners {
   use super::*;
   #[cfg(not(release))]
-  use std::process::Command;
   use tower_lsp::{LspService, Server};
 
-  pub(super) fn format(need_help: bool) {
+  pub(super) fn format(need_help: bool, need_check: bool) {
     if need_help {
       println!("samlang format: Format your codebase according to sconfig.json.")
     } else {
       let configuration = utils::get_configuration();
       let heap = &mut samlang_heap::Heap::new();
+      let mut has_violation = false;
       for (module_reference, source) in utils::collect_sources(&configuration, heap) {
         let path =
           PathBuf::from(&configuration.source_directory).join(module_reference.to_filename(heap));
-        fs::write(&path, samlang_core::reformat_source(&source)).unwrap();
-        eprintln!("Formatted: {}", path.to_str().unwrap())
+        let formatted = samlang_core::reformat_source(&source);
+        if need_check {
+          if formatted != source {
+            eprintln!("Changed: {}", path.to_str().unwrap());
+            has_violation = true;
+          }
+          fs::write(&path, formatted).unwrap();
+        } else {
+          fs::write(&path, formatted).unwrap();
+          eprintln!("Formatted: {}", path.to_str().unwrap())
+        }
+      }
+      if has_violation {
+        std::process::exit(1);
       }
     }
   }
@@ -774,16 +786,21 @@ mod runners {
     let expected = include_str!("../../../tests/snapshot.txt");
 
     eprintln!("==================== Step 1 ====================");
+    eprintln!("Formatting samlang source code...");
+    format(/* need_help */ false, /* need_check */ true);
+    eprintln!("Formatted samlang source code.");
+
+    eprintln!("==================== Step 2 ====================");
     eprintln!("Compiling samlang source code...");
     compile_single(/* enable_profiling */ false);
     eprintln!("Compiled samlang source code.");
 
-    eprintln!("==================== Step 2 ====================");
+    eprintln!("==================== Step 3 ====================");
     eprintln!("Checking generated TS code...");
     pretty_assertions::assert_eq!(
       expected,
       String::from_utf8(
-        Command::new("bun")
+        std::process::Command::new("bun")
           .args(["out/tests.AllTests.ts"])
           .output()
           .expect("JS execution failure")
@@ -793,12 +810,12 @@ mod runners {
     );
     eprintln!("Generated TS code is good.");
 
-    eprintln!("==================== Step 3 ====================");
+    eprintln!("==================== Step 4 ====================");
     eprintln!("Checking generated WebAssembly code...");
     pretty_assertions::assert_eq!(
       expected,
       String::from_utf8(
-        Command::new("node")
+        std::process::Command::new("node")
           .args(["out/tests.AllTests.wasm.js"])
           .output()
           .expect("WASM/JS execution failure")
@@ -858,7 +875,7 @@ async fn main() {
     runners::compile(false);
   } else {
     match arguments[0].as_str() {
-      "format" => runners::format(does_need_help),
+      "format" => runners::format(does_need_help, arguments.contains(&"--check".to_string())),
       "compile" => runners::compile(does_need_help),
       "e2e" => runners::e2e(does_need_help),
       "lsp" => runners::lsp(does_need_help).await,

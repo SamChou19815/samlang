@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-  use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_errors::ErrorSet;
   use samlang_heap::Heap;
@@ -10,11 +9,6 @@ mod tests {
   struct CheckerTestSource<'a> {
     test_name: &'a str,
     source_code: &'a str,
-  }
-
-  struct CompilerTestCase {
-    name: &'static str,
-    source_code: &'static str,
   }
 
   #[test]
@@ -1160,43 +1154,5 @@ Found 51 errors.
       expected_errors.trim(),
       error_set.pretty_print_error_messages(heap, &string_sources).trim()
     );
-  }
-
-  fn compiler_integration_tests() -> Vec<CompilerTestCase> {
-    vec![CompilerTestCase {
-      name: "DifferentExpressionsDemo",
-      source_code: r#"
-class Main {
-  function main(): unit = {}
-}
-"#,
-    }]
-  }
-
-  #[test]
-  fn formatter_tests() {
-    let heap = &mut Heap::new();
-    let handles = compiler_integration_tests()
-      .iter()
-      .map(|case| {
-        (
-          heap.alloc_module_reference_from_string_vec(vec![case.name.to_string()]),
-          case.source_code.to_string(),
-        )
-      })
-      .collect_vec();
-    let mut sources = samlang_parser::builtin_parsed_std_sources_for_tests(heap);
-    let expected_sources_size = sources.len() + handles.len();
-    for (mod_ref, text) in handles {
-      let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
-      let raw = samlang_printer::pretty_print_source_module(heap, 100, &module);
-      let mut error_set = ErrorSet::new();
-      sources.insert(mod_ref, parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set));
-      assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
-    }
-    let mut error_set = ErrorSet::new();
-    let (checked_sources, _) = samlang_checker::type_check_sources(&sources, &mut error_set);
-    assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
-    assert!(checked_sources.len() == expected_sources_size);
   }
 }
