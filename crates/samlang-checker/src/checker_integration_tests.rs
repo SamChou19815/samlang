@@ -6,17 +6,39 @@ mod tests {
   use samlang_parser::parse_source_module_from_text;
   use std::collections::HashMap;
 
+  #[test]
+  fn type_checker_integration_tests() {
+    let heap = &mut Heap::new();
+    let mut error_set = ErrorSet::new();
+    let mut string_sources = HashMap::new();
+    let mut parsed_sources = HashMap::new();
+    for t in SOURCES.iter() {
+      let mod_ref = heap.alloc_module_reference_from_string_vec(vec![t.test_name.to_string()]);
+      string_sources.insert(mod_ref, t.source_code.to_string());
+      parsed_sources.insert(
+        mod_ref,
+        parse_source_module_from_text(t.source_code, mod_ref, heap, &mut error_set),
+      );
+    }
+    for (mod_ref, parsed) in samlang_parser::builtin_parsed_std_sources_for_tests(heap) {
+      parsed_sources.insert(mod_ref, parsed);
+    }
+    super::super::type_check_sources(&parsed_sources, &mut error_set);
+    assert_eq!(
+      EXPECTED_ERRORS.trim(),
+      error_set.pretty_print_error_messages(heap, &string_sources).trim()
+    );
+  }
+
   struct CheckerTestSource<'a> {
     test_name: &'a str,
     source_code: &'a str,
   }
 
-  #[test]
-  fn type_checker_integration_tests() {
-    let sources = vec![
-      CheckerTestSource {
-        test_name: "access-builtin",
-        source_code: r#"
+  static SOURCES: [CheckerTestSource; 31] = [
+    CheckerTestSource {
+      test_name: "access-builtin",
+      source_code: r#"
 class Main {
   function main(): unit = {
     let a: int = "3".toInt();
@@ -26,10 +48,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "access-private-member",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "access-private-member",
+      source_code: r#"
 class A {
   private function b(): int = 3
 }
@@ -45,10 +67,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "add-panic-to-class",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "add-panic-to-class",
+      source_code: r#"
 class A(val a: int) {
   function create(): A = A.init(42)
 }
@@ -59,10 +81,10 @@ class Main {
   private function main(): int = Main.main1() + Main.main2()
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "add-with-class",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "add-with-class",
+      source_code: r#"
 class A(val a: int) {
   function create(): A = A.init(42)
 }
@@ -71,10 +93,10 @@ class Main {
   function main(): int = 3 + A.create()
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "allowed-cyclic-classes",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "allowed-cyclic-classes",
+      source_code: r#"
 class A {
   function a(): int = B.b()
 }
@@ -87,10 +109,10 @@ class Main {
   function main(): unit = {}
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "bounded-generics",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "bounded-generics",
+      source_code: r#"
 interface Comparable<T> {
   method compare(other: T): int
 }
@@ -120,34 +142,34 @@ interface ExtendingConfliting : Conflicting1, Conflicting2
 class ImplItself : ImplItself {} // error: expect interface type
 class ImplTArg<T> : T {} // error: T not resolved
 "#,
-      },
-      CheckerTestSource {
-        test_name: "call-interface-function",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "call-interface-function",
+      source_code: r#"
 interface Foo { function bar(): int }
 class Ouch { function call(foo: Foo): int = Foo.bar() }
 "#,
-      },
-      CheckerTestSource { test_name: "complete-trash", source_code: "This is a bad source." },
-      CheckerTestSource {
-        test_name: "forty-two",
-        source_code: r#"
+    },
+    CheckerTestSource { test_name: "complete-trash", source_code: "This is a bad source." },
+    CheckerTestSource {
+      test_name: "forty-two",
+      source_code: r#"
 class Main {
   function main(): int = 42
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "hello-world",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "hello-world",
+      source_code: r#"
 class Main {
   function main(): Str = "Hello World!"
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "illegal-binary-operations",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "illegal-binary-operations",
+      source_code: r#"
 class Box<T>(val value: T) {
   function <T> empty(): Box<T> = Box.init(Process.panic<T>("PANIC"))
   function <T> of(value: T): Box<T> = Box.init(value)
@@ -176,10 +198,10 @@ class Main {
     Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "illegal-private-field-access",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "illegal-private-field-access",
+      source_code: r#"
 class Fields(val a: int, private val b: bool) {
   function get(): Fields = {
     let f = Fields.init(3, true);
@@ -199,10 +221,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "illegal-shadow",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "illegal-shadow",
+      source_code: r#"
 class A {}
 class A {}
 
@@ -227,10 +249,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "illegal-this",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "illegal-this",
+      source_code: r#"
 
 class Main {
   function main(): unit = {
@@ -238,10 +260,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "insufficient-type-info",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "insufficient-type-info",
+      source_code: r#"
 class NotEnoughTypeInfo {
   function <T> randomFunction(): T = Process.panic("I can be any type!")
   function main(): unit = {
@@ -252,10 +274,10 @@ class Main {
   function main(): unit = NotEnoughTypeInfo.main()
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "insufficient-type-info-none",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "insufficient-type-info-none",
+      source_code: r#"
 class Option<T>(Some(T), None(bool)) {
   function <T> none(): Option<T> = Option.None(true)
   method toSome(t: T): Option<T> = Option.Some(t)
@@ -266,18 +288,18 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "invalid-property-declaration-syntax",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "invalid-property-declaration-syntax",
+      source_code: r#"
 class Main(a: int, val b: int) {
   function main(): int = 42
 }
     "#,
-      },
-      CheckerTestSource {
-        test_name: "lots-of-fields-and-methods",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "lots-of-fields-and-methods",
+      source_code: r#"
 class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
   function <T> create(sam: T): SamObject<T> = SamObject.init(sam, true, 100000)
   method getSam(): T = this.sam
@@ -295,26 +317,26 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "min-int",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "min-int",
+      source_code: r#"
 class Main {
   function main(): int = -2147483648
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "multiple-type-errors",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "multiple-type-errors",
+      source_code: r#"
 class Main {
   function main(): int = 233333 + "foo" + "bar" + 42
 }
     "#,
-      },
-      CheckerTestSource {
-        test_name: "overengineered-helloworld",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "overengineered-helloworld",
+      source_code: r#"
 class HelloWorld(val message: Str) {
   private method getMessage(): Str = {
     let { message } = this;
@@ -331,10 +353,10 @@ class Main {
   function main(): Str = HelloWorld.getGlobalMessage()
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "overengineered-helloworld-2",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "overengineered-helloworld-2",
+      source_code: r#"
 class NewYear2019<T>(val message: T) {
   function create(): NewYear2019<Str> = NewYear2019.init("Hello World!")
   method getMessage(): T = {
@@ -346,18 +368,18 @@ class Main {
   function main(): Str = NewYear2019.create().getMessage()
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "overflow-int",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "overflow-int",
+      source_code: r#"
 class Main {
   function main(): int = 999999999999999999999999999999
 }
     "#,
-      },
-      CheckerTestSource {
-        test_name: "pipe",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "pipe",
+      source_code: r#"
 class Main {
   function <A, B, C> pipe(a: A, f1: (A)->B, f2: (B)->C): C = f2(f1(a))
 
@@ -366,10 +388,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "polymorphic-option",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "polymorphic-option",
+      source_code: r#"
 class Option<T>(Some(T), None) {
   function <T> none(): Option<T> = Option.None()
   method toSome(t: T): Option<T> = Option.Some(t)
@@ -388,10 +410,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "sam-in-samlang-list",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "sam-in-samlang-list",
+      source_code: r#"
 class Pair<A, B>(val a: A, val b: B) {}
 class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
@@ -413,19 +435,19 @@ class Main {
   function main(): Developer = Developer.sam()
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "simple-mismatch",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "simple-mismatch",
+      source_code: r#"
     class Main {
       // should be type bool!
       function main(): int = true
     }
     "#,
-      },
-      CheckerTestSource {
-        test_name: "simple-type-inference-annotated",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "simple-type-inference-annotated",
+      source_code: r#"
 /**
  * From Cornell CS4110's Type Checking Lecture.
  * This version is fully annotated.
@@ -436,10 +458,10 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "synthesis-mode",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "synthesis-mode",
+      source_code: r#"
 class Main {
   function <Acc> reduce(f: (Acc, int) -> Acc, init: Acc): Acc = Process.panic("")
   function getInt(): int = 10
@@ -454,26 +476,26 @@ class Main {
   }
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "undefined-type",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "undefined-type",
+      source_code: r#"
 class Main {
   function main(): HelloWorld = 1
 }
 "#,
-      },
-      CheckerTestSource {
-        test_name: "undefined-variable",
-        source_code: r#"
+    },
+    CheckerTestSource {
+      test_name: "undefined-variable",
+      source_code: r#"
 class Main {
   function main(): Str = helloWorld
 }
 "#,
-      },
-    ];
+    },
+  ];
 
-    let expected_errors = r#"
+  const EXPECTED_ERRORS: &str = r#"
 Error ---------------- access-private-member.sam:12:15-12:16
 
 Cannot resolve member `b` on `A`.
@@ -1133,26 +1155,4 @@ Cannot resolve name `helloWorld`.
 
 Found 51 errors.
 "#;
-
-    let heap = &mut Heap::new();
-    let mut error_set = ErrorSet::new();
-    let mut string_sources = HashMap::new();
-    let mut parsed_sources = HashMap::new();
-    for t in sources {
-      let mod_ref = heap.alloc_module_reference_from_string_vec(vec![t.test_name.to_string()]);
-      string_sources.insert(mod_ref, t.source_code.to_string());
-      parsed_sources.insert(
-        mod_ref,
-        parse_source_module_from_text(t.source_code, mod_ref, heap, &mut error_set),
-      );
-    }
-    for (mod_ref, parsed) in samlang_parser::builtin_parsed_std_sources_for_tests(heap) {
-      parsed_sources.insert(mod_ref, parsed);
-    }
-    samlang_checker::type_check_sources(&parsed_sources, &mut error_set);
-    assert_eq!(
-      expected_errors.trim(),
-      error_set.pretty_print_error_messages(heap, &string_sources).trim()
-    );
-  }
 }

@@ -5,6 +5,7 @@ use samlang_errors::ErrorSet;
 use samlang_heap::ModuleReference;
 use std::collections::HashMap;
 
+mod checker_integration_tests;
 mod checker_tests;
 /// Responsible for building and querying the global signature environment.
 mod global_signature;
