@@ -13,10 +13,4 @@ samlang-errors = { path = "../samlang-errors" }
 samlang-heap = { path = "../samlang-heap" }
 samlang-optimization = { path = "../samlang-optimization" }
 samlang-parser = { path = "../samlang-parser" }
-samlang-printer = { path = "../samlang-printer" }
 samlang-profiling = { path = "../samlang-profiling" }
-wat = "1.0.66"
-
-[dev-dependencies]
-pretty_assertions = "1.4.0"
-wasmi = "0.30.0"

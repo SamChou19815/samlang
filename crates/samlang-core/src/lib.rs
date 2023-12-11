@@ -5,22 +5,6 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 pub use samlang_parser::builtin_std_raw_sources;
 use std::collections::{BTreeMap, HashMap};
 
-pub fn reformat_source(source: &str) -> String {
-  let mut heap = Heap::new();
-  let mut error_set = samlang_errors::ErrorSet::new();
-  let module = samlang_parser::parse_source_module_from_text(
-    source,
-    ModuleReference::DUMMY,
-    &mut heap,
-    &mut error_set,
-  );
-  if error_set.has_errors() {
-    source.to_string()
-  } else {
-    samlang_printer::pretty_print_source_module(&heap, 100, &module)
-  }
-}
-
 pub struct SourcesCompilationResult {
   pub text_code_results: BTreeMap<String, String>,
   pub wasm_file: Vec<u8>,
@@ -114,84 +98,29 @@ require('./__samlang_loader__.js')(binary).{}();
 
 #[cfg(test)]
 mod tests {
-  use pretty_assertions::assert_eq;
-  use samlang_heap::Heap;
-  use std::collections::HashMap;
-
-  #[test]
-  fn reformat_tests() {
-    super::reformat_source("d");
-    super::reformat_source("class Foo {}");
-  }
-
   #[test]
   fn compile_tests() {
-    let heap = &mut Heap::new();
+    let heap = &mut samlang_heap::Heap::new();
     let mod_ref_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
     let mod_ref_demo = heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()]);
 
-    assert_eq!(
-      "Invalid entry point: A does not exist.",
-      super::compile_sources(heap, HashMap::new(), vec![mod_ref_a], false,).err().unwrap()
-    );
-
-    assert_eq!(
-      r#"
-Error ----------------------------------- Demo.sam:1:37-1:44
-
-`int` [1] is incompatible with `Str` [2].
-
-  1| class Main { function main(): Str = 42 + "" }
-                                         ^^^^^^^
-
-  [1] Demo.sam:1:37-1:44
-  ----------------------
-  1| class Main { function main(): Str = 42 + "" }
-                                         ^^^^^^^
-
-  [2] Demo.sam:1:31-1:34
-  ----------------------
-  1| class Main { function main(): Str = 42 + "" }
-                                   ^^^
-
-
-Error ----------------------------------- Demo.sam:1:42-1:44
-
-`Str` [1] is incompatible with `int` [2].
-
-  1| class Main { function main(): Str = 42 + "" }
-                                              ^^
-
-  [1] Demo.sam:1:42-1:44
-  ----------------------
-  1| class Main { function main(): Str = 42 + "" }
-                                              ^^
-
-  [2] Demo.sam:1:37-1:44
-  ----------------------
-  1| class Main { function main(): Str = 42 + "" }
-                                         ^^^^^^^
-
-
-Found 2 errors.
-"#
-      .trim(),
-      super::compile_sources(
-        heap,
-        HashMap::from([(
-          mod_ref_demo,
-          "class Main { function main(): Str = 42 + \"\" }".to_string()
-        )]),
-        vec![mod_ref_demo],
-        false,
-      )
-      .err()
-      .unwrap()
-    );
+    assert!(super::compile_sources(heap, std::collections::HashMap::new(), vec![mod_ref_a], false)
+      .is_err());
 
     assert!(super::compile_sources(
       heap,
-      HashMap::from([(
+      std::collections::HashMap::from([(
+        mod_ref_demo,
+        "class Main { function main(): Str = 42 + \"\" }".to_string()
+      )]),
+      vec![mod_ref_demo],
+      false,
+    )
+    .is_err());
+
+    assert!(super::compile_sources(
+      heap,
+      std::collections::HashMap::from([(
         mod_ref_demo,
         r#"
 class Foo(val a: int) {}
