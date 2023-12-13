@@ -696,16 +696,28 @@ mod runners {
       for (module_reference, source) in utils::collect_sources(&configuration, heap) {
         let path =
           PathBuf::from(&configuration.source_directory).join(module_reference.to_filename(heap));
-        let formatted = samlang_core::reformat_source(&source);
-        if need_check {
-          if formatted != source {
-            eprintln!("Changed: {}", path.to_str().unwrap());
-            has_violation = true;
-          }
-          fs::write(&path, formatted).unwrap();
+        let mut heap = samlang_heap::Heap::new();
+        let mut error_set = samlang_errors::ErrorSet::new();
+        let module = samlang_parser::parse_source_module_from_text(
+          &source,
+          samlang_heap::ModuleReference::DUMMY,
+          &mut heap,
+          &mut error_set,
+        );
+        if error_set.has_errors() {
+          eprintln!("Cannot parse: {}", path.to_str().unwrap())
         } else {
-          fs::write(&path, formatted).unwrap();
-          eprintln!("Formatted: {}", path.to_str().unwrap())
+          let formatted = samlang_printer::pretty_print_source_module(&heap, 100, &module);
+          if need_check {
+            if formatted != source {
+              eprintln!("Changed: {}", path.to_str().unwrap());
+              has_violation = true;
+            }
+            fs::write(&path, formatted).unwrap();
+          } else {
+            fs::write(&path, formatted).unwrap();
+            eprintln!("Formatted: {}", path.to_str().unwrap())
+          }
         }
       }
       if has_violation {
