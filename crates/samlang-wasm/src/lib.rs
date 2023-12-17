@@ -14,7 +14,7 @@ fn demo_sources(
   heap: &mut samlang_heap::Heap,
   text: String,
 ) -> HashMap<samlang_heap::ModuleReference, String> {
-  let mut sources = samlang_core::builtin_std_raw_sources(heap);
+  let mut sources = samlang_parser::builtin_std_raw_sources(heap);
   sources.insert(demo_mod_ref(heap), text);
   sources
 }
@@ -32,8 +32,8 @@ pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
   let heap = &mut samlang_heap::Heap::new();
   let mod_ref = demo_mod_ref(heap);
   let sources = demo_sources(heap, source);
-  match samlang_core::compile_sources(heap, sources, vec![mod_ref], false) {
-    Ok(samlang_core::SourcesCompilationResult { mut text_code_results, wasm_file }) => {
+  match samlang_compiler::compile_sources(heap, sources, vec![mod_ref], false) {
+    Ok(samlang_compiler::SourcesCompilationResult { mut text_code_results, wasm_file }) => {
       let ts_code = text_code_results.remove("Demo.ts").unwrap();
       let wasm_bytes = Uint8Array::from(&wasm_file as &[u8]);
       Ok(SourcesCompilationResult { ts_code, wasm_bytes })

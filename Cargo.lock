@@ -535,7 +535,7 @@ version = "0.9.1"
 dependencies = [
  "pretty_assertions",
  "samlang-ast",
- "samlang-core",
+ "samlang-compiler",
  "samlang-errors",
  "samlang-heap",
  "samlang-parser",
@@ -567,24 +567,10 @@ dependencies = [
  "samlang-collections",
  "samlang-errors",
  "samlang-heap",
- "samlang-parser",
- "wat",
-]
-
-[[package]]
-name = "samlang-core"
-version = "0.9.1"
-dependencies = [
- "enum-as-inner",
- "itertools",
- "samlang-ast",
- "samlang-checker",
- "samlang-compiler",
- "samlang-errors",
- "samlang-heap",
  "samlang-optimization",
  "samlang-parser",
  "samlang-profiling",
+ "wat",
 ]
 
 [[package]]
@@ -671,8 +657,9 @@ version = "0.9.1"
 dependencies = [
  "js-sys",
  "samlang-ast",
- "samlang-core",
+ "samlang-compiler",
  "samlang-heap",
+ "samlang-parser",
  "samlang-services",
  "serde",
  "serde-wasm-bindgen",
