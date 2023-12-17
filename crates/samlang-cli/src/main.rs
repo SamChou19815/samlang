@@ -6,14 +6,12 @@ use std::{
   path::{Path, PathBuf},
 };
 
-mod configuration;
-
 mod utils {
   use super::*;
   use std::collections::HashMap;
 
-  pub(super) fn get_configuration() -> configuration::ProjectConfiguration {
-    match configuration::load_project_configuration() {
+  pub(super) fn get_configuration() -> samlang_configuration::ProjectConfiguration {
+    match samlang_configuration::load_project_configuration() {
       Ok(c) => c,
       Err(e) => {
         eprintln!("{}", e.to_str());
@@ -53,7 +51,7 @@ mod utils {
 
   fn walk(
     heap: &mut samlang_heap::Heap,
-    configuration: &configuration::ProjectConfiguration,
+    configuration: &samlang_configuration::ProjectConfiguration,
     absolute_source_path: &Path,
     start_path: &Path,
     sources: &mut HashMap<samlang_heap::ModuleReference, String>,
@@ -92,7 +90,7 @@ mod utils {
   }
 
   pub(super) fn collect_sources(
-    configuration: &configuration::ProjectConfiguration,
+    configuration: &samlang_configuration::ProjectConfiguration,
     heap: &mut samlang_heap::Heap,
   ) -> HashMap<samlang_heap::ModuleReference, String> {
     let mut sources = if configuration.dangerously_allow_libdef_shadowing {
