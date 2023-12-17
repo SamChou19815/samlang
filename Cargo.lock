@@ -536,13 +536,13 @@ dependencies = [
  "pretty_assertions",
  "samlang-ast",
  "samlang-compiler",
+ "samlang-configuration",
  "samlang-errors",
  "samlang-heap",
  "samlang-parser",
  "samlang-printer",
  "samlang-profiling",
  "samlang-services",
- "serde_json",
  "tokio",
  "tower-lsp",
 ]
@@ -571,6 +571,14 @@ dependencies = [
  "samlang-parser",
  "samlang-profiling",
  "wat",
+]
+
+[[package]]
+name = "samlang-configuration"
+version = "0.9.1"
+dependencies = [
+ "pretty_assertions",
+ "serde_json",
 ]
 
 [[package]]

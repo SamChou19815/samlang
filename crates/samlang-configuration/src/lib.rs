@@ -2,22 +2,22 @@ use serde_json::Value;
 use std::{fs, path::PathBuf};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(super) struct ProjectConfiguration {
-  pub(super) source_directory: String,
-  pub(super) output_directory: String,
-  pub(super) entry_points: Vec<String>,
-  pub(super) ignores: Vec<String>,
-  pub(super) dangerously_allow_libdef_shadowing: bool,
+pub struct ProjectConfiguration {
+  pub source_directory: String,
+  pub output_directory: String,
+  pub entry_points: Vec<String>,
+  pub ignores: Vec<String>,
+  pub dangerously_allow_libdef_shadowing: bool,
 }
 
-pub(super) enum ConfigurationLoadingFailure {
+pub enum ConfigurationLoadingFailure {
   UnreadableConfigurationFile,
   UnparsableConfigurationFile,
   NoConfiguration,
 }
 
 impl ConfigurationLoadingFailure {
-  pub(super) fn to_str(&self) -> &'static str {
+  pub fn to_str(&self) -> &'static str {
     match self {
       ConfigurationLoadingFailure::UnreadableConfigurationFile => "UNREADABLE_CONFIGURATION_FILE",
       ConfigurationLoadingFailure::UnparsableConfigurationFile => "UNPARSABLE_CONFIGURATION_FILE",
@@ -86,8 +86,7 @@ fn load_project_configuration_custom_start_path(
   Err(ConfigurationLoadingFailure::NoConfiguration)
 }
 
-pub(super) fn load_project_configuration(
-) -> Result<ProjectConfiguration, ConfigurationLoadingFailure> {
+pub fn load_project_configuration() -> Result<ProjectConfiguration, ConfigurationLoadingFailure> {
   load_project_configuration_custom_start_path(".")
 }
 
