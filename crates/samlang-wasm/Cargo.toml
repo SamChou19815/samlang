@@ -6,8 +6,9 @@ edition = "2021"
 [dependencies]
 js-sys = "0.3.64"
 samlang-ast = { path = "../samlang-ast" }
-samlang-core = { path = "../samlang-core" }
+samlang-compiler = { path = "../samlang-compiler" }
 samlang-heap = { path = "../samlang-heap" }
+samlang-parser = { path = "../samlang-parser" }
 samlang-services = { path = "../samlang-services" }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.5"

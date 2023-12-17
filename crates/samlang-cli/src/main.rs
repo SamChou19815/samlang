@@ -7,7 +7,6 @@ use std::{
 };
 
 mod configuration;
-mod logo;
 
 mod utils {
   use super::*;
@@ -99,7 +98,7 @@ mod utils {
     let mut sources = if configuration.dangerously_allow_libdef_shadowing {
       HashMap::new()
     } else {
-      samlang_core::builtin_std_raw_sources(heap)
+      samlang_parser::builtin_std_raw_sources(heap)
     };
     if let Ok(absolute_source_path) =
       fs::canonicalize(PathBuf::from(&configuration.source_directory))
@@ -743,13 +742,13 @@ mod runners {
         samlang_profiling::measure_time(enable_profiling, "Collecting sources", || {
           utils::collect_sources(&configuration, heap)
         });
-      match samlang_core::compile_sources(
+      match samlang_compiler::compile_sources(
         heap,
         collected_sources,
         entry_module_references,
         enable_profiling,
       ) {
-        Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
+        Ok(samlang_compiler::SourcesCompilationResult { text_code_results, wasm_file }) => {
           if fs::create_dir_all(&configuration.output_directory).is_ok() {
             for (file, content) in text_code_results {
               fs::write(PathBuf::from(&configuration.output_directory).join(file), content)
@@ -863,8 +862,7 @@ mod runners {
 
   pub(super) fn help() {
     println!(
-      r#"{}
-Usage:
+      r#"Usage:
 samlang [command]
 
 Commands:
@@ -873,7 +871,6 @@ format: Format your codebase according to sconfig.json.
 compile: Compile your codebase according to sconfig.json.
 lsp: Start a language server according to sconfig.json.
 help: Show this message."#,
-      logo::get_logo()
     )
   }
 }
