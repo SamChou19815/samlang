@@ -207,12 +207,12 @@ impl<'a> LoweringManager<'a> {
       lir::Expression::IntLiteral(v) => wasm::InlineInstruction::Const(*v),
       lir::Expression::Variable(n, _) => self.get(n),
       lir::Expression::StringName(n) => {
-        let index = self.global_variables_to_pointer_mapping.get(n);
-        wasm::InlineInstruction::Const(i32::try_from(*(index.unwrap())).unwrap())
+        let index = self.global_variables_to_pointer_mapping.get(n).unwrap();
+        wasm::InlineInstruction::Const(i32::try_from(*index).unwrap())
       }
       lir::Expression::FnName(n, _) => {
-        let index = self.function_index_mapping.get(n);
-        wasm::InlineInstruction::Const(i32::try_from(*(index.unwrap())).unwrap())
+        let index = self.function_index_mapping.get(n).unwrap();
+        wasm::InlineInstruction::Const(i32::try_from(*index).unwrap())
       }
     }
   }
@@ -234,7 +234,7 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-pub(super) fn compile_mir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::Module {
+pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::Module {
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
@@ -415,7 +415,7 @@ mod tests {
       }],
     };
     let actual =
-      super::compile_mir_to_wasm(heap, &sources).pretty_print(heap, &sources.symbol_table);
+      super::compile_lir_to_wasm(heap, &sources).pretty_print(heap, &sources.symbol_table);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
 (data (i32.const 4096) "\00\00\00\00\03\00\00\00\66\6f\6f")
 (data (i32.const 4107) "\00\00\00\00\03\00\00\00\62\61\72")
