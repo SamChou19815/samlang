@@ -916,7 +916,11 @@ impl<'a> ExpressionLoweringManager<'a> {
       &source_fn_type.return_type,
     );
     let fn_name = self.allocate_synthetic_fn_name();
-    let LoweringResult { statements: mut lowered_s, expression: lowered_e } =
+    let LoweringResultWithSyntheticFunctions {
+      statements: mut lowered_s,
+      expression: lowered_e,
+      mut synthetic_functions,
+    } = lower_source_expression(
       ExpressionLoweringManager::new(
         self.module_reference,
         parameters
@@ -930,9 +934,11 @@ impl<'a> ExpressionLoweringManager<'a> {
         self.type_lowering_manager,
         self.string_manager,
         self.next_synthetic_fn_id_manager,
-      )
-      .lower(&expression.body);
+      ),
+      &expression.body,
+    );
     lambda_stmts.append(&mut lowered_s);
+    self.synthetic_functions.append(&mut synthetic_functions);
 
     hir::Function {
       name: fn_name,
