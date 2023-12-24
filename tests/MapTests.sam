@@ -1,5 +1,6 @@
 import { Int } from std.boxed;
 import { Map } from std.map;
+import { Option } from std.option;
 import { ForTests } from tests.StdLib;
 
 private class MapInsertAndGetTests {
@@ -11,13 +12,47 @@ private class MapInsertAndGetTests {
 
   private function validatekeyMirrorIntMapHelper(map: Map<Int, int>, n: int): unit =
     if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+      let _ = ForTests.assertBool(map.containsKey(Int.init(n)), "Missing key");
       let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), n);
       MapInsertAndGetTests.validatekeyMirrorIntMapHelper(map, n - 1)
+    }
+
+  private function validatekeyMirrorPlusOneIntMapHelper(map: Map<Int, int>, n: int): unit =
+    if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+      let _ = ForTests.assertBool(map.containsKey(Int.init(n)), "Missing key");
+      let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), n + 1);
+      MapInsertAndGetTests.validatekeyMirrorPlusOneIntMapHelper(map, n - 1)
+    }
+
+  private function assertAllZeroMap(map: Map<Int, int>, n: int): unit =
+    if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+      let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), 0);
+      MapInsertAndGetTests.assertAllZeroMap(map, n - 1)
     }
 
   function run(): unit = {
     let map = MapInsertAndGetTests.keyMirrorIntMapHelper(Map.empty(), 100);
     let _ = MapInsertAndGetTests.validatekeyMirrorIntMapHelper(map, 100);
+    let _ = MapInsertAndGetTests.validatekeyMirrorPlusOneIntMapHelper(
+      map.map((k, v) -> v + 1),
+      100
+    );
+    let _ = MapInsertAndGetTests.assertAllZeroMap(
+      map.merge(map, (k, v1, v2) -> Option.Some(v1.unwrap() - v2.unwrap())),
+      100
+    );
+    let _ = ForTests.assertIntEquals(
+      map.update(Int.init(500), (v) -> Option.Some(42)).get(Int.init(500)).unwrap(),
+      42
+    );
+    let _ = ForTests.assertIntEquals(
+      map.update(Int.init(50), (v) -> v.map((i) -> i + 1)).get(Int.init(50)).unwrap(),
+      51
+    );
+    let _ = ForTests.assertIntEquals(
+      map.fold(0, (acc, k, v) -> acc + k.value + v),
+      (1 + 100) * 100
+    );
   }
 }
 
