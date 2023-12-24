@@ -732,7 +732,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
     .collect_vec();
   functions.push(generate_inc_ref_fn());
   functions.push(generate_dec_ref_fn());
-  lir_unused_name_elimination::optimize_mir_sources_by_eliminating_unused_ones(lir::Sources {
+  lir_unused_name_elimination::optimize_lir_sources_by_eliminating_unused_ones(lir::Sources {
     symbol_table,
     global_variables,
     type_definitions: type_defs,

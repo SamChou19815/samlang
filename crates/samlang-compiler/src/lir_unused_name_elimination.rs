@@ -184,7 +184,7 @@ fn analyze_used_function_names_and_type_names(
   (used_str_names, used_fn_names, used_types)
 }
 
-pub(super) fn optimize_mir_sources_by_eliminating_unused_ones(
+pub(super) fn optimize_lir_sources_by_eliminating_unused_ones(
   Sources { symbol_table,global_variables, type_definitions, main_function_names, functions }: Sources,
 ) -> Sources {
   let (used_str_names, used_fn_names, used_types) =
@@ -223,7 +223,7 @@ mod tests {
     let heap = &mut Heap::new();
     let mut table = SymbolTable::new();
 
-    let optimized = super::optimize_mir_sources_by_eliminating_unused_ones(Sources {
+    let optimized = super::optimize_lir_sources_by_eliminating_unused_ones(Sources {
       global_variables: vec![
         hir::GlobalVariable {
           name: heap.alloc_str_for_test("bar"),
