@@ -4,6 +4,7 @@ use samlang_collections::list::{cons, list, one, PersistentList};
 use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{HashMap, VecDeque},
+  fmt::Debug,
   rc::Rc,
 };
 
@@ -47,8 +48,14 @@ impl AbstractPatternNodeInner {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub(super) struct AbstractPatternNode(Rc<AbstractPatternNodeInner>);
+
+impl Debug for AbstractPatternNode {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    self.0.fmt(f)
+  }
+}
 
 impl AbstractPatternNode {
   fn to_description(&self) -> Description {
@@ -103,6 +110,12 @@ impl AbstractPatternNode {
 }
 
 struct PatternVector(PersistentList<AbstractPatternNode>);
+
+impl Debug for PatternVector {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    self.0.fmt(f)
+  }
+}
 
 struct PatternMatrix(Vec<PatternVector>);
 
@@ -487,7 +500,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    format!("{:?} {:?}", OPTION_NONE, P::wildcard());
+    format!("{:?} {:?} {:?}", OPTION_NONE, P::wildcard(), PatternVector(super::one(P::wildcard())));
     assert_eq!(LETTERS, LETTERS_A.clone().class_name);
     assert_eq!(
       2,
