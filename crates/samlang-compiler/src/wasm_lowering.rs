@@ -247,6 +247,10 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
     let global_variable = wasm::GlobalData { constant_pointer: data_start, bytes };
     global_variables_to_pointer_mapping.insert(*name, data_start);
     data_start += content_str.len() + 8;
+    let pad = data_start % 8;
+    if pad != 0 {
+      data_start += 8 - pad;
+    }
     global_variables.push(global_variable);
   }
   for (i, f) in sources.functions.iter().enumerate() {
@@ -417,8 +421,8 @@ mod tests {
     let actual =
       super::compile_lir_to_wasm(heap, &sources).pretty_print(heap, &sources.symbol_table);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
-(data (i32.const 4096) "\00\00\00\00\03\00\00\00\66\6f\6f")
-(data (i32.const 4107) "\00\00\00\00\03\00\00\00\62\61\72")
+(data (i32.const 4096) "\00\00\00\00\03\00\00\00foo")
+(data (i32.const 4112) "\00\00\00\00\03\00\00\00bar")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $__$main)
 (func $__$main (param $bar i32) (result i32)
