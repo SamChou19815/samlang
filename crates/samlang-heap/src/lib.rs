@@ -25,8 +25,8 @@ const ALL_ZERO_SLICE: [u8; 15] = [0; 15];
 impl std::fmt::Debug for PStrPrivateRepr {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self.as_inline_str() {
-      Ok(s) => f.debug_struct("PStrPrivateRepr").field("inline", &s).finish(),
-      Err(id) => f.debug_struct("PStrPrivateRepr").field("heap_id", &id).finish(),
+      Ok(s) => f.write_fmt(format_args!("\"{}\"", s)),
+      Err(id) => f.write_fmt(format_args!("id={id}")),
     }
   }
 }
