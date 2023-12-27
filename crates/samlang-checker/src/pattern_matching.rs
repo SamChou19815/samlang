@@ -216,7 +216,6 @@ fn convert_into_specialized_matrix_row(
           // Different constructors. Skip
         }
         _ => {
-          debug_assert_eq!(rs_len, rs.len());
           new_rows.push(PatternVector(rs.clone().append(p_row.rest())));
         }
       }
