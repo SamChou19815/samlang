@@ -1,0 +1,458 @@
+import { Comparable } from std.interfaces;
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair, Triple } from std.tuples;
+
+private class NodeEnumerationHelper<E: Comparable<E>, T>(
+  End,
+  More(E, T, NodeEnumerationHelper<E, T>)
+) {
+  function <E: Comparable<E>> cons(
+    set: Set<E>,
+    helper: NodeEnumerationHelper<E, Set<E>>
+  ): NodeEnumerationHelper<E, Set<E>> =
+    match set {
+      Empty -> helper,
+      Leaf(v) -> NodeEnumerationHelper.More(v, Set.empty<E>(), helper),
+      Node(_, v, l, r) -> NodeEnumerationHelper.cons(l, NodeEnumerationHelper.More(v, r, helper)),
+    }
+}
+
+// Adapted from https://github.com/facebook/flow/
+// See src/hack_forked/utils/collections/third-party/flow_set.ml
+class Set<V: Comparable<V>>(Empty, Leaf(V), Node(int, V, Set<V>, Set<V>)) {
+  function <V: Comparable<V>> empty(): Set<V> = Set.Empty()
+
+  function <V: Comparable<V>> singleton(value: V): Set<V> = Set.Leaf(value)
+
+  method isEmpty(): bool =
+    match this {
+      Empty -> true,
+      Leaf(_) -> false,
+      Node(_, _, _, _) -> false,
+    }
+
+  method contains(value: V): bool =
+    match this {
+      Empty -> false,
+      Leaf(v) -> v.compare(value) == 0,
+      Node(_, v, l, r) -> {
+        let c = value.compare(v);
+        c == 0 || (if c < 0 then l.contains(value) else r.contains(value))
+      },
+    }
+
+  method insert(value: V): Set<V> =
+    match this {
+      Empty -> Set.singleton(value),
+      Leaf(v) -> {
+        let c = value.compare(v);
+        if c == 0 then { this } else if c < 0 then {
+          Set.unsafeNode(Set.singleton(value), v, Set.Empty<V>())
+        } else { Set.unsafeNode(this, value, Set.Empty<V>()) }
+      },
+      Node(h, v, l, r) -> {
+        let c = value.compare(v);
+        if c == 0 then { this } else if c < 0 then {
+          let ll = l.insert(value);
+          if l == ll then this else Set.balanced(ll, v, r)
+        } else {
+          let rr = r.insert(value);
+          if r == rr then this else Set.balanced(l, v, rr)
+        }
+      },
+    }
+
+  method split(value: V): Triple<Set<V>, bool, Set<V>> =
+    match this {
+      Empty -> (Set.empty<V>(), false, Set.empty<V>()),
+      Leaf(v) -> {
+        let c = value.compare(v);
+        if c == 0 then { (Set.empty<V>(), true, Set.empty<V>()) } else if c < 0 then {
+          (Set.empty<V>(), false, this)
+        } else { (this, false, Set.empty<V>()) }
+      },
+      Node(_, v, l, r) -> {
+        let c = value.compare(v);
+        if c == 0 then { (l, true, r) } else if c < 0 then {
+          let (ll, pres, rl) = l.split(value);
+          (ll, pres, Set.join(rl, v, r))
+        } else {
+          let (lr, pres, rr) = r.split(value);
+          (Set.join(l, v, lr), pres, rr)
+        }
+      },
+    }
+
+  method union(other: Set<V>): Set<V> =
+    match (this, other) {
+      (Empty, _) -> other,
+      (_, Empty) -> this,
+      (Leaf(v), s2) -> s2.insert(v),
+      (s1, Leaf(v)) -> s1.insert(v),
+      (Node(h1, v1, l1, r1), Node(h2, v2, l2, r2)) -> {
+        if h1 >= h2 then {
+          if h2 == 1 then { this.insert(v2) } else {
+            let (ll2, _, rr2) = other.split(v1);
+            Set.join(l1.union(ll2), v1, r1.union(rr2))
+          }
+        } else if h1 == 1 then { other.insert(v1) } else {
+          let (ll1, _, rr1) = this.split(v2);
+          Set.join(ll1.union(l2), v2, rr1.union(r2))
+        }
+      },
+    }
+
+  method intersection(other: Set<V>): Set<V> =
+    match (this, other) {
+      (Empty, _) -> this,
+      (_, Empty) -> other,
+      (Leaf(v), _) -> { if other.contains(v) then this else Set.Empty() },
+      (Node(_, v1, l1, r1), _) -> {
+        let (l2, b, r2) = other.split(v1);
+        if b then { Set.join(l1.intersection(l2), v1, r1.intersection(r2)) } else {
+          Set.concat(l1.intersection(l2), r1.intersection(r2))
+        }
+      },
+    }
+
+  method disjoint(other: Set<V>): bool = this.intersection(other).isEmpty()
+
+  method diff(other: Set<V>): Set<V> =
+    match (this, other) {
+      (Empty, _) -> this,
+      (_, Empty) -> other,
+      (Leaf(v), _) -> if other.contains(v) then Set.Empty<V>() else this,
+      (Node(_, v1, l1, r1), _) -> {
+        let (l2, b, r2) = other.split(v1);
+        if b then { Set.concat(l1.diff(l2), r1.diff(r2)) } else {
+          Set.join(l1.diff(l2), v1, r1.diff(r2))
+        }
+      },
+    }
+
+  method subset(other: Set<V>): bool =
+    match (this, other) {
+      (Empty, _) -> true,
+      (_, Empty) -> false,
+      (Leaf(v1), Leaf(v2)) -> v1.compare(v2) == 0,
+      (Node(h, v1, _, _), Leaf(v2)) -> h == 1 && v1.compare(v2) == 0,
+      (Leaf(v1), Node(_, v2, l2, r2)) -> {
+        let c = v1.compare(v2);
+        if c == 0 then true else if c < 0 then this.subset(l2) else this.subset(r2)
+      },
+      (Node(_, v1, l1, r1), Node(_, v2, l2, r2)) -> {
+        let c = v1.compare(v2);
+        if c == 0 then { l1.subset(l2) && r1.subset(r2) } else if c < 0 then {
+          Set.unsafeNode(l1, v1, Set.empty<V>()).subset(l2) && r1.subset(other)
+        } else { Set.unsafeNode(Set.empty<V>(), v1, r1).subset(r2) && l1.subset(other) }
+      },
+    }
+
+  private method internalMerge(other: Set<V>): Set<V> =
+    match (this, other) {
+      (Empty, _) -> Set.empty(),
+      (_, Empty) -> Set.empty(),
+      (_, _) -> Set.balanced(this, other.min().unwrap(), other.removeMin()),
+    }
+
+  /** When failed to remove, the original map is returned */
+  method remove(value: V): Set<V> =
+    match this {
+      Empty -> this,
+      Leaf(v) -> if value.compare(v) == 0 then Set.empty() else this,
+      Node(_, v, l, r) -> {
+        let c = value.compare(v);
+        if c == 0 then { l.internalMerge(r) } else if c < 0 then {
+          let ll = l.remove(value);
+          if l == ll then this else Set.balanced(ll, v, r)
+        } else {
+          let rr = r.remove(value);
+          if r == rr then this else Set.balanced(l, v, rr)
+        }
+      },
+    }
+
+  function <V: Comparable<V>> fromList(list: List<V>): Set<V> =
+    list.fold((acc, e) -> acc.insert(e), Set.empty<V>())
+
+  method compare(other: Set<V>, f: (V, V) -> int): int =
+    Set.compareHelper(
+      f,
+      NodeEnumerationHelper.cons(this, NodeEnumerationHelper.End<V, Set<V>>()),
+      NodeEnumerationHelper.cons(other, NodeEnumerationHelper.End<V, Set<V>>())
+    )
+
+  private function <V: Comparable<V>> compareHelper(
+    f: (V, V) -> int,
+    e1: NodeEnumerationHelper<V, Set<V>>,
+    e2: NodeEnumerationHelper<V, Set<V>>
+  ): int =
+    match (e1, e2) {
+      (End, End) -> 0,
+      (End, _) -> -1,
+      (_, End) -> 1,
+      (More(v1, r1, e1Nested), More(v2, r2, e2Nested)) -> {
+        let c = v1.compare(v2);
+        if c != 0 then { c } else {
+          let c1 = f(v1, v2);
+          if c1 != 0 then { c } else {
+            Set.compareHelper(
+              f,
+              NodeEnumerationHelper.cons(r1, e1Nested),
+              NodeEnumerationHelper.cons(r2, e2Nested)
+            )
+          }
+        }
+      },
+    }
+
+  method equal(other: Set<V>, f: (V, V) -> bool): bool =
+    Set.equalHelper(
+      f,
+      NodeEnumerationHelper.cons(this, NodeEnumerationHelper.End<V, Set<V>>()),
+      NodeEnumerationHelper.cons(other, NodeEnumerationHelper.End<V, Set<V>>())
+    )
+
+  private function <V: Comparable<V>> equalHelper(
+    f: (V, V) -> bool,
+    e1: NodeEnumerationHelper<V, Set<V>>,
+    e2: NodeEnumerationHelper<V, Set<V>>
+  ): bool =
+    match (e1, e2) {
+      (End, End) -> true,
+      (End, _) -> false,
+      (_, End) -> false,
+      (More(v1, r1, e1Nested), More(v2, r2, e2Nested)) -> {
+        v1.compare(v2) == 0 && f(v1, v2) && Set.equalHelper(
+          f,
+          NodeEnumerationHelper.cons(r1, e1Nested),
+          NodeEnumerationHelper.cons(r2, e2Nested)
+        )
+      },
+    }
+
+  method iter(f: (V) -> unit): unit =
+    match this {
+      Empty -> {  },
+      Leaf(v) -> f(v),
+      Node(_, v, l, r) -> {
+        let _ = l.iter(f);
+        let _ = f(v);
+        let _ = r.iter(f);
+      },
+    }
+
+  method <A> fold(acc: A, f: (A, V) -> A): A =
+    match this {
+      Empty -> acc,
+      Leaf(v) -> f(acc, v),
+      Node(_, v, l, r) -> r.fold(f(l.fold(acc, f), v), f),
+    }
+
+  method forAll(f: (V) -> bool): bool =
+    match this {
+      Empty -> true,
+      Leaf(v) -> f(v),
+      Node(_, v, l, r) -> f(v) && l.forAll(f) && r.forAll(f),
+    }
+
+  method exists(f: (V) -> bool): bool =
+    match this {
+      Empty -> true,
+      Leaf(v) -> f(v),
+      Node(_, v, l, r) -> f(v) || l.exists(f) || r.exists(f),
+    }
+
+  method filter(f: (V) -> bool): Set<V> =
+    match this {
+      Empty -> Set.Empty(),
+      Leaf(v) -> if f(v) then this else Set.empty(),
+      Node(_, v, l, r) -> {
+        let newL = l.filter(f);
+        let keepCurrentVal = f(v);
+        let newR = r.filter(f);
+        if keepCurrentVal then {
+          if l == newL && r == newR then this else Set.join(newL, v, newR)
+        } else { Set.concat(newL, newR) }
+      },
+    }
+
+  method partition(f: (V) -> bool): Pair<Set<V>, Set<V>> =
+    match this {
+      Empty -> (Set.empty<V>(), Set.empty<V>()),
+      Leaf(v) -> if f(v) then (this, Set.empty<V>()) else (Set.empty<V>(), this),
+      Node(_, v, l, r) -> {
+        let (lt, lf) = l.partition(f);
+        let currentNodeToTrue = f(v);
+        let (rt, rf) = r.partition(f);
+        if currentNodeToTrue then { (Set.join(lt, v, rt), Set.concat(lf, rf)) } else {
+          (Set.concat(lt, rt), Set.join(lf, v, rf))
+        }
+      },
+    }
+
+  method size(): int =
+    match this {
+      Empty -> 0,
+      Leaf(_) -> 1,
+      Node(_, _, l, r) -> l.size() + 1 + r.size(),
+    }
+
+  method min(): Option<V> =
+    match this {
+      Empty -> Option.None(),
+      Leaf(v) -> Option.Some(v),
+      Node(_, v, child, _) -> if child.isEmpty() then { Option.Some(v) } else { child.min() },
+    }
+
+  method max(): Option<V> =
+    match this {
+      Empty -> Option.None(),
+      Leaf(v) -> Option.Some(v),
+      Node(_, v, _, child) -> if child.isEmpty() then { Option.Some(v) } else { child.min() },
+    }
+
+  private method removeMin(): Set<V> =
+    match this {
+      Empty -> Process.panic("Invalid state for Set.removeMin"),
+      Leaf(_) -> Set.empty(),
+      Node(_, _, Empty, r) -> r,
+      Node(_, v, l, r) -> Set.balanced(l.removeMin(), v, r),
+    }
+
+  /** Return ordered keys */
+  method elements(): List<V> = this.elementsHelper(List.nil())
+
+  private method elementsHelper(acc: List<V>): List<V> =
+    match this {
+      Empty -> acc,
+      Leaf(v) -> List.Cons(v, acc),
+      Node(_, v, l, r) -> l.elementsHelper(List.Cons(v, r.elementsHelper(acc))),
+    }
+
+  method map(f: (V) -> V): Set<V> =
+    match this {
+      Empty -> Set.Empty(),
+      Leaf(v) -> {
+        let newV = f(v);
+        if newV == v then this else Set.singleton(newV)
+      },
+      Node(_, v, l, r) -> {
+        // enforce left-to-right evaluation order
+        let newL = l.map(f);
+        let newV = f(v);
+        let newR = r.map(f);
+        if l == newL && v == newV && r == newR then this else { Set.tryJoin(newL, newV, newR) }
+      },
+    }
+
+  private method height(): int =
+    match this {
+      Empty -> 0,
+      Leaf(_) -> 1,
+      Node(h, _, _, _) -> h,
+    }
+
+  private function <V: Comparable<V>> create(left: Set<V>, value: V, right: Set<V>): Set<V> = {
+    let lh = left.height();
+    let rh = right.height();
+    let h = if lh >= rh then lh + 1 else rh + 1;
+    Set.Node(h, value, left, right)
+  }
+
+  private function <V: Comparable<V>> unsafeNode(left: Set<V>, value: V, right: Set<V>): Set<V> =
+    match (left, right) {
+      (Empty, Empty) -> Set.singleton(value),
+      (Leaf(_), Empty) -> Set.Node(2, value, left, right),
+      (Empty, Leaf(_)) -> Set.Node(2, value, left, right),
+      (Leaf(_), Leaf(_)) -> Set.Node(2, value, left, right),
+      (Node(h, _, _, _), Leaf(_)) -> Set.Node(h + 1, value, left, right),
+      (Node(h, _, _, _), Empty) -> Set.Node(h + 1, value, left, right),
+      (Leaf(_), Node(h, _, _, _)) -> Set.Node(h + 1, value, left, right),
+      (Empty, Node(h, _, _, _)) -> Set.Node(h + 1, value, left, right),
+      (Node(hl, _, _, _), Node(hr, _, _, _)) -> {
+        let h = if hl >= hr then hl + 1 else hr + 1;
+        Set.Node(h, value, left, right)
+      },
+    }
+
+  private method forcedNodeWithoutHeight(): Triple<V, Set<V>, Set<V>> =
+    match this {
+      Empty -> Process.panic("Bad tree"),
+      Leaf(_) -> Process.panic("Bad tree"),
+      Node(_, v, l, r) -> (v, l, r),
+    }
+
+  private function <V: Comparable<V>> balanced(l: Set<V>, v: V, r: Set<V>): Set<V> = {
+    let lh = l.height();
+    let rh = r.height();
+    if lh > rh + 2 then {
+      let (lv, ll, lr) = l.forcedNodeWithoutHeight();
+      if ll.height() >= lr.height() then { Set.create(ll, lv, Set.unsafeNode(lr, v, r)) } else {
+        let (lrv, lrl, lrr) = lr.forcedNodeWithoutHeight();
+        Set.create(Set.unsafeNode(ll, lv, lrl), lrv, Set.unsafeNode(lrr, v, r))
+      }
+    } else if rh > lh + 2 then {
+      let (rv, rl, rr) = r.forcedNodeWithoutHeight();
+      if rr.height() >= rl.height() then { Set.create(Set.unsafeNode(l, v, rl), rv, rr) } else {
+        let (rlv, rll, rlr) = rl.forcedNodeWithoutHeight();
+        Set.create(Set.unsafeNode(l, v, rll), rlv, Set.unsafeNode(rlr, rv, rr))
+      }
+    } else { Set.unsafeNode(l, v, r) }
+  }
+
+  /*
+   * Beware: those 2 functions assume that the added k is *strictly* smaller (or bigger) than all
+   * the present keys in the tree; it does not test for equality with the current min (or max) key.
+   * Indeed, they are only used during the "join" operation which respects this precondition.
+   */
+  private function <V: Comparable<V>> addMinElement(newV: V, tree: Set<V>): Set<V> =
+    match tree {
+      Empty -> Set.singleton(newV),
+      Leaf(v) -> Set.unsafeNode(Set.singleton(newV), v, Set.empty<V>()),
+      Node(_, v, l, r) -> Set.balanced(Set.addMinElement(newV, l), v, r),
+    }
+
+  private function <V: Comparable<V>> addMaxElement(newV: V, tree: Set<V>): Set<V> =
+    match tree {
+      Empty -> Set.singleton(newV),
+      Leaf(v) -> Set.unsafeNode(Set.empty<V>(), v, Set.singleton(newV)),
+      Node(_, v, l, r) -> Set.balanced(l, v, Set.addMaxElement(newV, r)),
+    }
+
+  // Same as create and bal, but no assumptions are made on the relative heights of l and r
+  private function <V: Comparable<V>> join(l: Set<V>, v: V, r: Set<V>): Set<V> =
+    match (l, r) {
+      (Empty, _) -> Set.addMinElement(v, r),
+      (_, Empty) -> Set.addMaxElement(v, l),
+      (Leaf(_), Leaf(_)) -> Set.unsafeNode(l, v, r),
+      (Leaf(_), Node(rh, rv, rl, rr)) -> if rh > 3 then {
+        Set.balanced(Set.join(l, v, rl), rv, rr)
+      } else { Set.create(l, v, r) },
+      (Node(lh, lv, ll, lr), Leaf(_)) -> if lh > 3 then {
+        Set.balanced(ll, lv, Set.join(lr, v, r))
+      } else { Set.create(l, v, r) },
+      (Node(lh, lv, ll, lr), Node(rh, rv, rl, rr)) -> {
+        if lh > rh + 2 then { Set.balanced(ll, lv, Set.join(lr, v, r)) } else if rh > lh + 2 then {
+          Set.balanced(Set.join(l, v, rl), rv, rr)
+        } else { Set.create(l, v, r) }
+      },
+    }
+
+  /*
+   * Merge two trees l and r into one. All elements of l must precede the elements of r. No
+   * assumption on the heights of l and r.
+   */
+  private function <V: Comparable<V>> concat(t1: Set<V>, t2: Set<V>): Set<V> =
+    match (t1, t2) {
+      (Empty, t) -> t,
+      (t, Empty) -> t,
+      (_, _) -> Set.join(t1, t2.min().unwrap(), t2.removeMin()),
+    }
+
+  private function <V: Comparable<V>> tryJoin(l: Set<V>, v: V, r: Set<V>): Set<V> =
+    if (l.isEmpty() || l.max().unwrap().compare(v) < 0) && (
+      r.isEmpty() || v.compare(r.min().unwrap()) < 0
+    ) then { Set.join(l, v, r) } else { l.union(r.insert(v)) }
+}

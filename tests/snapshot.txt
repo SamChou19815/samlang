@@ -81,6 +81,8 @@ Test Name: MathFunctions
 Test Name: PrintHelloWorld
 Hello World!
 ========================================
+Test Name: SetTests
+========================================
 Test Name: ShortCircuitAndOr
 0
 1

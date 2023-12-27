@@ -18,6 +18,7 @@ import { LoopOptimization } from tests.LoopOptimization;
 import { MapTests } from tests.MapTests;
 import { MathFunctions } from tests.MathFunctions;
 import { PrintHelloWorld } from tests.PrintHelloWorld;
+import { SetTests } from tests.SetTests;
 import { ShortCircuitAndOr } from tests.ShortCircuitAndOr;
 import { SortableListTest } from tests.SortableList;
 import { VariousSyntaxForms } from tests.VariousSyntaxForms;
@@ -53,6 +54,7 @@ class Main {
       .cons(TestCase.init("MapTests", MapTests.run))
       .cons(TestCase.init("MathFunctions", MathFunctions.run))
       .cons(TestCase.init("PrintHelloWorld", PrintHelloWorld.run))
+      .cons(TestCase.init("SetTests", SetTests.run))
       .cons(TestCase.init("ShortCircuitAndOr", ShortCircuitAndOr.run))
       .cons(TestCase.init("SortableList", SortableListTest.run))
       .cons(TestCase.init("VariousSyntaxForms", VariousSyntaxForms.run))
