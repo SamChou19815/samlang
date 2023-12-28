@@ -153,14 +153,21 @@ fn search_expression(
     expr::E::Lambda(e) => {
       for param in &e.parameters {
         if param.name.loc.contains_position(position) {
-          if let Some(annot) = &param.annotation {
-            return Some(LocationCoverSearchResult::TypedName(
+          return if let Some(annot) = &param.annotation {
+            Some(LocationCoverSearchResult::TypedName(
               param.name.loc,
               param.name.name,
               Type::from_annotation(annot),
               true,
-            ));
-          }
+            ))
+          } else {
+            Some(LocationCoverSearchResult::TypedName(
+              param.name.loc,
+              param.name.name,
+              param.type_.as_ref().clone(),
+              false,
+            ))
+          };
         }
       }
       search_expression(&e.body, position, stop_at_call)
