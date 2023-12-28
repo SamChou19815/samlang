@@ -1146,8 +1146,8 @@ fn lower_constructors(
   functions
 }
 
-fn lower_tparams(type_parameters: &[source::TypeParameter]) -> Vec<PStr> {
-  type_parameters.iter().map(|it| it.name.name).collect_vec()
+fn lower_tparams(type_parameters: Option<&source::annotation::TypeParameters>) -> Vec<PStr> {
+  type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name).collect_vec()
 }
 
 fn compile_sources_with_generics_preserved(
@@ -1162,7 +1162,7 @@ fn compile_sources_with_generics_preserved(
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
         type_lowering_manager.generic_types =
-          c.type_parameters.iter().map(|it| it.name.name).collect();
+          c.type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name).collect();
         compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
           heap,
           mod_ref,
@@ -1173,7 +1173,7 @@ fn compile_sources_with_generics_preserved(
           && c.members.iter().any(|source::ClassMemberDefinition { decl, .. }| {
             decl.name.name == PStr::MAIN_FN
               && decl.parameters.is_empty()
-              && decl.type_parameters.is_empty()
+              && decl.type_parameters.is_none()
           })
         {
           main_function_names.push(hir::FunctionName {
@@ -1210,12 +1210,12 @@ fn compile_sources_with_generics_preserved(
             },
             fn_name: member.decl.name.name,
           };
-          let class_tparams = lower_tparams(&c.type_parameters);
+          let class_tparams = lower_tparams(c.type_parameters.as_ref());
           if member.decl.is_method {
             let tparams = class_tparams
               .iter()
               .cloned()
-              .chain(lower_tparams(&member.decl.type_parameters))
+              .chain(lower_tparams(member.decl.type_parameters.as_ref()))
               .collect_vec();
             let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
             type_lowering_manager.generic_types = tparams_set;
@@ -1276,7 +1276,7 @@ fn compile_sources_with_generics_preserved(
             compiled_functions.append(&mut compiled_functions_to_add);
           } else {
             let tparams_set: HashSet<_> =
-              lower_tparams(&member.decl.type_parameters).into_iter().collect();
+              lower_tparams(member.decl.type_parameters.as_ref()).into_iter().collect();
             let tparams = tparams_set.iter().sorted().cloned().collect_vec();
             type_lowering_manager.generic_types = tparams_set;
             let main_function_parameter_with_types = vec![(PStr::UNDERSCORE_THIS, hir::INT_TYPE)]
@@ -3164,7 +3164,7 @@ return (_t2: int);"#,
           associated_comments: NO_COMMENT_REFERENCE,
           private: false,
           name: source::Id::from(heap.alloc_str_for_test("I")),
-          type_parameters: vec![],
+          type_parameters: None,
           extends_or_implements_nodes: vec![],
           type_definition: (),
           members: vec![],
@@ -3174,7 +3174,7 @@ return (_t2: int);"#,
           associated_comments: NO_COMMENT_REFERENCE,
           private: false,
           name: source::Id::from(PStr::MAIN_TYPE),
-          type_parameters: vec![],
+          type_parameters: None,
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
@@ -3188,7 +3188,7 @@ return (_t2: int);"#,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(PStr::MAIN_FN),
-                type_parameters: Rc::new(vec![]),
+                type_parameters: None,
                 type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.unit_annot()),
                 parameters: Rc::new(vec![]),
               },
@@ -3225,11 +3225,16 @@ return (_t2: int);"#,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str_for_test("loopy")),
-                type_parameters: Rc::new(vec![source::TypeParameter {
-                  loc: Location::dummy(),
-                  name: source::Id::from(heap.alloc_str_for_test("T")),
-                  bound: None,
-                }]),
+                type_parameters: Some(source::annotation::TypeParameters {
+                  location: Location::dummy(),
+                  start_associated_comments: NO_COMMENT_REFERENCE,
+                  ending_associated_comments: NO_COMMENT_REFERENCE,
+                  parameters: vec![source::annotation::TypeParameter {
+                    loc: Location::dummy(),
+                    name: source::Id::from(heap.alloc_str_for_test("T")),
+                    bound: None,
+                  }],
+                }),
                 type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.unit_annot()),
                 parameters: Rc::new(vec![]),
               },
@@ -3266,7 +3271,7 @@ return (_t2: int);"#,
           associated_comments: NO_COMMENT_REFERENCE,
           private: false,
           name: source::Id::from(heap.alloc_str_for_test("Class1")),
-          type_parameters: vec![],
+          type_parameters: None,
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
@@ -3284,7 +3289,7 @@ return (_t2: int);"#,
                 is_public: true,
                 is_method: true,
                 name: source::Id::from(heap.alloc_str_for_test("foo")),
-                type_parameters: Rc::new(vec![]),
+                type_parameters: None,
                 type_: annot_builder
                   .fn_annot_unwrapped(vec![annot_builder.int_annot()], annot_builder.int_annot()),
                 parameters: Rc::new(vec![source::AnnotatedId {
@@ -3302,7 +3307,7 @@ return (_t2: int);"#,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
-                type_parameters: Rc::new(vec![]),
+                type_parameters: None,
                 type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.unit_annot()),
                 parameters: Rc::new(vec![]),
               },
@@ -3339,7 +3344,7 @@ return (_t2: int);"#,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str_for_test("factorial")),
-                type_parameters: Rc::new(vec![]),
+                type_parameters: None,
                 type_: annot_builder.fn_annot_unwrapped(
                   vec![annot_builder.int_annot(), annot_builder.int_annot()],
                   annot_builder.int_annot(),
@@ -3428,7 +3433,7 @@ return (_t2: int);"#,
           associated_comments: NO_COMMENT_REFERENCE,
           private: false,
           name: source::Id::from(heap.alloc_str_for_test("Class2")),
-          type_parameters: vec![],
+          type_parameters: None,
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition::Enum {
             loc: Location::dummy(),
@@ -3444,11 +3449,16 @@ return (_t2: int);"#,
           associated_comments: NO_COMMENT_REFERENCE,
           private: false,
           name: source::Id::from(heap.alloc_str_for_test("Class3")),
-          type_parameters: vec![source::TypeParameter {
-            loc: Location::dummy(),
-            name: source::Id::from(heap.alloc_str_for_test("T")),
-            bound: None,
-          }],
+          type_parameters: Some(source::annotation::TypeParameters {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            parameters: vec![source::annotation::TypeParameter {
+              loc: Location::dummy(),
+              name: source::Id::from(heap.alloc_str_for_test("T")),
+              bound: None,
+            }],
+          }),
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),

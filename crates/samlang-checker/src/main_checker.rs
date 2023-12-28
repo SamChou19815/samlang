@@ -1412,13 +1412,17 @@ fn check_class_member_conformance_with_signature(
   expected: &MemberSignature,
   actual: &ClassMemberDeclaration,
 ) {
-  if expected.type_parameters.len() != actual.type_parameters.len() {
+  let actual_type_params_len =
+    if let Some(tparams) = &actual.type_parameters { tparams.parameters.len() } else { 0 };
+  if expected.type_parameters.len() != actual_type_params_len {
     let mut error = StackableError::new();
-    error.add_type_params_arity_error(actual.type_parameters.len(), expected.type_parameters.len());
+    error.add_type_params_arity_error(actual_type_params_len, expected.type_parameters.len());
     error_set.report_stackable_error(actual.type_.location, error);
   }
   let mut has_type_parameter_conformance_errors = false;
-  for (e, a) in expected.type_parameters.iter().zip(actual.type_parameters.deref()) {
+  for (e, a) in
+    expected.type_parameters.iter().zip(actual.type_parameters.iter().flat_map(|it| &it.parameters))
+  {
     if e.name != a.name.name {
       has_type_parameter_conformance_errors = true;
     }
@@ -1486,6 +1490,7 @@ pub fn type_check_module(
       type_arguments: toplevel
         .type_parameters()
         .iter()
+        .flat_map(|it| &it.parameters)
         .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
         .collect_vec(),
     };
@@ -1543,13 +1548,13 @@ pub fn type_check_module(
     for member in toplevel.members_iter() {
       let tparam_sigs = if member.is_method {
         let mut sigs = TypeParameterSignature::from_list(toplevel.type_parameters());
-        sigs.append(&mut TypeParameterSignature::from_list(&member.type_parameters));
+        sigs.append(&mut TypeParameterSignature::from_list(member.type_parameters.as_ref()));
         sigs
       } else {
         if !toplevel.is_class() {
           error_set.report_illegal_function_in_interface(member.loc);
         }
-        TypeParameterSignature::from_list(&member.type_parameters)
+        TypeParameterSignature::from_list(member.type_parameters.as_ref())
       };
       let has_interface_def = if member.is_method {
         let resolved = global_signature::resolve_all_method_signatures(
@@ -1580,7 +1585,7 @@ pub fn type_check_module(
         toplevel.name().name,
         tparam_sigs,
       );
-      for tparam in member.type_parameters.iter() {
+      for tparam in member.type_parameters.iter().flat_map(|it| &it.parameters) {
         if let Some(bound) = &tparam.bound {
           member_cx.validate_type_instantiation_allow_abstract_types(&Type::Nominal(
             NominalType::from_annotation(bound),
@@ -1633,11 +1638,12 @@ pub fn type_check_module(
         for member in &c.members {
           let tparam_sigs = if member.decl.is_method {
             let mut sigs = TypeParameterSignature::from_list(toplevel.type_parameters());
-            let mut local_sigs = TypeParameterSignature::from_list(&member.decl.type_parameters);
+            let mut local_sigs =
+              TypeParameterSignature::from_list(member.decl.type_parameters.as_ref());
             sigs.append(&mut local_sigs);
             sigs
           } else {
-            TypeParameterSignature::from_list(&member.decl.type_parameters)
+            TypeParameterSignature::from_list(member.decl.type_parameters.as_ref())
           };
           let mut cx = TypingContext::new(
             global_cx,

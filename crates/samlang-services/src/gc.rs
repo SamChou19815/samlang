@@ -1,5 +1,5 @@
 use samlang_ast::source::{
-  annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter,
+  annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition,
 };
 use samlang_checker::type_::{FunctionType, NominalType, Type};
 use samlang_heap::{Heap, ModuleReference};
@@ -16,11 +16,13 @@ fn mark_annot(heap: &mut Heap, type_: &annotation::T) {
 
 fn mark_id_annot(heap: &mut Heap, annot: &annotation::Id) {
   heap.mark(annot.id.name);
-  mark_annotations(heap, &annot.type_arguments);
+  if let Some(targs) = &annot.type_arguments {
+    mark_annotations(heap, &targs.arguments);
+  }
 }
 
 fn mark_fn_annot(heap: &mut Heap, annot: &annotation::Function) {
-  mark_annotations(heap, &annot.argument_types);
+  mark_annotations(heap, &annot.parameters.parameters);
   mark_annot(heap, &annot.return_type);
 }
 
@@ -174,8 +176,8 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
   }
 }
 
-fn mark_type_parameters(heap: &mut Heap, type_parameters: &Vec<TypeParameter>) {
-  for tparam in type_parameters {
+fn mark_type_parameters(heap: &mut Heap, type_parameters: Option<&annotation::TypeParameters>) {
+  for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
     mark_id(heap, &tparam.name);
     if let Some(annot) = &tparam.bound {
       mark_id_annot(heap, annot);
@@ -202,7 +204,7 @@ fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
     }
     for m in toplevel.members_iter() {
       mark_id(heap, &m.name);
-      mark_type_parameters(heap, &m.type_parameters);
+      mark_type_parameters(heap, m.type_parameters.as_ref());
       mark_fn_annot(heap, &m.type_);
     }
     if let Toplevel::Class(c) = toplevel {
