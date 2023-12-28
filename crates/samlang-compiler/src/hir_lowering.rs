@@ -1216,7 +1216,6 @@ fn compile_sources_with_generics_preserved(
               .iter()
               .cloned()
               .chain(lower_tparams(&member.decl.type_parameters))
-              .sorted()
               .collect_vec();
             let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
             type_lowering_manager.generic_types = tparams_set;

@@ -54,6 +54,9 @@ impl TypeName {
     collector.push_str(&self.module_reference.encoded(heap));
     collector.push('_');
     collector.push_str(self.type_name.as_str(heap));
+    if !self.suffix.is_empty() {
+      collector.push('_');
+    }
     for t in &self.suffix {
       collector.push('_');
       match t {

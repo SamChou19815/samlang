@@ -236,9 +236,13 @@ fn byte_digit_to_char(byte: u8) -> char {
 
 fn print_byte_vec(collector: &mut String, array: &[u8]) {
   for b in array {
-    collector.push('\\');
-    collector.push(byte_digit_to_char(b / 16));
-    collector.push(byte_digit_to_char(b % 16));
+    if b.is_ascii_alphanumeric() {
+      collector.push(*b as char);
+    } else {
+      collector.push('\\');
+      collector.push(byte_digit_to_char(b / 16));
+      collector.push(byte_digit_to_char(b % 16));
+    }
   }
 }
 

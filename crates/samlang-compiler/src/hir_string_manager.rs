@@ -1,15 +1,15 @@
 use samlang_ast::hir::GlobalVariable;
 use samlang_heap::{Heap, PStr};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 // TODO: move this to global variable since heap allows us to provide a better API
 pub(super) struct StringManager {
-  global_variable_reference_map: HashMap<PStr, GlobalVariable>,
+  global_variable_reference_map: BTreeMap<PStr, GlobalVariable>,
 }
 
 impl StringManager {
   pub(super) fn new() -> StringManager {
-    StringManager { global_variable_reference_map: HashMap::new() }
+    StringManager { global_variable_reference_map: BTreeMap::new() }
   }
 
   pub(super) fn all_global_variables(self) -> Vec<GlobalVariable> {

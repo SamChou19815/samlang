@@ -487,7 +487,6 @@ fn generate_dec_ref_fn() -> lir::Function {
   let bitset = PStr::six_letter_literal(b"bitSet");
   let is_ref_bit_set = PStr::six_letter_literal(b"isRefB");
   let new_is_ref_bit_set = PStr::seven_letter_literal(b"isRefB2");
-  let header_offset = PStr::seven_letter_literal(b"hdrOfst");
   let byte_offset = PStr::seven_letter_literal(b"bytOfst");
 
   lir::Function {
@@ -605,15 +604,9 @@ fn generate_dec_ref_fn() -> lir::Function {
                         invert_condition: false,
                         statements: vec![
                           lir::Statement::binary(
-                            header_offset,
-                            hir::Operator::PLUS,
-                            lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
-                            lir::ONE,
-                          ),
-                          lir::Statement::binary(
                             byte_offset,
                             hir::Operator::SHL,
-                            lir::Expression::Variable(header_offset, lir::INT_TYPE),
+                            lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                             lir::Expression::int(2),
                           ),
                           lir::Statement::binary(
@@ -1173,8 +1166,7 @@ function __$dec_ref(ptr: any): number {{
           }}
           let isRef = isRefB & 1;
           if (isRef) {{
-            let hdrOfst = i + 1;
-            let bytOfst = hdrOfst << 2;
+            let bytOfst = i << 2;
             let fPtr = ptr + bytOfst;
             __$dec_ref(fPtr);
           }}

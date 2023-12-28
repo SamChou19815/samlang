@@ -384,6 +384,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
         keep
       });
     }
+    debug_assert_eq!(f.parameters.len(), f.type_.argument_types.len());
     let state = RewriteState { all_functions: &all_functions, local_rewrite };
     rewrite_stmts(&state, &mut f.body);
     rewrite_expr(&state, &mut f.return_value);

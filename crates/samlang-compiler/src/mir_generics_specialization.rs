@@ -1397,12 +1397,12 @@ sources.mains = [_DUMMY_I$main]
       r#"
 const G1 = 'a';
 
-closure type DUMMY_CC__Str__Str = (_Str) -> _Str
-closure type DUMMY_CC_int__Str = (int) -> _Str
+closure type DUMMY_CC___Str__Str = (_Str) -> _Str
+closure type DUMMY_CC__int__Str = (int) -> _Str
 variant type _Str = []
 object type DUMMY_J = [int]
-variant type DUMMY_I_int__Str = [int, int]
-variant type DUMMY_I__Str__Str = [int, int]
+variant type DUMMY_I__int__Str = [int, int]
+variant type DUMMY_I___Str__Str = [int, int]
 variant type DUMMY_Enum = [Unboxed(DUMMY_J), int]
 variant type DUMMY_Enum3 = [Boxed(int, DUMMY_J), Boxed(int, DUMMY_J), int]
 variant type DUMMY_Enum2 = [Boxed(int, int), int]
@@ -1411,12 +1411,12 @@ function _DUMMY_I$main(): int {
   if 1 {
     if 0 {
     }
-    let a: DUMMY_I_int__Str = _DUMMY_I_int$creatorIA(0);
-    let a2: DUMMY_I_int__Str = _DUMMY_I__Str$creatorIA(G1);
-    let b: DUMMY_I_int__Str = _DUMMY_I__Str$creatorIB(G1);
-    _DUMMY_I_DUMMY_I_int__Str$functor_fun(G1);
-    _DUMMY_I_DUMMY_J$functor_fun(G1);
-    let v1: int = (a: DUMMY_I_int__Str)[0];
+    let a: DUMMY_I__int__Str = _DUMMY_I__int$creatorIA(0);
+    let a2: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIA(G1);
+    let b: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIB(G1);
+    _DUMMY_I__DUMMY_I__int__Str$functor_fun(G1);
+    _DUMMY_I__DUMMY_J$functor_fun(G1);
+    let v1: int = (a: DUMMY_I__int__Str)[0];
     let cast = (a: int) as int;
     let late_init: int;
     late_init = (a: int);
@@ -1426,8 +1426,8 @@ function _DUMMY_I$main(): int {
     let v1 = 0 + 0;
     let j: DUMMY_J = [0];
     let v2: int = (j: DUMMY_J)[0];
-    let c1: DUMMY_CC__Str__Str = Closure { fun: (_DUMMY_I__Str$creatorIA: (_Str) -> DUMMY_I__Str__Str), context: G1 };
-    let c2: DUMMY_CC_int__Str = Closure { fun: (_DUMMY_I__Str$creatorIA: (_Str) -> DUMMY_I__Str__Str), context: G1 };
+    let c1: DUMMY_CC___Str__Str = Closure { fun: (_DUMMY_I___Str$creatorIA: (_Str) -> DUMMY_I___Str__Str), context: G1 };
+    let c2: DUMMY_CC__int__Str = Closure { fun: (_DUMMY_I___Str$creatorIA: (_Str) -> DUMMY_I___Str__Str), context: G1 };
     finalV = (v2: int);
   }
   let b = 0 as DUMMY_Enum;
@@ -1475,27 +1475,27 @@ function _DUMMY_J$bar(a: DUMMY_J): int {
   return 0;
 }
 
-function _DUMMY_I_int$creatorIA(a: int): DUMMY_I_int__Str {
-  let v: DUMMY_I_int__Str = [0, (a: int)];
-  return (v: DUMMY_I_int__Str);
+function _DUMMY_I__int$creatorIA(a: int): DUMMY_I__int__Str {
+  let v: DUMMY_I__int__Str = [0, (a: int)];
+  return (v: DUMMY_I__int__Str);
 }
 
-function _DUMMY_I__Str$creatorIA(a: _Str): DUMMY_I__Str__Str {
-  let v: DUMMY_I__Str__Str = [0, (a: _Str)];
-  return (v: DUMMY_I__Str__Str);
+function _DUMMY_I___Str$creatorIA(a: _Str): DUMMY_I___Str__Str {
+  let v: DUMMY_I___Str__Str = [0, (a: _Str)];
+  return (v: DUMMY_I___Str__Str);
 }
 
-function _DUMMY_I__Str$creatorIB(b: _Str): DUMMY_I_int__Str {
-  let v: DUMMY_I_int__Str = [1, (b: _Str)];
-  return (v: DUMMY_I_int__Str);
+function _DUMMY_I___Str$creatorIB(b: _Str): DUMMY_I__int__Str {
+  let v: DUMMY_I__int__Str = [1, (b: _Str)];
+  return (v: DUMMY_I__int__Str);
 }
 
-function _DUMMY_I_DUMMY_I_int__Str$functor_fun(a: DUMMY_I_int__Str): int {
-  _DUMMY_I_int__Str$bar(0);
+function _DUMMY_I__DUMMY_I__int__Str$functor_fun(a: DUMMY_I__int__Str): int {
+  _DUMMY_I__int__Str$bar(0);
   return 0;
 }
 
-function _DUMMY_I_DUMMY_J$functor_fun(a: DUMMY_J): int {
+function _DUMMY_I__DUMMY_J$functor_fun(a: DUMMY_J): int {
   _DUMMY_J$bar(0);
   return 0;
 }
@@ -1623,12 +1623,12 @@ sources.mains = [_DUMMY_I$main]"#,
       },
       heap,
       r#"
-object type DUMMY_J = [DUMMY_I_int_int]
-variant type DUMMY_I_int_int = [int, int]
+object type DUMMY_J = [DUMMY_I__int_int]
+variant type DUMMY_I__int_int = [int, int]
 variant type DUMMY_StrOption = [Unboxed(DUMMY_K), int]
 variant type DUMMY_K = [Boxed(int, int), Boxed(int, int)]
 function _DUMMY_I$creatorJ(): DUMMY_J {
-  let v1: DUMMY_I_int_int = [];
+  let v1: DUMMY_I__int_int = [];
   let v2: DUMMY_J = [0, 0];
   return (v2: DUMMY_J);
 }
