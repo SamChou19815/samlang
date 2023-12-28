@@ -1,0 +1,51 @@
+import { Int } from std.boxed;
+import { Option } from std.option;
+import { Set } from std.set;
+import { ForTests } from tests.StdLib;
+
+class SetTests {
+  private function createSetHelper(acc: Set<Int>, n: int): Set<Int> =
+    if n == 0 then { acc } else {
+      let boxedN = Int.init(n);
+      SetTests.createSetHelper(acc.insert(boxedN).insert(boxedN), n - 1)
+    }
+
+  private function validateSetHelper(set: Set<Int>, n: int): unit =
+    if n == 0 then { ForTests.assertBool(!set.contains(Int.init(n)), "Should be none!") } else {
+      let _ = ForTests.assertBool(set.contains(Int.init(n)), "Missing key");
+      SetTests.validateSetHelper(set, n - 1)
+    }
+
+  private function validatePlusOneIntSetHelper(set: Set<Int>, n: int): unit =
+    if n == 0 then { ForTests.assertBool(!set.contains(Int.init(1)), "Should be none!") } else {
+      let _ = ForTests.assertBool(set.contains(Int.init(n + 1)), "Missing key");
+      SetTests.validatePlusOneIntSetHelper(set, n - 1)
+    }
+
+  function run(): unit = {
+    let set = SetTests.createSetHelper(Set.empty(), 100);
+    let _ = SetTests.validateSetHelper(set, 100);
+    let _ = SetTests.validatePlusOneIntSetHelper(set.map((v) -> Int.init(v.value + 1)), 100);
+    let _ = ForTests.assertBool(set.diff(set).isEmpty(), "Not empty");
+    let _ = ForTests.assertBool(!set.disjoint(set), "Disjoint");
+    let union = set.union(set);
+    let inter = set.intersection(set);
+    let _ = ForTests.assertBool(
+      union.equal(set, (v1, v2) -> v1.compare(v2) == 0),
+      "Not equal with union result"
+    );
+    let _ = ForTests.assertBool(
+      inter.equal(set, (v1, v2) -> v1.compare(v2) == 0),
+      "Not equal with intersetion result"
+    );
+    let _ = ForTests.assertBool(
+      union.compare(set, (v1, v2) -> v1.compare(v2)) == 0,
+      "Compare with union != 0"
+    );
+    let _ = ForTests.assertBool(
+      inter.compare(set, (v1, v2) -> v1.compare(v2)) == 0,
+      "Compare with intersection != 0"
+    );
+    let _ = ForTests.assertIntEquals(set.fold(0, (acc, v) -> acc + v.value), (1 + 100) * 100 / 2);
+  }
+}
