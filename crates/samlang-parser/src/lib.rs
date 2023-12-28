@@ -28,7 +28,7 @@ pub fn parse_source_module_from_text(
     module_reference,
     builtins,
   );
-  parser.parse_module()
+  source_parser::parse_module(parser)
 }
 
 pub fn parse_source_expression_from_text(
@@ -45,7 +45,7 @@ pub fn parse_source_expression_from_text(
     module_reference,
     builtins,
   );
-  parser.parse_expression_with_comment_store()
+  source_parser::parse_expression_with_comment_store(parser)
 }
 
 pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, String> {
