@@ -702,36 +702,64 @@ fn create_doc(heap: &Heap, comment_store: &CommentStore, expression: &expr::E<()
   )
 }
 
+fn tuple_pattern_to_document(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  pattern::TuplePattern {
+    location: _,
+    start_associated_comments,
+    ending_associated_comments,
+    elements,
+  }: &pattern::TuplePattern<()>,
+) -> Document {
+  create_opt_preceding_comment_doc(
+    heap,
+    comment_store,
+    *start_associated_comments,
+    parenthesis_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      elements,
+      *ending_associated_comments,
+      |it| matching_pattern_to_document(heap, comment_store, &it.pattern),
+    )),
+  )
+}
+
 fn matching_pattern_to_document(
   heap: &Heap,
   comment_store: &CommentStore,
   pattern: &pattern::MatchingPattern<()>,
 ) -> Document {
   match pattern {
-    pattern::MatchingPattern::Tuple(_, names) => parenthesis_surrounded_doc(comma_sep_list(
+    pattern::MatchingPattern::Tuple(p) => tuple_pattern_to_document(heap, comment_store, p),
+    pattern::MatchingPattern::Object {
+      location: _,
+      start_associated_comments,
+      ending_associated_comments,
+      elements,
+    } => create_opt_preceding_comment_doc(
       heap,
       comment_store,
-      names,
-      NO_COMMENT_REFERENCE,
-      |it| matching_pattern_to_document(heap, comment_store, &it.pattern),
-    )),
-    pattern::MatchingPattern::Object(_, names) => braces_surrounded_doc(comma_sep_list(
-      heap,
-      comment_store,
-      names,
-      NO_COMMENT_REFERENCE,
-      |it| {
-        if it.shorthand {
-          Document::Text(rc_pstr(heap, it.field_name.name))
-        } else {
-          Document::concat(vec![
-            Document::Text(rc_pstr(heap, it.field_name.name)),
-            Document::Text(rcs(" as ")),
-            matching_pattern_to_document(heap, comment_store, &it.pattern),
-          ])
-        }
-      },
-    )),
+      *start_associated_comments,
+      braces_surrounded_doc(comma_sep_list(
+        heap,
+        comment_store,
+        elements,
+        *ending_associated_comments,
+        |it| {
+          if it.shorthand {
+            Document::Text(rc_pstr(heap, it.field_name.name))
+          } else {
+            Document::concat(vec![
+              Document::Text(rc_pstr(heap, it.field_name.name)),
+              Document::Text(rcs(" as ")),
+              matching_pattern_to_document(heap, comment_store, &it.pattern),
+            ])
+          }
+        },
+      )),
+    ),
     pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc: _,
       tag_order: _,
@@ -739,23 +767,39 @@ fn matching_pattern_to_document(
       data_variables,
       type_: (),
     }) => {
-      if data_variables.is_empty() {
-        Document::Text(rc_pstr(heap, tag.name))
-      } else {
+      if let Some(p) = data_variables {
         Document::concat(vec![
-          Document::Text(rc_pstr(heap, tag.name)),
-          parenthesis_surrounded_doc(comma_sep_list(
+          create_opt_preceding_comment_doc(
             heap,
             comment_store,
-            data_variables,
-            NO_COMMENT_REFERENCE,
-            |(p, _)| matching_pattern_to_document(heap, comment_store, p),
-          )),
+            tag.associated_comments,
+            Document::Text(rc_pstr(heap, tag.name)),
+          ),
+          tuple_pattern_to_document(heap, comment_store, p),
         ])
+      } else {
+        create_opt_preceding_comment_doc(
+          heap,
+          comment_store,
+          tag.associated_comments,
+          Document::Text(rc_pstr(heap, tag.name)),
+        )
       }
     }
-    pattern::MatchingPattern::Id(id, _) => Document::Text(rc_pstr(heap, id.name)),
-    pattern::MatchingPattern::Wildcard(_) => Document::Text(rcs("_")),
+    pattern::MatchingPattern::Id(id, _) => create_opt_preceding_comment_doc(
+      heap,
+      comment_store,
+      id.associated_comments,
+      Document::Text(rc_pstr(heap, id.name)),
+    ),
+    pattern::MatchingPattern::Wildcard { location: _, associated_comments } => {
+      create_opt_preceding_comment_doc(
+        heap,
+        comment_store,
+        *associated_comments,
+        Document::Text(rcs("_")),
+      )
+    }
   }
 }
 

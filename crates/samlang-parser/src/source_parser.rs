@@ -232,10 +232,6 @@ impl<'a> SourceParser<'a> {
     collector
   }
 
-  fn parse_upper_id(&mut self) -> Id {
-    self.parse_upper_id_with_comments(vec![])
-  }
-
   fn parse_upper_id_with_comments(&mut self, mut associated_comments: Vec<Comment>) -> Id {
     associated_comments.append(&mut self.collect_preceding_comments());
     let (loc, name) = self.assert_and_peek_upper_id();
@@ -246,14 +242,22 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  fn parse_lower_id(&mut self) -> Id {
-    let associated_comments = self.collect_preceding_comments();
+  fn parse_lower_id_with_comments(&mut self, mut associated_comments: Vec<Comment>) -> Id {
+    associated_comments.append(&mut self.collect_preceding_comments());
     let (loc, name) = self.assert_and_peek_lower_id();
     Id {
       loc,
       associated_comments: self.comments_store.create_comment_reference(associated_comments),
       name,
     }
+  }
+
+  fn parse_upper_id(&mut self) -> Id {
+    self.parse_upper_id_with_comments(vec![])
+  }
+
+  fn parse_lower_id(&mut self) -> Id {
+    self.parse_lower_id_with_comments(vec![])
   }
 
   fn collect_preceding_comments(&mut self) -> Vec<Comment> {
@@ -1520,29 +1524,15 @@ mod pattern_parser {
   use super::super::lexer::{Keyword, Token, TokenContent, TokenOp};
   use samlang_ast::source::*;
 
-  pub(super) fn parse_matching_pattern_with_unit(
-    parser: &mut super::SourceParser,
-  ) -> (pattern::MatchingPattern<()>, ()) {
-    (parse_matching_pattern(parser), ())
-  }
-
   pub(super) fn parse_matching_pattern(
     parser: &mut super::SourceParser,
   ) -> pattern::MatchingPattern<()> {
     let peeked = parser.peek();
-    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
-      parser.consume();
-      let destructured_names = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::RPAREN,
-        &mut |s: &mut super::SourceParser| pattern::TuplePatternElement {
-          pattern: Box::new(parse_matching_pattern(s)),
-          type_: (),
-        },
-      );
-      let end_location = parser.assert_and_consume_operator(TokenOp::RPAREN);
-      return pattern::MatchingPattern::Tuple(peeked_loc.union(&end_location), destructured_names);
+    if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
+      return pattern::MatchingPattern::Tuple(parse_tuple_pattern(parser));
     }
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
+      let starting_comments = parser.collect_preceding_comments();
       parser.consume();
       let destructured_names = parser.parse_comma_separated_list_with_end_token(
         TokenOp::RBRACE,
@@ -1567,23 +1557,32 @@ mod pattern_parser {
           }
         },
       );
+      let ending_comments = parser.collect_preceding_comments();
       let end_location = parser.assert_and_consume_operator(TokenOp::RBRACE);
-      return pattern::MatchingPattern::Object(peeked_loc.union(&end_location), destructured_names);
+      return pattern::MatchingPattern::Object {
+        location: peeked_loc.union(&end_location),
+        start_associated_comments: parser
+          .comments_store
+          .create_comment_reference(starting_comments),
+        ending_associated_comments: parser.comments_store.create_comment_reference(ending_comments),
+        elements: destructured_names,
+      };
     }
     if let Token(peeked_loc, TokenContent::UpperId(id)) = peeked {
+      let id_comments = parser.collect_preceding_comments();
       parser.consume();
-      let tag = Id { loc: peeked_loc, associated_comments: NO_COMMENT_REFERENCE, name: id };
+      let tag = Id {
+        loc: peeked_loc,
+        associated_comments: parser.comments_store.create_comment_reference(id_comments),
+        name: id,
+      };
       let (data_variables, loc) =
         if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = parser.peek() {
-          parser.consume();
-          let data_variables = parser.parse_comma_separated_list_with_end_token(
-            TokenOp::RPAREN,
-            &mut parse_matching_pattern_with_unit,
-          );
-          let end_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
-          (data_variables, peeked_loc.union(&end_loc))
+          let tuple_patterns = parse_tuple_pattern(parser);
+          let loc = peeked_loc.union(&tuple_patterns.location);
+          (Some(tuple_patterns), loc)
         } else {
-          (Vec::with_capacity(0), peeked_loc)
+          (None, peeked_loc)
         };
       return pattern::MatchingPattern::Variant(pattern::VariantPattern {
         loc,
@@ -1593,18 +1592,35 @@ mod pattern_parser {
         type_: (),
       });
     }
-    if let Token(peeked_loc, TokenContent::Operator(TokenOp::UNDERSCORE)) = peeked {
+    if let Token(location, TokenContent::Operator(TokenOp::UNDERSCORE)) = peeked {
+      let comments = parser.collect_preceding_comments();
       parser.consume();
-      return pattern::MatchingPattern::Wildcard(peeked_loc);
-    }
-    pattern::MatchingPattern::Id(
-      Id {
-        loc: peeked.0,
-        associated_comments: NO_COMMENT_REFERENCE,
-        name: parser.assert_and_peek_lower_id().1,
+      return pattern::MatchingPattern::Wildcard {
+        location,
+        associated_comments: parser.comments_store.create_comment_reference(comments),
+      };
+    };
+    pattern::MatchingPattern::Id(parser.parse_lower_id(), ())
+  }
+
+  fn parse_tuple_pattern(parser: &mut super::SourceParser) -> pattern::TuplePattern<()> {
+    let starting_comments = parser.collect_preceding_comments();
+    let start_loc = parser.assert_and_consume_operator(TokenOp::LPAREN);
+    let destructured_names = parser.parse_comma_separated_list_with_end_token(
+      TokenOp::RPAREN,
+      &mut |s: &mut super::SourceParser| pattern::TuplePatternElement {
+        pattern: Box::new(parse_matching_pattern(s)),
+        type_: (),
       },
-      (),
-    )
+    );
+    let ending_comments = parser.collect_preceding_comments();
+    let end_location = parser.assert_and_consume_operator(TokenOp::RPAREN);
+    pattern::TuplePattern {
+      location: start_loc.union(&end_location),
+      start_associated_comments: parser.comments_store.create_comment_reference(starting_comments),
+      ending_associated_comments: parser.comments_store.create_comment_reference(ending_comments),
+      elements: destructured_names,
+    }
   }
 }
 

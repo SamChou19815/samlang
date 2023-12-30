@@ -76,29 +76,50 @@ fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) 
   }
 }
 
+fn apply_tuple_pattern_renaming(
+  pattern: &pattern::TuplePattern<()>,
+  definition_and_uses: &DefinitionAndUses,
+  new_name: PStr,
+) -> pattern::TuplePattern<()> {
+  let pattern::TuplePattern {
+    location,
+    start_associated_comments,
+    ending_associated_comments,
+    elements,
+  } = pattern;
+  pattern::TuplePattern {
+    location: *location,
+    start_associated_comments: *start_associated_comments,
+    ending_associated_comments: *ending_associated_comments,
+    elements: elements
+      .iter()
+      .map(|pattern::TuplePatternElement { pattern, type_ }| pattern::TuplePatternElement {
+        pattern: Box::new(apply_matching_pattern_renaming(pattern, definition_and_uses, new_name)),
+        type_: *type_,
+      })
+      .collect(),
+  }
+}
+
 fn apply_matching_pattern_renaming(
   pattern: &pattern::MatchingPattern<()>,
   definition_and_uses: &DefinitionAndUses,
   new_name: PStr,
 ) -> pattern::MatchingPattern<()> {
   match pattern {
-    pattern::MatchingPattern::Tuple(l, names) => pattern::MatchingPattern::Tuple(
-      *l,
-      names
-        .iter()
-        .map(|pattern::TuplePatternElement { pattern, type_ }| pattern::TuplePatternElement {
-          pattern: Box::new(apply_matching_pattern_renaming(
-            pattern,
-            definition_and_uses,
-            new_name,
-          )),
-          type_: *type_,
-        })
-        .collect(),
+    pattern::MatchingPattern::Tuple(p) => pattern::MatchingPattern::Tuple(
+      apply_tuple_pattern_renaming(p, definition_and_uses, new_name),
     ),
-    pattern::MatchingPattern::Object(l, names) => pattern::MatchingPattern::Object(
-      *l,
-      names
+    pattern::MatchingPattern::Object {
+      location,
+      start_associated_comments,
+      ending_associated_comments,
+      elements,
+    } => pattern::MatchingPattern::Object {
+      location: *location,
+      start_associated_comments: *start_associated_comments,
+      ending_associated_comments: *ending_associated_comments,
+      elements: elements
         .iter()
         .map(
           |pattern::ObjectPatternElement {
@@ -126,7 +147,7 @@ fn apply_matching_pattern_renaming(
           },
         )
         .collect(),
-    ),
+    },
     pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc,
       tag_order,
@@ -138,9 +159,8 @@ fn apply_matching_pattern_renaming(
       tag_order: *tag_order,
       tag: *tag,
       data_variables: data_variables
-        .iter()
-        .map(|(p, ())| (apply_matching_pattern_renaming(p, definition_and_uses, new_name), ()))
-        .collect(),
+        .as_ref()
+        .map(|p| apply_tuple_pattern_renaming(p, definition_and_uses, new_name)),
       type_: (),
     }),
     pattern::MatchingPattern::Id(id, ()) => {
@@ -151,7 +171,7 @@ fn apply_matching_pattern_renaming(
         (),
       )
     }
-    pattern::MatchingPattern::Wildcard(_) => pattern.clone(),
+    pattern::MatchingPattern::Wildcard { .. } => pattern.clone(),
   }
 }
 
