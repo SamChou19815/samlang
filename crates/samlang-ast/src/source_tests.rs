@@ -389,12 +389,33 @@ mod tests {
           annotation: Some(annotation::T::Fn(annotation::Function {
             location: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            argument_types: vec![annotation::T::Id(annotation::Id {
+            parameters: annotation::FunctionParameters {
               location: Location::dummy(),
-              module_reference: ModuleReference::DUMMY,
-              id: Id::from(heap.alloc_str_for_test("name")),
-              type_arguments: vec![],
-            })],
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              parameters: vec![
+                annotation::T::Id(annotation::Id {
+                  location: Location::dummy(),
+                  module_reference: ModuleReference::DUMMY,
+                  id: Id::from(heap.alloc_str_for_test("name")),
+                  type_arguments: None,
+                }),
+                annotation::T::Id(annotation::Id {
+                  location: Location::dummy(),
+                  module_reference: ModuleReference::DUMMY,
+                  id: Id::from(heap.alloc_str_for_test("name")),
+                  type_arguments: Some(annotation::TypeArguments {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    arguments: vec![annotation::T::Primitive(
+                      Location::dummy(),
+                      NO_COMMENT_REFERENCE,
+                      annotation::PrimitiveTypeKind::Any,
+                    )],
+                  }),
+                }),
+              ],
+            },
             return_type: Box::new(annotation::T::Primitive(
               Location::dummy(),
               NO_COMMENT_REFERENCE,
@@ -413,7 +434,7 @@ mod tests {
     let mut heap = Heap::new();
     assert_eq!(
       "name",
-      TypeParameter {
+      annotation::TypeParameter {
         loc: Location::dummy(),
         name: Id::from(heap.alloc_str_for_test("name")),
         bound: None
@@ -447,7 +468,7 @@ mod tests {
       associated_comments: NO_COMMENT_REFERENCE,
       private: false,
       name: Id::from(PStr::LOWER_A),
-      type_parameters: vec![],
+      type_parameters: None,
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![ClassMemberDeclaration {
@@ -456,7 +477,12 @@ mod tests {
         is_public: true,
         is_method: true,
         name: Id::from(PStr::LOWER_A),
-        type_parameters: Rc::new(vec![]),
+        type_parameters: Some(annotation::TypeParameters {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters: vec![]
+        }),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![AnnotatedId {
           name: Id::from(PStr::LOWER_A),
@@ -467,7 +493,7 @@ mod tests {
     }
     .clone()
     .type_parameters
-    .is_empty());
+    .is_none());
     assert!(ModuleMembersImport {
       loc: Location::dummy(),
       imported_members: vec![],
@@ -505,15 +531,28 @@ mod tests {
       type_: (),
       annotation: builder.int_annot(),
     }));
-    assert!(TypeParameter { loc: Location::dummy(), name: Id::from(PStr::LOWER_A), bound: None }
-      .eq(&TypeParameter { loc: Location::dummy(), name: Id::from(PStr::LOWER_A), bound: None }));
+    assert!(annotation::TypeParameter {
+      loc: Location::dummy(),
+      name: Id::from(PStr::LOWER_A),
+      bound: None
+    }
+    .eq(&annotation::TypeParameter {
+      loc: Location::dummy(),
+      name: Id::from(PStr::LOWER_A),
+      bound: None
+    }));
 
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
       private: false,
       name: Id::from(heap.alloc_str_for_test("name")),
-      type_parameters: vec![],
+      type_parameters: Some(annotation::TypeParameters {
+        location: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        parameters: vec![],
+      }),
       extends_or_implements_nodes: vec![],
       type_definition: TypeDefinition::Struct {
         loc: Location::dummy(),
@@ -530,7 +569,12 @@ mod tests {
           is_public: true,
           is_method: true,
           name: Id::from(PStr::LOWER_A),
-          type_parameters: Rc::new(vec![]),
+          type_parameters: Some(annotation::TypeParameters {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            parameters: vec![],
+          }),
           type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
           parameters: Rc::new(vec![]),
         },
@@ -547,7 +591,12 @@ mod tests {
       associated_comments: NO_COMMENT_REFERENCE,
       private: false,
       name: Id::from(heap.alloc_str_for_test("name")),
-      type_parameters: vec![],
+      type_parameters: Some(annotation::TypeParameters {
+        location: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        parameters: vec![],
+      }),
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![ClassMemberDeclaration {
@@ -556,7 +605,12 @@ mod tests {
         is_public: true,
         is_method: true,
         name: Id::from(PStr::LOWER_A),
-        type_parameters: Rc::new(vec![]),
+        type_parameters: Some(annotation::TypeParameters {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters: vec![],
+        }),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![]),
       }],

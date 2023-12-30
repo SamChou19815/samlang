@@ -174,7 +174,7 @@ impl Document {
 /// Each variant can be translated easily into a printable form without extra state.
 enum IntermediateDocumentTokenForPrinting {
   Text(Str),
-  Line(usize),
+  Line { indentation: usize, hard: bool },
 }
 
 enum DocumentList {
@@ -216,7 +216,10 @@ fn generate_best_doc(
         list = rest.clone();
       }
       Document::Line | Document::LineFlattenToNil | Document::LineHard => {
-        collector.push(IntermediateDocumentTokenForPrinting::Line(*indentation));
+        collector.push(IntermediateDocumentTokenForPrinting::Line {
+          indentation: *indentation,
+          hard: document.as_ref().eq(&Document::LineHard),
+        });
         consumed = *indentation;
         enforce_consumed = false;
         list = rest.clone();
@@ -253,13 +256,21 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
   );
 
   let mut string_builder = String::new();
+  let mut prev_hard_line = false;
   for token in collector {
     match token {
       IntermediateDocumentTokenForPrinting::Text(s) => {
         string_builder.push_str(&s);
+        prev_hard_line = false;
       }
-      IntermediateDocumentTokenForPrinting::Line(indentation) => {
+      IntermediateDocumentTokenForPrinting::Line { indentation, hard } => {
+        if !hard && prev_hard_line {
+          // If we already printed a hard line before and we are getting a soft line,
+          // undo the hardline first.
+          string_builder.truncate(string_builder.trim_end().len());
+        }
         string_builder.push('\n');
+        prev_hard_line = hard;
         for _ in 0..indentation {
           string_builder.push(' ');
         }

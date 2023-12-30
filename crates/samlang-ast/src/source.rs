@@ -147,18 +147,33 @@ pub mod annotation {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub struct TypeArguments {
+    pub location: Location,
+    pub start_associated_comments: CommentReference,
+    pub ending_associated_comments: CommentReference,
+    pub arguments: Vec<T>,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub struct Id {
     pub location: Location,
     pub module_reference: ModuleReference,
     pub id: super::Id,
-    pub type_arguments: Vec<T>,
+    pub type_arguments: Option<TypeArguments>,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub struct FunctionParameters {
+    pub location: Location,
+    pub ending_associated_comments: CommentReference,
+    pub parameters: Vec<T>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
   pub struct Function {
     pub location: Location,
     pub associated_comments: CommentReference,
-    pub argument_types: Vec<T>,
+    pub parameters: FunctionParameters,
     pub return_type: Box<T>,
   }
 
@@ -188,6 +203,21 @@ pub mod annotation {
         T::Fn(annot) => annot.associated_comments,
       }
     }
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub struct TypeParameter {
+    pub loc: Location,
+    pub name: super::Id,
+    pub bound: Option<Id>,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub struct TypeParameters {
+    pub location: Location,
+    pub start_associated_comments: CommentReference,
+    pub ending_associated_comments: CommentReference,
+    pub parameters: Vec<TypeParameter>,
   }
 }
 
@@ -596,20 +626,13 @@ pub mod expr {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct TypeParameter {
-  pub loc: Location,
-  pub name: Id,
-  pub bound: Option<annotation::Id>,
-}
-
-#[derive(Clone, PartialEq, Eq)]
 pub struct ClassMemberDeclaration {
   pub loc: Location,
   pub associated_comments: CommentReference,
   pub is_public: bool,
   pub is_method: bool,
   pub name: Id,
-  pub type_parameters: Rc<Vec<TypeParameter>>,
+  pub type_parameters: Option<annotation::TypeParameters>,
   pub type_: annotation::Function,
   pub parameters: Rc<Vec<AnnotatedId<()>>>,
 }
@@ -626,7 +649,7 @@ pub struct InterfaceDeclarationCommon<D, M> {
   pub associated_comments: CommentReference,
   pub private: bool,
   pub name: Id,
-  pub type_parameters: Vec<TypeParameter>,
+  pub type_parameters: Option<annotation::TypeParameters>,
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
   pub extends_or_implements_nodes: Vec<annotation::Id>,
   pub type_definition: D,
@@ -714,10 +737,10 @@ impl<T: Clone> Toplevel<T> {
     }
   }
 
-  pub fn type_parameters(&self) -> &Vec<TypeParameter> {
+  pub fn type_parameters(&self) -> Option<&annotation::TypeParameters> {
     match self {
-      Toplevel::Interface(i) => &i.type_parameters,
-      Toplevel::Class(c) => &c.type_parameters,
+      Toplevel::Interface(i) => i.type_parameters.as_ref(),
+      Toplevel::Class(c) => c.type_parameters.as_ref(),
     }
   }
 
@@ -760,8 +783,8 @@ pub struct Module<T: Clone> {
 }
 
 pub mod test_builder {
-  use super::super::loc::Location;
   use super::*;
+  use super::{super::loc::Location, annotation::TypeArguments};
   use samlang_heap::{ModuleReference, PStr};
 
   pub struct CustomizedAstBuilder {}
@@ -804,7 +827,7 @@ pub mod test_builder {
         location: Location::dummy(),
         module_reference: ModuleReference::ROOT,
         id: Id::from(PStr::STR_TYPE),
-        type_arguments: vec![],
+        type_arguments: None,
       })
     }
 
@@ -817,7 +840,12 @@ pub mod test_builder {
         location: Location::dummy(),
         module_reference: ModuleReference::DUMMY,
         id: Id::from(id),
-        type_arguments,
+        type_arguments: Some(TypeArguments {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          arguments: type_arguments,
+        }),
       }
     }
 
@@ -835,13 +863,17 @@ pub mod test_builder {
 
     pub fn fn_annot_unwrapped(
       &self,
-      argument_types: Vec<annotation::T>,
+      parameters: Vec<annotation::T>,
       return_type: annotation::T,
     ) -> annotation::Function {
       annotation::Function {
         location: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        argument_types,
+        parameters: annotation::FunctionParameters {
+          location: Location::dummy(),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters,
+        },
         return_type: Box::new(return_type),
       }
     }

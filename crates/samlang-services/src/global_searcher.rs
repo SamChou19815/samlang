@@ -21,7 +21,7 @@ fn search_annot(
     annotation::T::Primitive(_, _, _) | annotation::T::Generic(_, _) => {}
     annotation::T::Id(annot) => search_id_annot(annot, request, collector),
     annotation::T::Fn(annot) => {
-      for a in &annot.argument_types {
+      for a in &annot.parameters.parameters {
         search_annot(a, request, collector);
       }
       search_annot(&annot.return_type, request, collector);
@@ -42,7 +42,7 @@ fn search_id_annot(
     }
     _ => {}
   }
-  for annot in &annotation.type_arguments {
+  for annot in annotation.type_arguments.iter().flat_map(|it| &it.arguments) {
     search_annot(annot, request, collector);
   }
 }

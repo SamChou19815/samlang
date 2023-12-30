@@ -31,7 +31,7 @@ pub fn build_module_signature(
     for member in toplevel.members_iter() {
       let type_info = MemberSignature {
         is_public: member.is_public,
-        type_parameters: TypeParameterSignature::from_list(&member.type_parameters),
+        type_parameters: TypeParameterSignature::from_list(member.type_parameters.as_ref()),
         type_: FunctionType::from_annotation(&member.type_),
       };
       if member.is_method {
@@ -50,6 +50,7 @@ pub fn build_module_signature(
         type_arguments: class
           .type_parameters
           .iter()
+          .flat_map(|it| &it.parameters)
           .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
           .collect_vec(),
       }));

@@ -233,7 +233,11 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_upper_id(&mut self) -> Id {
-    let associated_comments = self.collect_preceding_comments();
+    self.parse_upper_id_with_comments(vec![])
+  }
+
+  fn parse_upper_id_with_comments(&mut self, mut associated_comments: Vec<Comment>) -> Id {
+    associated_comments.append(&mut self.collect_preceding_comments());
     let (loc, name) = self.assert_and_peek_upper_id();
     Id {
       loc,
@@ -394,20 +398,8 @@ mod toplevel_parser {
       };
     let name = parser.parse_upper_id();
     loc = loc.union(&name.loc);
-    let (type_param_loc_start, type_param_loc_end, mut type_parameters) =
-      if let Token(loc_start, TokenContent::Operator(TokenOp::LT)) = parser.peek() {
-        parser.consume();
-        let type_params = parser.parse_comma_separated_list_with_end_token(
-          TokenOp::GT,
-          &mut super::type_parser::parse_type_parameter,
-        );
-        let loc_end = parser.assert_and_consume_operator(TokenOp::GT);
-        (Some(loc_start), Some(loc_end), type_params)
-      } else {
-        (None, None, vec![])
-      };
-    parser.available_tparams = type_parameters.iter().map(|it| it.name.name).collect();
-    super::type_parser::fix_tparams_with_generic_annot(parser, &mut type_parameters);
+    parser.available_tparams = HashSet::new();
+    let type_parameters = super::type_parser::parse_type_parameters(parser);
     let (type_definition, extends_or_implements_nodes) = match parser.peek().1 {
       TokenContent::Operator(TokenOp::LBRACE | TokenOp::COLON)
       | TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE) => {
@@ -419,7 +411,11 @@ mod toplevel_parser {
         } else {
           vec![]
         };
-        loc = if let Some(loc_end) = type_param_loc_end { loc.union(&loc_end) } else { loc };
+        loc = if let Some(tparams_node) = &type_parameters {
+          loc.union(&tparams_node.location)
+        } else {
+          loc
+        };
         let type_def = TypeDefinition::Struct { loc: parser.peek().0, fields: vec![] };
         (type_def, nodes)
       }
@@ -427,8 +423,11 @@ mod toplevel_parser {
         let type_def_loc_start = parser.assert_and_consume_operator(TokenOp::LPAREN);
         let mut type_def = parse_type_definition_inner(parser);
         let type_def_loc_end = parser.assert_and_consume_operator(TokenOp::RPAREN);
-        let type_def_loc =
-          type_param_loc_start.unwrap_or(type_def_loc_start).union(&type_def_loc_end);
+        let type_def_loc = type_parameters
+          .as_ref()
+          .map(|it| it.location)
+          .unwrap_or(type_def_loc_start)
+          .union(&type_def_loc_end);
         match &mut type_def {
           TypeDefinition::Struct { loc, fields: _ } => *loc = type_def_loc,
           TypeDefinition::Enum { loc, variants: _ } => *loc = type_def_loc,
@@ -480,19 +479,8 @@ mod toplevel_parser {
         (parser.assert_and_consume_keyword(Keyword::INTERFACE), false)
       };
     let name = parser.parse_upper_id();
-    let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = parser.peek().1 {
-      parser.consume();
-      let type_params = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::GT,
-        &mut super::type_parser::parse_type_parameter,
-      );
-      loc = loc.union(&parser.assert_and_consume_operator(TokenOp::GT));
-      type_params
-    } else {
-      vec![]
-    };
-    parser.available_tparams = type_parameters.iter().map(|it| it.name.name).collect();
-    super::type_parser::fix_tparams_with_generic_annot(parser, &mut type_parameters);
+    parser.available_tparams = HashSet::new();
+    let type_parameters = super::type_parser::parse_type_parameters(parser);
     let extends_or_implements_nodes =
       if let TokenContent::Operator(TokenOp::COLON) = parser.peek().1 {
         parser.consume();
@@ -567,8 +555,7 @@ mod toplevel_parser {
     }
     parser.assert_and_consume_keyword(Keyword::VAL);
     let name = parser.parse_lower_id();
-    parser.assert_and_consume_operator(TokenOp::COLON);
-    let annotation = super::type_parser::parse_annotation(parser);
+    let annotation = super::type_parser::parse_annotation_with_colon(parser);
     FieldDefinition { name, annotation, is_public }
   }
 
@@ -644,19 +631,10 @@ mod toplevel_parser {
     if !is_method {
       parser.available_tparams = HashSet::new();
     }
-    let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = parser.peek().1 {
-      parser.consume();
-      let type_params = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::GT,
-        &mut super::type_parser::parse_type_parameter,
-      );
-      parser.assert_and_consume_operator(TokenOp::GT);
-      type_params
-    } else {
-      vec![]
-    };
-    parser.available_tparams.extend(type_parameters.iter().map(|it| it.name.name));
-    super::type_parser::fix_tparams_with_generic_annot(parser, &mut type_parameters);
+    let type_parameters = super::type_parser::parse_type_parameters(parser);
+    parser
+      .available_tparams
+      .extend(type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name));
     let name = parser.parse_lower_id();
     let fun_type_loc_start = parser.assert_and_consume_operator(TokenOp::LPAREN);
     let parameters = if let TokenContent::Operator(TokenOp::RPAREN) = parser.peek().1 {
@@ -668,8 +646,7 @@ mod toplevel_parser {
       )
     };
     parser.assert_and_consume_operator(TokenOp::RPAREN);
-    parser.assert_and_consume_operator(TokenOp::COLON);
-    let return_type = super::type_parser::parse_annotation(parser);
+    let return_type = super::type_parser::parse_annotation_with_colon(parser);
     let fun_type_loc = fun_type_loc_start.union(&return_type.location());
     ClassMemberDeclaration {
       loc: start_loc.union(&fun_type_loc),
@@ -677,11 +654,15 @@ mod toplevel_parser {
       is_public,
       is_method,
       name,
-      type_parameters: std::rc::Rc::new(type_parameters),
+      type_parameters,
       type_: annotation::Function {
         location: fun_type_loc,
         associated_comments: NO_COMMENT_REFERENCE,
-        argument_types: parameters.iter().map(|it| it.annotation.clone()).collect_vec(),
+        parameters: annotation::FunctionParameters {
+          location: fun_type_loc,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters: parameters.iter().map(|it| it.annotation.clone()).collect_vec(),
+        },
         return_type: Box::new(return_type),
       },
       parameters: std::rc::Rc::new(parameters),
@@ -1511,19 +1492,20 @@ mod expression_parser {
   pub(super) fn parse_statement(
     parser: &mut super::SourceParser,
   ) -> expr::DeclarationStatement<()> {
-    let concrete_comments = parser.collect_preceding_comments();
-    let associated_comments = parser.comments_store.create_comment_reference(concrete_comments);
+    let mut concrete_comments = parser.collect_preceding_comments();
     let start_loc = parser.assert_and_consume_keyword(Keyword::LET);
     let pattern = super::pattern_parser::parse_matching_pattern(parser);
     let annotation = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
-      parser.consume();
-      Some(super::type_parser::parse_annotation(parser))
+      Some(super::type_parser::parse_annotation_with_colon(parser))
     } else {
       None
     };
+    concrete_comments.append(&mut parser.collect_preceding_comments());
     parser.assert_and_consume_operator(TokenOp::ASSIGN);
     let assigned_expression = Box::new(parse_expression(parser));
+    concrete_comments.append(&mut parser.collect_preceding_comments());
     let loc = start_loc.union(&parser.assert_and_consume_operator(TokenOp::SEMICOLON));
+    let associated_comments = parser.comments_store.create_comment_reference(concrete_comments);
     expr::DeclarationStatement {
       loc,
       associated_comments,
@@ -1630,24 +1612,51 @@ mod type_parser {
   use super::super::lexer::{Keyword, Token, TokenContent, TokenOp};
   use samlang_ast::source::*;
 
-  pub(super) fn parse_type_parameter(parser: &mut super::SourceParser) -> TypeParameter {
+  pub(super) fn parse_type_parameters(
+    parser: &mut super::SourceParser,
+  ) -> Option<annotation::TypeParameters> {
+    if let Token(start_loc, TokenContent::Operator(TokenOp::LT)) = parser.peek() {
+      let start_comments = parser.collect_preceding_comments();
+      parser.consume();
+      let mut parameters = parser.parse_comma_separated_list_with_end_token(
+        TokenOp::GT,
+        &mut super::type_parser::parse_type_parameter,
+      );
+      let end_comments = parser.collect_preceding_comments();
+      let location = start_loc.union(&parser.assert_and_consume_operator(TokenOp::GT));
+      parser.available_tparams.extend(parameters.iter().map(|it| it.name.name));
+      fix_tparams_with_generic_annot(parser, &mut parameters);
+      Some(annotation::TypeParameters {
+        location,
+        start_associated_comments: parser.comments_store.create_comment_reference(start_comments),
+        ending_associated_comments: parser.comments_store.create_comment_reference(end_comments),
+        parameters,
+      })
+    } else {
+      None
+    }
+  }
+
+  pub(super) fn parse_type_parameter(
+    parser: &mut super::SourceParser,
+  ) -> annotation::TypeParameter {
     let name = &parser.parse_upper_id();
     let (bound, loc) = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
+      let id_comments = parser.collect_preceding_comments();
       parser.consume();
-      let id = parser.parse_upper_id();
+      let id = parser.parse_upper_id_with_comments(id_comments);
       let bound = super::type_parser::parse_identifier_annot(parser, id);
       let loc = name.loc.union(&bound.location);
       (Some(bound), loc)
     } else {
       (None, name.loc)
     };
-    TypeParameter { loc, name: *name, bound }
+    annotation::TypeParameter { loc, name: *name, bound }
   }
 
   pub(super) fn parse_annotated_id(parser: &mut super::SourceParser) -> AnnotatedId<()> {
     let name = parser.parse_lower_id();
-    parser.assert_and_consume_operator(TokenOp::COLON);
-    let annotation = parse_annotation(parser);
+    let annotation = parse_annotation_with_colon(parser);
     AnnotatedId { name, type_: (), annotation }
   }
 
@@ -1661,15 +1670,27 @@ mod type_parser {
 
   fn parse_optional_annotation(parser: &mut super::SourceParser) -> Option<annotation::T> {
     if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
-      parser.consume();
-      Some(parse_annotation(parser))
+      Some(parse_annotation_with_colon(parser))
     } else {
       None
     }
   }
 
   pub(super) fn parse_annotation(parser: &mut super::SourceParser) -> annotation::T {
-    let associated_comments = parser.collect_preceding_comments();
+    parse_annotation_with_additional_comments(parser, vec![])
+  }
+
+  pub(super) fn parse_annotation_with_colon(parser: &mut super::SourceParser) -> annotation::T {
+    let annotation_comments = parser.collect_preceding_comments();
+    parser.assert_and_consume_operator(TokenOp::COLON);
+    parse_annotation_with_additional_comments(parser, annotation_comments)
+  }
+
+  pub(super) fn parse_annotation_with_additional_comments(
+    parser: &mut super::SourceParser,
+    mut associated_comments: Vec<Comment>,
+  ) -> annotation::T {
+    associated_comments.append(&mut parser.collect_preceding_comments());
     let peeked = parser.peek();
     match peeked.1 {
       TokenContent::Keyword(Keyword::UNIT) => {
@@ -1701,8 +1722,7 @@ mod type_parser {
         let associated_comments = parser.comments_store.create_comment_reference(vec![]);
         let id_annot =
           parse_identifier_annot(parser, Id { loc: peeked.0, associated_comments, name });
-        if id_annot.type_arguments.is_empty()
-          && parser.available_tparams.contains(&id_annot.id.name)
+        if id_annot.type_arguments.is_none() && parser.available_tparams.contains(&id_annot.id.name)
         {
           annotation::T::Generic(id_annot.location, id_annot.id)
         } else {
@@ -1711,23 +1731,35 @@ mod type_parser {
       }
       TokenContent::Operator(TokenOp::LPAREN) => {
         parser.consume();
-        let argument_types =
-          if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = parser.peek() {
-            parser.consume();
-            vec![]
-          } else {
-            let types = parser
-              .parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut parse_annotation);
-            parser.assert_and_consume_operator(TokenOp::RPAREN);
-            types
-          };
-        parser.assert_and_consume_operator(TokenOp::ARROW);
+        let parameters = if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = parser.peek() {
+          let mut comments = parser.collect_preceding_comments();
+          let location = peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RPAREN));
+          comments.append(&mut parser.collect_preceding_comments());
+          parser.assert_and_consume_operator(TokenOp::ARROW);
+          annotation::FunctionParameters {
+            location,
+            ending_associated_comments: parser.comments_store.create_comment_reference(comments),
+            parameters: Vec::with_capacity(0),
+          }
+        } else {
+          let parameters = parser
+            .parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut parse_annotation);
+          let mut comments = parser.collect_preceding_comments();
+          let location = peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RPAREN));
+          comments.append(&mut parser.collect_preceding_comments());
+          parser.assert_and_consume_operator(TokenOp::ARROW);
+          annotation::FunctionParameters {
+            location,
+            ending_associated_comments: parser.comments_store.create_comment_reference(comments),
+            parameters,
+          }
+        };
         let return_type = parse_annotation(parser);
         let location = peeked.0.union(&return_type.location());
         annotation::T::Fn(annotation::Function {
           location,
           associated_comments: parser.comments_store.create_comment_reference(associated_comments),
-          argument_types,
+          parameters,
           return_type: Box::new(return_type),
         })
       }
@@ -1747,12 +1779,14 @@ mod type_parser {
 
   pub(super) fn fix_tparams_with_generic_annot(
     parser: &mut super::SourceParser,
-    tparams: &mut [TypeParameter],
+    tparams: &mut [annotation::TypeParameter],
   ) {
     for tparam in tparams {
       if let Some(bound) = &mut tparam.bound {
-        for annot in &mut bound.type_arguments {
-          fix_annot_with_generic_annot(parser, annot);
+        if let Some(targs) = &mut bound.type_arguments {
+          for annot in &mut targs.arguments {
+            fix_annot_with_generic_annot(parser, annot);
+          }
         }
       }
     }
@@ -1765,14 +1799,13 @@ mod type_parser {
     match annot {
       annotation::T::Primitive(_, _, _) | annotation::T::Generic(_, _) => {}
       annotation::T::Id(id_annot) => {
-        if id_annot.type_arguments.is_empty()
-          && parser.available_tparams.contains(&id_annot.id.name)
+        if id_annot.type_arguments.is_none() && parser.available_tparams.contains(&id_annot.id.name)
         {
           *annot = annotation::T::Generic(id_annot.location, id_annot.id)
         }
       }
       annotation::T::Fn(t) => {
-        for annot in &mut t.argument_types {
+        for annot in &mut t.parameters.parameters {
           fix_annot_with_generic_annot(parser, annot);
         }
         fix_annot_with_generic_annot(parser, &mut t.return_type);
@@ -1784,16 +1817,34 @@ mod type_parser {
     parser: &mut super::SourceParser,
     identifier: Id,
   ) -> annotation::Id {
-    let (type_arguments, location) =
-      if let Token(_, TokenContent::Operator(TokenOp::LT)) = parser.peek() {
+    let type_arguments =
+      if let Token(start_loc, TokenContent::Operator(TokenOp::LT)) = parser.peek() {
+        let start_associated_comments = {
+          let comments = parser.collect_preceding_comments();
+          parser.comments_store.create_comment_reference(comments)
+        };
         parser.consume();
-        let types =
+        let arguments =
           parser.parse_comma_separated_list_with_end_token(TokenOp::GT, &mut parse_annotation);
-        let location = identifier.loc.union(&parser.assert_and_consume_operator(TokenOp::GT));
-        (types, location)
+        let ending_associated_comments = {
+          let comments = parser.collect_preceding_comments();
+          parser.comments_store.create_comment_reference(comments)
+        };
+        let location = start_loc.union(&parser.assert_and_consume_operator(TokenOp::GT));
+        Some(annotation::TypeArguments {
+          location,
+          start_associated_comments,
+          ending_associated_comments,
+          arguments,
+        })
       } else {
-        (vec![], identifier.loc)
+        None
       };
+    let location = if let Some(node) = &type_arguments {
+      identifier.loc.union(&node.location)
+    } else {
+      identifier.loc
+    };
     annotation::Id {
       location,
       module_reference: super::utils::resolve_class(parser, identifier.name),

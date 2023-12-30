@@ -507,7 +507,7 @@ class Main {
   fn rename_test_1() {
     let source = r#"
 class Main {
-  function test(a: int, b: bool): unit = {
+  function test(a: int, b: (int, bool, Str, int, bool, Str, int, bool, Str, /* foo */) -> bool, c: (/* foo */) -> bool, d: () -> bool): unit = {
     let c = a.foo;
   }
 }
@@ -523,7 +523,23 @@ interface Foo {}
     );
     assert_eq!(
       r#"class Main {
-  function test(renAmeD: int, b: bool): unit = {
+  function test(
+    renAmeD: int,
+    b: (
+      int,
+      bool,
+      Str,
+      int,
+      bool,
+      Str,
+      int,
+      bool,
+      Str,
+      /* foo */
+    ) -> bool,
+    c: (/* foo */) -> bool,
+    d: () -> bool
+  ): unit = {
     let c = renAmeD.foo;
   }
 }

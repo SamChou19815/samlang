@@ -259,7 +259,7 @@ impl DiffNode<'_> {
       DiffNode::Statement(n) => {
         samlang_printer::pretty_print_statement(heap, 100, comment_store, n)
       }
-      DiffNode::Import(n) => samlang_printer::pretty_print_import(heap, 100, n),
+      DiffNode::Import(n) => samlang_printer::pretty_print_import(heap, 100, comment_store, n),
       DiffNode::Toplevel(n) => samlang_printer::pretty_print_toplevel(heap, 100, comment_store, n),
     }
   }
@@ -530,7 +530,7 @@ mod tests {
       associated_comments: NO_COMMENT_REFERENCE,
       private: false,
       name: Id::from(PStr::UPPER_A),
-      type_parameters: vec![],
+      type_parameters: None,
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![],

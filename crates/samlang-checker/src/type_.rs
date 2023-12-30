@@ -1,9 +1,6 @@
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use samlang_ast::{
-  source::{annotation, TypeParameter},
-  Description, Location, Reason,
-};
+use samlang_ast::{source::annotation, Description, Location, Reason};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
@@ -104,11 +101,11 @@ impl NominalType {
       is_class_statics: false,
       module_reference: annotation.module_reference,
       id: annotation.id.name,
-      type_arguments: annotation
-        .type_arguments
-        .iter()
-        .map(|annot| Rc::new(Type::from_annotation(annot)))
-        .collect(),
+      type_arguments: if let Some(targs) = &annotation.type_arguments {
+        targs.arguments.iter().map(|annot| Rc::new(Type::from_annotation(annot))).collect()
+      } else {
+        Vec::with_capacity(0)
+      },
     }
   }
 }
@@ -159,7 +156,8 @@ impl FunctionType {
     FunctionType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       argument_types: annotation
-        .argument_types
+        .parameters
+        .parameters
         .iter()
         .map(|annot| Rc::new(Type::from_annotation(annot)))
         .collect(),
@@ -289,9 +287,11 @@ pub struct TypeParameterSignature {
 }
 
 impl TypeParameterSignature {
-  pub fn from_list(type_parameters: &[TypeParameter]) -> Vec<TypeParameterSignature> {
+  pub fn from_list(
+    type_parameters: Option<&annotation::TypeParameters>,
+  ) -> Vec<TypeParameterSignature> {
     let mut tparam_sigs = vec![];
-    for tparam in type_parameters {
+    for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
       tparam_sigs.push(TypeParameterSignature {
         name: tparam.name.name,
         bound: tparam.bound.as_ref().map(NominalType::from_annotation),
@@ -654,7 +654,7 @@ pub type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
 mod type_tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::source::{test_builder, Id};
+  use samlang_ast::source::{test_builder, Id, NO_COMMENT_REFERENCE};
 
   #[test]
   fn boilterplate() {
@@ -739,25 +739,35 @@ mod type_tests {
 
     assert_eq!(
       "A",
-      TypeParameterSignature::from_list(&[TypeParameter {
-        loc: Location::dummy(),
-        name: Id::from(PStr::UPPER_A),
-        bound: None
-      }])[0]
+      TypeParameterSignature::from_list(Some(&annotation::TypeParameters {
+        location: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        parameters: vec![annotation::TypeParameter {
+          loc: Location::dummy(),
+          name: Id::from(PStr::UPPER_A),
+          bound: None
+        }]
+      }))[0]
         .pretty_print(&heap)
     );
     assert_eq!(
       "A : B",
-      TypeParameterSignature::from_list(&[TypeParameter {
-        loc: Location::dummy(),
-        name: Id::from(PStr::UPPER_A),
-        bound: Some(annotation::Id {
-          location: Location::dummy(),
-          module_reference: ModuleReference::DUMMY,
-          id: Id::from(PStr::UPPER_B),
-          type_arguments: vec![]
-        })
-      }])[0]
+      TypeParameterSignature::from_list(Some(&annotation::TypeParameters {
+        location: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        parameters: vec![annotation::TypeParameter {
+          loc: Location::dummy(),
+          name: Id::from(PStr::UPPER_A),
+          bound: Some(annotation::Id {
+            location: Location::dummy(),
+            module_reference: ModuleReference::DUMMY,
+            id: Id::from(PStr::UPPER_B),
+            type_arguments: None
+          })
+        }]
+      }))[0]
         .pretty_print(&heap)
     );
 

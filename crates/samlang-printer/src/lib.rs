@@ -40,11 +40,17 @@ pub fn pretty_print_statement(
 pub fn pretty_print_import(
   heap: &samlang_heap::Heap,
   available_width: usize,
+  comment_store: &samlang_ast::source::CommentStore,
   import: &samlang_ast::source::ModuleMembersImport,
 ) -> String {
   prettier::pretty_print(
     available_width,
-    source_printer::import_to_document(heap, import.imported_module, &import.imported_members),
+    source_printer::import_to_document(
+      heap,
+      comment_store,
+      import.imported_module,
+      &import.imported_members,
+    ),
   )
 }
 

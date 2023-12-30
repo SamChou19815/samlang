@@ -3,26 +3,13 @@ use itertools::Itertools;
 use samlang_ast::source::{
   annotation, expr, pattern, ClassDefinition, ClassMemberDeclaration, CommentKind,
   CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
-  TypeParameter,
+  NO_COMMENT_REFERENCE,
 };
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 fn rc_pstr(heap: &Heap, s: PStr) -> Str {
   rc_string(String::from(s.as_str(heap)))
-}
-
-fn comma_sep_list<E, F: Fn(&E) -> Document>(elements: &[E], doc_creator: F) -> Document {
-  let mut iter = elements.iter().rev();
-  if let Some(last) = iter.next() {
-    let mut base = doc_creator(last);
-    for e in iter {
-      base = Document::concat(vec![doc_creator(e), Document::Text(rcs(",")), Document::Line, base]);
-    }
-    base
-  } else {
-    Document::Nil
-  }
 }
 
 fn parenthesis_surrounded_doc(doc: Document) -> Document {
@@ -120,6 +107,41 @@ fn create_opt_preceding_comment_doc(
   }
 }
 
+fn comma_sep_list<E, F: Fn(&E) -> Document>(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  elements: &[E],
+  ending_comments: CommentReference,
+  doc_creator: F,
+) -> Document {
+  let comment_doc_opt = associated_comments_doc(
+    heap,
+    comment_store,
+    ending_comments,
+    DocumentGrouping::Expanded,
+    false,
+  );
+  let mut iter = elements.iter().rev();
+  let base = if let Some(last) = iter.next() {
+    let mut base = doc_creator(last);
+    for e in iter {
+      base = Document::concat(vec![doc_creator(e), Document::Text(rcs(",")), Document::Line, base]);
+    }
+    base
+  } else {
+    Document::Nil
+  };
+  if let Some(comment_doc) = comment_doc_opt {
+    if matches!(base, Document::Nil) {
+      comment_doc
+    } else {
+      Document::concat(vec![base, Document::Text(rcs(",")), Document::Line, comment_doc])
+    }
+  } else {
+    base
+  }
+}
+
 pub(super) fn annotation_to_doc(
   heap: &Heap,
   comment_store: &CommentStore,
@@ -142,16 +164,20 @@ pub(super) fn annotation_to_doc(
     annotation::T::Fn(annotation::Function {
       location: _,
       associated_comments,
-      argument_types,
+      parameters,
       return_type,
     }) => create_opt_preceding_comment_doc(
       heap,
       comment_store,
       *associated_comments,
       Document::concat(vec![
-        parenthesis_surrounded_doc(comma_sep_list(argument_types, |annot| {
-          annotation_to_doc(heap, comment_store, annot)
-        })),
+        parenthesis_surrounded_doc(comma_sep_list(
+          heap,
+          comment_store,
+          &parameters.parameters,
+          parameters.ending_associated_comments,
+          |annot| annotation_to_doc(heap, comment_store, annot),
+        )),
         Document::Text(rcs(" -> ")),
         annotation_to_doc(heap, comment_store, return_type),
       ]),
@@ -167,9 +193,13 @@ fn optional_targs(
   if type_args.is_empty() {
     Document::Nil
   } else {
-    angle_bracket_surrounded_doc(comma_sep_list(type_args, |a| {
-      annotation_to_doc(heap, comment_store, a)
-    }))
+    angle_bracket_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      type_args,
+      NO_COMMENT_REFERENCE,
+      |a| annotation_to_doc(heap, comment_store, a),
+    ))
   }
 }
 
@@ -182,15 +212,24 @@ fn id_annot_to_doc(
     heap,
     comment_store,
     id.associated_comments,
-    if type_arguments.is_empty() {
-      Document::Text(rc_pstr(heap, id.name))
-    } else {
+    if let Some(targs) = type_arguments {
       Document::Concat(
         Rc::new(Document::Text(rc_pstr(heap, id.name))),
-        Rc::new(angle_bracket_surrounded_doc(comma_sep_list(type_arguments, |annot| {
-          annotation_to_doc(heap, comment_store, annot)
-        }))),
+        Rc::new(create_opt_preceding_comment_doc(
+          heap,
+          comment_store,
+          targs.start_associated_comments,
+          angle_bracket_surrounded_doc(comma_sep_list(
+            heap,
+            comment_store,
+            &targs.arguments,
+            targs.ending_associated_comments,
+            |annot| annotation_to_doc(heap, comment_store, annot),
+          )),
+        )),
       )
+    } else {
+      Document::Text(rc_pstr(heap, id.name))
     },
   )
 }
@@ -279,7 +318,7 @@ fn add_if_else_first_half_docs(
     expr::IfElseCondition::Expression(e) => documents.push(create_doc(heap, comment_store, e)),
     expr::IfElseCondition::Guard(p, e) => {
       documents.push(Document::Text(rcs("let ")));
-      documents.push(matching_pattern_to_document(heap, p));
+      documents.push(matching_pattern_to_document(heap, comment_store, p));
       documents.push(Document::Text(rcs(" = ")));
       documents.push(create_doc(heap, comment_store, e));
     }
@@ -449,9 +488,13 @@ fn create_chainable_ir_docs(
       (base, chain)
     }
     expr::E::Call(e) => {
-      let args_doc = parenthesis_surrounded_doc(comma_sep_list(&e.arguments, |e| {
-        create_doc(heap, comment_store, e)
-      }));
+      let args_doc = parenthesis_surrounded_doc(comma_sep_list(
+        heap,
+        comment_store,
+        &e.arguments,
+        NO_COMMENT_REFERENCE,
+        |e| create_doc(heap, comment_store, e),
+      ));
       let (mut base, mut chain) =
         create_chainable_ir_docs(heap, comment_store, expression, &e.callee);
       if let Some((_, last_docs)) = chain.last_mut() {
@@ -482,11 +525,13 @@ fn create_doc_without_preceding_comment(
   match expression {
     expr::E::Literal(_, l) => Document::Text(rc_string(l.pretty_print(heap))),
     expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => Document::Text(rc_pstr(heap, id.name)),
-    expr::E::Tuple(_, expressions) => {
-      parenthesis_surrounded_doc(comma_sep_list(expressions, |e| {
-        create_doc(heap, comment_store, e)
-      }))
-    }
+    expr::E::Tuple(_, expressions) => parenthesis_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      expressions,
+      NO_COMMENT_REFERENCE,
+      |e| create_doc(heap, comment_store, e),
+    )),
     expr::E::FieldAccess(_) | expr::E::MethodAccess(_) | expr::E::Call(_) => {
       create_doc_for_dotted_chain(
         heap,
@@ -578,7 +623,7 @@ fn create_doc_without_preceding_comment(
     expr::E::Match(e) => {
       let mut list = vec![];
       for case in &e.cases {
-        list.push(matching_pattern_to_document(heap, &case.pattern));
+        list.push(matching_pattern_to_document(heap, comment_store, &case.pattern));
         list.push(Document::Text(rcs(" -> ")));
         list.push(create_doc(heap, comment_store, &case.body));
         list.push(Document::Text(rcs(",")));
@@ -595,21 +640,27 @@ fn create_doc_without_preceding_comment(
     }
 
     expr::E::Lambda(e) => Document::concat(vec![
-      parenthesis_surrounded_doc(comma_sep_list(&e.parameters, |id| {
-        create_opt_preceding_comment_doc(
-          heap,
-          comment_store,
-          id.name.associated_comments,
-          if let Some(annot) = &id.annotation {
-            Document::Concat(
-              Rc::new(Document::Text(rc_string(format!("{}: ", id.name.name.as_str(heap),)))),
-              Rc::new(annotation_to_doc(heap, comment_store, annot)),
-            )
-          } else {
-            Document::Text(rc_pstr(heap, id.name.name))
-          },
-        )
-      })),
+      parenthesis_surrounded_doc(comma_sep_list(
+        heap,
+        comment_store,
+        &e.parameters,
+        NO_COMMENT_REFERENCE,
+        |id| {
+          create_opt_preceding_comment_doc(
+            heap,
+            comment_store,
+            id.name.associated_comments,
+            if let Some(annot) = &id.annotation {
+              Document::Concat(
+                Rc::new(Document::Text(rc_string(format!("{}: ", id.name.name.as_str(heap),)))),
+                Rc::new(annotation_to_doc(heap, comment_store, annot)),
+              )
+            } else {
+              Document::Text(rc_pstr(heap, id.name.name))
+            },
+          )
+        },
+      )),
       Document::Text(rcs(" -> ")),
       create_doc_for_subexpression_considering_precedence_level(
         heap,
@@ -651,26 +702,36 @@ fn create_doc(heap: &Heap, comment_store: &CommentStore, expression: &expr::E<()
   )
 }
 
-fn matching_pattern_to_document(heap: &Heap, pattern: &pattern::MatchingPattern<()>) -> Document {
+fn matching_pattern_to_document(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  pattern: &pattern::MatchingPattern<()>,
+) -> Document {
   match pattern {
-    pattern::MatchingPattern::Tuple(_, names) => {
-      parenthesis_surrounded_doc(comma_sep_list(names, |it| {
-        matching_pattern_to_document(heap, &it.pattern)
-      }))
-    }
-    pattern::MatchingPattern::Object(_, names) => {
-      braces_surrounded_doc(comma_sep_list(names, |it| {
+    pattern::MatchingPattern::Tuple(_, names) => parenthesis_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      names,
+      NO_COMMENT_REFERENCE,
+      |it| matching_pattern_to_document(heap, comment_store, &it.pattern),
+    )),
+    pattern::MatchingPattern::Object(_, names) => braces_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      names,
+      NO_COMMENT_REFERENCE,
+      |it| {
         if it.shorthand {
           Document::Text(rc_pstr(heap, it.field_name.name))
         } else {
           Document::concat(vec![
             Document::Text(rc_pstr(heap, it.field_name.name)),
             Document::Text(rcs(" as ")),
-            matching_pattern_to_document(heap, &it.pattern),
+            matching_pattern_to_document(heap, comment_store, &it.pattern),
           ])
         }
-      }))
-    }
+      },
+    )),
     pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc: _,
       tag_order: _,
@@ -683,9 +744,13 @@ fn matching_pattern_to_document(heap: &Heap, pattern: &pattern::MatchingPattern<
       } else {
         Document::concat(vec![
           Document::Text(rc_pstr(heap, tag.name)),
-          parenthesis_surrounded_doc(comma_sep_list(data_variables, |(p, _)| {
-            matching_pattern_to_document(heap, p)
-          })),
+          parenthesis_surrounded_doc(comma_sep_list(
+            heap,
+            comment_store,
+            data_variables,
+            NO_COMMENT_REFERENCE,
+            |(p, _)| matching_pattern_to_document(heap, comment_store, p),
+          )),
         ])
       }
     }
@@ -700,7 +765,7 @@ pub(super) fn statement_to_document(
   stmt: &expr::DeclarationStatement<()>,
 ) -> Document {
   let mut segments = vec![];
-  let pattern_doc = matching_pattern_to_document(heap, &stmt.pattern);
+  let pattern_doc = matching_pattern_to_document(heap, comment_store, &stmt.pattern);
   segments.push(
     associated_comments_doc(
       heap,
@@ -731,32 +796,38 @@ fn type_parameters_to_doc(
   heap: &Heap,
   comment_store: &CommentStore,
   extra_space: bool,
-  tparams: &Vec<TypeParameter>,
+  tparams_opt: Option<&annotation::TypeParameters>,
 ) -> Document {
-  if tparams.is_empty() {
-    Document::Nil
-  } else {
-    let doc = angle_bracket_surrounded_doc(comma_sep_list(tparams, |tparam| {
-      create_opt_preceding_comment_doc(
-        heap,
-        comment_store,
-        tparam.name.associated_comments,
-        if let Some(b) = &tparam.bound {
-          Document::concat(vec![
-            Document::Text(rc_pstr(heap, tparam.name.name)),
-            Document::Text(rcs(": ")),
-            id_annot_to_doc(heap, comment_store, b),
-          ])
-        } else {
-          Document::Text(rc_pstr(heap, tparam.name.name))
-        },
-      )
-    }));
+  if let Some(tparams) = tparams_opt {
+    let doc = angle_bracket_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      &tparams.parameters,
+      NO_COMMENT_REFERENCE,
+      |tparam| {
+        create_opt_preceding_comment_doc(
+          heap,
+          comment_store,
+          tparam.name.associated_comments,
+          if let Some(b) = &tparam.bound {
+            Document::concat(vec![
+              Document::Text(rc_pstr(heap, tparam.name.name)),
+              Document::Text(rcs(": ")),
+              id_annot_to_doc(heap, comment_store, b),
+            ])
+          } else {
+            Document::Text(rc_pstr(heap, tparam.name.name))
+          },
+        )
+      },
+    ));
     if extra_space {
       Document::Concat(Rc::new(doc), Rc::new(Document::Text(rcs(" "))))
     } else {
       doc
     }
+  } else {
+    Document::Nil
   }
 }
 
@@ -800,20 +871,26 @@ fn create_doc_for_interface_member(
     .unwrap_or(Document::Nil),
     if member.is_public { Document::Nil } else { Document::Text(rcs("private ")) },
     Document::Text(rcs(if member.is_method { "method " } else { "function " })),
-    type_parameters_to_doc(heap, comment_store, true, &member.type_parameters),
+    type_parameters_to_doc(heap, comment_store, true, member.type_parameters.as_ref()),
     Document::Text(rc_pstr(heap, member.name.name)),
-    parenthesis_surrounded_doc(comma_sep_list(member.parameters.as_ref(), |param| {
-      create_opt_preceding_comment_doc(
-        heap,
-        comment_store,
-        param.name.associated_comments,
-        Document::concat(vec![
-          Document::Text(rc_pstr(heap, param.name.name)),
-          Document::Text(rcs(": ")),
-          annotation_to_doc(heap, comment_store, &param.annotation),
-        ]),
-      )
-    })),
+    parenthesis_surrounded_doc(comma_sep_list(
+      heap,
+      comment_store,
+      member.parameters.as_ref(),
+      NO_COMMENT_REFERENCE,
+      |param| {
+        create_opt_preceding_comment_doc(
+          heap,
+          comment_store,
+          param.name.associated_comments,
+          Document::concat(vec![
+            Document::Text(rc_pstr(heap, param.name.name)),
+            Document::Text(rcs(": ")),
+            annotation_to_doc(heap, comment_store, &param.annotation),
+          ]),
+        )
+      },
+    )),
     Document::Text(rcs(": ")),
     annotation_to_doc(heap, comment_store, &member.type_.return_type),
     if body.is_none() { Document::Nil } else { Document::Text(rcs(" =")) },
@@ -864,7 +941,7 @@ fn interface_to_doc(
       if interface.private { "private " } else { "" },
       interface.name.name.as_str(heap)
     ))),
-    type_parameters_to_doc(heap, comment_store, false, &interface.type_parameters),
+    type_parameters_to_doc(heap, comment_store, false, interface.type_parameters.as_ref()),
     extends_or_implements_node_to_doc(heap, comment_store, &interface.extends_or_implements_nodes),
   ];
 
@@ -905,11 +982,15 @@ fn class_to_doc(
       if class.private { "private " } else { "" },
       class.name.name.as_str(heap)
     ))),
-    type_parameters_to_doc(heap, comment_store, false, &class.type_parameters),
+    type_parameters_to_doc(heap, comment_store, false, class.type_parameters.as_ref()),
     match &class.type_definition {
       TypeDefinition::Struct { loc: _, fields } if fields.is_empty() => Document::Nil,
-      TypeDefinition::Struct { loc: _, fields } => {
-        parenthesis_surrounded_doc(comma_sep_list(fields, |field| {
+      TypeDefinition::Struct { loc: _, fields } => parenthesis_surrounded_doc(comma_sep_list(
+        heap,
+        comment_store,
+        fields,
+        NO_COMMENT_REFERENCE,
+        |field| {
           Document::Concat(
             Rc::new(Document::Text(rc_string(format!(
               "{}val {}: ",
@@ -918,22 +999,30 @@ fn class_to_doc(
             )))),
             Rc::new(annotation_to_doc(heap, comment_store, &field.annotation)),
           )
-        }))
-      }
-      TypeDefinition::Enum { loc: _, variants } => {
-        parenthesis_surrounded_doc(comma_sep_list(variants, |variant| {
+        },
+      )),
+      TypeDefinition::Enum { loc: _, variants } => parenthesis_surrounded_doc(comma_sep_list(
+        heap,
+        comment_store,
+        variants,
+        NO_COMMENT_REFERENCE,
+        |variant| {
           if variant.associated_data_types.is_empty() {
             Document::Text(rc_pstr(heap, variant.name.name))
           } else {
             Document::concat(vec![
               Document::Text(rc_pstr(heap, variant.name.name)),
-              parenthesis_surrounded_doc(comma_sep_list(&variant.associated_data_types, |annot| {
-                annotation_to_doc(heap, comment_store, annot)
-              })),
+              parenthesis_surrounded_doc(comma_sep_list(
+                heap,
+                comment_store,
+                &variant.associated_data_types,
+                NO_COMMENT_REFERENCE,
+                |annot| annotation_to_doc(heap, comment_store, annot),
+              )),
             ])
           }
-        }))
-      }
+        },
+      )),
     },
     extends_or_implements_node_to_doc(heap, comment_store, &class.extends_or_implements_nodes),
   ];
@@ -963,14 +1052,19 @@ fn class_to_doc(
 
 pub(super) fn import_to_document(
   heap: &Heap,
+  comment_store: &CommentStore,
   imported_module: ModuleReference,
   imported_members: &[Id],
 ) -> Document {
   let mut documents = vec![];
   documents.push(Document::Text(rcs("import ")));
-  documents.push(braces_surrounded_doc(comma_sep_list(imported_members, |m| {
-    Document::Text(rc_pstr(heap, m.name))
-  })));
+  documents.push(braces_surrounded_doc(comma_sep_list(
+    heap,
+    comment_store,
+    imported_members,
+    NO_COMMENT_REFERENCE,
+    |m| Document::Text(rc_pstr(heap, m.name)),
+  )));
   documents
     .push(Document::Text(rc_string(format!(" from {};", imported_module.pretty_print(heap)))));
   documents.push(Document::LineHard);
@@ -1013,7 +1107,12 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
       )
     })
   {
-    documents.push(import_to_document(heap, imported_module, &imported_members))
+    documents.push(import_to_document(
+      heap,
+      &module.comment_store,
+      imported_module,
+      &imported_members,
+    ))
   }
   if !module.imports.is_empty() {
     documents.push(Document::LineHard);
@@ -1059,7 +1158,7 @@ mod tests {
     let m =
       parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
     for n in &m.imports {
-      pretty_print_import(&heap, 40, n);
+      pretty_print_import(&heap, 40, &m.comment_store, n);
     }
     for n in &m.toplevels {
       pretty_print_toplevel(&heap, 40, &m.comment_store, n);
@@ -1307,6 +1406,28 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     assert_reprint_expr("(a) -> 1", "(a) -> 1");
     assert_reprint_expr("(a, b) -> 1", "(a, b) -> 1");
     assert_reprint_expr("(a: int) -> 1 + 1", "(a: int) -> 1 + 1");
+    assert_reprint_expr("(a: (/* foo */) -> int) -> 1 + 1", "(a: (/* foo */) -> int) -> 1 + 1");
+    assert_reprint_expr(
+      "(a: (int/* foo */) -> int) -> 1 + 1",
+      "(a: (int, /* foo */) -> int) -> 1 + 1",
+    );
+    assert_reprint_expr(
+      "(a: (// foo\n) -> int) -> 1 + 1",
+      r#"(
+  a: (
+    // foo
+  ) -> int
+) -> 1 + 1"#,
+    );
+    assert_reprint_expr(
+      "(a: (int// foo\n) -> int) -> 1 + 1",
+      r#"(
+  a: (
+    int,
+    // foo
+  ) -> int
+) -> 1 + 1"#,
+    );
     assert_reprint_expr("(() -> 1)()", "(() -> 1)()");
 
     assert_reprint_expr("{}", "{  }");

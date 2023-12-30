@@ -1,7 +1,7 @@
 use samlang_ast::{
   source::{
     annotation, expr, pattern, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
-    TypeDefinition, TypeParameter,
+    TypeDefinition,
   },
   Location,
 };
@@ -113,7 +113,7 @@ impl<'a> SsaAnalysisState<'a> {
         {
           self.visit_type_parameters_with_bounds(type_parameters);
           for t in toplevel.extends_or_implements_nodes() {
-            for annot in &t.type_arguments {
+            for annot in t.type_arguments.iter().flat_map(|it| &it.arguments) {
               self.visit_annot(annot);
             }
           }
@@ -159,7 +159,7 @@ impl<'a> SsaAnalysisState<'a> {
         if type_definition.is_some() {
           self.define_id(PStr::THIS, toplevel.loc());
         }
-        for tparam in type_parameters {
+        for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
           let id = &tparam.name;
           self.define_id(id.name, id.loc);
         }
@@ -199,7 +199,7 @@ impl<'a> SsaAnalysisState<'a> {
     body: Option<&expr::E<()>>,
   ) {
     self.context.push_scope();
-    self.visit_type_parameters_with_bounds(&member.type_parameters);
+    self.visit_type_parameters_with_bounds(member.type_parameters.as_ref());
     for param in member.parameters.iter() {
       self.visit_annot(&param.annotation);
     }
@@ -217,20 +217,31 @@ impl<'a> SsaAnalysisState<'a> {
     self.context.pop_scope();
   }
 
-  fn visit_type_parameters_with_bounds(&mut self, type_parameters: &[TypeParameter]) {
-    for tparam in type_parameters {
-      if let Some(bound) = &tparam.bound {
-        self.use_id(&bound.id.name, bound.id.loc, true)
+  fn visit_type_parameters_with_bounds(
+    &mut self,
+    type_parameters_opt: Option<&annotation::TypeParameters>,
+  ) {
+    if let Some(annotation::TypeParameters {
+      location: _,
+      start_associated_comments: _,
+      ending_associated_comments: _,
+      parameters,
+    }) = type_parameters_opt
+    {
+      for tparam in parameters {
+        if let Some(bound) = &tparam.bound {
+          self.use_id(&bound.id.name, bound.id.loc, true)
+        }
       }
-    }
-    for tparam in type_parameters {
-      let id = &tparam.name;
-      self.define_id(id.name, id.loc);
-    }
-    for tparam in type_parameters {
-      if let Some(bound) = &tparam.bound {
-        for annot in &bound.type_arguments {
-          self.visit_annot(annot);
+      for tparam in parameters {
+        let id = &tparam.name;
+        self.define_id(id.name, id.loc);
+      }
+      for tparam in parameters {
+        if let Some(bound) = &tparam.bound {
+          for annot in bound.type_arguments.iter().flat_map(|it| &it.arguments) {
+            self.visit_annot(annot);
+          }
         }
       }
     }
@@ -366,7 +377,7 @@ impl<'a> SsaAnalysisState<'a> {
     if self.module_reference.eq(module_reference) {
       self.use_id(&id.name, *location, true);
     }
-    for targ in type_arguments {
+    for targ in type_arguments.iter().flat_map(|it| &it.arguments) {
       self.visit_annot(targ);
     }
   }
@@ -379,10 +390,10 @@ impl<'a> SsaAnalysisState<'a> {
       annotation::T::Fn(annotation::Function {
         location: _,
         associated_comments: _,
-        argument_types,
+        parameters,
         return_type,
       }) => {
-        for arg in argument_types {
+        for arg in &parameters.parameters {
           self.visit_annot(arg);
         }
         self.visit_annot(return_type);
