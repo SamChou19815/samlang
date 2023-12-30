@@ -26,19 +26,21 @@ fn search_matching_pattern(
   position: Position,
 ) -> Option<LocationCoverSearchResult> {
   match pattern {
-    pattern::MatchingPattern::Tuple(_, patterns) => {
-      patterns.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
+    pattern::MatchingPattern::Tuple(pattern::TuplePattern { elements, .. }) => {
+      elements.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
     }
-    pattern::MatchingPattern::Object(_, patterns) => {
-      patterns.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
+    pattern::MatchingPattern::Object { elements, .. } => {
+      elements.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
     }
-    pattern::MatchingPattern::Variant(variant_pattern) => {
-      variant_pattern.data_variables.iter().find_map(|(p, _)| search_matching_pattern(p, position))
-    }
+    pattern::MatchingPattern::Variant(variant_pattern) => variant_pattern
+      .data_variables
+      .iter()
+      .flat_map(|it| &it.elements)
+      .find_map(|p| search_matching_pattern(&p.pattern, position)),
     pattern::MatchingPattern::Id(id, type_) if id.loc.contains_position(position) => {
       Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone(), true))
     }
-    pattern::MatchingPattern::Id(_, _) | pattern::MatchingPattern::Wildcard(_) => None,
+    pattern::MatchingPattern::Id(_, _) | pattern::MatchingPattern::Wildcard { .. } => None,
   }
 }
 

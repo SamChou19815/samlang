@@ -344,13 +344,9 @@ impl<'a> SsaAnalysisState<'a> {
 
   fn visit_matching_pattern(&mut self, pattern: &pattern::MatchingPattern<()>) {
     match pattern {
-      pattern::MatchingPattern::Tuple(_, names) => {
-        for pattern::TuplePatternElement { pattern, type_: _ } in names {
-          self.visit_matching_pattern(pattern);
-        }
-      }
-      pattern::MatchingPattern::Object(_, names) => {
-        for name in names {
+      pattern::MatchingPattern::Tuple(p) => self.visit_tuple_pattern(p),
+      pattern::MatchingPattern::Object { elements, .. } => {
+        for name in elements {
           self.visit_matching_pattern(&name.pattern);
         }
       }
@@ -361,12 +357,18 @@ impl<'a> SsaAnalysisState<'a> {
         data_variables,
         type_: _,
       }) => {
-        for (p, _) in data_variables {
-          self.visit_matching_pattern(p);
+        if let Some(p) = data_variables {
+          self.visit_tuple_pattern(p);
         }
       }
       pattern::MatchingPattern::Id(id, ()) => self.define_id(id.name, id.loc),
-      pattern::MatchingPattern::Wildcard(_) => {}
+      pattern::MatchingPattern::Wildcard { .. } => {}
+    }
+  }
+
+  fn visit_tuple_pattern(&mut self, pattern: &pattern::TuplePattern<()>) {
+    for pattern::TuplePatternElement { pattern, type_: _ } in &pattern.elements {
+      self.visit_matching_pattern(pattern);
     }
   }
 

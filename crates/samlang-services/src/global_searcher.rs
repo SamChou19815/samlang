@@ -54,18 +54,18 @@ fn search_matching_pattern(
   collector: &mut Vec<Location>,
 ) {
   match pattern {
-    pattern::MatchingPattern::Tuple(_, patterns) => {
-      for p in patterns {
+    pattern::MatchingPattern::Tuple(pattern::TuplePattern { elements, .. }) => {
+      for p in elements {
         search_matching_pattern(&p.pattern, &p.type_, request, collector)
       }
     }
-    pattern::MatchingPattern::Object(_, patterns) => {
+    pattern::MatchingPattern::Object { elements, .. } => {
       match (pattern_type.as_ref(), request) {
         (
           Type::Nominal(nominal_type),
           GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
         ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {
-          for n in patterns {
+          for n in elements {
             if field_name.eq(&n.field_name.name) {
               collector.push(n.field_name.loc);
             }
@@ -73,13 +73,13 @@ fn search_matching_pattern(
         }
         _ => {}
       }
-      for p in patterns {
+      for p in elements {
         search_matching_pattern(&p.pattern, &p.type_, request, collector)
       }
     }
     pattern::MatchingPattern::Variant(_)
     | pattern::MatchingPattern::Id(_, _)
-    | pattern::MatchingPattern::Wildcard(_) => {}
+    | pattern::MatchingPattern::Wildcard { .. } => {}
   }
 }
 

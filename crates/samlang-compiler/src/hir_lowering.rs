@@ -645,7 +645,9 @@ impl<'a> ExpressionLoweringManager<'a> {
     lowered_expression: hir::Expression,
   ) -> LoweringResult {
     match pattern {
-      source::pattern::MatchingPattern::Tuple(_, elements) => {
+      source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
+        elements, ..
+      }) => {
         let id_type = lowered_expression.type_().as_id().unwrap();
         let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
         let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
@@ -691,7 +693,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         }
         acc
       }
-      source::pattern::MatchingPattern::Object(_, elements) => {
+      source::pattern::MatchingPattern::Object { elements, .. } => {
         let id_type = lowered_expression.type_().as_id().unwrap();
         let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
         let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
@@ -746,42 +748,53 @@ impl<'a> ExpressionLoweringManager<'a> {
       }) => {
         let mut non_optional_bindings = vec![];
         let mut optional_bindings = vec![];
-        for (_, nested_type) in data_variables {
+        for source::pattern::TuplePatternElement { pattern: _, type_: nested_type } in
+          data_variables.iter().flat_map(|it| &it.elements)
+        {
           let data_var_type = self.type_lowering_manager.lower_source_type(self.heap, nested_type);
           let name = self.allocate_temp_variable();
           non_optional_bindings.push((name, data_var_type.clone()));
           optional_bindings.push(Some((name, data_var_type)));
         }
         let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
-        for ((nested_pattern, _), (name, data_var_type)) in
-          data_variables.iter().zip(non_optional_bindings).rev()
-        {
-          let LoweringResult {
-            statements: mut nested_pattern_lowering_stmts,
-            expression: nested_pattern_condition,
-          } = self.lower_matching_pattern(
-            nested_pattern,
-            binding_names,
-            hir::Expression::var_name(name, data_var_type.clone()),
-          );
-          if nested_pattern_condition == hir::ONE {
-            nested_pattern_lowering_stmts.append(&mut acc.statements);
-            acc = LoweringResult {
-              statements: nested_pattern_lowering_stmts,
-              expression: acc.expression,
-            };
-          } else {
-            let final_condition = self.allocate_temp_variable();
-            nested_pattern_lowering_stmts.push(hir::Statement::IfElse {
-              condition: nested_pattern_condition,
-              s1: acc.statements,
-              s2: vec![],
-              final_assignments: vec![(final_condition, hir::INT_TYPE, acc.expression, hir::ZERO)],
-            });
-            acc = LoweringResult {
-              statements: nested_pattern_lowering_stmts,
-              expression: hir::Expression::var_name(final_condition, hir::INT_TYPE),
-            };
+        if let Some(data_variables) = data_variables {
+          for (
+            source::pattern::TuplePatternElement { pattern: nested_pattern, type_: _ },
+            (name, data_var_type),
+          ) in data_variables.elements.iter().zip(non_optional_bindings).rev()
+          {
+            let LoweringResult {
+              statements: mut nested_pattern_lowering_stmts,
+              expression: nested_pattern_condition,
+            } = self.lower_matching_pattern(
+              nested_pattern,
+              binding_names,
+              hir::Expression::var_name(name, data_var_type.clone()),
+            );
+            if nested_pattern_condition == hir::ONE {
+              nested_pattern_lowering_stmts.append(&mut acc.statements);
+              acc = LoweringResult {
+                statements: nested_pattern_lowering_stmts,
+                expression: acc.expression,
+              };
+            } else {
+              let final_condition = self.allocate_temp_variable();
+              nested_pattern_lowering_stmts.push(hir::Statement::IfElse {
+                condition: nested_pattern_condition,
+                s1: acc.statements,
+                s2: vec![],
+                final_assignments: vec![(
+                  final_condition,
+                  hir::INT_TYPE,
+                  acc.expression,
+                  hir::ZERO,
+                )],
+              });
+              acc = LoweringResult {
+                statements: nested_pattern_lowering_stmts,
+                expression: hir::Expression::var_name(final_condition, hir::INT_TYPE),
+              };
+            }
           }
         }
         let final_assignment_temp = self.allocate_temp_variable();
@@ -809,7 +822,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         }],
         expression: hir::ONE,
       },
-      source::pattern::MatchingPattern::Wildcard(_) => {
+      source::pattern::MatchingPattern::Wildcard { .. } => {
         LoweringResult { statements: Vec::with_capacity(0), expression: hir::ONE }
       }
     }
@@ -2180,13 +2193,18 @@ return (_t1: DUMMY_Dummy);"#,
               loc: Location::dummy(),
               tag_order: 0,
               tag: source::Id::from(heap.alloc_str_for_test("Foo")),
-              data_variables: vec![(
-                source::pattern::MatchingPattern::Id(
-                  source::Id::from(heap.alloc_str_for_test("bar")),
-                  builder.int_type(),
-                ),
-                builder.int_type(),
-              )],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Id(
+                    source::Id::from(heap.alloc_str_for_test("bar")),
+                    builder.int_type(),
+                  )),
+                  type_: builder.int_type(),
+                }],
+              }),
               type_: Rc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(source::expr::E::LocalId(
@@ -2200,10 +2218,18 @@ return (_t1: DUMMY_Dummy);"#,
               loc: Location::dummy(),
               tag_order: 1,
               tag: source::Id::from(heap.alloc_str_for_test("Bar")),
-              data_variables: vec![(
-                source::pattern::MatchingPattern::Wildcard(Location::dummy()),
-                builder.int_type(),
-              )],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Wildcard {
+                    location: Location::dummy(),
+                    associated_comments: NO_COMMENT_REFERENCE,
+                  }),
+                  type_: builder.int_type(),
+                }],
+              }),
               type_: Rc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(dummy_source_this(heap)),
@@ -2253,10 +2279,18 @@ return (_t5: DUMMY_Dummy);"#,
               loc: Location::dummy(),
               tag_order: 0,
               tag: source::Id::from(heap.alloc_str_for_test("Foo")),
-              data_variables: vec![(
-                source::pattern::MatchingPattern::Wildcard(Location::dummy()),
-                builder.int_type(),
-              )],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Wildcard {
+                    location: Location::dummy(),
+                    associated_comments: NO_COMMENT_REFERENCE,
+                  }),
+                  type_: builder.int_type(),
+                }],
+              }),
               type_: Rc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(dummy_source_this(heap)),
@@ -2267,13 +2301,18 @@ return (_t5: DUMMY_Dummy);"#,
               loc: Location::dummy(),
               tag_order: 1,
               tag: source::Id::from(heap.alloc_str_for_test("Bar")),
-              data_variables: vec![(
-                source::pattern::MatchingPattern::Id(
-                  source::Id::from(heap.alloc_str_for_test("bar")),
-                  builder.int_type(),
-                ),
-                builder.int_type(),
-              )],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Id(
+                    source::Id::from(heap.alloc_str_for_test("bar")),
+                    builder.int_type(),
+                  )),
+                  type_: builder.int_type(),
+                }],
+              }),
               type_: Rc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(id_expr(
@@ -2287,10 +2326,18 @@ return (_t5: DUMMY_Dummy);"#,
               loc: Location::dummy(),
               tag_order: 2,
               tag: source::Id::from(heap.alloc_str_for_test("Baz")),
-              data_variables: vec![(
-                source::pattern::MatchingPattern::Wildcard(Location::dummy()),
-                builder.int_type(),
-              )],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![source::pattern::TuplePatternElement {
+                  pattern: Box::new(source::pattern::MatchingPattern::Wildcard {
+                    location: Location::dummy(),
+                    associated_comments: NO_COMMENT_REFERENCE,
+                  }),
+                  type_: builder.int_type(),
+                }],
+              }),
               type_: Rc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(dummy_source_this(heap)),
@@ -2347,7 +2394,10 @@ return (_t9: DUMMY_Dummy);"#,
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
-          source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+          source::pattern::MatchingPattern::Wildcard {
+            location: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+          },
           dummy_source_this(heap),
         )),
         e1: Box::new(dummy_source_this(heap)),
@@ -2363,9 +2413,11 @@ return (_t9: DUMMY_Dummy);"#,
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
-          source::pattern::MatchingPattern::Object(
-            Location::dummy(),
-            vec![
+          source::pattern::MatchingPattern::Object {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            elements: vec![
               source::pattern::ObjectPatternElement {
                 loc: Location::dummy(),
                 field_order: 0,
@@ -2389,7 +2441,7 @@ return (_t9: DUMMY_Dummy);"#,
                 type_: builder.int_type(),
               },
             ],
-          ),
+          },
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
@@ -2399,40 +2451,52 @@ return (_t9: DUMMY_Dummy);"#,
               loc: Location::dummy(),
               tag_order: 0,
               tag: source::Id::from(PStr::EMPTY),
-              data_variables: vec![
-                (
-                  source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
-                    loc: Location::dummy(),
-                    tag_order: 0,
-                    tag: source::Id::from(PStr::EMPTY),
-                    data_variables: vec![
-                      (
-                        source::pattern::MatchingPattern::Id(
-                          source::Id::from(heap.alloc_str_for_test("bar")),
-                          builder.int_type(),
-                        ),
-                        builder.int_type(),
-                      ),
-                      (
-                        source::pattern::MatchingPattern::Id(
-                          source::Id::from(heap.alloc_str_for_test("baz")),
-                          builder.int_type(),
-                        ),
-                        builder.int_type(),
-                      ),
-                    ],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![
+                  source::pattern::TuplePatternElement {
+                    pattern: Box::new(source::pattern::MatchingPattern::Variant(
+                      source::pattern::VariantPattern {
+                        loc: Location::dummy(),
+                        tag_order: 0,
+                        tag: source::Id::from(PStr::EMPTY),
+                        data_variables: Some(source::pattern::TuplePattern {
+                          location: Location::dummy(),
+                          start_associated_comments: NO_COMMENT_REFERENCE,
+                          ending_associated_comments: NO_COMMENT_REFERENCE,
+                          elements: vec![
+                            source::pattern::TuplePatternElement {
+                              pattern: Box::new(source::pattern::MatchingPattern::Id(
+                                source::Id::from(heap.alloc_str_for_test("bar")),
+                                builder.int_type(),
+                              )),
+                              type_: builder.int_type(),
+                            },
+                            source::pattern::TuplePatternElement {
+                              pattern: Box::new(source::pattern::MatchingPattern::Id(
+                                source::Id::from(heap.alloc_str_for_test("baz")),
+                                builder.int_type(),
+                              )),
+                              type_: builder.int_type(),
+                            },
+                          ],
+                        }),
+                        type_: builder.int_type(),
+                      },
+                    )),
                     type_: builder.int_type(),
-                  }),
-                  builder.int_type(),
-                ),
-                (
-                  source::pattern::MatchingPattern::Id(
-                    source::Id::from(heap.alloc_str_for_test("baz")),
-                    builder.int_type(),
-                  ),
-                  builder.int_type(),
-                ),
-              ],
+                  },
+                  source::pattern::TuplePatternElement {
+                    pattern: Box::new(source::pattern::MatchingPattern::Id(
+                      source::Id::from(heap.alloc_str_for_test("baz")),
+                      builder.int_type(),
+                    )),
+                    type_: builder.int_type(),
+                  },
+                ],
+              }),
               type_: builder.int_type(),
             }),
             dummy_source_this(heap),
@@ -2446,9 +2510,11 @@ return (_t9: DUMMY_Dummy);"#,
         e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
-            source::pattern::MatchingPattern::Tuple(
-              Location::dummy(),
-              vec![
+            source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![
                 source::pattern::TuplePatternElement {
                   pattern: Box::new(source::pattern::MatchingPattern::Id(
                     source::Id::from(PStr::LOWER_A),
@@ -2464,7 +2530,7 @@ return (_t9: DUMMY_Dummy);"#,
                   type_: builder.int_type(),
                 },
               ],
-            ),
+            }),
             dummy_source_this(heap),
           )),
           e1: Box::new(dummy_source_this(heap)),
@@ -2514,9 +2580,11 @@ return (_t14: int);"#,
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
-          source::pattern::MatchingPattern::Object(
-            Location::dummy(),
-            vec![
+          source::pattern::MatchingPattern::Object {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            elements: vec![
               source::pattern::ObjectPatternElement {
                 loc: Location::dummy(),
                 field_order: 0,
@@ -2526,13 +2594,18 @@ return (_t14: int);"#,
                     loc: Location::dummy(),
                     tag_order: 0,
                     tag: source::Id::from(PStr::UPPER_A),
-                    data_variables: vec![(
-                      source::pattern::MatchingPattern::Id(
-                        source::Id::from(PStr::LOWER_C),
-                        builder.int_type(),
-                      ),
-                      builder.int_type(),
-                    )],
+                    data_variables: Some(source::pattern::TuplePattern {
+                      location: Location::dummy(),
+                      start_associated_comments: NO_COMMENT_REFERENCE,
+                      ending_associated_comments: NO_COMMENT_REFERENCE,
+                      elements: vec![source::pattern::TuplePatternElement {
+                        pattern: Box::new(source::pattern::MatchingPattern::Id(
+                          source::Id::from(PStr::LOWER_C),
+                          builder.int_type(),
+                        )),
+                        type_: builder.int_type(),
+                      }],
+                    }),
                     type_: builder.int_type(),
                   },
                 )),
@@ -2548,13 +2621,18 @@ return (_t14: int);"#,
                     loc: Location::dummy(),
                     tag_order: 1,
                     tag: source::Id::from(PStr::UPPER_A),
-                    data_variables: vec![(
-                      source::pattern::MatchingPattern::Id(
-                        source::Id::from(PStr::LOWER_C),
-                        builder.int_type(),
-                      ),
-                      builder.int_type(),
-                    )],
+                    data_variables: Some(source::pattern::TuplePattern {
+                      location: Location::dummy(),
+                      start_associated_comments: NO_COMMENT_REFERENCE,
+                      ending_associated_comments: NO_COMMENT_REFERENCE,
+                      elements: vec![source::pattern::TuplePatternElement {
+                        pattern: Box::new(source::pattern::MatchingPattern::Id(
+                          source::Id::from(PStr::LOWER_C),
+                          builder.int_type(),
+                        )),
+                        type_: builder.int_type(),
+                      }],
+                    }),
                     type_: builder.int_type(),
                   },
                 )),
@@ -2562,7 +2640,7 @@ return (_t14: int);"#,
                 type_: builder.int_type(),
               },
             ],
-          ),
+          },
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
@@ -2572,22 +2650,27 @@ return (_t14: int);"#,
               loc: Location::dummy(),
               tag_order: 0,
               tag: source::Id::from(PStr::EMPTY),
-              data_variables: vec![
-                (
-                  source::pattern::MatchingPattern::Id(
-                    source::Id::from(heap.alloc_str_for_test("bar")),
-                    builder.int_type(),
-                  ),
-                  builder.int_type(),
-                ),
-                (
-                  source::pattern::MatchingPattern::Id(
-                    source::Id::from(heap.alloc_str_for_test("baz")),
-                    builder.int_type(),
-                  ),
-                  builder.int_type(),
-                ),
-              ],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![
+                  source::pattern::TuplePatternElement {
+                    pattern: Box::new(source::pattern::MatchingPattern::Id(
+                      source::Id::from(heap.alloc_str_for_test("bar")),
+                      builder.int_type(),
+                    )),
+                    type_: builder.int_type(),
+                  },
+                  source::pattern::TuplePatternElement {
+                    pattern: Box::new(source::pattern::MatchingPattern::Id(
+                      source::Id::from(heap.alloc_str_for_test("baz")),
+                      builder.int_type(),
+                    )),
+                    type_: builder.int_type(),
+                  },
+                ],
+              }),
               type_: builder.int_type(),
             }),
             dummy_source_this(heap),
@@ -2601,9 +2684,11 @@ return (_t14: int);"#,
         e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
-            source::pattern::MatchingPattern::Tuple(
-              Location::dummy(),
-              vec![
+            source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![
                 source::pattern::TuplePatternElement {
                   pattern: Box::new(source::pattern::MatchingPattern::Id(
                     source::Id::from(PStr::LOWER_A),
@@ -2619,7 +2704,7 @@ return (_t14: int);"#,
                   type_: builder.int_type(),
                 },
               ],
-            ),
+            }),
             dummy_source_this(heap),
           )),
           e1: Box::new(dummy_source_this(heap)),
@@ -2690,22 +2775,29 @@ return (_t10: int);"#,
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
-          source::pattern::MatchingPattern::Tuple(
-            Location::dummy(),
-            vec![
+          source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            elements: vec![
               source::pattern::TuplePatternElement {
                 pattern: Box::new(source::pattern::MatchingPattern::Variant(
                   source::pattern::VariantPattern {
                     loc: Location::dummy(),
                     tag_order: 0,
                     tag: source::Id::from(PStr::UPPER_A),
-                    data_variables: vec![(
-                      source::pattern::MatchingPattern::Id(
-                        source::Id::from(PStr::LOWER_C),
-                        builder.int_type(),
-                      ),
-                      builder.int_type(),
-                    )],
+                    data_variables: Some(source::pattern::TuplePattern {
+                      location: Location::dummy(),
+                      start_associated_comments: NO_COMMENT_REFERENCE,
+                      ending_associated_comments: NO_COMMENT_REFERENCE,
+                      elements: vec![source::pattern::TuplePatternElement {
+                        pattern: Box::new(source::pattern::MatchingPattern::Id(
+                          source::Id::from(PStr::LOWER_C),
+                          builder.int_type(),
+                        )),
+                        type_: builder.int_type(),
+                      }],
+                    }),
                     type_: builder.int_type(),
                   },
                 )),
@@ -2717,20 +2809,25 @@ return (_t10: int);"#,
                     loc: Location::dummy(),
                     tag_order: 1,
                     tag: source::Id::from(PStr::UPPER_A),
-                    data_variables: vec![(
-                      source::pattern::MatchingPattern::Id(
-                        source::Id::from(PStr::LOWER_C),
-                        builder.int_type(),
-                      ),
-                      builder.int_type(),
-                    )],
+                    data_variables: Some(source::pattern::TuplePattern {
+                      location: Location::dummy(),
+                      start_associated_comments: NO_COMMENT_REFERENCE,
+                      ending_associated_comments: NO_COMMENT_REFERENCE,
+                      elements: vec![source::pattern::TuplePatternElement {
+                        pattern: Box::new(source::pattern::MatchingPattern::Id(
+                          source::Id::from(PStr::LOWER_C),
+                          builder.int_type(),
+                        )),
+                        type_: builder.int_type(),
+                      }],
+                    }),
                     type_: builder.int_type(),
                   },
                 )),
                 type_: builder.int_type(),
               },
             ],
-          ),
+          }),
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
@@ -2740,22 +2837,27 @@ return (_t10: int);"#,
               loc: Location::dummy(),
               tag_order: 0,
               tag: source::Id::from(PStr::EMPTY),
-              data_variables: vec![
-                (
-                  source::pattern::MatchingPattern::Id(
-                    source::Id::from(heap.alloc_str_for_test("bar")),
-                    builder.int_type(),
-                  ),
-                  builder.int_type(),
-                ),
-                (
-                  source::pattern::MatchingPattern::Id(
-                    source::Id::from(heap.alloc_str_for_test("baz")),
-                    builder.int_type(),
-                  ),
-                  builder.int_type(),
-                ),
-              ],
+              data_variables: Some(source::pattern::TuplePattern {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                elements: vec![
+                  source::pattern::TuplePatternElement {
+                    pattern: Box::new(source::pattern::MatchingPattern::Id(
+                      source::Id::from(heap.alloc_str_for_test("bar")),
+                      builder.int_type(),
+                    )),
+                    type_: builder.int_type(),
+                  },
+                  source::pattern::TuplePatternElement {
+                    pattern: Box::new(source::pattern::MatchingPattern::Id(
+                      source::Id::from(heap.alloc_str_for_test("baz")),
+                      builder.int_type(),
+                    )),
+                    type_: builder.int_type(),
+                  },
+                ],
+              }),
               type_: builder.int_type(),
             }),
             dummy_source_this(heap),
@@ -2769,9 +2871,11 @@ return (_t10: int);"#,
         e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
-            source::pattern::MatchingPattern::Tuple(
-              Location::dummy(),
-              vec![
+            source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![
                 source::pattern::TuplePatternElement {
                   pattern: Box::new(source::pattern::MatchingPattern::Id(
                     source::Id::from(PStr::LOWER_A),
@@ -2787,7 +2891,7 @@ return (_t10: int);"#,
                   type_: builder.int_type(),
                 },
               ],
-            ),
+            }),
             dummy_source_this(heap),
           )),
           e1: Box::new(dummy_source_this(heap)),
@@ -2876,9 +2980,11 @@ return (_t10: int);"#,
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
                 associated_comments: NO_COMMENT_REFERENCE,
-                pattern: source::pattern::MatchingPattern::Object(
-                  Location::dummy(),
-                  vec![
+                pattern: source::pattern::MatchingPattern::Object {
+                  location: Location::dummy(),
+                  start_associated_comments: NO_COMMENT_REFERENCE,
+                  ending_associated_comments: NO_COMMENT_REFERENCE,
+                  elements: vec![
                     source::pattern::ObjectPatternElement {
                       loc: Location::dummy(),
                       field_order: 0,
@@ -2902,14 +3008,17 @@ return (_t10: int);"#,
                       type_: builder.int_type(),
                     },
                   ],
-                ),
+                },
                 annotation: Some(dummy_source_id_annot(heap)),
                 assigned_expression: Box::new(dummy_source_this(heap)),
               },
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
                 associated_comments: NO_COMMENT_REFERENCE,
-                pattern: source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+                pattern: source::pattern::MatchingPattern::Wildcard {
+                  location: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                },
                 annotation: Some(dummy_source_id_annot(heap)),
                 assigned_expression: Box::new(dummy_source_this(heap)),
               },
@@ -2939,9 +3048,11 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::MatchingPattern::Object(
-              Location::dummy(),
-              vec![
+            pattern: source::pattern::MatchingPattern::Object {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![
                 source::pattern::ObjectPatternElement {
                   loc: Location::dummy(),
                   field_order: 0,
@@ -2965,16 +3076,18 @@ return 0;"#,
                   type_: builder.int_type(),
                 },
               ],
-            ),
+            },
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::MatchingPattern::Tuple(
-              Location::dummy(),
-              vec![
+            pattern: source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![
                 source::pattern::TuplePatternElement {
                   pattern: Box::new(source::pattern::MatchingPattern::Id(
                     source::Id::from(PStr::LOWER_D),
@@ -2983,18 +3096,24 @@ return 0;"#,
                   type_: builder.int_type(),
                 },
                 source::pattern::TuplePatternElement {
-                  pattern: Box::new(source::pattern::MatchingPattern::Wildcard(Location::dummy())),
+                  pattern: Box::new(source::pattern::MatchingPattern::Wildcard {
+                    location: Location::dummy(),
+                    associated_comments: NO_COMMENT_REFERENCE,
+                  }),
                   type_: builder.int_type(),
                 },
               ],
-            ),
+            }),
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+            pattern: source::pattern::MatchingPattern::Wildcard {
+              location: Location::dummy(),
+              associated_comments: NO_COMMENT_REFERENCE,
+            },
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
           },

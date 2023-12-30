@@ -246,6 +246,22 @@ pub mod pattern {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub struct TuplePattern<T: Clone> {
+    pub location: Location,
+    pub start_associated_comments: super::CommentReference,
+    pub ending_associated_comments: super::CommentReference,
+    pub elements: Vec<TuplePatternElement<T>>,
+  }
+
+  impl<T: Clone> TuplePattern<T> {
+    fn collect_bindings<'a>(&'a self, collector: &mut BTreeMap<PStr, &'a T>) {
+      for nested in &self.elements {
+        nested.pattern.collect_bindings(collector)
+      }
+    }
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub struct ObjectPatternElement<T: Clone> {
     pub loc: Location,
     pub field_order: usize,
@@ -260,33 +276,41 @@ pub mod pattern {
     pub loc: Location,
     pub tag_order: usize,
     pub tag: Id,
-    pub data_variables: Vec<(MatchingPattern<T>, T)>,
+    pub data_variables: Option<TuplePattern<T>>,
     pub type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
   pub enum MatchingPattern<T: Clone> {
-    Tuple(Location, Vec<TuplePatternElement<T>>),
-    Object(Location, Vec<ObjectPatternElement<T>>),
+    Tuple(TuplePattern<T>),
+    Object {
+      location: Location,
+      start_associated_comments: super::CommentReference,
+      ending_associated_comments: super::CommentReference,
+      elements: Vec<ObjectPatternElement<T>>,
+    },
     Variant(VariantPattern<T>),
     Id(Id, T),
-    Wildcard(Location),
+    Wildcard {
+      location: Location,
+      associated_comments: super::CommentReference,
+    },
   }
 
   impl<T: Clone> MatchingPattern<T> {
     pub fn loc(&self) -> &Location {
       match self {
-        Self::Tuple(loc, _)
-        | Self::Object(loc, _)
-        | Self::Variant(VariantPattern { loc, .. })
-        | Self::Id(Id { loc, .. }, _)
-        | Self::Wildcard(loc) => loc,
+        Self::Tuple(TuplePattern { location, .. })
+        | Self::Object { location, .. }
+        | Self::Variant(VariantPattern { loc: location, .. })
+        | Self::Id(Id { loc: location, .. }, _)
+        | Self::Wildcard { location, .. } => location,
       }
     }
 
     pub fn always_matching(&self) -> bool {
       match self {
-        Self::Tuple(_, elements) => {
+        Self::Tuple(TuplePattern { elements, .. }) => {
           for e in elements {
             if !e.pattern.always_matching() {
               return false;
@@ -294,7 +318,7 @@ pub mod pattern {
           }
           true
         }
-        Self::Object(_, elements) => {
+        Self::Object { elements, .. } => {
           for e in elements {
             if !e.pattern.always_matching() {
               return false;
@@ -303,7 +327,7 @@ pub mod pattern {
           true
         }
         Self::Variant(_) => false,
-        Self::Id(_, _) | Self::Wildcard(_) => true,
+        Self::Id(_, _) | Self::Wildcard { .. } => true,
       }
     }
 
@@ -315,25 +339,21 @@ pub mod pattern {
 
     fn collect_bindings<'a>(&'a self, collector: &mut BTreeMap<PStr, &'a T>) {
       match self {
-        Self::Tuple(_, ps) => {
-          for nested in ps {
-            nested.pattern.collect_bindings(collector)
-          }
-        }
-        Self::Object(_, ps) => {
+        Self::Tuple(p) => p.collect_bindings(collector),
+        Self::Object { elements: ps, .. } => {
           for nested in ps {
             nested.pattern.collect_bindings(collector)
           }
         }
         Self::Variant(VariantPattern { data_variables, .. }) => {
-          for (p, _) in data_variables {
+          if let Some(p) = data_variables {
             p.collect_bindings(collector)
           }
         }
         Self::Id(Id { name, .. }, t) => {
           collector.insert(*name, t);
         }
-        Self::Wildcard(_) => {}
+        Self::Wildcard { .. } => {}
       }
     }
   }

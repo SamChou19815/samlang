@@ -67,16 +67,20 @@ fn mark_id(heap: &mut Heap, id: &Id) {
   heap.mark(id.name);
 }
 
+fn mark_tuple_pattern(heap: &mut Heap, pattern: &pattern::TuplePattern<Rc<Type>>) {
+  for n in &pattern.elements {
+    mark_matching_pattern(heap, &n.pattern);
+    mark_type(heap, &n.type_);
+  }
+}
+
 fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<Type>>) {
   match pattern {
-    pattern::MatchingPattern::Tuple(_, names) => {
-      for n in names {
-        mark_matching_pattern(heap, &n.pattern);
-        mark_type(heap, &n.type_);
-      }
+    pattern::MatchingPattern::Tuple(p) => {
+      mark_tuple_pattern(heap, p);
     }
-    pattern::MatchingPattern::Object(_, names) => {
-      for n in names {
+    pattern::MatchingPattern::Object { elements, .. } => {
+      for n in elements {
         mark_type(heap, &n.type_);
         mark_id(heap, &n.field_name);
         mark_matching_pattern(heap, &n.pattern);
@@ -91,16 +95,15 @@ fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<
     }) => {
       mark_type(heap, type_);
       mark_id(heap, tag);
-      for (p, type_) in data_variables {
-        mark_matching_pattern(heap, p);
-        mark_type(heap, type_);
+      if let Some(p) = data_variables {
+        mark_tuple_pattern(heap, p);
       }
     }
     pattern::MatchingPattern::Id(id, type_) => {
       mark_id(heap, id);
       mark_type(heap, type_);
     }
-    pattern::MatchingPattern::Wildcard(_) => {}
+    pattern::MatchingPattern::Wildcard { .. } => {}
   }
 }
 
@@ -311,6 +314,7 @@ mod tests {
           let { e as d2 } = Obj.init(5, 4); // d = 4
           let _ = if let { e as d3 } = Obj.init(5, 4) then {} else {};
           let _ = if let Some(_) = Option.Some(1) then {} else {};
+          let _ = if let None = Option.None<int>() then {} else {};
           let _ = if let (_, _) = (1,2) then {} else {};
           let f = Obj.init(5, 4); // d = 4
           let g = Obj.init(d, 4); // d = 4

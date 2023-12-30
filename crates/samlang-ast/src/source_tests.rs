@@ -64,27 +64,37 @@ mod tests {
 
   #[test]
   fn pattern_matching_and_bindings_tests() {
-    let mut matching_pattern: pattern::MatchingPattern<()> = pattern::MatchingPattern::Object(
-      Location::dummy(),
-      vec![pattern::ObjectPatternElement {
+    let mut matching_pattern: pattern::MatchingPattern<()> = pattern::MatchingPattern::Object {
+      location: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
+      elements: vec![pattern::ObjectPatternElement {
         loc: Location::dummy(),
         field_order: 0,
         field_name: Id::from(PStr::UPPER_A),
-        pattern: Box::new(pattern::MatchingPattern::Wildcard(Location::dummy())),
+        pattern: Box::new(pattern::MatchingPattern::Wildcard {
+          location: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+        }),
         shorthand: false,
         type_: (),
       }],
-    );
+    };
     matching_pattern.bindings();
     assert!(matching_pattern.always_matching());
-    matching_pattern = pattern::MatchingPattern::Object(
-      Location::dummy(),
-      vec![
+    matching_pattern = pattern::MatchingPattern::Object {
+      location: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
+      elements: vec![
         pattern::ObjectPatternElement {
           loc: Location::dummy(),
           field_order: 0,
           field_name: Id::from(PStr::UPPER_A),
-          pattern: Box::new(pattern::MatchingPattern::Wildcard(Location::dummy())),
+          pattern: Box::new(pattern::MatchingPattern::Wildcard {
+            location: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+          }),
           shorthand: false,
           type_: (),
         },
@@ -96,19 +106,32 @@ mod tests {
             loc: Location::dummy(),
             tag_order: 0,
             tag: Id::from(PStr::UPPER_A),
-            data_variables: vec![(pattern::MatchingPattern::Wildcard(Location::dummy()), ())],
+            data_variables: Some(pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![pattern::TuplePatternElement {
+                pattern: Box::new(pattern::MatchingPattern::Wildcard {
+                  location: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                }),
+                type_: (),
+              }],
+            }),
             type_: (),
           })),
           shorthand: false,
           type_: (),
         },
       ],
-    );
+    };
     matching_pattern.bindings();
     assert_eq!(false, matching_pattern.always_matching());
-    matching_pattern = pattern::MatchingPattern::Object(
-      Location::dummy(),
-      vec![
+    matching_pattern = pattern::MatchingPattern::Object {
+      location: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
+      elements: vec![
         pattern::ObjectPatternElement {
           loc: Location::dummy(),
           field_order: 0,
@@ -117,7 +140,18 @@ mod tests {
             loc: Location::dummy(),
             tag_order: 0,
             tag: Id::from(PStr::UPPER_A),
-            data_variables: vec![(pattern::MatchingPattern::Wildcard(Location::dummy()), ())],
+            data_variables: Some(pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              elements: vec![pattern::TuplePatternElement {
+                pattern: Box::new(pattern::MatchingPattern::Wildcard {
+                  location: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                }),
+                type_: (),
+              }],
+            }),
             type_: (),
           })),
           shorthand: false,
@@ -127,37 +161,58 @@ mod tests {
           loc: Location::dummy(),
           field_order: 0,
           field_name: Id::from(PStr::UPPER_A),
-          pattern: Box::new(pattern::MatchingPattern::Wildcard(Location::dummy())),
+          pattern: Box::new(pattern::MatchingPattern::Wildcard {
+            location: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+          }),
           shorthand: false,
           type_: (),
         },
       ],
-    );
+    };
     matching_pattern.bindings();
     assert_eq!(false, matching_pattern.always_matching());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
-    matching_pattern = pattern::MatchingPattern::Tuple(
-      Location::dummy(),
-      vec![pattern::TuplePatternElement {
-        pattern: Box::new(pattern::MatchingPattern::Wildcard(Location::dummy())),
+    matching_pattern = pattern::MatchingPattern::Tuple(pattern::TuplePattern {
+      location: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
+      elements: vec![pattern::TuplePatternElement {
+        pattern: Box::new(pattern::MatchingPattern::Wildcard {
+          location: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+        }),
         type_: (),
       }],
-    );
+    });
     matching_pattern.bindings();
     assert!(matching_pattern.always_matching());
-    matching_pattern = pattern::MatchingPattern::Tuple(
-      Location::dummy(),
-      vec![pattern::TuplePatternElement {
+    matching_pattern = pattern::MatchingPattern::Tuple(pattern::TuplePattern {
+      location: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
+      elements: vec![pattern::TuplePatternElement {
         pattern: Box::new(pattern::MatchingPattern::Variant(pattern::VariantPattern {
           loc: Location::dummy(),
           tag_order: 0,
           tag: Id::from(PStr::UPPER_A),
-          data_variables: vec![(pattern::MatchingPattern::Wildcard(Location::dummy()), ())],
+          data_variables: Some(pattern::TuplePattern {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            elements: vec![pattern::TuplePatternElement {
+              pattern: Box::new(pattern::MatchingPattern::Wildcard {
+                location: Location::dummy(),
+                associated_comments: NO_COMMENT_REFERENCE,
+              }),
+              type_: (),
+            }],
+          }),
           type_: (),
         })),
         type_: (),
       }],
-    );
+    });
     matching_pattern.bindings();
     assert_eq!(false, matching_pattern.always_matching());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
@@ -165,7 +220,18 @@ mod tests {
       loc: Location::dummy(),
       tag_order: 0,
       tag: Id::from(PStr::UPPER_A),
-      data_variables: vec![(pattern::MatchingPattern::Wildcard(Location::dummy()), ())],
+      data_variables: Some(pattern::TuplePattern {
+        location: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        elements: vec![pattern::TuplePatternElement {
+          pattern: Box::new(pattern::MatchingPattern::Wildcard {
+            location: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+          }),
+          type_: (),
+        }],
+      }),
       type_: (),
     });
     matching_pattern.bindings();
@@ -175,7 +241,10 @@ mod tests {
     matching_pattern.bindings();
     assert!(matching_pattern.always_matching());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
-    matching_pattern = pattern::MatchingPattern::Wildcard(Location::dummy());
+    matching_pattern = pattern::MatchingPattern::Wildcard {
+      location: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
+    };
     matching_pattern.bindings();
     assert!(matching_pattern.always_matching());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
@@ -184,13 +253,13 @@ mod tests {
         loc: Location::dummy(),
         tag_order: 0,
         tag: Id::from(PStr::UPPER_A),
-        data_variables: vec![],
+        data_variables: None,
         type_: (),
       }) == pattern::MatchingPattern::Variant(pattern::VariantPattern {
         loc: Location::dummy(),
         tag_order: 0,
         tag: Id::from(PStr::UPPER_A),
-        data_variables: vec![],
+        data_variables: None,
         type_: (),
       })
     );
@@ -299,7 +368,10 @@ mod tests {
     coverage_hack_for_expr(E::IfElse(IfElse {
       common: common.clone(),
       condition: Box::new(IfElseCondition::Guard(
-        pattern::MatchingPattern::Wildcard(Location::dummy()),
+        pattern::MatchingPattern::Wildcard {
+          location: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+        },
         zero_expr.clone(),
       )),
       e1: Box::new(zero_expr.clone()),
@@ -310,7 +382,10 @@ mod tests {
       matched: Box::new(zero_expr.clone()),
       cases: vec![expr::VariantPatternToExpression {
         loc: Location::dummy(),
-        pattern: pattern::MatchingPattern::Wildcard(Location::dummy()),
+        pattern: pattern::MatchingPattern::Wildcard {
+          location: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+        },
         body: Box::new(zero_expr.clone()),
       }],
     }));
@@ -330,9 +405,11 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: pattern::MatchingPattern::Object(
-            Location::dummy(),
-            vec![pattern::ObjectPatternElement {
+          pattern: pattern::MatchingPattern::Object {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            elements: vec![pattern::ObjectPatternElement {
               loc: Location::dummy(),
               field_order: 0,
               field_name: Id::from(heap.alloc_str_for_test("name")),
@@ -343,7 +420,7 @@ mod tests {
               shorthand: true,
               type_: (),
             }],
-          ),
+          },
           annotation: Some(annotation::T::Primitive(
             Location::dummy(),
             NO_COMMENT_REFERENCE,
@@ -354,16 +431,18 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: pattern::MatchingPattern::Tuple(
-            Location::dummy(),
-            vec![pattern::TuplePatternElement {
+          pattern: pattern::MatchingPattern::Tuple(pattern::TuplePattern {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            elements: vec![pattern::TuplePatternElement {
               pattern: Box::new(pattern::MatchingPattern::Id(
                 Id::from(heap.alloc_str_for_test("name")),
                 (),
               )),
               type_: (),
             }],
-          ),
+          }),
           annotation: Some(annotation::T::Primitive(
             Location::dummy(),
             NO_COMMENT_REFERENCE,
@@ -374,7 +453,10 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: pattern::MatchingPattern::Wildcard(Location::dummy()),
+          pattern: pattern::MatchingPattern::Wildcard {
+            location: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+          },
           annotation: Some(annotation::T::Primitive(
             Location::dummy(),
             NO_COMMENT_REFERENCE,

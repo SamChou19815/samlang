@@ -1040,23 +1040,45 @@ fn bad_pattern_default(wildcard_on_bad_pattern: bool) -> pattern_matching::Abstr
   }
 }
 
+fn any_typed_invalid_tuple_pattern(
+  cx: &mut TypingContext,
+  pattern::TuplePattern {
+    location: pattern_loc,
+    start_associated_comments,
+    ending_associated_comments,
+    elements: destructured_names,
+  }: &pattern::TuplePattern<()>,
+) -> pattern::TuplePattern<Rc<Type>> {
+  let mut checked_destructured_names = vec![];
+  for pattern::TuplePatternElement { pattern, type_: _ } in destructured_names {
+    let loc = pattern.loc();
+    checked_destructured_names.push(pattern::TuplePatternElement {
+      pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
+      type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+    });
+  }
+  pattern::TuplePattern {
+    location: *pattern_loc,
+    start_associated_comments: *start_associated_comments,
+    ending_associated_comments: *ending_associated_comments,
+    elements: checked_destructured_names,
+  }
+}
+
 fn any_typed_invalid_matching_pattern(
   cx: &mut TypingContext,
   pattern: &pattern::MatchingPattern<()>,
 ) -> pattern::MatchingPattern<Rc<Type>> {
   match pattern {
-    pattern::MatchingPattern::Tuple(pattern_loc, destructured_names) => {
-      let mut checked_destructured_names = vec![];
-      for pattern::TuplePatternElement { pattern, type_: _ } in destructured_names {
-        let loc = pattern.loc();
-        checked_destructured_names.push(pattern::TuplePatternElement {
-          pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
-          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
-        });
-      }
-      pattern::MatchingPattern::Tuple(*pattern_loc, checked_destructured_names)
+    pattern::MatchingPattern::Tuple(p) => {
+      pattern::MatchingPattern::Tuple(any_typed_invalid_tuple_pattern(cx, p))
     }
-    pattern::MatchingPattern::Object(pattern_loc, destructed_names) => {
+    pattern::MatchingPattern::Object {
+      location: pattern_loc,
+      start_associated_comments,
+      ending_associated_comments,
+      elements: destructured_names,
+    } => {
       let mut checked_destructured_names = vec![];
       for pattern::ObjectPatternElement {
         loc,
@@ -1065,7 +1087,7 @@ fn any_typed_invalid_matching_pattern(
         pattern,
         shorthand,
         type_: _,
-      } in destructed_names
+      } in destructured_names
       {
         checked_destructured_names.push(pattern::ObjectPatternElement {
           loc: *loc,
@@ -1076,7 +1098,12 @@ fn any_typed_invalid_matching_pattern(
           type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
       }
-      pattern::MatchingPattern::Object(*pattern_loc, checked_destructured_names)
+      pattern::MatchingPattern::Object {
+        location: *pattern_loc,
+        start_associated_comments: *start_associated_comments,
+        ending_associated_comments: *ending_associated_comments,
+        elements: checked_destructured_names,
+      }
     }
     pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc,
@@ -1088,15 +1115,7 @@ fn any_typed_invalid_matching_pattern(
       loc: *loc,
       tag_order: *tag_order,
       tag: *tag,
-      data_variables: data_variables
-        .iter()
-        .map(|(p, ())| {
-          (
-            any_typed_invalid_matching_pattern(cx, p),
-            Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false)),
-          )
-        })
-        .collect(),
+      data_variables: data_variables.as_ref().map(|p| any_typed_invalid_tuple_pattern(cx, p)),
       type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
     }),
     pattern::MatchingPattern::Id(id, ()) => {
@@ -1104,7 +1123,12 @@ fn any_typed_invalid_matching_pattern(
       cx.local_typing_context.write(id.loc, type_.clone());
       pattern::MatchingPattern::Id(*id, type_)
     }
-    pattern::MatchingPattern::Wildcard(loc) => pattern::MatchingPattern::Wildcard(*loc),
+    pattern::MatchingPattern::Wildcard { location, associated_comments } => {
+      pattern::MatchingPattern::Wildcard {
+        location: *location,
+        associated_comments: *associated_comments,
+      }
+    }
   }
 }
 
@@ -1115,7 +1139,12 @@ fn check_matching_pattern(
   pattern_type: &Rc<Type>,
 ) -> (pattern::MatchingPattern<Rc<Type>>, pattern_matching::AbstractPatternNode) {
   match pattern {
-    pattern::MatchingPattern::Tuple(pattern_loc, destructured_names) => {
+    pattern::MatchingPattern::Tuple(pattern::TuplePattern {
+      location: pattern_loc,
+      start_associated_comments,
+      ending_associated_comments,
+      elements: destructured_names,
+    }) => {
       let Some((_, _, fields)) = cx.resolve_detailed_struct_definitions_opt(pattern_type) else {
         cx.error_set.report_not_a_struct_error(*pattern_loc, pattern_type.to_description());
         return (
@@ -1161,11 +1190,21 @@ fn check_matching_pattern(
         }
       }
       (
-        pattern::MatchingPattern::Tuple(*pattern_loc, checked_destructured_names),
+        pattern::MatchingPattern::Tuple(pattern::TuplePattern {
+          location: *pattern_loc,
+          start_associated_comments: *start_associated_comments,
+          ending_associated_comments: *ending_associated_comments,
+          elements: checked_destructured_names,
+        }),
         pattern_matching::AbstractPatternNode::tuple(abstract_pattern_nodes),
       )
     }
-    pattern::MatchingPattern::Object(pattern_loc, destructed_names) => {
+    pattern::MatchingPattern::Object {
+      location: pattern_loc,
+      start_associated_comments,
+      ending_associated_comments,
+      elements: destructured_names,
+    } => {
       let Some((_, _, fields)) = cx.resolve_detailed_struct_definitions_opt(pattern_type) else {
         cx.error_set.report_not_a_struct_error(*pattern_loc, pattern_type.to_description());
         return (
@@ -1191,7 +1230,7 @@ fn check_matching_pattern(
         pattern,
         shorthand,
         type_: _,
-      } in destructed_names
+      } in destructured_names
       {
         if let Some((field_type, is_public)) = field_mappings.get(&field_name.name) {
           if !is_public {
@@ -1241,7 +1280,12 @@ fn check_matching_pattern(
         );
       }
       (
-        pattern::MatchingPattern::Object(*pattern_loc, checked_destructured_names),
+        pattern::MatchingPattern::Object {
+          location: *pattern_loc,
+          start_associated_comments: *start_associated_comments,
+          ending_associated_comments: *ending_associated_comments,
+          elements: checked_destructured_names,
+        },
         pattern_matching::AbstractPatternNode::tuple(abstract_pattern_nodes),
       )
     }
@@ -1277,35 +1321,65 @@ fn check_matching_pattern(
           pattern_matching::AbstractPatternNode::nothing(),
         );
       };
-      let mut checked_data_variables = Vec::with_capacity(data_variables.len());
       let abstract_variant_constructor = pattern_matching::VariantPatternConstructor {
         module_reference: abstract_variant_constructor_mod_ref,
         class_name: abstract_variant_constructor_class_name,
         variant_name: resolved_enum_variant.name,
       };
       let mut abstract_pattern_nodes = vec![];
-      for (index, (p, ())) in data_variables.iter().enumerate() {
-        if let Some(resolved_pattern_type) = resolved_enum_variant.types.get(index) {
-          let (checked, abstract_node) =
-            check_matching_pattern(cx, p, wildcard_on_bad_pattern, resolved_pattern_type);
-          checked_data_variables.push((checked, resolved_pattern_type.clone()));
-          abstract_pattern_nodes.push(abstract_node);
+      let (checked_data_variables_len, checked_data_variables) =
+        if let Some(pattern::TuplePattern {
+          location,
+          start_associated_comments,
+          ending_associated_comments,
+          elements: data_variables,
+        }) = data_variables
+        {
+          let mut checked_data_variables = Vec::with_capacity(data_variables.len());
+          for (index, pattern::TuplePatternElement { pattern: p, type_: _ }) in
+            data_variables.iter().enumerate()
+          {
+            if let Some(resolved_pattern_type) = resolved_enum_variant.types.get(index) {
+              let (checked, abstract_node) =
+                check_matching_pattern(cx, p, wildcard_on_bad_pattern, resolved_pattern_type);
+              checked_data_variables.push(pattern::TuplePatternElement {
+                pattern: Box::new(checked),
+                type_: resolved_pattern_type.clone(),
+              });
+              abstract_pattern_nodes.push(abstract_node);
+            } else {
+              cx.error_set.report_element_missing_error(
+                *p.loc(),
+                pattern_type.to_description(),
+                index,
+              );
+              let type_ = Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
+              let (checked, abstract_node) =
+                check_matching_pattern(cx, p, wildcard_on_bad_pattern, &type_);
+              checked_data_variables
+                .push(pattern::TuplePatternElement { pattern: Box::new(checked), type_ });
+              abstract_pattern_nodes.push(abstract_node);
+            }
+          }
+          (
+            checked_data_variables.len(),
+            Some(pattern::TuplePattern {
+              location: *location,
+              start_associated_comments: *start_associated_comments,
+              ending_associated_comments: *ending_associated_comments,
+              elements: checked_data_variables,
+            }),
+          )
         } else {
-          cx.error_set.report_element_missing_error(*p.loc(), pattern_type.to_description(), index);
-          let type_ = Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
-          let (checked, abstract_node) =
-            check_matching_pattern(cx, p, wildcard_on_bad_pattern, &type_);
-          checked_data_variables.push((checked, type_));
-          abstract_pattern_nodes.push(abstract_node);
-        }
-      }
-      if resolved_enum_variant.types.len() > checked_data_variables.len() {
+          (0, None)
+        };
+      if resolved_enum_variant.types.len() > checked_data_variables_len {
         cx.error_set.report_non_exhausive_tuple_binding_error(
           *loc,
           resolved_enum_variant.types.len(),
-          checked_data_variables.len(),
+          checked_data_variables_len,
         );
-        for _ in checked_data_variables.len()..resolved_enum_variant.types.len() {
+        for _ in checked_data_variables_len..resolved_enum_variant.types.len() {
           abstract_pattern_nodes.push(pattern_matching::AbstractPatternNode::wildcard());
         }
       }
@@ -1330,9 +1404,13 @@ fn check_matching_pattern(
         pattern_matching::AbstractPatternNode::wildcard(),
       )
     }
-    pattern::MatchingPattern::Wildcard(loc) => {
-      (pattern::MatchingPattern::Wildcard(*loc), pattern_matching::AbstractPatternNode::wildcard())
-    }
+    pattern::MatchingPattern::Wildcard { location, associated_comments } => (
+      pattern::MatchingPattern::Wildcard {
+        location: *location,
+        associated_comments: *associated_comments,
+      },
+      pattern_matching::AbstractPatternNode::wildcard(),
+    ),
   }
 }
 
