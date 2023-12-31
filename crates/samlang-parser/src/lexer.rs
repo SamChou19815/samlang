@@ -3,10 +3,7 @@ use samlang_ast::Location;
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 
-struct EOF();
-
 mod char_stream {
-  use super::EOF;
   use crate::ModuleReference;
   use itertools::Itertools;
   use samlang_ast::{Location, Position};
@@ -40,15 +37,16 @@ mod char_stream {
       }
     }
 
-    pub(super) fn consume_whitespace(&mut self) -> Result<(), EOF> {
+    /// Returns whether we actually consumed something
+    pub(super) fn consume_whitespace(&mut self) -> bool {
       while self.pos < self.source.len() {
         let c = self.source[self.pos];
         if !c.is_ascii_whitespace() {
-          return Result::Ok(());
+          return true;
         }
         self.advance_char(c)
       }
-      Result::Err(EOF())
+      false
     }
 
     pub(super) fn consume_and_get_loc(&mut self, length: usize) -> Location {
@@ -514,61 +512,59 @@ fn get_next_token(
   error_set: &mut ErrorSet,
   known_sorted_operators: &Vec<TokenOp>,
 ) -> Option<Token> {
-  match stream.consume_whitespace() {
-    Result::Err(EOF()) => Option::None,
-    Result::Ok(()) => {
-      if let Option::Some((loc, s)) = stream.consume_line_comment_opt() {
-        let comment_pstr = heap.alloc_string(s);
-        return Option::Some(Token(loc, TokenContent::LineComment(comment_pstr)));
-      }
+  if !stream.consume_whitespace() {
+    return None;
+  }
+  if let Option::Some((loc, s)) = stream.consume_line_comment_opt() {
+    let comment_pstr = heap.alloc_string(s);
+    return Option::Some(Token(loc, TokenContent::LineComment(comment_pstr)));
+  }
 
-      if let Option::Some((is_doc, loc, s)) = stream.consume_opt_block_comment() {
-        let comment_pstr = heap.alloc_string(s);
-        return Option::Some(Token(
-          loc,
-          if is_doc {
-            TokenContent::DocComment(comment_pstr)
-          } else {
-            TokenContent::BlockComment(comment_pstr)
-          },
-        ));
-      }
+  if let Option::Some((is_doc, loc, s)) = stream.consume_opt_block_comment() {
+    let comment_pstr = heap.alloc_string(s);
+    return Option::Some(Token(
+      loc,
+      if is_doc {
+        TokenContent::DocComment(comment_pstr)
+      } else {
+        TokenContent::BlockComment(comment_pstr)
+      },
+    ));
+  }
 
-      if let Option::Some((loc, s)) = stream.consume_opt_int() {
-        return Option::Some(Token(loc, TokenContent::IntLiteral(heap.alloc_string(s))));
-      }
+  if let Option::Some((loc, s)) = stream.consume_opt_int() {
+    return Option::Some(Token(loc, TokenContent::IntLiteral(heap.alloc_string(s))));
+  }
 
-      if let Option::Some((loc, s)) = stream.consume_str_opt() {
-        if !string_has_valid_escape(&s) {
-          error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
-        }
-        return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
-      }
+  if let Option::Some((loc, s)) = stream.consume_str_opt() {
+    if !string_has_valid_escape(&s) {
+      error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
+    }
+    return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
+  }
 
-      if let Option::Some((loc, s)) = stream.consume_opt_id() {
-        if let Option::Some(k) = KEYWORDS.get(s.as_str()) {
-          return Option::Some(Token(loc, TokenContent::Keyword(*k)));
-        }
-        let content = if s.chars().next().unwrap().is_ascii_uppercase() {
-          TokenContent::UpperId(heap.alloc_string(s))
-        } else {
-          TokenContent::LowerId(heap.alloc_string(s))
-        };
-        return Option::Some(Token(loc, content));
-      }
+  if let Option::Some((loc, s)) = stream.consume_opt_id() {
+    if let Option::Some(k) = KEYWORDS.get(s.as_str()) {
+      return Option::Some(Token(loc, TokenContent::Keyword(*k)));
+    }
+    let content = if s.chars().next().unwrap().is_ascii_uppercase() {
+      TokenContent::UpperId(heap.alloc_string(s))
+    } else {
+      TokenContent::LowerId(heap.alloc_string(s))
+    };
+    return Option::Some(Token(loc, content));
+  }
 
-      for op in known_sorted_operators {
-        let op_string = op.as_str();
-        if let Some(loc) = stream.consume_opt_next_constant_token(op_string) {
-          return Option::Some(Token(loc, TokenContent::Operator(*op)));
-        }
-      }
-
-      let (error_loc, error_token_content) = stream.consume_until_whitespace();
-      error_set.report_invalid_syntax_error(error_loc, "Invalid token.".to_string());
-      Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_string(error_token_content))))
+  for op in known_sorted_operators {
+    let op_string = op.as_str();
+    if let Some(loc) = stream.consume_opt_next_constant_token(op_string) {
+      return Option::Some(Token(loc, TokenContent::Operator(*op)));
     }
   }
+
+  let (error_loc, error_token_content) = stream.consume_until_whitespace();
+  error_set.report_invalid_syntax_error(error_loc, "Invalid token.".to_string());
+  Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_string(error_token_content))))
 }
 
 pub(super) fn lex_source_program(
