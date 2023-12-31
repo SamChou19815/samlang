@@ -14,11 +14,15 @@ fn mark_annot(heap: &mut Heap, type_: &annotation::T) {
   }
 }
 
-fn mark_id_annot(heap: &mut Heap, annot: &annotation::Id) {
-  heap.mark(annot.id.name);
-  if let Some(targs) = &annot.type_arguments {
+fn mark_type_arguments(heap: &mut Heap, type_arguments: Option<&annotation::TypeArguments>) {
+  if let Some(targs) = type_arguments {
     mark_annotations(heap, &targs.arguments);
   }
+}
+
+fn mark_id_annot(heap: &mut Heap, annot: &annotation::Id) {
+  heap.mark(annot.id.name);
+  mark_type_arguments(heap, annot.type_arguments.as_ref());
 }
 
 fn mark_fn_annot(heap: &mut Heap, annot: &annotation::Function) {
@@ -114,26 +118,26 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
     expr::E::Literal(_, _) => {}
     expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => mark_id(heap, id),
     expr::E::Tuple(_, expressions) => {
-      for e in expressions {
+      for e in &expressions.expressions {
         mark_expression(heap, e);
       }
     }
     expr::E::FieldAccess(e) => {
       mark_expression(heap, &e.object);
       mark_id(heap, &e.field_name);
-      mark_annotations(heap, &e.explicit_type_arguments);
+      mark_type_arguments(heap, e.explicit_type_arguments.as_ref());
       mark_types(heap, &e.inferred_type_arguments);
     }
     expr::E::MethodAccess(e) => {
       mark_expression(heap, &e.object);
       mark_id(heap, &e.method_name);
-      mark_annotations(heap, &e.explicit_type_arguments);
+      mark_type_arguments(heap, e.explicit_type_arguments.as_ref());
       mark_types(heap, &e.inferred_type_arguments);
     }
     expr::E::Unary(e) => mark_expression(heap, &e.argument),
     expr::E::Call(e) => {
       mark_expression(heap, &e.callee);
-      for e in &e.arguments {
+      for e in &e.arguments.expressions {
         mark_expression(heap, e);
       }
     }
@@ -160,7 +164,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       }
     }
     expr::E::Lambda(e) => {
-      for param in &e.parameters {
+      for param in &e.parameters.parameters {
         mark_id(heap, &param.name);
         mark_annot_opt(heap, &param.annotation);
       }
@@ -208,7 +212,7 @@ fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
     for m in toplevel.members_iter() {
       mark_id(heap, &m.name);
       mark_type_parameters(heap, m.type_parameters.as_ref());
-      mark_fn_annot(heap, &m.type_);
+      mark_annot(heap, &m.return_type);
     }
     if let Toplevel::Class(c) = toplevel {
       match &c.type_definition {

@@ -32,7 +32,7 @@ pub fn build_module_signature(
       let type_info = MemberSignature {
         is_public: member.is_public,
         type_parameters: TypeParameterSignature::from_list(member.type_parameters.as_ref()),
-        type_: FunctionType::from_annotation(&member.type_),
+        type_: FunctionType::from_function(member),
       };
       if member.is_method {
         methods.insert(member.name.name, type_info);

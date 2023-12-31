@@ -12,8 +12,8 @@ use super::{
 use itertools::Itertools;
 use samlang_ast::{
   source::{
-    expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon,
-    Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
+    annotation, expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id,
+    InterfaceDeclarationCommon, Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
   },
   Description, Location, Reason,
 };
@@ -101,14 +101,19 @@ fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
       true
     }
     expr::E::Lambda(expr::Lambda { common: _, parameters, captured: _, body }) => {
-      for param in parameters {
+      for param in &parameters.parameters {
         if param.annotation.is_none() {
           return false;
         }
       }
       arguments_should_be_checked_without_hint(body)
     }
-    expr::E::Block(expr::Block { common: _, statements: _, expression }) => {
+    expr::E::Block(expr::Block {
+      common: _,
+      statements: _,
+      expression,
+      ending_associated_comments: _,
+    }) => {
       if let Some(final_expression) = expression {
         arguments_should_be_checked_without_hint(final_expression)
       } else {
@@ -276,16 +281,16 @@ fn check_class_id(
 fn check_tuple(
   cx: &mut TypingContext,
   common: &expr::ExpressionCommon<()>,
-  expressions: &[expr::E<()>],
+  expressions: &expr::ParenthesizedExpressionList<()>,
 ) -> expr::E<Rc<Type>> {
-  let mut type_arguments = Vec::with_capacity(expressions.len());
-  let mut checked_expressions = Vec::with_capacity(expressions.len());
-  for e in expressions {
+  let mut type_arguments = Vec::with_capacity(expressions.expressions.len());
+  let mut checked_expressions = Vec::with_capacity(expressions.expressions.len());
+  for e in &expressions.expressions {
     let checked = type_check_expression(cx, e, type_hint::MISSING);
     type_arguments.push(checked.type_().clone());
     checked_expressions.push(checked);
   }
-  let id = match expressions.len() {
+  let id = match expressions.expressions.len() {
     2 => PStr::PAIR,
     3 => PStr::TRIPLE,
     4 => PStr::TUPLE_4,
@@ -310,7 +315,15 @@ fn check_tuple(
     id,
     type_arguments,
   }));
-  expr::E::Tuple(common.with_new_type(type_), checked_expressions)
+  expr::E::Tuple(
+    common.with_new_type(type_),
+    expr::ParenthesizedExpressionList {
+      loc: expressions.loc,
+      start_associated_comments: expressions.start_associated_comments,
+      ending_associated_comments: expressions.ending_associated_comments,
+      expressions: checked_expressions,
+    },
+  )
 }
 
 fn replace_undecided_tparam_with_unknown_and_update_type(
@@ -386,25 +399,22 @@ fn check_member_with_unresolved_tparams(
     cx.get_method_type(obj_type, expression.field_name.name, expression.common.loc)
   {
     // This is a valid method. We will now type check it as a method access
-    for targ in &expression.explicit_type_arguments {
+    for targ in expression.explicit_type_arguments.iter().flat_map(|it| &it.arguments) {
       cx.validate_type_instantiation_strictly(&Type::from_annotation(targ))
     }
-    if !expression.explicit_type_arguments.is_empty() {
-      if expression.explicit_type_arguments.len() == method_type_info.type_parameters.len() {
+    if let Some(annotation::TypeArguments { arguments: explicit_type_arguments, .. }) =
+      &expression.explicit_type_arguments
+    {
+      if explicit_type_arguments.len() == method_type_info.type_parameters.len() {
         let mut subst_map = HashMap::new();
-        for (tparam, targ) in
-          method_type_info.type_parameters.iter().zip(&expression.explicit_type_arguments)
-        {
+        for (tparam, targ) in method_type_info.type_parameters.iter().zip(explicit_type_arguments) {
           subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
         }
         validate_type_arguments(cx, &method_type_info.type_parameters, &subst_map);
         let type_ =
           Rc::new(Type::Fn(type_system::subst_fn_type(&method_type_info.type_, &subst_map)));
-        let inferred_type_arguments = expression
-          .explicit_type_arguments
-          .iter()
-          .map(|a| Rc::new(Type::from_annotation(a)))
-          .collect_vec();
+        let inferred_type_arguments =
+          explicit_type_arguments.iter().map(|a| Rc::new(Type::from_annotation(a))).collect_vec();
         let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
           common: expression.common.with_new_type(type_),
           explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -416,7 +426,7 @@ fn check_member_with_unresolved_tparams(
       }
       let mut error = StackableError::new();
       error.add_type_args_arity_error(
-        expression.explicit_type_arguments.len(),
+        explicit_type_arguments.len(),
         method_type_info.type_parameters.len(),
       );
       cx.error_set.report_stackable_error(expression.common.loc, error);
@@ -481,9 +491,9 @@ fn check_member_with_unresolved_tparams(
     (partially_checked_expr, method_type_info.type_parameters.clone())
   } else {
     // Now it should be checked as field access.
-    if !expression.explicit_type_arguments.is_empty() {
+    if let Some(explicit_type_arguments) = &expression.explicit_type_arguments {
       let mut error = StackableError::new();
-      error.add_type_args_arity_error(expression.explicit_type_arguments.len(), 0);
+      error.add_type_args_arity_error(explicit_type_arguments.arguments.len(), 0);
       cx.error_set.report_stackable_error(expression.common.loc, error);
     }
     let fields = cx.resolve_struct_definitions(checked_expression.type_());
@@ -732,18 +742,24 @@ fn check_function_call(
           partially_checked_callee,
           unresolved_tparams,
         )),
-        arguments: expression
-          .arguments
-          .iter()
-          .map(|e| type_check_expression(cx, e, type_hint::MISSING))
-          .collect(),
+        arguments: expr::ParenthesizedExpressionList {
+          loc: expression.arguments.loc,
+          start_associated_comments: expression.arguments.start_associated_comments,
+          ending_associated_comments: expression.arguments.ending_associated_comments,
+          expressions: expression
+            .arguments
+            .expressions
+            .iter()
+            .map(|e| type_check_expression(cx, e, type_hint::MISSING))
+            .collect(),
+        },
       });
     }
   };
-  if callee_function_type.argument_types.len() != expression.arguments.len() {
+  if callee_function_type.argument_types.len() != expression.arguments.expressions.len() {
     let mut stackable = StackableError::new();
     stackable.add_fn_param_arity_error(
-      expression.arguments.len(),
+      expression.arguments.expressions.len(),
       callee_function_type.argument_types.len(),
     );
     cx.error_set.report_stackable_error(expression.common.loc, stackable);
@@ -756,11 +772,17 @@ fn check_function_call(
         partially_checked_callee,
         unresolved_tparams,
       )),
-      arguments: expression
-        .arguments
-        .iter()
-        .map(|e| type_check_expression(cx, e, type_hint::MISSING))
-        .collect(),
+      arguments: expr::ParenthesizedExpressionList {
+        loc: expression.arguments.loc,
+        start_associated_comments: expression.arguments.start_associated_comments,
+        ending_associated_comments: expression.arguments.ending_associated_comments,
+        expressions: expression
+          .arguments
+          .expressions
+          .iter()
+          .map(|e| type_check_expression(cx, e, type_hint::MISSING))
+          .collect(),
+      },
     });
   }
   let FunctionCallTypeCheckingResult {
@@ -773,7 +795,7 @@ fn check_function_call(
     callee_function_type,
     &unresolved_tparams,
     &Reason::new(expression.common.loc, None),
-    &expression.arguments,
+    &expression.arguments.expressions,
     hint.get_valid_hint(),
   );
   let fully_resolved_checked_callee =
@@ -803,7 +825,12 @@ fn check_function_call(
   expr::E::Call(expr::Call {
     common: expression.common.with_new_type(Rc::new(solved_return_type)),
     callee: Box::new(callee_with_patched_targs),
-    arguments: checked_arguments,
+    arguments: expr::ParenthesizedExpressionList {
+      loc: expression.arguments.loc,
+      start_associated_comments: expression.arguments.start_associated_comments,
+      ending_associated_comments: expression.arguments.ending_associated_comments,
+      expressions: checked_arguments,
+    },
   })
 }
 
@@ -935,7 +962,9 @@ fn check_match(
   let mut checked_cases = vec![];
   let mut matching_list_type: Option<Rc<Type>> = None;
   let mut abstract_pattern_nodes = Vec::with_capacity(expression.cases.len());
-  for expr::VariantPatternToExpression { loc, pattern, body } in &expression.cases {
+  for expr::VariantPatternToExpression { loc, pattern, body, ending_associated_comments } in
+    &expression.cases
+  {
     let (pattern, abstract_pattern_node) =
       check_matching_pattern(cx, pattern, true, checked_matched_type);
     abstract_pattern_nodes.push(abstract_pattern_node);
@@ -948,6 +977,7 @@ fn check_match(
       loc: *loc,
       pattern,
       body: Box::new(checked_body),
+      ending_associated_comments: *ending_associated_comments,
     });
   }
   if let Some(description) =
@@ -973,9 +1003,9 @@ fn infer_lambda_parameter_types(
   hint: type_hint::Hint,
 ) -> (Vec<Rc<Type>>, bool) {
   let mut underconstrained = false;
-  let mut types_ = Vec::with_capacity(expression.parameters.len());
+  let mut types_ = Vec::with_capacity(expression.parameters.parameters.len());
   for (i, OptionallyAnnotatedId { name, type_: _, annotation }) in
-    expression.parameters.iter().enumerate()
+    expression.parameters.parameters.iter().enumerate()
   {
     let type_ = if let Some(annot) = annotation {
       Rc::new(Type::from_annotation(annot))
@@ -998,16 +1028,21 @@ fn check_lambda(
   hint: type_hint::Hint,
 ) -> expr::E<Rc<Type>> {
   let (argument_types, underconstrained) = infer_lambda_parameter_types(cx, expression, hint);
-  let checked_parameters = expression
-    .parameters
-    .iter()
-    .zip(&argument_types)
-    .map(|(param, t)| OptionallyAnnotatedId {
-      name: param.name,
-      type_: t.clone(),
-      annotation: param.annotation.clone(),
-    })
-    .collect_vec();
+  let checked_parameters = expr::LambdaParameters {
+    loc: expression.parameters.loc,
+    parameters: expression
+      .parameters
+      .parameters
+      .iter()
+      .zip(&argument_types)
+      .map(|(param, t)| OptionallyAnnotatedId {
+        name: param.name,
+        type_: t.clone(),
+        annotation: param.annotation.clone(),
+      })
+      .collect_vec(),
+    ending_associated_comments: expression.parameters.ending_associated_comments,
+  };
   let body = if cx.in_synthesis_mode() && underconstrained {
     expr::E::Literal(
       expression
@@ -1471,6 +1506,7 @@ fn check_block(
     common: expression.common.with_new_type(type_),
     statements,
     expression: checked_final_expr,
+    ending_associated_comments: expression.ending_associated_comments,
   })
 }
 
@@ -1490,12 +1526,16 @@ fn check_class_member_conformance_with_signature(
   expected: &MemberSignature,
   actual: &ClassMemberDeclaration,
 ) {
-  let actual_type_params_len =
-    if let Some(tparams) = &actual.type_parameters { tparams.parameters.len() } else { 0 };
+  let (actual_type_params_len, actual_type_params_loc) =
+    if let Some(tparams) = &actual.type_parameters {
+      (tparams.parameters.len(), tparams.location)
+    } else {
+      (0, actual.name.loc)
+    };
   if expected.type_parameters.len() != actual_type_params_len {
     let mut error = StackableError::new();
     error.add_type_params_arity_error(actual_type_params_len, expected.type_parameters.len());
-    error_set.report_stackable_error(actual.type_.location, error);
+    error_set.report_stackable_error(actual_type_params_loc, error);
   }
   let mut has_type_parameter_conformance_errors = false;
   for (e, a) in
@@ -1518,11 +1558,11 @@ fn check_class_member_conformance_with_signature(
   }
   if has_type_parameter_conformance_errors {
     error_set.report_type_parameter_mismatch_error(
-      actual.type_.location,
+      actual_type_params_loc,
       expected.type_parameters.iter().map(TypeParameterSignature::to_description).collect(),
     );
   } else {
-    let actual_fn_type = FunctionType::from_annotation(&actual.type_);
+    let actual_fn_type = FunctionType::from_function(actual);
     if !expected.type_.is_the_same_type(&actual_fn_type) {
       let mut error = StackableError::new();
       error.add_type_incompatibility_error(
@@ -1531,7 +1571,7 @@ fn check_class_member_conformance_with_signature(
         expected.type_.reason,
         expected.type_.to_description(),
       );
-      error_set.report_stackable_error(actual.type_.location, error);
+      error_set.report_stackable_error(actual.name.loc, error);
     }
   }
 }
@@ -1670,10 +1710,9 @@ pub fn type_check_module(
           ));
         }
       }
-      member_cx.validate_type_instantiation_strictly(&Type::Fn(FunctionType::from_annotation(
-        &member.type_,
-      )));
-      for param in member.parameters.iter() {
+      member_cx
+        .validate_type_instantiation_strictly(&Type::Fn(FunctionType::from_function(member)));
+      for param in member.parameters.parameters.iter() {
         local_cx.write(param.name.loc, Rc::new(Type::from_annotation(&param.annotation)));
       }
     }
@@ -1731,7 +1770,7 @@ pub fn type_check_module(
             c.name.name,
             tparam_sigs,
           );
-          let body_type_hint = Type::from_annotation(&member.decl.type_.return_type);
+          let body_type_hint = Type::from_annotation(&member.decl.return_type);
           let body =
             type_check_expression(&mut cx, &member.body, type_hint::available(&body_type_hint));
           assignability_check(&mut cx, body.loc(), body.type_(), &body_type_hint);

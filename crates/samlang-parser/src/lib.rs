@@ -150,9 +150,9 @@ mod tests {
     expect_good_expr("true && false");
     expect_good_expr("false || true");
     expect_good_expr("\"hello\"::\"world\"");
-    expect_good_expr("if (true) then 3 else bar");
+    expect_good_expr("if (true) /* a */ then 3 /* a */ else /* a */ bar");
     expect_good_expr(
-      "if let {foo as {bar as (Fizz(baz,), Buzz, (_,)), boo},} = true then 3 else bar",
+      "if let {foo as {bar /* a */ as (Fizz(baz,), Buzz, (_,)), boo},} = true then 3 else bar",
     );
     expect_good_expr("match (this) { None(_) -> 0, Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> match this { None(_) -> 1 }, Some(d) -> d }");

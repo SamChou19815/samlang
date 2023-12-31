@@ -99,7 +99,7 @@ fn search_expression(
       _ => {}
     },
     expr::E::Tuple(_, expressions) => {
-      for e in expressions {
+      for e in &expressions.expressions {
         search_expression(e, request, collector);
       }
     }
@@ -137,7 +137,7 @@ fn search_expression(
     expr::E::Unary(e) => search_expression(&e.argument, request, collector),
     expr::E::Call(e) => {
       search_expression(&e.callee, request, collector);
-      for e in &e.arguments {
+      for e in &e.arguments.expressions {
         search_expression(e, request, collector);
       }
     }
@@ -164,7 +164,7 @@ fn search_expression(
       }
     }
     expr::E::Lambda(e) => {
-      for param in &e.parameters {
+      for param in &e.parameters.parameters {
         if let Some(annot) = &param.annotation {
           search_annot(annot, request, collector);
         }
@@ -208,10 +208,10 @@ pub(super) fn search_modules_globally(
         _ => {}
       }
       for member in toplevel.members_iter() {
-        for param in member.parameters.iter() {
+        for param in member.parameters.parameters.iter() {
           search_annot(&param.annotation, request, &mut collector);
         }
-        search_annot(&member.type_.return_type, request, &mut collector);
+        search_annot(&member.return_type, request, &mut collector);
         match request {
           GlobalNameSearchRequest::InterfaceMember(
             req_mod_ref,

@@ -198,7 +198,7 @@ pub mod query {
         ) {
           let type_content = TypeQueryContent {
             language: "samlang",
-            value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&state.heap),
+            value: FunctionType::from_function(relevant_fn).pretty_print(&state.heap),
           };
           Some(query_result_with_optional_document(
             state,
@@ -414,16 +414,16 @@ pub mod query {
       {
         let signature = call.callee.type_().as_fn()?;
         let mut active_parameter = 0;
-        for (i, e) in call.arguments.iter().enumerate() {
+        for (i, e) in call.arguments.expressions.iter().enumerate() {
           if e.loc().contains_position(position) {
             active_parameter = i;
           }
         }
-        if let Some(last_arg) = call.arguments.last() {
+        if let Some(last_arg) = call.arguments.expressions.last() {
           if last_arg.loc().end.lt(&position)
-            && call.arguments.len() < signature.argument_types.len()
+            && call.arguments.expressions.len() < signature.argument_types.len()
           {
-            active_parameter = call.arguments.len();
+            active_parameter = call.arguments.expressions.len();
           }
         }
         let label = format!(
