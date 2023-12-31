@@ -608,6 +608,7 @@ mod tests {
     .is_none());
     assert!(ModuleMembersImport {
       loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
       imported_members: vec![],
       imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
@@ -772,6 +773,7 @@ mod tests {
 
     let one_import = ModuleMembersImport {
       loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
       imported_members: vec![],
       imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),

@@ -48,6 +48,7 @@ pub fn pretty_print_import(
     source_printer::import_to_document(
       heap,
       comment_store,
+      vec![import.associated_comments],
       import.imported_module,
       &import.imported_members,
     ),

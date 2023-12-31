@@ -562,6 +562,7 @@ pub mod rewrite {
     let mut changed_ast = ast.clone();
     changed_ast.imports.push(ModuleMembersImport {
       loc: dummy_location,
+      associated_comments: NO_COMMENT_REFERENCE,
       imported_members: vec![Id {
         loc: dummy_location,
         associated_comments: NO_COMMENT_REFERENCE,

@@ -516,6 +516,7 @@ mod tests {
 
     let import = ModuleMembersImport {
       loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
       imported_members: vec![Id::from(PStr::UPPER_A)],
       imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
