@@ -119,7 +119,7 @@ def_to_use_map:
     let program_str = r#"
 import { Pair } from stdlib.utils
 
-interface Useless
+interface Useless {}
 
 interface Comparable<T> : Useless {
   method compare(other: T): int

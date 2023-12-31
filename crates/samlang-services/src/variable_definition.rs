@@ -1,7 +1,7 @@
 use samlang_ast::{
   source::{
     expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
-    Module, OptionallyAnnotatedId, Toplevel,
+    InterfaceMembersCommon, Module, OptionallyAnnotatedId, Toplevel,
   },
   Location,
 };
@@ -352,55 +352,60 @@ pub(super) fn apply_renaming(
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
           type_definition: c.type_definition.clone(),
-          members: c
-            .members
-            .iter()
-            .map(
-              |ClassMemberDefinition {
-                 decl:
-                   ClassMemberDeclaration {
-                     loc,
-                     associated_comments,
-                     is_public,
-                     is_method,
-                     name,
-                     type_parameters,
-                     return_type,
-                     parameters,
-                   },
-                 body,
-               }| {
-                ClassMemberDefinition {
-                  decl: ClassMemberDeclaration {
-                    loc: *loc,
-                    associated_comments: *associated_comments,
-                    is_public: *is_public,
-                    is_method: *is_method,
-                    name: *name,
-                    type_parameters: type_parameters.clone(),
-                    parameters: samlang_ast::source::FunctionParameters {
-                      location: parameters.location,
-                      start_associated_comments: parameters.start_associated_comments,
-                      ending_associated_comments: parameters.ending_associated_comments,
-                      parameters: Rc::new(
-                        parameters
-                          .parameters
-                          .iter()
-                          .map(|AnnotatedId { name, type_, annotation }| AnnotatedId {
-                            name: mod_def_id(name, definition_and_uses, new_name),
-                            type_: *type_,
-                            annotation: annotation.clone(),
-                          })
-                          .collect(),
-                      ),
+          members: InterfaceMembersCommon {
+            loc: c.members.loc,
+            members: c
+              .members
+              .members
+              .iter()
+              .map(
+                |ClassMemberDefinition {
+                   decl:
+                     ClassMemberDeclaration {
+                       loc,
+                       associated_comments,
+                       is_public,
+                       is_method,
+                       name,
+                       type_parameters,
+                       return_type,
+                       parameters,
+                     },
+                   body,
+                 }| {
+                  ClassMemberDefinition {
+                    decl: ClassMemberDeclaration {
+                      loc: *loc,
+                      associated_comments: *associated_comments,
+                      is_public: *is_public,
+                      is_method: *is_method,
+                      name: *name,
+                      type_parameters: type_parameters.clone(),
+                      parameters: samlang_ast::source::FunctionParameters {
+                        location: parameters.location,
+                        start_associated_comments: parameters.start_associated_comments,
+                        ending_associated_comments: parameters.ending_associated_comments,
+                        parameters: Rc::new(
+                          parameters
+                            .parameters
+                            .iter()
+                            .map(|AnnotatedId { name, type_, annotation }| AnnotatedId {
+                              name: mod_def_id(name, definition_and_uses, new_name),
+                              type_: *type_,
+                              annotation: annotation.clone(),
+                            })
+                            .collect(),
+                        ),
+                      },
+                      return_type: return_type.clone(),
                     },
-                    return_type: return_type.clone(),
-                  },
-                  body: apply_expr_renaming(body, definition_and_uses, new_name),
-                }
-              },
-            )
-            .collect(),
+                    body: apply_expr_renaming(body, definition_and_uses, new_name),
+                  }
+                },
+              )
+              .collect(),
+            ending_associated_comments: c.members.ending_associated_comments,
+          },
         }),
       })
       .collect(),

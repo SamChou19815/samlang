@@ -160,7 +160,7 @@ impl FunctionType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       argument_types: annotation
         .parameters
-        .parameters
+        .annotations
         .iter()
         .map(|annot| Rc::new(Type::from_annotation(annot)))
         .collect(),

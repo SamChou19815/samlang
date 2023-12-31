@@ -430,7 +430,9 @@ pub(super) fn compute_module_diff_edits(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE};
+  use samlang_ast::source::{
+    test_builder, Id, InterfaceDeclarationCommon, InterfaceMembersCommon, NO_COMMENT_REFERENCE,
+  };
   use samlang_errors::ErrorSet;
   use samlang_heap::PStr;
 
@@ -531,9 +533,13 @@ mod tests {
       private: false,
       name: Id::from(PStr::UPPER_A),
       type_parameters: None,
-      extends_or_implements_nodes: vec![],
+      extends_or_implements_nodes: None,
       type_definition: (),
-      members: vec![],
+      members: InterfaceMembersCommon {
+        loc: Location::dummy(),
+        members: vec![],
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+      },
     });
     assert_eq!(
       "interface A {}",

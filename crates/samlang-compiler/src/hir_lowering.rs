@@ -1186,10 +1186,10 @@ fn compile_sources_with_generics_preserved(
           heap,
           mod_ref,
           c.name.name,
-          &c.type_definition,
+          c.type_definition.as_ref(),
         ));
         if c.name.name == PStr::MAIN_TYPE
-          && c.members.iter().any(|source::ClassMemberDefinition { decl, .. }| {
+          && c.members.members.iter().any(|source::ClassMemberDefinition { decl, .. }| {
             decl.name.name == PStr::MAIN_FN
               && decl.parameters.parameters.is_empty()
               && decl.type_parameters.is_none()
@@ -1221,7 +1221,7 @@ fn compile_sources_with_generics_preserved(
           c.name.name,
           &type_def_mappings,
         ));
-        for member in &c.members {
+        for member in &c.members.members {
           let function_name = hir::FunctionName {
             type_name: hir::TypeName {
               module_reference: Some(*module_reference),
@@ -3339,9 +3339,13 @@ return (_t2: int);"#,
           private: false,
           name: source::Id::from(heap.alloc_str_for_test("I")),
           type_parameters: None,
-          extends_or_implements_nodes: vec![],
+          extends_or_implements_nodes: None,
           type_definition: (),
-          members: vec![],
+          members: source::InterfaceMembersCommon {
+            loc: Location::dummy(),
+            members: vec![],
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          },
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
@@ -3349,253 +3353,32 @@ return (_t2: int);"#,
           private: false,
           name: source::Id::from(PStr::MAIN_TYPE),
           type_parameters: None,
-          extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition::Struct {
+          extends_or_implements_nodes: None,
+          type_definition: None,
+          members: source::InterfaceMembersCommon {
             loc: Location::dummy(),
-            fields: vec![],
-          },
-          members: vec![
-            source::ClassMemberDefinition {
-              decl: source::ClassMemberDeclaration {
-                loc: Location::dummy(),
-                associated_comments: NO_COMMENT_REFERENCE,
-                is_public: true,
-                is_method: false,
-                name: source::Id::from(PStr::MAIN_FN),
-                type_parameters: None,
-                parameters: source::FunctionParameters {
-                  location: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  parameters: Rc::new(vec![]),
-                },
-                return_type: annot_builder.unit_annot(),
-              },
-              body: source::expr::E::Call(source::expr::Call {
-                common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-                callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
-                  common: source::expr::ExpressionCommon::dummy(
-                    builder.fun_type(vec![], builder.int_type()),
-                  ),
-                  explicit_type_arguments: None,
-                  inferred_type_arguments: vec![],
-                  object: Box::new(source::expr::E::ClassId(
-                    source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
-                      type_::NominalType {
-                        reason: Reason::dummy(),
-                        is_class_statics: true,
-                        module_reference: ModuleReference::DUMMY,
-                        id: heap.alloc_str_for_test("Class1"),
-                        type_arguments: vec![],
-                      },
-                    ))),
-                    ModuleReference::DUMMY,
-                    source::Id::from(heap.alloc_str_for_test("Class1")),
-                  )),
-                  method_name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
-                })),
-                arguments: source::expr::ParenthesizedExpressionList {
+            members: vec![
+              source::ClassMemberDefinition {
+                decl: source::ClassMemberDeclaration {
                   loc: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  expressions: vec![],
+                  associated_comments: NO_COMMENT_REFERENCE,
+                  is_public: true,
+                  is_method: false,
+                  name: source::Id::from(PStr::MAIN_FN),
+                  type_parameters: None,
+                  parameters: source::FunctionParameters {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    parameters: Rc::new(vec![]),
+                  },
+                  return_type: annot_builder.unit_annot(),
                 },
-              }),
-            },
-            source::ClassMemberDefinition {
-              decl: source::ClassMemberDeclaration {
-                loc: Location::dummy(),
-                associated_comments: NO_COMMENT_REFERENCE,
-                is_public: true,
-                is_method: false,
-                name: source::Id::from(heap.alloc_str_for_test("loopy")),
-                type_parameters: Some(source::annotation::TypeParameters {
-                  location: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  parameters: vec![source::annotation::TypeParameter {
-                    loc: Location::dummy(),
-                    name: source::Id::from(heap.alloc_str_for_test("T")),
-                    bound: None,
-                  }],
-                }),
-                parameters: source::FunctionParameters {
-                  location: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  parameters: Rc::new(vec![]),
-                },
-                return_type: annot_builder.unit_annot(),
-              },
-              body: source::expr::E::Call(source::expr::Call {
-                common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-                callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
-                  common: source::expr::ExpressionCommon::dummy(
-                    builder.fun_type(vec![], builder.int_type()),
-                  ),
-                  explicit_type_arguments: None,
-                  inferred_type_arguments: vec![],
-                  object: Box::new(source::expr::E::ClassId(
-                    source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
-                      type_::NominalType {
-                        reason: Reason::dummy(),
-                        is_class_statics: true,
-                        module_reference: ModuleReference::DUMMY,
-                        id: heap.alloc_str_for_test("T"),
-                        type_arguments: vec![],
-                      },
-                    ))),
-                    ModuleReference::DUMMY,
-                    source::Id::from(heap.alloc_str_for_test("T")),
-                  )),
-                  method_name: source::Id::from(heap.alloc_str_for_test("loopy")),
-                })),
-                arguments: source::expr::ParenthesizedExpressionList {
-                  loc: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  expressions: vec![],
-                },
-              }),
-            },
-          ],
-        }),
-        source::Toplevel::Class(source::InterfaceDeclarationCommon {
-          loc: Location::dummy(),
-          associated_comments: NO_COMMENT_REFERENCE,
-          private: false,
-          name: source::Id::from(heap.alloc_str_for_test("Class1")),
-          type_parameters: None,
-          extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition::Struct {
-            loc: Location::dummy(),
-            fields: vec![source::FieldDefinition {
-              name: source::Id::from(PStr::LOWER_A),
-              annotation: annot_builder.int_annot(),
-              is_public: true,
-            }],
-          },
-          members: vec![
-            source::ClassMemberDefinition {
-              decl: source::ClassMemberDeclaration {
-                loc: Location::dummy(),
-                associated_comments: NO_COMMENT_REFERENCE,
-                is_public: true,
-                is_method: true,
-                name: source::Id::from(heap.alloc_str_for_test("foo")),
-                type_parameters: None,
-                parameters: source::FunctionParameters {
-                  location: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  parameters: Rc::new(vec![source::AnnotatedId {
-                    name: source::Id::from(PStr::LOWER_A),
-                    type_: (), // builder.int_type(),
-                    annotation: annot_builder.int_annot(),
-                  }]),
-                },
-                return_type: annot_builder.int_annot(),
-              },
-              body: this_expr.clone(),
-            },
-            source::ClassMemberDefinition {
-              decl: source::ClassMemberDeclaration {
-                loc: Location::dummy(),
-                associated_comments: NO_COMMENT_REFERENCE,
-                is_public: true,
-                is_method: false,
-                name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
-                type_parameters: None,
-                parameters: source::FunctionParameters {
-                  location: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  parameters: Rc::new(vec![]),
-                },
-                return_type: annot_builder.unit_annot(),
-              },
-              body: source::expr::E::Call(source::expr::Call {
-                common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-                callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
-                  common: source::expr::ExpressionCommon::dummy(
-                    builder.fun_type(vec![], builder.int_type()),
-                  ),
-                  explicit_type_arguments: None,
-                  inferred_type_arguments: vec![],
-                  object: Box::new(source::expr::E::ClassId(
-                    source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
-                      type_::NominalType {
-                        reason: Reason::dummy(),
-                        is_class_statics: true,
-                        module_reference: ModuleReference::DUMMY,
-                        id: heap.alloc_str_for_test("Class1"),
-                        type_arguments: vec![],
-                      },
-                    ))),
-                    ModuleReference::DUMMY,
-                    source::Id::from(heap.alloc_str_for_test("Class1")),
-                  )),
-                  method_name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
-                })),
-                arguments: source::expr::ParenthesizedExpressionList {
-                  loc: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  expressions: vec![],
-                },
-              }),
-            },
-            source::ClassMemberDefinition {
-              decl: source::ClassMemberDeclaration {
-                loc: Location::dummy(),
-                associated_comments: NO_COMMENT_REFERENCE,
-                is_public: true,
-                is_method: false,
-                name: source::Id::from(heap.alloc_str_for_test("factorial")),
-                type_parameters: None,
-                parameters: source::FunctionParameters {
-                  location: Location::dummy(),
-                  start_associated_comments: NO_COMMENT_REFERENCE,
-                  ending_associated_comments: NO_COMMENT_REFERENCE,
-                  parameters: Rc::new(vec![
-                    source::AnnotatedId {
-                      name: source::Id::from(heap.alloc_str_for_test("n")),
-                      type_: (), // builder.int_type(),
-                      annotation: annot_builder.int_annot(),
-                    },
-                    source::AnnotatedId {
-                      name: source::Id::from(heap.alloc_str_for_test("acc")),
-                      type_: (), // builder.int_type(),
-                      annotation: annot_builder.int_annot(),
-                    },
-                  ]),
-                },
-                return_type: annot_builder.int_annot(),
-              },
-              body: source::expr::E::IfElse(source::expr::IfElse {
-                common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                condition: Box::new(source::expr::IfElseCondition::Expression(
-                  source::expr::E::Binary(source::expr::Binary {
-                    common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                    operator_preceding_comments: NO_COMMENT_REFERENCE,
-                    operator: source::expr::BinaryOperator::EQ,
-                    e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
-                    e2: Box::new(source::expr::E::Literal(
-                      source::expr::ExpressionCommon::dummy(builder.int_type()),
-                      source::Literal::Int(0),
-                    )),
-                  }),
-                )),
-                e1: Box::new(source::expr::E::Literal(
-                  source::expr::ExpressionCommon::dummy(builder.int_type()),
-                  source::Literal::Int(1),
-                )),
-                e2: Box::new(source::expr::E::Call(source::expr::Call {
-                  common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                body: source::expr::E::Call(source::expr::Call {
+                  common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
                   callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
                     common: source::expr::ExpressionCommon::dummy(
-                      builder
-                        .fun_type(vec![builder.int_type(), builder.int_type()], builder.int_type()),
+                      builder.fun_type(vec![], builder.int_type()),
                     ),
                     explicit_type_arguments: None,
                     inferred_type_arguments: vec![],
@@ -3612,36 +3395,264 @@ return (_t2: int);"#,
                       ModuleReference::DUMMY,
                       source::Id::from(heap.alloc_str_for_test("Class1")),
                     )),
-                    method_name: source::Id::from(heap.alloc_str_for_test("factorial")),
+                    method_name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
                   })),
                   arguments: source::expr::ParenthesizedExpressionList {
                     loc: Location::dummy(),
                     start_associated_comments: NO_COMMENT_REFERENCE,
                     ending_associated_comments: NO_COMMENT_REFERENCE,
-                    expressions: vec![
-                      source::expr::E::Binary(source::expr::Binary {
-                        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                        operator_preceding_comments: NO_COMMENT_REFERENCE,
-                        operator: source::expr::BinaryOperator::MINUS,
-                        e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
-                        e2: Box::new(source::expr::E::Literal(
-                          source::expr::ExpressionCommon::dummy(builder.int_type()),
-                          source::Literal::Int(1),
-                        )),
-                      }),
-                      source::expr::E::Binary(source::expr::Binary {
-                        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                        operator_preceding_comments: NO_COMMENT_REFERENCE,
-                        operator: source::expr::BinaryOperator::MUL,
-                        e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
-                        e2: Box::new(id_expr(heap.alloc_str_for_test("acc"), builder.int_type())),
-                      }),
-                    ],
+                    expressions: vec![],
                   },
-                })),
-              }),
-            },
-          ],
+                }),
+              },
+              source::ClassMemberDefinition {
+                decl: source::ClassMemberDeclaration {
+                  loc: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                  is_public: true,
+                  is_method: false,
+                  name: source::Id::from(heap.alloc_str_for_test("loopy")),
+                  type_parameters: Some(source::annotation::TypeParameters {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    parameters: vec![source::annotation::TypeParameter {
+                      loc: Location::dummy(),
+                      name: source::Id::from(heap.alloc_str_for_test("T")),
+                      bound: None,
+                    }],
+                  }),
+                  parameters: source::FunctionParameters {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    parameters: Rc::new(vec![]),
+                  },
+                  return_type: annot_builder.unit_annot(),
+                },
+                body: source::expr::E::Call(source::expr::Call {
+                  common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
+                  callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
+                    common: source::expr::ExpressionCommon::dummy(
+                      builder.fun_type(vec![], builder.int_type()),
+                    ),
+                    explicit_type_arguments: None,
+                    inferred_type_arguments: vec![],
+                    object: Box::new(source::expr::E::ClassId(
+                      source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                        type_::NominalType {
+                          reason: Reason::dummy(),
+                          is_class_statics: true,
+                          module_reference: ModuleReference::DUMMY,
+                          id: heap.alloc_str_for_test("T"),
+                          type_arguments: vec![],
+                        },
+                      ))),
+                      ModuleReference::DUMMY,
+                      source::Id::from(heap.alloc_str_for_test("T")),
+                    )),
+                    method_name: source::Id::from(heap.alloc_str_for_test("loopy")),
+                  })),
+                  arguments: source::expr::ParenthesizedExpressionList {
+                    loc: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    expressions: vec![],
+                  },
+                }),
+              },
+            ],
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          },
+        }),
+        source::Toplevel::Class(source::InterfaceDeclarationCommon {
+          loc: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+          private: false,
+          name: source::Id::from(heap.alloc_str_for_test("Class1")),
+          type_parameters: None,
+          extends_or_implements_nodes: None,
+          type_definition: Some(source::TypeDefinition::Struct {
+            loc: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            fields: vec![source::FieldDefinition {
+              name: source::Id::from(PStr::LOWER_A),
+              annotation: annot_builder.int_annot(),
+              is_public: true,
+            }],
+          }),
+          members: source::InterfaceMembersCommon {
+            loc: Location::dummy(),
+            members: vec![
+              source::ClassMemberDefinition {
+                decl: source::ClassMemberDeclaration {
+                  loc: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                  is_public: true,
+                  is_method: true,
+                  name: source::Id::from(heap.alloc_str_for_test("foo")),
+                  type_parameters: None,
+                  parameters: source::FunctionParameters {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    parameters: Rc::new(vec![source::AnnotatedId {
+                      name: source::Id::from(PStr::LOWER_A),
+                      type_: (), // builder.int_type(),
+                      annotation: annot_builder.int_annot(),
+                    }]),
+                  },
+                  return_type: annot_builder.int_annot(),
+                },
+                body: this_expr.clone(),
+              },
+              source::ClassMemberDefinition {
+                decl: source::ClassMemberDeclaration {
+                  loc: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                  is_public: true,
+                  is_method: false,
+                  name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
+                  type_parameters: None,
+                  parameters: source::FunctionParameters {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    parameters: Rc::new(vec![]),
+                  },
+                  return_type: annot_builder.unit_annot(),
+                },
+                body: source::expr::E::Call(source::expr::Call {
+                  common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
+                  callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
+                    common: source::expr::ExpressionCommon::dummy(
+                      builder.fun_type(vec![], builder.int_type()),
+                    ),
+                    explicit_type_arguments: None,
+                    inferred_type_arguments: vec![],
+                    object: Box::new(source::expr::E::ClassId(
+                      source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                        type_::NominalType {
+                          reason: Reason::dummy(),
+                          is_class_statics: true,
+                          module_reference: ModuleReference::DUMMY,
+                          id: heap.alloc_str_for_test("Class1"),
+                          type_arguments: vec![],
+                        },
+                      ))),
+                      ModuleReference::DUMMY,
+                      source::Id::from(heap.alloc_str_for_test("Class1")),
+                    )),
+                    method_name: source::Id::from(heap.alloc_str_for_test("infiniteLoop")),
+                  })),
+                  arguments: source::expr::ParenthesizedExpressionList {
+                    loc: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    expressions: vec![],
+                  },
+                }),
+              },
+              source::ClassMemberDefinition {
+                decl: source::ClassMemberDeclaration {
+                  loc: Location::dummy(),
+                  associated_comments: NO_COMMENT_REFERENCE,
+                  is_public: true,
+                  is_method: false,
+                  name: source::Id::from(heap.alloc_str_for_test("factorial")),
+                  type_parameters: None,
+                  parameters: source::FunctionParameters {
+                    location: Location::dummy(),
+                    start_associated_comments: NO_COMMENT_REFERENCE,
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                    parameters: Rc::new(vec![
+                      source::AnnotatedId {
+                        name: source::Id::from(heap.alloc_str_for_test("n")),
+                        type_: (), // builder.int_type(),
+                        annotation: annot_builder.int_annot(),
+                      },
+                      source::AnnotatedId {
+                        name: source::Id::from(heap.alloc_str_for_test("acc")),
+                        type_: (), // builder.int_type(),
+                        annotation: annot_builder.int_annot(),
+                      },
+                    ]),
+                  },
+                  return_type: annot_builder.int_annot(),
+                },
+                body: source::expr::E::IfElse(source::expr::IfElse {
+                  common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                  condition: Box::new(source::expr::IfElseCondition::Expression(
+                    source::expr::E::Binary(source::expr::Binary {
+                      common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                      operator_preceding_comments: NO_COMMENT_REFERENCE,
+                      operator: source::expr::BinaryOperator::EQ,
+                      e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
+                      e2: Box::new(source::expr::E::Literal(
+                        source::expr::ExpressionCommon::dummy(builder.int_type()),
+                        source::Literal::Int(0),
+                      )),
+                    }),
+                  )),
+                  e1: Box::new(source::expr::E::Literal(
+                    source::expr::ExpressionCommon::dummy(builder.int_type()),
+                    source::Literal::Int(1),
+                  )),
+                  e2: Box::new(source::expr::E::Call(source::expr::Call {
+                    common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                    callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
+                      common: source::expr::ExpressionCommon::dummy(builder.fun_type(
+                        vec![builder.int_type(), builder.int_type()],
+                        builder.int_type(),
+                      )),
+                      explicit_type_arguments: None,
+                      inferred_type_arguments: vec![],
+                      object: Box::new(source::expr::E::ClassId(
+                        source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                          type_::NominalType {
+                            reason: Reason::dummy(),
+                            is_class_statics: true,
+                            module_reference: ModuleReference::DUMMY,
+                            id: heap.alloc_str_for_test("Class1"),
+                            type_arguments: vec![],
+                          },
+                        ))),
+                        ModuleReference::DUMMY,
+                        source::Id::from(heap.alloc_str_for_test("Class1")),
+                      )),
+                      method_name: source::Id::from(heap.alloc_str_for_test("factorial")),
+                    })),
+                    arguments: source::expr::ParenthesizedExpressionList {
+                      loc: Location::dummy(),
+                      start_associated_comments: NO_COMMENT_REFERENCE,
+                      ending_associated_comments: NO_COMMENT_REFERENCE,
+                      expressions: vec![
+                        source::expr::E::Binary(source::expr::Binary {
+                          common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                          operator_preceding_comments: NO_COMMENT_REFERENCE,
+                          operator: source::expr::BinaryOperator::MINUS,
+                          e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
+                          e2: Box::new(source::expr::E::Literal(
+                            source::expr::ExpressionCommon::dummy(builder.int_type()),
+                            source::Literal::Int(1),
+                          )),
+                        }),
+                        source::expr::E::Binary(source::expr::Binary {
+                          common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                          operator_preceding_comments: NO_COMMENT_REFERENCE,
+                          operator: source::expr::BinaryOperator::MUL,
+                          e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
+                          e2: Box::new(id_expr(heap.alloc_str_for_test("acc"), builder.int_type())),
+                        }),
+                      ],
+                    },
+                  })),
+                }),
+              },
+            ],
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          },
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
@@ -3649,15 +3660,26 @@ return (_t2: int);"#,
           private: false,
           name: source::Id::from(heap.alloc_str_for_test("Class2")),
           type_parameters: None,
-          extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition::Enum {
+          extends_or_implements_nodes: None,
+          type_definition: Some(source::TypeDefinition::Enum {
             loc: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
             variants: vec![source::VariantDefinition {
               name: source::Id::from(heap.alloc_str_for_test("Tag")),
-              associated_data_types: vec![annot_builder.int_annot()],
+              associated_data_types: Some(source::annotation::ParenthesizedAnnotationList {
+                location: Location::dummy(),
+                start_associated_comments: NO_COMMENT_REFERENCE,
+                ending_associated_comments: NO_COMMENT_REFERENCE,
+                annotations: vec![annot_builder.int_annot()],
+              }),
             }],
+          }),
+          members: source::InterfaceMembersCommon {
+            loc: Location::dummy(),
+            members: vec![],
+            ending_associated_comments: NO_COMMENT_REFERENCE,
           },
-          members: vec![],
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
@@ -3674,9 +3696,11 @@ return (_t2: int);"#,
               bound: None,
             }],
           }),
-          extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition::Struct {
+          extends_or_implements_nodes: None,
+          type_definition: Some(source::TypeDefinition::Struct {
             loc: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
             fields: vec![source::FieldDefinition {
               name: source::Id::from(PStr::LOWER_A),
               annotation: annot_builder.fn_annot(
@@ -3688,8 +3712,12 @@ return (_t2: int);"#,
               ),
               is_public: true,
             }],
+          }),
+          members: source::InterfaceMembersCommon {
+            loc: Location::dummy(),
+            members: vec![],
+            ending_associated_comments: NO_COMMENT_REFERENCE,
           },
-          members: vec![],
         }),
       ],
       trailing_comments: NO_COMMENT_REFERENCE,
@@ -3708,16 +3736,11 @@ return (_t2: int);"#,
     ]);
 
     let generics_preserved_expected = r#"closure type _$SyntheticIDType0<T> = (DUMMY_A<int>, T) -> int
-object type DUMMY_Main = []
+variant type DUMMY_Main = []
 object type DUMMY_Class1 = [int]
 variant type DUMMY_Class2 = [(Tag: [int])]
 object type DUMMY_Class3<T> = [_$SyntheticIDType0<T>]
 variant type _Str = []
-function DUMMY_Main$init(_this: int): DUMMY_Main {
-  let o: DUMMY_Main = [];
-  return (o: DUMMY_Main);
-}
-
 function DUMMY_Main$main(_this: int): int {
   DUMMY_Class1$infiniteLoop(0);
   return 0;

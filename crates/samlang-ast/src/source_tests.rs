@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+  use crate::source::annotation::ParenthesizedAnnotationList;
+
   use super::super::loc::Location;
   use super::super::source::expr::*;
   use super::super::source::*;
@@ -484,10 +486,11 @@ mod tests {
           annotation: Some(annotation::T::Fn(annotation::Function {
             location: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            parameters: annotation::FunctionParameters {
+            parameters: annotation::ParenthesizedAnnotationList {
               location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
               ending_associated_comments: NO_COMMENT_REFERENCE,
-              parameters: vec![
+              annotations: vec![
                 annotation::T::Id(annotation::Id {
                   location: Location::dummy(),
                   module_reference: ModuleReference::DUMMY,
@@ -565,32 +568,40 @@ mod tests {
       private: false,
       name: Id::from(PStr::LOWER_A),
       type_parameters: None,
-      extends_or_implements_nodes: vec![],
-      type_definition: (),
-      members: vec![ClassMemberDeclaration {
-        loc: Location::dummy(),
+      extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
+        location: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        is_public: true,
-        is_method: true,
-        name: Id::from(PStr::LOWER_A),
-        type_parameters: Some(annotation::TypeParameters {
-          location: Location::dummy(),
-          start_associated_comments: NO_COMMENT_REFERENCE,
-          ending_associated_comments: NO_COMMENT_REFERENCE,
-          parameters: vec![]
-        }),
-        parameters: FunctionParameters {
-          location: Location::dummy(),
-          start_associated_comments: NO_COMMENT_REFERENCE,
-          ending_associated_comments: NO_COMMENT_REFERENCE,
-          parameters: Rc::new(vec![AnnotatedId {
-            name: Id::from(PStr::LOWER_A),
-            type_: (),
-            annotation: builder.int_annot()
-          }])
-        },
-        return_type: builder.int_annot(),
-      }]
+        nodes: vec![],
+      }),
+      type_definition: (),
+      members: InterfaceMembersCommon {
+        loc: Location::dummy(),
+        members: vec![ClassMemberDeclaration {
+          loc: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+          is_public: true,
+          is_method: true,
+          name: Id::from(PStr::LOWER_A),
+          type_parameters: Some(annotation::TypeParameters {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            parameters: vec![]
+          }),
+          parameters: FunctionParameters {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            parameters: Rc::new(vec![AnnotatedId {
+              name: Id::from(PStr::LOWER_A),
+              type_: (),
+              annotation: builder.int_annot()
+            }])
+          },
+          return_type: builder.int_annot(),
+        }],
+        ending_associated_comments: NO_COMMENT_REFERENCE
+      }
     }
     .clone()
     .type_parameters
@@ -606,6 +617,8 @@ mod tests {
     .is_empty());
     let _ = TypeDefinition::Struct {
       loc: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
       fields: vec![FieldDefinition {
         name: Id::from(heap.alloc_str_for_test("str")),
         annotation: builder.bool_annot(),
@@ -615,9 +628,16 @@ mod tests {
     .clone();
     let enum_type_def = TypeDefinition::Enum {
       loc: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
       variants: vec![VariantDefinition {
         name: Id::from(heap.alloc_str_for_test("str")),
-        associated_data_types: vec![builder.bool_annot()],
+        associated_data_types: Some(ParenthesizedAnnotationList {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          annotations: vec![builder.bool_annot()],
+        }),
       }],
     };
     assert!(enum_type_def.clone().eq(&enum_type_def));
@@ -654,17 +674,74 @@ mod tests {
         ending_associated_comments: NO_COMMENT_REFERENCE,
         parameters: vec![],
       }),
-      extends_or_implements_nodes: vec![],
-      type_definition: TypeDefinition::Struct {
+      extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
+        location: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        nodes: vec![],
+      }),
+      type_definition: Some(TypeDefinition::Struct {
         loc: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
         fields: vec![FieldDefinition {
           name: Id::from(heap.alloc_str_for_test("str")),
           annotation: builder.bool_annot(),
           is_public: true,
         }],
+      }),
+      members: InterfaceMembersCommon {
+        loc: Location::dummy(),
+        members: vec![ClassMemberDefinition {
+          decl: ClassMemberDeclaration {
+            loc: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+            is_public: true,
+            is_method: true,
+            name: Id::from(PStr::LOWER_A),
+            type_parameters: Some(annotation::TypeParameters {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              parameters: vec![],
+            }),
+            parameters: FunctionParameters {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              parameters: Rc::new(vec![]),
+            },
+            return_type: builder.int_annot(),
+          },
+          body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0)),
+        }],
+        ending_associated_comments: NO_COMMENT_REFERENCE,
       },
-      members: vec![ClassMemberDefinition {
-        decl: ClassMemberDeclaration {
+    });
+    class.members_iter().next();
+    class.loc();
+    class.associated_comments();
+    assert!(class.is_class());
+    assert!(class.clone().eq(&class));
+    let interface: Toplevel<()> = Toplevel::Interface(InterfaceDeclarationCommon {
+      loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
+      private: false,
+      name: Id::from(heap.alloc_str_for_test("name")),
+      type_parameters: Some(annotation::TypeParameters {
+        location: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        parameters: vec![],
+      }),
+      extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
+        location: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        nodes: vec![],
+      }),
+      type_definition: (),
+      members: InterfaceMembersCommon {
+        loc: Location::dummy(),
+        members: vec![ClassMemberDeclaration {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           is_public: true,
@@ -683,48 +760,9 @@ mod tests {
             parameters: Rc::new(vec![]),
           },
           return_type: builder.int_annot(),
-        },
-        body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0)),
-      }],
-    });
-    class.members_iter().next();
-    class.loc();
-    class.associated_comments();
-    assert!(class.is_class());
-    assert!(class.clone().eq(&class));
-    let interface: Toplevel<()> = Toplevel::Interface(InterfaceDeclarationCommon {
-      loc: Location::dummy(),
-      associated_comments: NO_COMMENT_REFERENCE,
-      private: false,
-      name: Id::from(heap.alloc_str_for_test("name")),
-      type_parameters: Some(annotation::TypeParameters {
-        location: Location::dummy(),
-        start_associated_comments: NO_COMMENT_REFERENCE,
+        }],
         ending_associated_comments: NO_COMMENT_REFERENCE,
-        parameters: vec![],
-      }),
-      extends_or_implements_nodes: vec![],
-      type_definition: (),
-      members: vec![ClassMemberDeclaration {
-        loc: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        is_public: true,
-        is_method: true,
-        name: Id::from(PStr::LOWER_A),
-        type_parameters: Some(annotation::TypeParameters {
-          location: Location::dummy(),
-          start_associated_comments: NO_COMMENT_REFERENCE,
-          ending_associated_comments: NO_COMMENT_REFERENCE,
-          parameters: vec![],
-        }),
-        parameters: FunctionParameters {
-          location: Location::dummy(),
-          start_associated_comments: NO_COMMENT_REFERENCE,
-          ending_associated_comments: NO_COMMENT_REFERENCE,
-          parameters: Rc::new(vec![]),
-        },
-        return_type: builder.int_annot(),
-      }],
+      },
     });
     assert!(interface.clone().eq(&interface));
     interface.members_iter().next();

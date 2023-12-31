@@ -1027,7 +1027,7 @@ Str [kind=Class, detail=class Str]
         .join("\n")
     );
     assert_eq!(
-      "init [kind=Function, detail=init(): Developer]",
+      "",
       completion::auto_complete(&state, &mod_ref, Position(3, 42))
         .iter()
         .map(completion::AutoCompletionItem::to_string)

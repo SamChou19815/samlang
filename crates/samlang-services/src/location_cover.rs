@@ -245,7 +245,7 @@ pub(super) fn search_module_locally(
       }
     }
     if let Toplevel::Class(c) = toplevel {
-      for member in &c.members {
+      for member in &c.members.members {
         if !member.decl.loc.contains_position(position) {
           continue;
         }
@@ -345,7 +345,7 @@ mod tests {
       }
     }
 
-    interface Interface
+    interface Interface {}
 
     class Main {
       function identity(a: int): int = a

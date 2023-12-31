@@ -84,7 +84,7 @@ mod state_searcher_utils {
   ) -> Option<&'a FieldDefinition> {
     find_type_def(state, module_reference, class_name)
       .and_then(|it| it.as_struct())
-      .and_then(|(_, fields)| fields.iter().find(|it| it.name.name.eq(field_name)))
+      .and_then(|(_, _, _, fields)| fields.iter().find(|it| it.name.name.eq(field_name)))
   }
 
   pub(super) fn find_class_member<'a>(

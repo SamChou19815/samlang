@@ -3907,7 +3907,7 @@ interface Conflicting1 {
 interface Conflicting2 {
   method foo(): bool
 }
-interface ExtendingConfliting : Conflicting1, Conflicting2 // no error, we only complain if it's used by classes
+interface ExtendingConfliting : Conflicting1, Conflicting2 {} // no error, we only complain if it's used by classes
 class ImplItself : ImplItself {} // error: expect interface type
 class ImplTArg<T> : T {} // error: T not resolved
 class NoBoundMethodCall {

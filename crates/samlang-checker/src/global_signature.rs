@@ -54,8 +54,13 @@ pub fn build_module_signature(
           .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
           .collect_vec(),
       }));
-      match &class.type_definition {
-        TypeDefinition::Struct { loc, fields } => {
+      match class.type_definition.as_ref() {
+        Some(TypeDefinition::Struct {
+          loc,
+          start_associated_comments: _,
+          ending_associated_comments: _,
+          fields,
+        }) => {
           let type_def_reason = Reason::new(*loc, Some(*loc));
           let ctor_fn = MemberSignature {
             is_public: true,
@@ -85,7 +90,12 @@ pub fn build_module_signature(
               .collect(),
           ))
         }
-        TypeDefinition::Enum { loc, variants } => {
+        Some(TypeDefinition::Enum {
+          loc,
+          start_associated_comments: _,
+          ending_associated_comments: _,
+          variants,
+        }) => {
           let type_def_reason = Reason::new(*loc, Some(*loc));
           for variant in variants {
             let ctor_fn = MemberSignature {
@@ -96,6 +106,7 @@ pub fn build_module_signature(
                 argument_types: variant
                   .associated_data_types
                   .iter()
+                  .flat_map(|it| &it.annotations)
                   .map(|annot| Rc::new(Type::from_annotation(annot)))
                   .collect(),
                 return_type: class_type.clone(),
@@ -111,12 +122,14 @@ pub fn build_module_signature(
                 types: variant
                   .associated_data_types
                   .iter()
+                  .flat_map(|it| &it.annotations)
                   .map(|it| Rc::new(Type::from_annotation(it)))
                   .collect(),
               })
               .collect(),
           ))
         }
+        None => Some(TypeDefinitionSignature::Enum(vec![])),
       }
     } else {
       None
@@ -132,6 +145,7 @@ pub fn build_module_signature(
         super_types: toplevel
           .extends_or_implements_nodes()
           .iter()
+          .flat_map(|it| &it.nodes)
           .map(NominalType::from_annotation)
           .collect(),
       },

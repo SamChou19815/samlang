@@ -13,7 +13,8 @@ use itertools::Itertools;
 use samlang_ast::{
   source::{
     annotation, expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id,
-    InterfaceDeclarationCommon, Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
+    InterfaceDeclarationCommon, InterfaceMembersCommon, Literal, Module, OptionallyAnnotatedId,
+    Toplevel, TypeDefinition,
   },
   Description, Location, Reason,
 };
@@ -1644,20 +1645,33 @@ pub fn type_check_module(
       toplevel_tparams_sig.clone(),
     );
     validate_tparams_signature_type_instantiation(&mut cx, &toplevel_tparams_sig);
-    for bound in toplevel.extends_or_implements_nodes() {
+    for bound in toplevel.extends_or_implements_nodes().iter().flat_map(|it| &it.nodes) {
       cx.validate_type_instantiation_allow_abstract_types(&Type::Nominal(
         NominalType::from_annotation(bound),
       ));
     }
     if let Some(type_definition) = toplevel.type_definition() {
       match type_definition {
-        TypeDefinition::Struct { loc: _, fields } => {
+        TypeDefinition::Struct {
+          loc: _,
+          start_associated_comments: _,
+          ending_associated_comments: _,
+          fields,
+        } => {
           for field in fields {
             cx.validate_type_instantiation_strictly(&Type::from_annotation(&field.annotation))
           }
         }
-        TypeDefinition::Enum { loc: _, variants } => {
-          for t in variants.iter().flat_map(|it| it.associated_data_types.iter()) {
+        TypeDefinition::Enum {
+          loc: _,
+          start_associated_comments: _,
+          ending_associated_comments: _,
+          variants,
+        } => {
+          for t in variants
+            .iter()
+            .flat_map(|it| it.associated_data_types.iter().flat_map(|it| &it.annotations))
+          {
             cx.validate_type_instantiation_strictly(&Type::from_annotation(t))
           }
         }
@@ -1724,7 +1738,7 @@ pub fn type_check_module(
           global_signature::resolve_all_member_names(global_cx, &resolved_super_types, false);
         let mut missing_method_members =
           global_signature::resolve_all_member_names(global_cx, &resolved_super_types, true);
-        for member in &c.members {
+        for member in &c.members.members {
           let n = member.decl.name.name;
           if member.decl.is_method {
             missing_method_members.remove(&n);
@@ -1732,15 +1746,21 @@ pub fn type_check_module(
             missing_function_members.remove(&n);
           }
         }
-        match &c.type_definition {
-          TypeDefinition::Struct { .. } => {
+        match c.type_definition.as_ref() {
+          Some(TypeDefinition::Struct { .. }) => {
             missing_function_members.remove(&PStr::INIT);
           }
-          TypeDefinition::Enum { loc: _, variants } => {
+          Some(TypeDefinition::Enum {
+            loc: _,
+            start_associated_comments: _,
+            ending_associated_comments: _,
+            variants,
+          }) => {
             for variant in variants {
               missing_function_members.remove(&variant.name.name);
             }
           }
+          None => {}
         }
         missing_function_members.extend(&missing_method_members);
         if !missing_function_members.is_empty() {
@@ -1752,7 +1772,7 @@ pub fn type_check_module(
         local_cx.write(c.loc, Rc::new(Type::Nominal(nominal_type)));
 
         let mut checked_members = vec![];
-        for member in &c.members {
+        for member in &c.members.members {
           let tparam_sigs = if member.decl.is_method {
             let mut sigs = TypeParameterSignature::from_list(toplevel.type_parameters());
             let mut local_sigs =
@@ -1784,7 +1804,11 @@ pub fn type_check_module(
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
           type_definition: c.type_definition.clone(),
-          members: checked_members,
+          members: InterfaceMembersCommon {
+            loc: c.members.loc,
+            members: checked_members,
+            ending_associated_comments: c.members.ending_associated_comments,
+          },
         })
       }
     };

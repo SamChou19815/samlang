@@ -271,12 +271,12 @@ mod tests {
 
     class Util {}
 
-    class Util
+    class Util {}
 
-    class Util<T>
+    class Util<T> {}
 
-    class A(val a: () -> int) : Baz
-    class A(val a: (Str) -> int) : Baz
+    class A(val a: () -> int) : Baz {}
+    class A(val a: (Str) -> int) : Baz {}
 
     class TParamFixParserTest : A, A<(A) -> int> {
       function <T: Foo<T>, R: Bar<(A) -> int>> f(): unit = {}
