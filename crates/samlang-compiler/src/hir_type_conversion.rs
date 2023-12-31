@@ -215,14 +215,20 @@ impl TypeLoweringManager {
     heap: &mut Heap,
     module_reference: &ModuleReference,
     identifier: PStr,
-    source_type_def: &source::TypeDefinition,
+    source_type_def: Option<&source::TypeDefinition>,
   ) -> TypeDefinition {
     let type_parameters = Vec::from_iter(
       self.generic_types.iter().cloned().sorted_by(|x, y| x.as_str(heap).cmp(y.as_str(heap))),
     );
+    let name = TypeName { module_reference: Some(*module_reference), type_name: identifier };
     match source_type_def {
-      source::TypeDefinition::Struct { loc: _, fields } => TypeDefinition {
-        name: TypeName { module_reference: Some(*module_reference), type_name: identifier },
+      Some(source::TypeDefinition::Struct {
+        loc: _,
+        start_associated_comments: _,
+        ending_associated_comments: _,
+        fields,
+      }) => TypeDefinition {
+        name,
         type_parameters,
         mappings: TypeDefinitionMappings::Struct(
           fields
@@ -233,8 +239,13 @@ impl TypeLoweringManager {
             .collect(),
         ),
       },
-      source::TypeDefinition::Enum { loc: _, variants } => TypeDefinition {
-        name: TypeName { module_reference: Some(*module_reference), type_name: identifier },
+      Some(source::TypeDefinition::Enum {
+        loc: _,
+        start_associated_comments: _,
+        ending_associated_comments: _,
+        variants,
+      }) => TypeDefinition {
+        name,
         type_parameters,
         mappings: TypeDefinitionMappings::Enum(
           variants
@@ -245,6 +256,7 @@ impl TypeLoweringManager {
                 variant
                   .associated_data_types
                   .iter()
+                  .flat_map(|it| &it.annotations)
                   .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t)))
                   .collect_vec(),
               )
@@ -252,6 +264,9 @@ impl TypeLoweringManager {
             .collect(),
         ),
       },
+      None => {
+        TypeDefinition { name, type_parameters, mappings: TypeDefinitionMappings::Enum(vec![]) }
+      }
     }
   }
 
@@ -276,7 +291,11 @@ impl TypeLoweringManager {
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::{hir::INT_TYPE, source::test_builder, Location, Reason};
+  use samlang_ast::{
+    hir::INT_TYPE,
+    source::{test_builder, NO_COMMENT_REFERENCE},
+    Location, Reason,
+  };
   use samlang_checker::type_::test_type_builder;
   use samlang_heap::PStr;
 
@@ -529,6 +548,8 @@ mod tests {
 
     let type_def = source::TypeDefinition::Struct {
       loc: Location::dummy(),
+      start_associated_comments: NO_COMMENT_REFERENCE,
+      ending_associated_comments: NO_COMMENT_REFERENCE,
       fields: vec![
         source::FieldDefinition {
           name: source::Id::from(PStr::LOWER_A),
@@ -556,7 +577,7 @@ mod tests {
     };
     let foo_str = heap.alloc_str_for_test("Foo");
     let type_def =
-      manager.lower_source_type_definition(heap, &ModuleReference::ROOT, foo_str, &type_def);
+      manager.lower_source_type_definition(heap, &ModuleReference::ROOT, foo_str, Some(&type_def));
     let SynthesizedTypes { closure_types, mut tuple_types } =
       manager.type_synthesizer.synthesized_types();
     assert_eq!(

@@ -138,7 +138,7 @@ interface Conflicting1 {
 interface Conflicting2 {
   method foo(): bool
 }
-interface ExtendingConfliting : Conflicting1, Conflicting2
+interface ExtendingConfliting : Conflicting1, Conflicting2 {}
 class ImplItself : ImplItself {} // error: expect interface type
 class ImplTArg<T> : T {} // error: T not resolved
 "#,

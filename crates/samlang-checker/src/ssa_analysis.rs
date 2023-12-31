@@ -103,7 +103,7 @@ impl<'a> SsaAnalysisState<'a> {
       let type_parameters = toplevel.type_parameters();
       let type_definition = toplevel.type_definition();
 
-      for t in toplevel.extends_or_implements_nodes() {
+      for t in toplevel.extends_or_implements_nodes().iter().flat_map(|it| &it.nodes) {
         self.use_id(&t.id.name, t.id.loc, true);
       }
 
@@ -112,7 +112,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.push_scope();
         {
           self.visit_type_parameters_with_bounds(type_parameters);
-          for t in toplevel.extends_or_implements_nodes() {
+          for t in toplevel.extends_or_implements_nodes().iter().flat_map(|it| &it.nodes) {
             for annot in t.type_arguments.iter().flat_map(|it| &it.arguments) {
               self.visit_annot(annot);
             }
@@ -121,16 +121,26 @@ impl<'a> SsaAnalysisState<'a> {
             let mut names = vec![];
             let mut annots = vec![];
             match type_def {
-              TypeDefinition::Struct { loc: _, fields } => {
+              TypeDefinition::Struct {
+                loc: _,
+                start_associated_comments: _,
+                ending_associated_comments: _,
+                fields,
+              } => {
                 for field in fields {
                   names.push(&field.name);
                   annots.push(&field.annotation);
                 }
               }
-              TypeDefinition::Enum { loc: _, variants } => {
+              TypeDefinition::Enum {
+                loc: _,
+                start_associated_comments: _,
+                ending_associated_comments: _,
+                variants,
+              } => {
                 for variant in variants {
                   names.push(&variant.name);
-                  for annot in &variant.associated_data_types {
+                  for annot in variant.associated_data_types.iter().flat_map(|it| &it.annotations) {
                     annots.push(annot);
                   }
                 }
@@ -156,7 +166,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.pop_scope();
         // Visit instance methods
         self.context.push_scope();
-        if type_definition.is_some() {
+        if toplevel.is_class() {
           self.define_id(PStr::THIS, toplevel.loc());
         }
         for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
@@ -177,14 +187,14 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_members(&mut self, toplevel: &Toplevel<()>, is_method: bool) {
     match toplevel {
       Toplevel::Class(c) => {
-        for m in &c.members {
+        for m in &c.members.members {
           if m.decl.is_method == is_method {
             self.visit_member_declaration(&m.decl, Some(&m.body));
           }
         }
       }
       Toplevel::Interface(d) => {
-        for m in &d.members {
+        for m in &d.members.members {
           if m.is_method == is_method {
             self.visit_member_declaration(m, None);
           }
@@ -395,7 +405,7 @@ impl<'a> SsaAnalysisState<'a> {
         parameters,
         return_type,
       }) => {
-        for arg in &parameters.parameters {
+        for arg in &parameters.annotations {
           self.visit_annot(arg);
         }
         self.visit_annot(return_type);

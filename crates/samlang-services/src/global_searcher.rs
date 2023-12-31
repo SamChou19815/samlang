@@ -21,7 +21,7 @@ fn search_annot(
     annotation::T::Primitive(_, _, _) | annotation::T::Generic(_, _) => {}
     annotation::T::Id(annot) => search_id_annot(annot, request, collector),
     annotation::T::Fn(annot) => {
-      for a in &annot.parameters.parameters {
+      for a in &annot.parameters.annotations {
         search_annot(a, request, collector);
       }
       search_annot(&annot.return_type, request, collector);
@@ -231,7 +231,12 @@ pub(super) fn search_modules_globally(
       if let Toplevel::Class(c) = toplevel {
         match (&c.type_definition, request) {
           (
-            TypeDefinition::Struct { loc: _, fields },
+            Some(TypeDefinition::Struct {
+              loc: _,
+              start_associated_comments: _,
+              ending_associated_comments: _,
+              fields,
+            }),
             GlobalNameSearchRequest::Property(req_mod_ref, req_toplevel_name, req_prop),
           ) if mod_ref.eq(req_mod_ref) && toplevel_name.name.eq(req_toplevel_name) => {
             for field in fields {
@@ -242,7 +247,7 @@ pub(super) fn search_modules_globally(
           }
           _ => {}
         }
-        for member in &c.members {
+        for member in &c.members.members {
           search_expression(&member.body, request, &mut collector);
         }
       }
@@ -304,7 +309,7 @@ mod tests {
       }
     }
 
-    interface Interface
+    interface Interface {}
 
     class Main {
       function identity(a: int): int = a

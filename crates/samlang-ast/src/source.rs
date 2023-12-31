@@ -160,17 +160,18 @@ pub mod annotation {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub struct FunctionParameters {
+  pub struct ParenthesizedAnnotationList {
     pub location: Location,
+    pub start_associated_comments: CommentReference,
     pub ending_associated_comments: CommentReference,
-    pub parameters: Vec<T>,
+    pub annotations: Vec<T>,
   }
 
   #[derive(Clone, PartialEq, Eq)]
   pub struct Function {
     pub location: Location,
     pub associated_comments: CommentReference,
-    pub parameters: FunctionParameters,
+    pub parameters: ParenthesizedAnnotationList,
     pub return_type: Box<T>,
   }
 
@@ -685,6 +686,21 @@ pub struct ClassMemberDefinition<T: Clone> {
   pub body: expr::E<T>,
 }
 
+/// The node after colon, interpreted as extends in interfaces and implements in classes.
+#[derive(Clone, PartialEq, Eq)]
+pub struct ExtendsOrImplementsNodes {
+  pub location: Location,
+  pub associated_comments: CommentReference,
+  pub nodes: Vec<annotation::Id>,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct InterfaceMembersCommon<M> {
+  pub loc: Location,
+  pub members: Vec<M>,
+  pub ending_associated_comments: CommentReference,
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct InterfaceDeclarationCommon<D, M> {
   pub loc: Location,
@@ -692,10 +708,9 @@ pub struct InterfaceDeclarationCommon<D, M> {
   pub private: bool,
   pub name: Id,
   pub type_parameters: Option<annotation::TypeParameters>,
-  /** The node after colon, interpreted as extends in interfaces and implements in classes. */
-  pub extends_or_implements_nodes: Vec<annotation::Id>,
+  pub extends_or_implements_nodes: Option<ExtendsOrImplementsNodes>,
   pub type_definition: D,
-  pub members: Vec<M>,
+  pub members: InterfaceMembersCommon<M>,
 }
 
 pub type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMemberDeclaration>;
@@ -710,16 +725,63 @@ pub struct FieldDefinition {
 #[derive(Clone, PartialEq, Eq)]
 pub struct VariantDefinition {
   pub name: Id,
-  pub associated_data_types: Vec<annotation::T>,
+  pub associated_data_types: Option<annotation::ParenthesizedAnnotationList>,
 }
 
 #[derive(Clone, EnumAsInner, PartialEq, Eq)]
 pub enum TypeDefinition {
-  Struct { loc: Location, fields: Vec<FieldDefinition> },
-  Enum { loc: Location, variants: Vec<VariantDefinition> },
+  Struct {
+    loc: Location,
+    start_associated_comments: CommentReference,
+    ending_associated_comments: CommentReference,
+    fields: Vec<FieldDefinition>,
+  },
+  Enum {
+    loc: Location,
+    start_associated_comments: CommentReference,
+    ending_associated_comments: CommentReference,
+    variants: Vec<VariantDefinition>,
+  },
 }
 
-pub type ClassDefinition<T> = InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition<T>>;
+impl TypeDefinition {
+  pub fn loc(&self) -> &Location {
+    match self {
+      TypeDefinition::Struct {
+        loc,
+        start_associated_comments: _,
+        ending_associated_comments: _,
+        fields: _,
+      }
+      | TypeDefinition::Enum {
+        loc,
+        start_associated_comments: _,
+        ending_associated_comments: _,
+        variants: _,
+      } => loc,
+    }
+  }
+
+  pub fn loc_mut(&mut self) -> &mut Location {
+    match self {
+      TypeDefinition::Struct {
+        loc,
+        start_associated_comments: _,
+        ending_associated_comments: _,
+        fields: _,
+      }
+      | TypeDefinition::Enum {
+        loc,
+        start_associated_comments: _,
+        ending_associated_comments: _,
+        variants: _,
+      } => loc,
+    }
+  }
+}
+
+pub type ClassDefinition<T> =
+  InterfaceDeclarationCommon<Option<TypeDefinition>, ClassMemberDefinition<T>>;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Toplevel<T: Clone> {
@@ -786,24 +848,24 @@ impl<T: Clone> Toplevel<T> {
     }
   }
 
-  pub fn extends_or_implements_nodes(&self) -> &Vec<annotation::Id> {
+  pub fn extends_or_implements_nodes(&self) -> Option<&ExtendsOrImplementsNodes> {
     match self {
-      Toplevel::Interface(i) => &i.extends_or_implements_nodes,
-      Toplevel::Class(c) => &c.extends_or_implements_nodes,
+      Toplevel::Interface(i) => i.extends_or_implements_nodes.as_ref(),
+      Toplevel::Class(c) => c.extends_or_implements_nodes.as_ref(),
     }
   }
 
   pub fn type_definition(&self) -> Option<&TypeDefinition> {
     match self {
       Toplevel::Interface(_) => None,
-      Toplevel::Class(c) => Some(&c.type_definition),
+      Toplevel::Class(c) => c.type_definition.as_ref(),
     }
   }
 
   pub fn members_iter(&self) -> MemberDeclarationsIterator<T> {
     match self {
-      Toplevel::Interface(i) => MemberDeclarationsIterator::Interface(i.members.iter()),
-      Toplevel::Class(c) => MemberDeclarationsIterator::Class(c.members.iter()),
+      Toplevel::Interface(i) => MemberDeclarationsIterator::Interface(i.members.members.iter()),
+      Toplevel::Class(c) => MemberDeclarationsIterator::Class(c.members.members.iter()),
     }
   }
 }
@@ -911,10 +973,11 @@ pub mod test_builder {
       annotation::Function {
         location: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        parameters: annotation::FunctionParameters {
+        parameters: annotation::ParenthesizedAnnotationList {
           location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
           ending_associated_comments: NO_COMMENT_REFERENCE,
-          parameters,
+          annotations: parameters,
         },
         return_type: Box::new(return_type),
       }

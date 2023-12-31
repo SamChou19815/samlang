@@ -26,7 +26,7 @@ fn mark_id_annot(heap: &mut Heap, annot: &annotation::Id) {
 }
 
 fn mark_fn_annot(heap: &mut Heap, annot: &annotation::Function) {
-  mark_annotations(heap, &annot.parameters.parameters);
+  mark_annotations(heap, &annot.parameters.annotations);
   mark_annot(heap, &annot.return_type);
 }
 
@@ -206,7 +206,7 @@ fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
   for toplevel in &module.toplevels {
     mark_id(heap, toplevel.name());
     mark_type_parameters(heap, toplevel.type_parameters());
-    for t in toplevel.extends_or_implements_nodes() {
+    for t in toplevel.extends_or_implements_nodes().iter().flat_map(|it| &it.nodes) {
       mark_id_annot(heap, t);
     }
     for m in toplevel.members_iter() {
@@ -215,23 +215,34 @@ fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
       mark_annot(heap, &m.return_type);
     }
     if let Toplevel::Class(c) = toplevel {
-      match &c.type_definition {
-        TypeDefinition::Struct { loc: _, fields } => {
+      match c.type_definition.as_ref() {
+        Some(TypeDefinition::Struct {
+          loc: _,
+          start_associated_comments: _,
+          ending_associated_comments: _,
+          fields,
+        }) => {
           for field in fields {
             mark_id(heap, &field.name);
             mark_annot(heap, &field.annotation);
           }
         }
-        TypeDefinition::Enum { loc: _, variants } => {
+        Some(TypeDefinition::Enum {
+          loc: _,
+          start_associated_comments: _,
+          ending_associated_comments: _,
+          variants,
+        }) => {
           for variant in variants {
             mark_id(heap, &variant.name);
-            for annot in &variant.associated_data_types {
+            for annot in variant.associated_data_types.iter().flat_map(|it| &it.annotations) {
               mark_annot(heap, annot);
             }
           }
         }
+        None => {}
       }
-      for m in &c.members {
+      for m in &c.members.members {
         mark_expression(heap, &m.body);
       }
     }

@@ -2,8 +2,8 @@ use super::prettier::{rc_string, rcs, Document, Str};
 use itertools::Itertools;
 use samlang_ast::source::{
   annotation, expr, pattern, ClassDefinition, ClassMemberDeclaration, CommentKind,
-  CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
-  NO_COMMENT_REFERENCE,
+  CommentReference, CommentStore, ExtendsOrImplementsNodes, Id, InterfaceDeclaration, Module,
+  Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
 };
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, ops::Deref, rc::Rc};
@@ -162,7 +162,7 @@ pub(super) fn annotation_to_doc(
         parenthesis_surrounded_doc(comma_sep_list(
           heap,
           comment_store,
-          &parameters.parameters,
+          &parameters.annotations,
           parameters.ending_associated_comments,
           |annot| annotation_to_doc(heap, comment_store, annot),
         )),
@@ -964,13 +964,11 @@ fn create_doc_for_interface_member(
 fn extends_or_implements_node_to_doc(
   heap: &Heap,
   comment_store: &CommentStore,
-  nodes: &Vec<annotation::Id>,
+  nodes: Option<&ExtendsOrImplementsNodes>,
 ) -> Document {
-  if nodes.is_empty() {
-    Document::Nil
-  } else {
+  if let Some(nodes) = nodes {
     let mut expanded_ids = vec![Document::Line];
-    for id in nodes {
+    for id in &nodes.nodes {
       expanded_ids.push(id_annot_to_doc(heap, comment_store, id));
       expanded_ids.push(Document::Text(rcs(",")));
       expanded_ids.push(Document::Line);
@@ -981,7 +979,14 @@ fn extends_or_implements_node_to_doc(
       Rc::new(Document::Text(rcs(" :"))),
       Rc::new(Document::Nest(2, Rc::new(Document::concat(expanded_ids)))),
     );
-    Document::group(expanded)
+    create_opt_preceding_comment_doc(
+      heap,
+      comment_store,
+      nodes.associated_comments,
+      Document::group(expanded),
+    )
+  } else {
+    Document::Nil
   }
 }
 
@@ -1005,11 +1010,15 @@ fn interface_to_doc(
       interface.name.name.as_str(heap)
     ))),
     type_parameters_to_doc(heap, comment_store, false, interface.type_parameters.as_ref()),
-    extends_or_implements_node_to_doc(heap, comment_store, &interface.extends_or_implements_nodes),
+    extends_or_implements_node_to_doc(
+      heap,
+      comment_store,
+      interface.extends_or_implements_nodes.as_ref(),
+    ),
   ];
 
   documents.push(Document::Text(rcs(" {")));
-  for member in &interface.members {
+  for member in &interface.members.members {
     documents.push(Document::Nest(
       2,
       Rc::new(Document::concat(
@@ -1021,6 +1030,16 @@ fn interface_to_doc(
     ));
     documents.push(Document::Line);
   }
+  if let Some(comments) = associated_comments_doc(
+    heap,
+    comment_store,
+    interface.members.ending_associated_comments,
+    DocumentGrouping::Expanded,
+    true,
+  ) {
+    documents.push(Document::Nest(2, Rc::new(Document::concat(vec![Document::Line, comments]))));
+    documents.push(Document::Line);
+  };
   documents.push(Document::Text(rcs("}")));
 
   documents
@@ -1046,52 +1065,81 @@ fn class_to_doc(
       class.name.name.as_str(heap)
     ))),
     type_parameters_to_doc(heap, comment_store, false, class.type_parameters.as_ref()),
-    match &class.type_definition {
-      TypeDefinition::Struct { loc: _, fields } if fields.is_empty() => Document::Nil,
-      TypeDefinition::Struct { loc: _, fields } => parenthesis_surrounded_doc(comma_sep_list(
-        heap,
-        comment_store,
+    match class.type_definition.as_ref() {
+      None => Document::Nil,
+      Some(TypeDefinition::Struct {
+        loc: _,
+        start_associated_comments,
+        ending_associated_comments,
         fields,
-        NO_COMMENT_REFERENCE,
-        |field| {
-          Document::Concat(
-            Rc::new(Document::Text(rc_string(format!(
-              "{}val {}: ",
-              if field.is_public { "" } else { "private " },
-              field.name.name.as_str(heap)
-            )))),
-            Rc::new(annotation_to_doc(heap, comment_store, &field.annotation)),
-          )
-        },
-      )),
-      TypeDefinition::Enum { loc: _, variants } => parenthesis_surrounded_doc(comma_sep_list(
+      }) => create_opt_preceding_comment_doc(
         heap,
         comment_store,
+        *start_associated_comments,
+        parenthesis_surrounded_doc(comma_sep_list(
+          heap,
+          comment_store,
+          fields,
+          *ending_associated_comments,
+          |field| {
+            Document::Concat(
+              Rc::new(Document::Text(rc_string(format!(
+                "{}val {}: ",
+                if field.is_public { "" } else { "private " },
+                field.name.name.as_str(heap)
+              )))),
+              Rc::new(annotation_to_doc(heap, comment_store, &field.annotation)),
+            )
+          },
+        )),
+      ),
+      Some(TypeDefinition::Enum {
+        loc: _,
+        start_associated_comments,
+        ending_associated_comments,
         variants,
-        NO_COMMENT_REFERENCE,
-        |variant| {
-          if variant.associated_data_types.is_empty() {
-            Document::Text(rc_pstr(heap, variant.name.name))
-          } else {
-            Document::concat(vec![
-              Document::Text(rc_pstr(heap, variant.name.name)),
-              parenthesis_surrounded_doc(comma_sep_list(
-                heap,
-                comment_store,
-                &variant.associated_data_types,
-                NO_COMMENT_REFERENCE,
-                |annot| annotation_to_doc(heap, comment_store, annot),
-              )),
-            ])
-          }
-        },
-      )),
+      }) => create_opt_preceding_comment_doc(
+        heap,
+        comment_store,
+        *start_associated_comments,
+        parenthesis_surrounded_doc(comma_sep_list(
+          heap,
+          comment_store,
+          variants,
+          *ending_associated_comments,
+          |variant| {
+            if let Some(annotations) = &variant.associated_data_types {
+              Document::concat(vec![
+                Document::Text(rc_pstr(heap, variant.name.name)),
+                create_opt_preceding_comment_doc(
+                  heap,
+                  comment_store,
+                  annotations.start_associated_comments,
+                  parenthesis_surrounded_doc(comma_sep_list(
+                    heap,
+                    comment_store,
+                    &annotations.annotations,
+                    annotations.ending_associated_comments,
+                    |annot| annotation_to_doc(heap, comment_store, annot),
+                  )),
+                ),
+              ])
+            } else {
+              Document::Text(rc_pstr(heap, variant.name.name))
+            }
+          },
+        )),
+      ),
     },
-    extends_or_implements_node_to_doc(heap, comment_store, &class.extends_or_implements_nodes),
+    extends_or_implements_node_to_doc(
+      heap,
+      comment_store,
+      class.extends_or_implements_nodes.as_ref(),
+    ),
   ];
 
   documents.push(Document::Text(rcs(" {")));
-  for member in &class.members {
+  for member in &class.members.members {
     documents.push(Document::Nest(
       2,
       Rc::new(Document::concat(
@@ -1108,6 +1156,16 @@ fn class_to_doc(
     ));
     documents.push(Document::Line);
   }
+  if let Some(comments) = associated_comments_doc(
+    heap,
+    comment_store,
+    class.members.ending_associated_comments,
+    DocumentGrouping::Expanded,
+    true,
+  ) {
+    documents.push(Document::Nest(2, Rc::new(Document::concat(vec![Document::Line, comments]))));
+    documents.push(Document::Line);
+  };
   documents.push(Document::Text(rcs("}")));
 
   documents
@@ -1231,7 +1289,7 @@ mod tests {
       match n {
         Toplevel::Interface(_) => {}
         Toplevel::Class(c) => {
-          for member in &c.members {
+          for member in &c.members.members {
             for p in member.decl.parameters.parameters.as_ref().iter() {
               pretty_print_annotation(&heap, 40, &m.comment_store, &p.annotation);
             }
@@ -1599,17 +1657,22 @@ ClassName /* b */ /* c */.classMember<
     assert_reprint_module(
       r#"
 interface Foo {}
-interface Foo2 : Foo {}
+interface Foo2 : Foo {
+
+  // f
+}
 private interface Bar</* comment*/A: // foo
 B> { function baz(): int }
-class Empty
-class Empty2 : Foo
+class Empty {}
+class Empty2 : Foo {}
 class Main { function main(): unit = {} }
 "#,
       r#"
 interface Foo {}
 
-interface Foo2 : Foo {}
+interface Foo2 : Foo {
+  // f
+}
 
 private interface Bar<
   /* comment */
@@ -1655,6 +1718,8 @@ class Obj(private val d: int, val e: int) {
     let b: int = 2; /* a */
     // sss
   }
+
+  // f
 }
 
 /** short line */
@@ -1750,6 +1815,8 @@ class Obj(
     /* a */
     // sss
   }
+
+  // f
 }
 
 /** short line */

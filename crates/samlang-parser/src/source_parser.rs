@@ -367,7 +367,7 @@ mod toplevel_parser {
     super::lexer::{Keyword, Token, TokenContent, TokenOp},
     MAX_STRUCT_SIZE, MAX_VARIANT_SIZE,
   };
-  use samlang_ast::{source::*, Location};
+  use samlang_ast::source::*;
   use std::collections::HashSet;
 
   pub(super) fn parse_toplevel(parser: &mut super::SourceParser) -> Toplevel<()> {
@@ -390,13 +390,16 @@ mod toplevel_parser {
   }
 
   pub(super) fn parse_class(parser: &mut super::SourceParser) -> ClassDefinition<()> {
-    let associated_comments = parser.collect_preceding_comments();
+    let mut associated_comments = vec![];
     let (mut loc, private) =
       if let Token(loc, TokenContent::Keyword(Keyword::PRIVATE)) = parser.peek() {
+        associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
+        associated_comments.append(&mut parser.collect_preceding_comments());
         parser.assert_and_consume_keyword(Keyword::CLASS);
         (loc, true)
       } else {
+        associated_comments.append(&mut parser.collect_preceding_comments());
         (parser.assert_and_consume_keyword(Keyword::CLASS), false)
       };
     let name = parser.parse_upper_id();
@@ -404,61 +407,49 @@ mod toplevel_parser {
     parser.available_tparams = HashSet::new();
     let type_parameters = super::type_parser::parse_type_parameters(parser);
     let (type_definition, extends_or_implements_nodes) = match parser.peek().1 {
-      TokenContent::Operator(TokenOp::LBRACE | TokenOp::COLON)
-      | TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE) => {
-        let nodes = if let TokenContent::Operator(TokenOp::COLON) = parser.peek().1 {
-          parser.consume();
-          let nodes = parse_extends_or_implements_nodes(parser);
-          loc = loc.union(&nodes.last().unwrap().location);
-          nodes
-        } else {
-          vec![]
-        };
+      TokenContent::Operator(TokenOp::LBRACE | TokenOp::COLON) => {
         loc = if let Some(tparams_node) = &type_parameters {
           loc.union(&tparams_node.location)
         } else {
           loc
         };
-        let type_def = TypeDefinition::Struct { loc: parser.peek().0, fields: vec![] };
-        (type_def, nodes)
+        let extends_or_implements_nodes = parse_extends_or_implements_nodes(parser);
+        if let Some(node) = &extends_or_implements_nodes {
+          loc = loc.union(&node.location);
+        }
+        (None, extends_or_implements_nodes)
       }
       _ => {
-        let type_def_loc_start = parser.assert_and_consume_operator(TokenOp::LPAREN);
         let mut type_def = parse_type_definition_inner(parser);
-        let type_def_loc_end = parser.assert_and_consume_operator(TokenOp::RPAREN);
         let type_def_loc = type_parameters
           .as_ref()
           .map(|it| it.location)
-          .unwrap_or(type_def_loc_start)
-          .union(&type_def_loc_end);
-        match &mut type_def {
-          TypeDefinition::Struct { loc, fields: _ } => *loc = type_def_loc,
-          TypeDefinition::Enum { loc, variants: _ } => *loc = type_def_loc,
+          .unwrap_or(*type_def.loc())
+          .union(type_def.loc());
+        *type_def.loc_mut() = type_def_loc;
+        loc = loc.union(&type_def_loc);
+        let extends_or_implements_nodes = parse_extends_or_implements_nodes(parser);
+        if let Some(node) = &extends_or_implements_nodes {
+          loc = loc.union(&node.location);
         }
-        loc = loc.union(&type_def_loc_end);
-        let nodes = if let TokenContent::Operator(TokenOp::COLON) = parser.peek().1 {
-          parser.consume();
-          let nodes = parse_extends_or_implements_nodes(parser);
-          loc = loc.union(&nodes.last().unwrap().location);
-          nodes
-        } else {
-          vec![]
-        };
-        (type_def, nodes)
+        (Some(type_def), extends_or_implements_nodes)
       }
     };
     let mut members = vec![];
-    if !peeked_class_or_interface_start(parser) {
-      parser.assert_and_consume_operator(TokenOp::LBRACE);
-      while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
-        parser.peek().1
-      {
-        let saved_upper_type_parameters = parser.available_tparams.clone();
-        members.push(parse_class_member_definition(parser));
-        parser.available_tparams = saved_upper_type_parameters;
-      }
-      loc = loc.union(&parser.assert_and_consume_operator(TokenOp::RBRACE));
+    let members_start_loc = parser.assert_and_consume_operator(TokenOp::LBRACE);
+    while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
+      parser.peek().1
+    {
+      let saved_upper_type_parameters = parser.available_tparams.clone();
+      members.push(parse_class_member_definition(parser));
+      parser.available_tparams = saved_upper_type_parameters;
     }
+    let ending_associated_comments = {
+      let comments = parser.collect_preceding_comments();
+      parser.comments_store.create_comment_reference(comments)
+    };
+    let end_loc = parser.assert_and_consume_operator(TokenOp::RBRACE);
+    loc = loc.union(&end_loc);
     InterfaceDeclarationCommon {
       loc,
       associated_comments: parser.comments_store.create_comment_reference(associated_comments),
@@ -467,44 +458,46 @@ mod toplevel_parser {
       type_parameters,
       extends_or_implements_nodes,
       type_definition,
-      members,
+      members: InterfaceMembersCommon {
+        loc: members_start_loc.union(&end_loc),
+        members,
+        ending_associated_comments,
+      },
     }
   }
 
   pub(super) fn parse_interface(parser: &mut super::SourceParser) -> InterfaceDeclaration {
-    let associated_comments = parser.collect_preceding_comments();
+    let mut associated_comments = vec![];
     let (mut loc, private) =
       if let Token(loc, TokenContent::Keyword(Keyword::PRIVATE)) = parser.peek() {
+        associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
+        associated_comments.append(&mut parser.collect_preceding_comments());
         parser.assert_and_consume_keyword(Keyword::INTERFACE);
         (loc, true)
       } else {
+        associated_comments.append(&mut parser.collect_preceding_comments());
         (parser.assert_and_consume_keyword(Keyword::INTERFACE), false)
       };
     let name = parser.parse_upper_id();
     parser.available_tparams = HashSet::new();
     let type_parameters = super::type_parser::parse_type_parameters(parser);
-    let extends_or_implements_nodes =
-      if let TokenContent::Operator(TokenOp::COLON) = parser.peek().1 {
-        parser.consume();
-        let nodes = parse_extends_or_implements_nodes(parser);
-        loc = loc.union(&nodes.last().unwrap().location);
-        nodes
-      } else {
-        vec![]
-      };
+    let extends_or_implements_nodes = parse_extends_or_implements_nodes(parser);
     let mut members = vec![];
-    if let TokenContent::Operator(TokenOp::LBRACE) = parser.peek().1 {
-      parser.consume();
-      while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
-        parser.peek().1
-      {
-        let saved_upper_type_parameters = parser.available_tparams.clone();
-        members.push(parse_class_member_declaration(parser));
-        parser.available_tparams = saved_upper_type_parameters;
-      }
-      loc = loc.union(&parser.assert_and_consume_operator(TokenOp::RBRACE));
+    let members_start_loc = parser.assert_and_consume_operator(TokenOp::LBRACE);
+    while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
+      parser.peek().1
+    {
+      let saved_upper_type_parameters = parser.available_tparams.clone();
+      members.push(parse_class_member_declaration(parser));
+      parser.available_tparams = saved_upper_type_parameters;
     }
+    let ending_associated_comments = {
+      let comments = parser.collect_preceding_comments();
+      parser.comments_store.create_comment_reference(comments)
+    };
+    let end_loc = parser.assert_and_consume_operator(TokenOp::RBRACE);
+    loc = loc.union(&end_loc);
     InterfaceDeclarationCommon {
       loc,
       associated_comments: parser.comments_store.create_comment_reference(associated_comments),
@@ -513,28 +506,54 @@ mod toplevel_parser {
       type_parameters,
       extends_or_implements_nodes,
       type_definition: (),
-      members,
+      members: InterfaceMembersCommon {
+        loc: members_start_loc.union(&end_loc),
+        members,
+        ending_associated_comments,
+      },
     }
   }
 
-  fn parse_extends_or_implements_nodes(parser: &mut super::SourceParser) -> Vec<annotation::Id> {
-    let id = parser.parse_upper_id();
-    let mut collector = vec![super::type_parser::parse_identifier_annot(parser, id)];
-    while let Token(_, TokenContent::Operator(TokenOp::COMMA)) = parser.peek() {
-      parser.consume();
+  fn parse_extends_or_implements_nodes(
+    parser: &mut super::SourceParser,
+  ) -> Option<ExtendsOrImplementsNodes> {
+    if let TokenContent::Operator(TokenOp::COLON) = parser.peek().1 {
+      let comments = parser.collect_preceding_comments();
+      let mut location = parser.assert_and_consume_operator(TokenOp::COLON);
       let id = parser.parse_upper_id();
-      collector.push(super::type_parser::parse_identifier_annot(parser, id));
+      let mut nodes = vec![super::type_parser::parse_identifier_annot(parser, id)];
+      while let Token(_, TokenContent::Operator(TokenOp::COMMA)) = parser.peek() {
+        let comments = parser.collect_preceding_comments();
+        parser.consume();
+        let id = parser.parse_upper_id_with_comments(comments);
+        nodes.push(super::type_parser::parse_identifier_annot(parser, id));
+      }
+      location = location.union(&nodes.last().unwrap().location);
+      Some(ExtendsOrImplementsNodes {
+        location,
+        associated_comments: parser.comments_store.create_comment_reference(comments),
+        nodes,
+      })
+    } else {
+      None
     }
-    collector
   }
 
   fn parse_type_definition_inner(parser: &mut super::SourceParser) -> TypeDefinition {
+    let start_comments = parser.collect_preceding_comments();
+    let loc_start = parser.assert_and_consume_operator(TokenOp::LPAREN);
+    let end_comments = parser.collect_preceding_comments();
     if let Token(_, TokenContent::UpperId(_)) = parser.peek() {
       let mut variants = parser
         .parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut parse_variant_definition);
       variants.truncate(MAX_VARIANT_SIZE);
-      // Location is later patched by the caller
-      TypeDefinition::Enum { loc: Location::dummy(), variants }
+      let loc_end = parser.assert_and_consume_operator(TokenOp::RPAREN);
+      TypeDefinition::Enum {
+        loc: loc_start.union(&loc_end),
+        start_associated_comments: parser.comments_store.create_comment_reference(start_comments),
+        ending_associated_comments: parser.comments_store.create_comment_reference(end_comments),
+        variants,
+      }
     } else {
       let mut fields = parser
         .parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut parse_field_definition);
@@ -545,50 +564,61 @@ mod toplevel_parser {
         );
       }
       fields.truncate(MAX_STRUCT_SIZE);
-      // Location is later patched by the caller
-      TypeDefinition::Struct { loc: Location::dummy(), fields }
+      let loc_end = parser.assert_and_consume_operator(TokenOp::RPAREN);
+      TypeDefinition::Struct {
+        loc: loc_start.union(&loc_end),
+        start_associated_comments: parser.comments_store.create_comment_reference(start_comments),
+        ending_associated_comments: parser.comments_store.create_comment_reference(end_comments),
+        fields,
+      }
     }
   }
 
   fn parse_field_definition(parser: &mut super::SourceParser) -> FieldDefinition {
     let mut is_public = true;
+    let mut comments = vec![];
     if let TokenContent::Keyword(Keyword::PRIVATE) = parser.peek().1 {
       is_public = false;
+      comments.append(&mut parser.collect_preceding_comments());
       parser.consume();
     }
+    comments.append(&mut parser.collect_preceding_comments());
     parser.assert_and_consume_keyword(Keyword::VAL);
-    let name = parser.parse_lower_id();
+    let name = parser.parse_lower_id_with_comments(comments);
     let annotation = super::type_parser::parse_annotation_with_colon(parser);
     FieldDefinition { name, annotation, is_public }
   }
 
   fn parse_variant_definition(parser: &mut super::SourceParser) -> VariantDefinition {
     let name = parser.parse_upper_id();
-    if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = parser.peek() {
+    if let Token(left_paren_loc, TokenContent::Operator(TokenOp::LPAREN)) = parser.peek() {
+      let start_comments = parser.collect_preceding_comments();
       parser.consume();
-      let associated_data_types = parser.parse_comma_separated_list_with_end_token(
+      let annotations = parser.parse_comma_separated_list_with_end_token(
         TokenOp::RPAREN,
         &mut super::type_parser::parse_annotation,
       );
 
-      if let Some(node) = associated_data_types.get(MAX_VARIANT_SIZE) {
+      if let Some(node) = annotations.get(MAX_VARIANT_SIZE) {
         parser.error_set.report_invalid_syntax_error(
           node.location(),
           format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
         );
       }
-      parser.assert_and_consume_operator(TokenOp::RPAREN);
-      VariantDefinition { name, associated_data_types }
+      let end_comments = parser.collect_preceding_comments();
+      let right_paren_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+      VariantDefinition {
+        name,
+        associated_data_types: Some(annotation::ParenthesizedAnnotationList {
+          location: left_paren_loc.union(&right_paren_loc),
+          start_associated_comments: parser.comments_store.create_comment_reference(start_comments),
+          ending_associated_comments: parser.comments_store.create_comment_reference(end_comments),
+          annotations,
+        }),
+      }
     } else {
-      VariantDefinition { name, associated_data_types: vec![] }
+      VariantDefinition { name, associated_data_types: None }
     }
-  }
-
-  fn peeked_class_or_interface_start(parser: &mut super::SourceParser) -> bool {
-    matches!(
-      parser.peek().1,
-      TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE)
-    )
   }
 
   pub(super) fn parse_class_member_definition(
@@ -1855,10 +1885,11 @@ mod type_parser {
           let location = peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RPAREN));
           comments.append(&mut parser.collect_preceding_comments());
           parser.assert_and_consume_operator(TokenOp::ARROW);
-          annotation::FunctionParameters {
+          annotation::ParenthesizedAnnotationList {
             location,
+            start_associated_comments: NO_COMMENT_REFERENCE,
             ending_associated_comments: parser.comments_store.create_comment_reference(comments),
-            parameters: Vec::with_capacity(0),
+            annotations: Vec::with_capacity(0),
           }
         } else {
           let parameters = parser
@@ -1867,10 +1898,11 @@ mod type_parser {
           let location = peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RPAREN));
           comments.append(&mut parser.collect_preceding_comments());
           parser.assert_and_consume_operator(TokenOp::ARROW);
-          annotation::FunctionParameters {
+          annotation::ParenthesizedAnnotationList {
             location,
+            start_associated_comments: NO_COMMENT_REFERENCE,
             ending_associated_comments: parser.comments_store.create_comment_reference(comments),
-            parameters,
+            annotations: parameters,
           }
         };
         let return_type = parse_annotation(parser);
@@ -1924,7 +1956,7 @@ mod type_parser {
         }
       }
       annotation::T::Fn(t) => {
-        for annot in &mut t.parameters.parameters {
+        for annot in &mut t.parameters.annotations {
           fix_annot_with_generic_annot(parser, annot);
         }
         fix_annot_with_generic_annot(parser, &mut t.return_type);
