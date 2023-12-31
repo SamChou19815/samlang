@@ -11,11 +11,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    let comment = Comment {
-      location: Location::dummy(),
-      kind: CommentKind::BLOCK,
-      text: Heap::new().alloc_str_for_test("d"),
-    };
+    let comment = Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str_for_test("d") };
 
     assert!(CommentKind::DOC == CommentKind::DOC.clone());
     format!("{:?}", comment.clone().text);
@@ -29,8 +25,7 @@ mod tests {
       .iter()
       .collect_vec()
       .is_empty());
-    assert!(CommentsNode::Comments(Location::dummy(), vec![comment])
-      .eq(&CommentsNode::Comments(Location::dummy(), vec![comment])));
+    assert!(CommentsNode::Comments(vec![comment]).eq(&CommentsNode::Comments(vec![comment])));
     assert!(CommentStore::new().eq(&CommentStore::new()));
 
     assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
@@ -326,10 +321,18 @@ mod tests {
       ModuleReference::DUMMY,
       Id::from(heap.alloc_str_for_test("s")),
     ));
-    coverage_hack_for_expr(E::Tuple(common.clone(), vec![zero_expr.clone(), zero_expr.clone()]));
+    coverage_hack_for_expr(E::Tuple(
+      common.clone(),
+      ParenthesizedExpressionList {
+        loc: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        expressions: vec![zero_expr.clone(), zero_expr.clone()],
+      },
+    ));
     coverage_hack_for_expr(E::FieldAccess(FieldAccess {
       common: common.clone(),
-      explicit_type_arguments: vec![],
+      explicit_type_arguments: None,
       inferred_type_arguments: vec![],
       object: Box::new(zero_expr.clone()),
       field_name: Id::from(heap.alloc_str_for_test("name")),
@@ -337,7 +340,7 @@ mod tests {
     }));
     coverage_hack_for_expr(E::MethodAccess(MethodAccess {
       common: common.clone(),
-      explicit_type_arguments: vec![],
+      explicit_type_arguments: None,
       inferred_type_arguments: vec![],
       object: Box::new(zero_expr.clone()),
       method_name: Id::from(heap.alloc_str_for_test("name")),
@@ -345,7 +348,12 @@ mod tests {
     coverage_hack_for_expr(E::Call(Call {
       common: common.clone(),
       callee: Box::new(zero_expr.clone()),
-      arguments: vec![],
+      arguments: ParenthesizedExpressionList {
+        loc: Location::dummy(),
+        start_associated_comments: NO_COMMENT_REFERENCE,
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+        expressions: vec![],
+      },
     }));
     coverage_hack_for_expr(E::Unary(Unary {
       common: common.clone(),
@@ -387,15 +395,20 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
         },
         body: Box::new(zero_expr.clone()),
+        ending_associated_comments: NO_COMMENT_REFERENCE,
       }],
     }));
     coverage_hack_for_expr(E::Lambda(Lambda {
       common: common.clone(),
-      parameters: vec![OptionallyAnnotatedId {
-        name: Id::from(heap.alloc_str_for_test("name")),
-        type_: (),
-        annotation: None,
-      }],
+      parameters: LambdaParameters {
+        loc: Location::dummy(),
+        parameters: vec![OptionallyAnnotatedId {
+          name: Id::from(heap.alloc_str_for_test("name")),
+          type_: (),
+          annotation: None,
+        }],
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+      },
       captured: HashMap::new(),
       body: Box::new(zero_expr.clone()),
     }));
@@ -508,6 +521,7 @@ mod tests {
         },
       ],
       expression: Some(Box::new(zero_expr.clone())),
+      ending_associated_comments: NO_COMMENT_REFERENCE,
     }));
   }
 
@@ -565,12 +579,17 @@ mod tests {
           ending_associated_comments: NO_COMMENT_REFERENCE,
           parameters: vec![]
         }),
-        type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
-        parameters: Rc::new(vec![AnnotatedId {
-          name: Id::from(PStr::LOWER_A),
-          type_: (),
-          annotation: builder.int_annot()
-        }])
+        parameters: FunctionParameters {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters: Rc::new(vec![AnnotatedId {
+            name: Id::from(PStr::LOWER_A),
+            type_: (),
+            annotation: builder.int_annot()
+          }])
+        },
+        return_type: builder.int_annot(),
       }]
     }
     .clone()
@@ -657,8 +676,13 @@ mod tests {
             ending_associated_comments: NO_COMMENT_REFERENCE,
             parameters: vec![],
           }),
-          type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
-          parameters: Rc::new(vec![]),
+          parameters: FunctionParameters {
+            location: Location::dummy(),
+            start_associated_comments: NO_COMMENT_REFERENCE,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+            parameters: Rc::new(vec![]),
+          },
+          return_type: builder.int_annot(),
         },
         body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0)),
       }],
@@ -693,8 +717,13 @@ mod tests {
           ending_associated_comments: NO_COMMENT_REFERENCE,
           parameters: vec![],
         }),
-        type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
-        parameters: Rc::new(vec![]),
+        parameters: FunctionParameters {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters: Rc::new(vec![]),
+        },
+        return_type: builder.int_annot(),
       }],
     });
     assert!(interface.clone().eq(&interface));

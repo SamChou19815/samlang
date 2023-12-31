@@ -53,7 +53,12 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           type_: (),
         },
-        vec![],
+        expr::ParenthesizedExpressionList {
+          loc: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          expressions: vec![],
+        },
       ),
       None,
     );
@@ -92,7 +97,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           type_: (),
         },
-        explicit_type_arguments: vec![],
+        explicit_type_arguments: None,
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id {
@@ -3676,22 +3681,22 @@ The following members must be implemented for the class:
            ^
 
 
-Error ------------------------------------ A.sam:11:11-11:19
+Error ------------------------------------ A.sam:11:10-11:11
 
 `() -> unit` [1] is incompatible with `() -> Str` [2].
 
   11|   method b(): unit = {} // error
-                ^^^^^^^^
+               ^
 
-  [1] A.sam:11:11-11:19
-  ---------------------
+  [1] A.sam:11:3-11:24
+  --------------------
   11|   method b(): unit = {} // error
-                ^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^
 
-  [2] A.sam:6:11-6:18
-  -------------------
+  [2] A.sam:6:3-6:18
+  ------------------
   6|   method b(): Str
-               ^^^^^^^
+       ^^^^^^^^^^^^^^^
 
 
 Error -------------------------------------- A.sam:13:7-13:8
@@ -3711,66 +3716,74 @@ Error ------------------------------------ A.sam:32:11-32:65
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Error ------------------------------------ A.sam:32:25-32:45
+Error ------------------------------------ A.sam:32:23-32:25
 
 `(Str, Str) -> TC` [1] is incompatible with `(int, int) -> TC` [2].
 
   32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
-                              ^^^^^^^^^^^^^^^^^^^^
+                            ^^
 
-  [1] A.sam:32:25-32:45
+  [1] A.sam:32:11-32:65
   ---------------------
   32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
-                              ^^^^^^^^^^^^^^^^^^^^
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  [2] A.sam:18:17-18:35
-  ---------------------
+  [2] A.sam:18:3-18:35
+  --------------------
   18|   method <TC> m1(a: TA, b: TB): TC
-                      ^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Error ------------------------------------ A.sam:33:27-33:47
+Error ------------------------------------ A.sam:33:25-33:27
 
 `(Str, Str) -> TC` [1] is incompatible with `(TA1, TB1) -> TC` [2].
 
   33|   method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Process.panic("") // error
-                                ^^^^^^^^^^^^^^^^^^^^
+                              ^^
 
-  [1] A.sam:33:27-33:47
-  ---------------------
+  [1] A.sam:33:3-33:67
+  --------------------
   33|   method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Process.panic("") // error
-                                ^^^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  [2] A.sam:21:27-21:47
-  ---------------------
+  [2] A.sam:21:3-21:47
+  --------------------
   21|   method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC
-                                ^^^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Error ------------------------------------ A.sam:34:17-34:37
+Error ------------------------------------ A.sam:34:15-34:17
 
 `(Str, Str) -> TC` [1] is incompatible with `(Str, bool) -> TC` [2].
 
   34|   method <TC> m2(a: Str, b: Str): TC = Process.panic("") // error
-                      ^^^^^^^^^^^^^^^^^^^^
+                    ^^
 
-  [1] A.sam:34:17-34:37
-  ---------------------
+  [1] A.sam:34:3-34:57
+  --------------------
   34|   method <TC> m2(a: Str, b: Str): TC = Process.panic("") // error
-                      ^^^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  [2] A.sam:24:17-24:35
-  ---------------------
+  [2] A.sam:24:3-24:35
+  --------------------
   24|   method <TC> m2(a: TA, b: TB): TC
-                      ^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Error ------------------------------------ A.sam:37:17-37:37
+Error ------------------------------------ A.sam:37:10-37:14
 
 Type parameter name mismatch. Expected exact match of `<TC>`.
 
   37|   method <TD> m1(a: int, b: int): TD // tparam name mismatch
-                      ^^^^^^^^^^^^^^^^^^^^
+               ^^^^
+
+
+Error ------------------------------------ A.sam:38:10-38:28
+
+Type parameter name mismatch. Expected exact match of `<TA1, TB1, TC>`.
+
+  38|   method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
+               ^^^^^^^^^^^^^^^^^^
 
 
 Error ------------------------------------ A.sam:38:16-38:18
@@ -3781,36 +3794,28 @@ Cannot resolve name `TA`.
                      ^^
 
 
-Error ------------------------------------ A.sam:38:31-38:51
-
-Type parameter name mismatch. Expected exact match of `<TA1, TB1, TC>`.
-
-  38|   method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
-                                    ^^^^^^^^^^^^^^^^^^^^
-
-
-Error ------------------------------------ A.sam:42:24-42:32
+Error ------------------------------------ A.sam:42:10-42:14
 
 Type parameter name mismatch. Expected exact match of `<TE : Foo>`.
 
   42|   method <TE> unrelated(): unit
-                             ^^^^^^^^
+               ^^^^
 
 
-Error ------------------------------------ A.sam:45:19-45:27
+Error ------------------------------------ A.sam:45:10-45:19
 
 Type parameter arity of 0 is incompatible with type parameter arity of 1.
 
   45|   method unrelated(): unit
-                        ^^^^^^^^
+               ^^^^^^^^^
 
 
-Error ------------------------------------ A.sam:48:29-48:37
+Error ------------------------------------ A.sam:48:10-48:19
 
 Type parameter name mismatch. Expected exact match of `<TE : Foo>`.
 
   48|   method <TE: Bar> unrelated(): unit
-                                  ^^^^^^^^
+               ^^^^^^^^^
 
 
 Error ------------------------------------ A.sam:50:34-50:35

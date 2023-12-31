@@ -44,6 +44,14 @@ fn search_matching_pattern(
   }
 }
 
+fn search_parenthesized_expression_list(
+  expr_list: &expr::ParenthesizedExpressionList<Rc<Type>>,
+  position: Position,
+  stop_at_call: bool,
+) -> Option<LocationCoverSearchResult> {
+  expr_list.expressions.iter().find_map(|e| search_expression(e, position, stop_at_call))
+}
+
 fn search_expression(
   expr: &expr::E<Rc<Type>>,
   position: Position,
@@ -65,7 +73,7 @@ fn search_expression(
       Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
     }
     expr::E::Tuple(_, expressions) => {
-      expressions.iter().find_map(|e| search_expression(e, position, stop_at_call))
+      search_parenthesized_expression_list(expressions, position, stop_at_call)
     }
     expr::E::FieldAccess(e) => {
       let found = e
@@ -121,7 +129,7 @@ fn search_expression(
     expr::E::Unary(e) => search_expression(&e.argument, position, stop_at_call),
     expr::E::Call(e) => {
       let mut found = search_expression(&e.callee, position, stop_at_call);
-      for e in &e.arguments {
+      for e in &e.arguments.expressions {
         if Option::is_some(&found) {
           break;
         }
@@ -153,7 +161,7 @@ fn search_expression(
       found
     }
     expr::E::Lambda(e) => {
-      for param in &e.parameters {
+      for param in &e.parameters.parameters {
         if param.name.loc.contains_position(position) {
           return if let Some(annot) = &param.annotation {
             Some(LocationCoverSearchResult::TypedName(
@@ -222,10 +230,10 @@ pub(super) fn search_module_locally(
           class_name: name.name,
           fn_name: member.name.name,
           is_method: member.is_method,
-          type_: Rc::new(Type::Fn(FunctionType::from_annotation(&member.type_))),
+          type_: Rc::new(Type::Fn(FunctionType::from_function(member))),
         });
       }
-      for param in member.parameters.iter() {
+      for param in member.parameters.parameters.iter() {
         if param.name.loc.contains_position(position) {
           return Some(LocationCoverSearchResult::TypedName(
             param.name.loc,
@@ -270,7 +278,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
         },
-        explicit_type_arguments: vec![],
+        explicit_type_arguments: None,
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::LocalId(
           expr::ExpressionCommon {

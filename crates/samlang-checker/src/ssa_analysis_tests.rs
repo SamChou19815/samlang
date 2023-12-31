@@ -7,7 +7,7 @@ mod tests {
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    source::{expr, test_builder, Id, Literal},
+    source::{annotation, expr, test_builder, Id, Literal, NO_COMMENT_REFERENCE},
     Location,
   };
   use samlang_errors::ErrorSet;
@@ -22,7 +22,12 @@ mod tests {
       ModuleReference::DUMMY,
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(()),
-        explicit_type_arguments: vec![test_builder::create().bool_annot()],
+        explicit_type_arguments: Some(annotation::TypeArguments {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          arguments: vec![test_builder::create().bool_annot()],
+        }),
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id::from(heap.alloc_str_for_test("name")),

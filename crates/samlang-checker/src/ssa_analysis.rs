@@ -200,12 +200,12 @@ impl<'a> SsaAnalysisState<'a> {
   ) {
     self.context.push_scope();
     self.visit_type_parameters_with_bounds(member.type_parameters.as_ref());
-    for param in member.parameters.iter() {
+    for param in member.parameters.parameters.iter() {
       self.visit_annot(&param.annotation);
     }
-    self.visit_annot(&member.type_.return_type);
+    self.visit_annot(&member.return_type);
     self.context.push_scope();
-    for param in member.parameters.iter() {
+    for param in member.parameters.parameters.iter() {
       let id = &param.name;
       self.define_id(id.name, id.loc);
     }
@@ -252,26 +252,26 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => {}
       expr::E::LocalId(_, id) => self.use_id(&id.name, id.loc, false),
       expr::E::Tuple(_, expressions) => {
-        for e in expressions {
+        for e in &expressions.expressions {
           self.visit_expression(e);
         }
       }
       expr::E::FieldAccess(e) => {
         self.visit_expression(&e.object);
-        for targ in &e.explicit_type_arguments {
+        for targ in e.explicit_type_arguments.iter().flat_map(|it| &it.arguments) {
           self.visit_annot(targ);
         }
       }
       expr::E::MethodAccess(e) => {
         self.visit_expression(&e.object);
-        for targ in &e.explicit_type_arguments {
+        for targ in e.explicit_type_arguments.iter().flat_map(|it| &it.arguments) {
           self.visit_annot(targ);
         }
       }
       expr::E::Unary(e) => self.visit_expression(&e.argument),
       expr::E::Call(e) => {
         self.visit_expression(&e.callee);
-        for arg in &e.arguments {
+        for arg in &e.arguments.expressions {
           self.visit_expression(arg);
         }
       }
@@ -306,7 +306,7 @@ impl<'a> SsaAnalysisState<'a> {
       }
       expr::E::Lambda(e) => {
         self.context.push_scope();
-        for OptionallyAnnotatedId { name, type_: _, annotation } in &e.parameters {
+        for OptionallyAnnotatedId { name, type_: _, annotation } in &e.parameters.parameters {
           self.define_id(name.name, name.loc);
           if let Some(annot) = annotation {
             self.visit_annot(annot)

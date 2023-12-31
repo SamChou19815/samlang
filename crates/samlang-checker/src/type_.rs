@@ -1,6 +1,9 @@
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use samlang_ast::{source::annotation, Description, Location, Reason};
+use samlang_ast::{
+  source::{annotation, ClassMemberDeclaration},
+  Description, Location, Reason,
+};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
@@ -162,6 +165,19 @@ impl FunctionType {
         .map(|annot| Rc::new(Type::from_annotation(annot)))
         .collect(),
       return_type: Rc::new(Type::from_annotation(&annotation.return_type)),
+    }
+  }
+
+  pub fn from_function(f: &ClassMemberDeclaration) -> FunctionType {
+    FunctionType {
+      reason: Reason::new(f.loc, Some(f.loc)),
+      argument_types: f
+        .parameters
+        .parameters
+        .iter()
+        .map(|id| Rc::new(Type::from_annotation(&id.annotation)))
+        .collect(),
+      return_type: Rc::new(Type::from_annotation(&f.return_type)),
     }
   }
 }
@@ -652,9 +668,13 @@ pub type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
 
 #[cfg(test)]
 mod type_tests {
+  use std::rc::Rc;
+
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::source::{test_builder, Id, NO_COMMENT_REFERENCE};
+  use samlang_ast::source::{
+    test_builder, AnnotatedId, FunctionParameters, Id, NO_COMMENT_REFERENCE,
+  };
 
   #[test]
   fn boilterplate() {
@@ -1021,7 +1041,33 @@ m2: public () -> any
         )
       ))
       .pretty_print(heap)
-    )
+    );
+    assert_eq!(
+      "(bool) -> I<int, A>",
+      FunctionType::from_function(&ClassMemberDeclaration {
+        loc: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        is_public: false,
+        is_method: false,
+        name: Id::from(PStr::LOWER_A),
+        type_parameters: None,
+        parameters: FunctionParameters {
+          location: Location::dummy(),
+          start_associated_comments: NO_COMMENT_REFERENCE,
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+          parameters: Rc::new(vec![AnnotatedId {
+            name: Id::from(PStr::LOWER_A),
+            type_: (),
+            annotation: builder.bool_annot()
+          }])
+        },
+        return_type: builder.general_id_annot(
+          heap.alloc_str_for_test("I"),
+          vec![builder.int_annot(), builder.generic_annot(PStr::UPPER_A)]
+        ),
+      })
+      .pretty_print(heap)
+    );
   }
 
   #[test]

@@ -12,7 +12,6 @@ pub enum CommentKind {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Comment {
-  pub location: Location,
   pub kind: CommentKind,
   pub text: PStr,
 }
@@ -20,7 +19,7 @@ pub struct Comment {
 #[derive(Clone, PartialEq, Eq)]
 pub enum CommentsNode {
   NoComment,
-  Comments(Location, Vec<Comment>),
+  Comments(Vec<Comment>),
 }
 
 static EMPTY_COMMENTS: Vec<Comment> = vec![];
@@ -29,14 +28,13 @@ impl CommentsNode {
   pub fn iter(&self) -> std::slice::Iter<'_, Comment> {
     match self {
       CommentsNode::NoComment => EMPTY_COMMENTS.iter(),
-      CommentsNode::Comments(_, comments) => comments.iter(),
+      CommentsNode::Comments(comments) => comments.iter(),
     }
   }
 
   pub fn from(comments: Vec<Comment>) -> CommentsNode {
     if !comments.is_empty() {
-      let loc = comments.iter().map(|it| it.location).reduce(|l1, l2| l1.union(&l2)).unwrap();
-      CommentsNode::Comments(loc, comments)
+      CommentsNode::Comments(comments)
     } else {
       CommentsNode::NoComment
     }
@@ -122,10 +120,9 @@ impl Literal {
 }
 
 pub mod annotation {
-  use samlang_heap::ModuleReference;
-
+  use super::super::Location;
   use super::CommentReference;
-  use crate::Location;
+  use samlang_heap::ModuleReference;
 
   #[derive(Copy, Clone, PartialEq, Eq)]
   pub enum PrimitiveTypeKind {
@@ -401,9 +398,17 @@ pub mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub struct ParenthesizedExpressionList<T: Clone> {
+    pub loc: Location,
+    pub start_associated_comments: CommentReference,
+    pub ending_associated_comments: CommentReference,
+    pub expressions: Vec<E<T>>,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub struct FieldAccess<T: Clone> {
     pub common: ExpressionCommon<T>,
-    pub explicit_type_arguments: Vec<annotation::T>,
+    pub explicit_type_arguments: Option<super::annotation::TypeArguments>,
     pub inferred_type_arguments: Vec<T>,
     pub object: Box<E<T>>,
     pub field_name: Id,
@@ -413,7 +418,7 @@ pub mod expr {
   #[derive(Clone, PartialEq, Eq)]
   pub struct MethodAccess<T: Clone> {
     pub common: ExpressionCommon<T>,
-    pub explicit_type_arguments: Vec<annotation::T>,
+    pub explicit_type_arguments: Option<super::annotation::TypeArguments>,
     pub inferred_type_arguments: Vec<T>,
     pub object: Box<E<T>>,
     pub method_name: Id,
@@ -445,7 +450,7 @@ pub mod expr {
   pub struct Call<T: Clone> {
     pub common: ExpressionCommon<T>,
     pub callee: Box<E<T>>,
-    pub arguments: Vec<E<T>>,
+    pub arguments: ParenthesizedExpressionList<T>,
   }
 
   #[derive(Copy, Clone, PartialEq, Eq)]
@@ -536,6 +541,7 @@ pub mod expr {
     pub loc: Location,
     pub pattern: pattern::MatchingPattern<T>,
     pub body: Box<E<T>>,
+    pub ending_associated_comments: CommentReference,
   }
 
   #[derive(Clone, PartialEq, Eq)]
@@ -546,9 +552,16 @@ pub mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub struct LambdaParameters<T: Clone> {
+    pub loc: Location,
+    pub parameters: Vec<super::OptionallyAnnotatedId<T>>,
+    pub ending_associated_comments: CommentReference,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub struct Lambda<T: Clone> {
     pub common: ExpressionCommon<T>,
-    pub parameters: Vec<super::OptionallyAnnotatedId<T>>,
+    pub parameters: LambdaParameters<T>,
     pub captured: HashMap<PStr, T>,
     pub body: Box<E<T>>,
   }
@@ -567,6 +580,7 @@ pub mod expr {
     pub common: ExpressionCommon<T>,
     pub statements: Vec<DeclarationStatement<T>>,
     pub expression: Option<Box<E<T>>>,
+    pub ending_associated_comments: CommentReference,
   }
 
   #[derive(Clone, PartialEq, Eq)]
@@ -574,7 +588,7 @@ pub mod expr {
     Literal(ExpressionCommon<T>, Literal),
     LocalId(ExpressionCommon<T>, Id),
     ClassId(ExpressionCommon<T>, ModuleReference, Id),
-    Tuple(ExpressionCommon<T>, Vec<E<T>>),
+    Tuple(ExpressionCommon<T>, ParenthesizedExpressionList<T>),
     FieldAccess(FieldAccess<T>),
     MethodAccess(MethodAccess<T>),
     Unary(Unary<T>),
@@ -646,6 +660,14 @@ pub mod expr {
 }
 
 #[derive(Clone, PartialEq, Eq)]
+pub struct FunctionParameters {
+  pub location: Location,
+  pub start_associated_comments: CommentReference,
+  pub ending_associated_comments: CommentReference,
+  pub parameters: Rc<Vec<AnnotatedId<()>>>,
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct ClassMemberDeclaration {
   pub loc: Location,
   pub associated_comments: CommentReference,
@@ -653,8 +675,8 @@ pub struct ClassMemberDeclaration {
   pub is_method: bool,
   pub name: Id,
   pub type_parameters: Option<annotation::TypeParameters>,
-  pub type_: annotation::Function,
-  pub parameters: Rc<Vec<AnnotatedId<()>>>,
+  pub parameters: FunctionParameters,
+  pub return_type: annotation::T,
 }
 
 #[derive(Clone, PartialEq, Eq)]

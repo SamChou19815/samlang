@@ -175,6 +175,27 @@ fn apply_matching_pattern_renaming(
   }
 }
 
+fn apply_parenthesized_expression_list_renaming(
+  expr::ParenthesizedExpressionList {
+    loc,
+    start_associated_comments,
+    ending_associated_comments,
+    expressions,
+  }: &expr::ParenthesizedExpressionList<()>,
+  definition_and_uses: &DefinitionAndUses,
+  new_name: PStr,
+) -> expr::ParenthesizedExpressionList<()> {
+  expr::ParenthesizedExpressionList {
+    loc: *loc,
+    start_associated_comments: *start_associated_comments,
+    ending_associated_comments: *ending_associated_comments,
+    expressions: expressions
+      .iter()
+      .map(|e| apply_expr_renaming(e, definition_and_uses, new_name))
+      .collect(),
+  }
+}
+
 fn apply_expr_renaming(
   expr: &expr::E<()>,
   definition_and_uses: &DefinitionAndUses,
@@ -187,9 +208,9 @@ fn apply_expr_renaming(
   match expr {
     expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => panic!(),
     expr::E::LocalId(common, old_id) => expr::E::LocalId(common.clone(), mod_id(old_id, new_name)),
-    expr::E::Tuple(common, expressions) => expr::E::Tuple(
+    expr::E::Tuple(common, e) => expr::E::Tuple(
       common.clone(),
-      expressions.iter().map(|e| apply_expr_renaming(e, definition_and_uses, new_name)).collect(),
+      apply_parenthesized_expression_list_renaming(e, definition_and_uses, new_name),
     ),
     expr::E::FieldAccess(e) => expr::E::FieldAccess(expr::FieldAccess {
       common: e.common.clone(),
@@ -214,11 +235,11 @@ fn apply_expr_renaming(
     expr::E::Call(e) => expr::E::Call(expr::Call {
       common: e.common.clone(),
       callee: Box::new(apply_expr_renaming(&e.callee, definition_and_uses, new_name)),
-      arguments: e
-        .arguments
-        .iter()
-        .map(|e| apply_expr_renaming(e, definition_and_uses, new_name))
-        .collect(),
+      arguments: apply_parenthesized_expression_list_renaming(
+        &e.arguments,
+        definition_and_uses,
+        new_name,
+      ),
     }),
     expr::E::Binary(e) => expr::E::Binary(expr::Binary {
       common: e.common.clone(),
@@ -247,26 +268,34 @@ fn apply_expr_renaming(
       cases: e
         .cases
         .iter()
-        .map(|expr::VariantPatternToExpression { loc, pattern, body }| {
-          expr::VariantPatternToExpression {
-            loc: *loc,
-            pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
-            body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name)),
-          }
-        })
+        .map(
+          |expr::VariantPatternToExpression { loc, pattern, body, ending_associated_comments }| {
+            expr::VariantPatternToExpression {
+              loc: *loc,
+              pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
+              body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name)),
+              ending_associated_comments: *ending_associated_comments,
+            }
+          },
+        )
         .collect(),
     }),
     expr::E::Lambda(e) => expr::E::Lambda(expr::Lambda {
       common: e.common.clone(),
-      parameters: e
-        .parameters
-        .iter()
-        .map(|OptionallyAnnotatedId { name, type_, annotation }| OptionallyAnnotatedId {
-          name: mod_def_id(name, definition_and_uses, new_name),
-          type_: *type_,
-          annotation: annotation.clone(),
-        })
-        .collect(),
+      parameters: expr::LambdaParameters {
+        loc: e.parameters.loc,
+        parameters: e
+          .parameters
+          .parameters
+          .iter()
+          .map(|OptionallyAnnotatedId { name, type_, annotation }| OptionallyAnnotatedId {
+            name: mod_def_id(name, definition_and_uses, new_name),
+            type_: *type_,
+            annotation: annotation.clone(),
+          })
+          .collect(),
+        ending_associated_comments: e.parameters.ending_associated_comments,
+      },
       captured: e.captured.clone(),
       body: Box::new(apply_expr_renaming(&e.body, definition_and_uses, new_name)),
     }),
@@ -299,6 +328,7 @@ fn apply_expr_renaming(
         .expression
         .as_ref()
         .map(|e| Box::new(apply_expr_renaming(e, definition_and_uses, new_name))),
+      ending_associated_comments: e.ending_associated_comments,
     }),
   }
 }
@@ -335,7 +365,7 @@ pub(super) fn apply_renaming(
                      is_method,
                      name,
                      type_parameters,
-                     type_,
+                     return_type,
                      parameters,
                    },
                  body,
@@ -348,17 +378,23 @@ pub(super) fn apply_renaming(
                     is_method: *is_method,
                     name: *name,
                     type_parameters: type_parameters.clone(),
-                    type_: type_.clone(),
-                    parameters: Rc::new(
-                      parameters
-                        .iter()
-                        .map(|AnnotatedId { name, type_, annotation }| AnnotatedId {
-                          name: mod_def_id(name, definition_and_uses, new_name),
-                          type_: *type_,
-                          annotation: annotation.clone(),
-                        })
-                        .collect(),
-                    ),
+                    parameters: samlang_ast::source::FunctionParameters {
+                      location: parameters.location,
+                      start_associated_comments: parameters.start_associated_comments,
+                      ending_associated_comments: parameters.ending_associated_comments,
+                      parameters: Rc::new(
+                        parameters
+                          .parameters
+                          .iter()
+                          .map(|AnnotatedId { name, type_, annotation }| AnnotatedId {
+                            name: mod_def_id(name, definition_and_uses, new_name),
+                            type_: *type_,
+                            annotation: annotation.clone(),
+                          })
+                          .collect(),
+                      ),
+                    },
+                    return_type: return_type.clone(),
                   },
                   body: apply_expr_renaming(body, definition_and_uses, new_name),
                 }
@@ -388,7 +424,7 @@ mod tests {
     apply_expr_renaming(
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(()),
-        explicit_type_arguments: vec![],
+        explicit_type_arguments: None,
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0))),
         method_name: Id::from(PStr::LOWER_A),
