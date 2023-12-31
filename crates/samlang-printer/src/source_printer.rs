@@ -33,23 +33,25 @@ enum DocumentGrouping {
 fn associated_comments_doc(
   heap: &Heap,
   comment_store: &CommentStore,
-  associated_comments: CommentReference,
+  associated_comments: Vec<CommentReference>,
   group: DocumentGrouping,
   add_final_line_break: bool,
 ) -> Option<Document> {
   let mut documents = vec![];
-  for comment in comment_store.get(associated_comments).iter() {
-    documents.append(&mut match comment.kind {
-      CommentKind::LINE => {
-        vec![Document::line_comment(comment.text.as_str(heap)), Document::LineHard]
-      }
-      CommentKind::BLOCK => {
-        vec![Document::multiline_comment("/*", comment.text.as_str(heap)), Document::Line]
-      }
-      CommentKind::DOC => {
-        vec![Document::multiline_comment("/**", comment.text.as_str(heap)), Document::Line]
-      }
-    });
+  for associated_comments in associated_comments {
+    for comment in comment_store.get(associated_comments).iter() {
+      documents.append(&mut match comment.kind {
+        CommentKind::LINE => {
+          vec![Document::line_comment(comment.text.as_str(heap)), Document::LineHard]
+        }
+        CommentKind::BLOCK => {
+          vec![Document::multiline_comment("/*", comment.text.as_str(heap)), Document::Line]
+        }
+        CommentKind::DOC => {
+          vec![Document::multiline_comment("/**", comment.text.as_str(heap)), Document::Line]
+        }
+      });
+    }
   }
   if documents.is_empty() {
     None
@@ -85,7 +87,7 @@ fn create_opt_preceding_comment_doc(
   if let Some(comment_doc) = associated_comments_doc(
     heap,
     comment_store,
-    associated_comments,
+    vec![associated_comments],
     DocumentGrouping::Grouped,
     true,
   ) {
@@ -105,7 +107,7 @@ fn comma_sep_list<E, F: Fn(&E) -> Document>(
   let comment_doc_opt = associated_comments_doc(
     heap,
     comment_store,
-    ending_comments,
+    vec![ending_comments],
     DocumentGrouping::Expanded,
     false,
   );
@@ -418,7 +420,7 @@ fn create_member_preceding_comment_docs(
   if let Some(doc) = associated_comments_doc(
     heap,
     comment_store,
-    comments,
+    vec![comments],
     if flattened { DocumentGrouping::Flattened } else { DocumentGrouping::Expanded },
     !flattened,
   ) {
@@ -546,7 +548,7 @@ fn create_doc_without_preceding_comment(
       let operator_preceding_comments_docs = if let Some(doc) = associated_comments_doc(
         heap,
         comment_store,
-        e.operator_preceding_comments,
+        vec![e.operator_preceding_comments],
         DocumentGrouping::Grouped,
         false,
       ) {
@@ -676,7 +678,7 @@ fn create_doc_without_preceding_comment(
       if let Some(comments) = associated_comments_doc(
         heap,
         comment_store,
-        e.ending_associated_comments,
+        vec![e.ending_associated_comments],
         DocumentGrouping::Expanded,
         false,
       ) {
@@ -828,7 +830,7 @@ pub(super) fn statement_to_document(
     associated_comments_doc(
       heap,
       comment_store,
-      stmt.associated_comments,
+      vec![stmt.associated_comments],
       DocumentGrouping::Grouped,
       true,
     )
@@ -922,7 +924,7 @@ fn create_doc_for_interface_member(
     associated_comments_doc(
       heap,
       comment_store,
-      member.associated_comments,
+      vec![member.associated_comments],
       DocumentGrouping::Grouped,
       true,
     )
@@ -999,7 +1001,7 @@ fn interface_to_doc(
     associated_comments_doc(
       heap,
       comment_store,
-      interface.associated_comments,
+      vec![interface.associated_comments],
       DocumentGrouping::Grouped,
       true,
     )
@@ -1033,7 +1035,7 @@ fn interface_to_doc(
   if let Some(comments) = associated_comments_doc(
     heap,
     comment_store,
-    interface.members.ending_associated_comments,
+    vec![interface.members.ending_associated_comments],
     DocumentGrouping::Expanded,
     true,
   ) {
@@ -1054,7 +1056,7 @@ fn class_to_doc(
     associated_comments_doc(
       heap,
       comment_store,
-      class.associated_comments,
+      vec![class.associated_comments],
       DocumentGrouping::Grouped,
       true,
     )
@@ -1159,7 +1161,7 @@ fn class_to_doc(
   if let Some(comments) = associated_comments_doc(
     heap,
     comment_store,
-    class.members.ending_associated_comments,
+    vec![class.members.ending_associated_comments],
     DocumentGrouping::Expanded,
     true,
   ) {
@@ -1174,10 +1176,20 @@ fn class_to_doc(
 pub(super) fn import_to_document(
   heap: &Heap,
   comment_store: &CommentStore,
+  associated_comments: Vec<CommentReference>,
   imported_module: ModuleReference,
   imported_members: &[Id],
 ) -> Document {
   let mut documents = vec![];
+  if let Some(comments) = associated_comments_doc(
+    heap,
+    comment_store,
+    associated_comments,
+    DocumentGrouping::Expanded,
+    true,
+  ) {
+    documents.push(comments);
+  }
   documents.push(Document::Text(rcs("import ")));
   documents.push(braces_surrounded_doc(comma_sep_list(
     heap,
@@ -1206,31 +1218,39 @@ pub(super) fn toplevel_to_document(
 pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Document {
   let mut documents = vec![];
 
-  let mut organized_imports = HashMap::<ModuleReference, Vec<Id>>::new();
+  let mut organized_imports = HashMap::<ModuleReference, (Vec<CommentReference>, Vec<Id>)>::new();
   for import in &module.imports {
-    if let Some(list) = organized_imports.get_mut(&import.imported_module) {
-      list.append(&mut import.imported_members.clone());
+    if let Some((c, m)) = organized_imports.get_mut(&import.imported_module) {
+      c.push(import.associated_comments);
+      m.append(&mut import.imported_members.clone());
     } else {
-      organized_imports.insert(import.imported_module, import.imported_members.clone());
+      organized_imports.insert(
+        import.imported_module,
+        (vec![import.associated_comments], import.imported_members.clone()),
+      );
     }
   }
 
-  for (imported_module, imported_members) in organized_imports
+  for (imported_module, (associated_comments, imported_members)) in organized_imports
     .into_iter()
     .sorted_by_key(|(mod_ref, _)| mod_ref.pretty_print(heap))
-    .map(|(mod_ref, members)| {
+    .map(|(mod_ref, (comments, members))| {
       (
         mod_ref,
-        members
-          .into_iter()
-          .sorted_by(|x, y| x.name.as_str(heap).cmp(y.name.as_str(heap)))
-          .collect_vec(),
+        (
+          comments,
+          members
+            .into_iter()
+            .sorted_by(|x, y| x.name.as_str(heap).cmp(y.name.as_str(heap)))
+            .collect_vec(),
+        ),
       )
     })
   {
     documents.push(import_to_document(
       heap,
       &module.comment_store,
+      associated_comments,
       imported_module,
       &imported_members,
     ))
@@ -1243,6 +1263,16 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
     documents.push(toplevel_to_document(heap, &module.comment_store, toplevel));
     documents.push(Document::LineHard);
     documents.push(Document::LineHard);
+  }
+
+  if let Some(comments) = associated_comments_doc(
+    heap,
+    &module.comment_store,
+    vec![module.trailing_comments],
+    DocumentGrouping::Expanded,
+    true,
+  ) {
+    documents.push(comments);
   }
 
   Document::concat(documents)
@@ -1694,6 +1724,7 @@ class Main {
     assert_reprint_module(
       r#"
 import {Foo} from Foo.Baz
+// a
 import {F1,F2,F3,F4,F5,F6,F7,F8} from Bar.Baz
 import {F9,F10} from Bar.Baz
 
@@ -1729,8 +1760,10 @@ private class A(val a: int) {}
  * long document string
  */
 class Main {}
+// f
 "#,
       r#"
+// a
 import {
   F1,
   F10,
@@ -1828,7 +1861,9 @@ private class A(val a: int) {}
  * very very very very very long
  * document string
  */
-class Main {}"#,
+class Main {}
+
+// f"#,
     );
   }
 }

@@ -873,6 +873,7 @@ impl<T: Clone> Toplevel<T> {
 #[derive(Clone, PartialEq, Eq)]
 pub struct ModuleMembersImport {
   pub loc: Location,
+  pub associated_comments: CommentReference,
   pub imported_members: Vec<Id>,
   pub imported_module: ModuleReference,
   pub imported_module_loc: Location,
