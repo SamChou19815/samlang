@@ -423,7 +423,7 @@ fn extract_loop_guard_structure(
   non_loop_invariant_variables: &HashSet<PStr>,
 ) -> Option<LoopGuardStructure> {
   let (first_binary_stmt, second_single_if_stmt) =
-    (stmts.get(0).and_then(Statement::as_binary), stmts.get(1).and_then(Statement::as_single_if));
+    (stmts.first().and_then(Statement::as_binary), stmts.get(1).and_then(Statement::as_single_if));
   match (first_binary_stmt, second_single_if_stmt) {
     (
       Some(Binary { name, operator, e1: Expression::Variable(e1_var), e2 }),

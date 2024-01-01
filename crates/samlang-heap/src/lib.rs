@@ -309,7 +309,7 @@ impl ModuleReference {
   }
 
   pub fn is_std(&self, heap: &Heap) -> bool {
-    self.get_parts(heap).get(0) == Some(&PStr::STD)
+    self.get_parts(heap).first() == Some(&PStr::STD)
   }
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
