@@ -1,8 +1,8 @@
 use samlang_ast::{
-  source::{expr, pattern, Module, Toplevel},
-  Location, Position,
+  source::{annotation, expr, pattern, Module, Toplevel},
+  Location, Position, Reason,
 };
-use samlang_checker::type_::{FunctionType, Type};
+use samlang_checker::type_::{FunctionType, NominalType, Type};
 use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 
@@ -50,6 +50,95 @@ fn search_parenthesized_expression_list(
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult> {
   expr_list.expressions.iter().find_map(|e| search_expression(e, position, stop_at_call))
+}
+
+fn search_optional_type_parameters(
+  tparams_opt: Option<&annotation::TypeParameters>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  tparams_opt.iter().flat_map(|it| &it.parameters).find_map(|tparam| {
+    if tparam.name.loc.contains_position(position) {
+      return Some(LocationCoverSearchResult::TypedName(
+        tparam.name.loc,
+        tparam.name.name,
+        Type::Generic(Reason::new(tparam.name.loc, Some(tparam.name.loc)), tparam.name.name),
+        true,
+      ));
+    }
+    search_optional_id_annotation(tparam.bound.as_ref(), position)
+  })
+}
+
+fn search_optional_type_arguments(
+  targs_opt: Option<&annotation::TypeArguments>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  targs_opt.iter().flat_map(|it| &it.arguments).find_map(|it| search_annotation(it, position))
+}
+
+fn search_id_annotation(
+  id_annot: &annotation::Id,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  if id_annot.id.loc.contains_position(position) {
+    return Some(LocationCoverSearchResult::TypedName(
+      id_annot.id.loc,
+      id_annot.id.name,
+      Type::Nominal(NominalType::from_annotation(id_annot)),
+      false,
+    ));
+  }
+  search_optional_type_arguments(id_annot.type_arguments.as_ref(), position)
+}
+
+fn search_optional_id_annotation(
+  id_annot_opt: Option<&annotation::Id>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  if let Some(id_annot) = id_annot_opt {
+    search_id_annotation(id_annot, position)
+  } else {
+    None
+  }
+}
+
+fn search_annotation(
+  annotation: &annotation::T,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  match annotation {
+    annotation::T::Primitive(_, _, _) => None,
+    annotation::T::Id(id_annot) => search_id_annotation(id_annot, position),
+    annotation::T::Generic(loc, id) => {
+      if loc.contains_position(position) {
+        return Some(LocationCoverSearchResult::TypedName(
+          *loc,
+          id.name,
+          Type::from_annotation(annotation),
+          false,
+        ));
+      } else {
+        None
+      }
+    }
+    annotation::T::Fn(fn_annot) => fn_annot
+      .parameters
+      .annotations
+      .iter()
+      .find_map(|it| search_annotation(it, position))
+      .or_else(|| search_annotation(&fn_annot.return_type, position)),
+  }
+}
+
+fn search_optional_annotation(
+  annotation_opt: Option<&annotation::T>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  if let Some(annot) = annotation_opt {
+    search_annotation(annot, position)
+  } else {
+    None
+  }
 }
 
 fn search_expression(
@@ -100,7 +189,8 @@ fn search_expression(
               e.field_name.name,
             )
           }
-        });
+        })
+        .or_else(|| search_optional_type_arguments(e.explicit_type_arguments.as_ref(), position));
       if found.is_some() {
         return found;
       }
@@ -120,7 +210,8 @@ fn search_expression(
           fn_name: e.method_name.name,
           is_method: !nominal_type.is_class_statics,
           type_: e.common.type_.clone(),
-        });
+        })
+        .or_else(|| search_optional_type_arguments(e.explicit_type_arguments.as_ref(), position));
       if found.is_some() {
         return found;
       }
@@ -179,11 +270,17 @@ fn search_expression(
             ))
           };
         }
+        if let Some(found) = search_optional_annotation(param.annotation.as_ref(), position) {
+          return Some(found);
+        }
       }
       search_expression(&e.body, position, stop_at_call)
     }
     expr::E::Block(e) => {
       for stmt in &e.statements {
+        if let Some(found) = search_optional_annotation(stmt.annotation.as_ref(), position) {
+          return Some(found);
+        }
         if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
           return Some(found);
         }
@@ -219,6 +316,9 @@ pub(super) fn search_module_locally(
     if name.loc.contains_position(position) {
       return Some(LocationCoverSearchResult::ToplevelName(name.loc, module_reference, name.name));
     }
+    if let Some(found) = search_optional_type_parameters(toplevel.type_parameters(), position) {
+      return Some(found);
+    }
     for member in toplevel.members_iter() {
       if !member.loc.contains_position(position) {
         continue;
@@ -233,6 +333,11 @@ pub(super) fn search_module_locally(
           type_: Rc::new(Type::Fn(FunctionType::from_function(member))),
         });
       }
+      if let Some(found) =
+        search_optional_type_parameters(member.type_parameters.as_ref(), position)
+      {
+        return Some(found);
+      }
       for param in member.parameters.parameters.iter() {
         if param.name.loc.contains_position(position) {
           return Some(LocationCoverSearchResult::TypedName(
@@ -242,6 +347,12 @@ pub(super) fn search_module_locally(
             true,
           ));
         }
+        if let Some(found) = search_annotation(&param.annotation, position) {
+          return Some(found);
+        }
+      }
+      if let Some(found) = search_annotation(&member.return_type, position) {
+        return Some(found);
       }
     }
     if let Toplevel::Class(c) = toplevel {
@@ -317,6 +428,7 @@ mod tests {
       function none(): Option<int> = Option.None({})
       function createSome(): (int) -> Option<int> = (n: int) -> Option.Some(n)
       function createSome2(): (int) -> Option<int> = (n) -> Option.Some(n)
+      function createSome3(): (Obj) -> Option<Obj> = (n: Obj) -> Option.Some(n)
 
       function run(): unit = Option.createSome()(1).matchExample()
 
@@ -332,7 +444,7 @@ mod tests {
         let a: int = 1;
         let b = 2;
         let c = 3; // c = 3
-        let { d as _, e as d } = Obj.init(5, 4); // d = 4
+        let { d as _, e as d }: Obj = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
         let _ = if let Some({ a as d3 }) = Option.Some(Foo.init(5)) then {} else {};
@@ -365,7 +477,7 @@ mod tests {
         )
 
       function nestedVal(): int = {
-        let a = {
+        let a: int = {
           let b = 4;
           let c = {
             let c = b;
