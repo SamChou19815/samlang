@@ -141,6 +141,28 @@ fn search_optional_annotation(
   }
 }
 
+fn search_block(
+  block: &expr::Block<Rc<Type>>,
+  position: Position,
+  stop_at_call: bool,
+) -> Option<LocationCoverSearchResult> {
+  for stmt in &block.statements {
+    if let Some(found) = search_optional_annotation(stmt.annotation.as_ref(), position) {
+      return Some(found);
+    }
+    if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
+      return Some(found);
+    }
+    if let Some(found) = search_matching_pattern(&stmt.pattern, position) {
+      return Some(found);
+    }
+  }
+  if let Some(e) = &block.expression {
+    return search_expression(e, position, stop_at_call);
+  }
+  None
+}
+
 fn search_expression(
   expr: &expr::E<Rc<Type>>,
   position: Position,
@@ -276,23 +298,7 @@ fn search_expression(
       }
       search_expression(&e.body, position, stop_at_call)
     }
-    expr::E::Block(e) => {
-      for stmt in &e.statements {
-        if let Some(found) = search_optional_annotation(stmt.annotation.as_ref(), position) {
-          return Some(found);
-        }
-        if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
-          return Some(found);
-        }
-        if let Some(found) = search_matching_pattern(&stmt.pattern, position) {
-          return Some(found);
-        }
-      }
-      if let Some(e) = &e.expression {
-        return search_expression(e, position, stop_at_call);
-      }
-      None
-    }
+    expr::E::Block(e) => search_block(e, position, stop_at_call),
   };
   if let Some(e) = found_from_children {
     Some(e)

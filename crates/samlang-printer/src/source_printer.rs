@@ -516,6 +516,47 @@ fn create_doc_for_parenthesized_expression_list(
   )
 }
 
+fn create_doc_for_block(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  block: &expr::Block<()>,
+) -> Document {
+  let mut segments = vec![];
+  for stmt in &block.statements {
+    segments.push(statement_to_document(heap, comment_store, stmt));
+    segments.push(Document::LineHard);
+  }
+  if let Some(comments) = associated_comments_doc(
+    heap,
+    comment_store,
+    vec![block.ending_associated_comments],
+    DocumentGrouping::Expanded,
+    false,
+  ) {
+    segments.push(comments);
+    segments.push(Document::LineHard);
+  }
+  let final_expr_doc = block.expression.as_ref().map(|e| create_doc(heap, comment_store, e));
+  if segments.is_empty() {
+    braces_surrounded_doc(final_expr_doc.unwrap_or(Document::Nil))
+  } else {
+    if let Some(d) = final_expr_doc {
+      segments.push(d);
+    } else {
+      segments.pop();
+    }
+    Document::concat(vec![
+      Document::Text(rcs("{")),
+      Document::Nest(
+        2,
+        Rc::new(Document::concat(vec![Document::Line].into_iter().chain(segments).collect())),
+      ),
+      Document::Line,
+      Document::Text(rcs("}")),
+    ])
+  }
+}
+
 fn create_doc_without_preceding_comment(
   heap: &Heap,
   comment_store: &CommentStore,
@@ -669,42 +710,7 @@ fn create_doc_without_preceding_comment(
       ),
     ]),
 
-    expr::E::Block(e) => {
-      let mut segments = vec![];
-      for stmt in &e.statements {
-        segments.push(statement_to_document(heap, comment_store, stmt));
-        segments.push(Document::LineHard);
-      }
-      if let Some(comments) = associated_comments_doc(
-        heap,
-        comment_store,
-        vec![e.ending_associated_comments],
-        DocumentGrouping::Expanded,
-        false,
-      ) {
-        segments.push(comments);
-        segments.push(Document::LineHard);
-      }
-      let final_expr_doc = e.expression.as_ref().map(|e| create_doc(heap, comment_store, e));
-      if segments.is_empty() {
-        braces_surrounded_doc(final_expr_doc.unwrap_or(Document::Nil))
-      } else {
-        if let Some(d) = final_expr_doc {
-          segments.push(d);
-        } else {
-          segments.pop();
-        }
-        Document::concat(vec![
-          Document::Text(rcs("{")),
-          Document::Nest(
-            2,
-            Rc::new(Document::concat(vec![Document::Line].into_iter().chain(segments).collect())),
-          ),
-          Document::Line,
-          Document::Text(rcs("}")),
-        ])
-      }
-    }
+    expr::E::Block(e) => create_doc_for_block(heap, comment_store, e),
   }
 }
 

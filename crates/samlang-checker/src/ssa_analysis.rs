@@ -328,28 +328,32 @@ impl<'a> SsaAnalysisState<'a> {
         self.lambda_captures.insert(e.common.loc, captured);
       }
       expr::E::Block(e) => {
-        self.context.push_scope();
-        for expr::DeclarationStatement {
-          loc: _,
-          associated_comments: _,
-          pattern,
-          annotation,
-          assigned_expression,
-        } in &e.statements
-        {
-          self.visit_expression(assigned_expression);
-          if let Some(annot) = annotation {
-            self.visit_annot(annot);
-          }
-          self.visit_matching_pattern(pattern);
-        }
-        if let Some(final_expr) = &e.expression {
-          self.visit_expression(final_expr);
-        }
-        let (local_defs, _) = self.context.pop_scope();
-        self.local_scoped_def_locs.insert(e.common.loc, local_defs);
+        self.visit_block(e);
       }
     }
+  }
+
+  fn visit_block(&mut self, block: &expr::Block<()>) {
+    self.context.push_scope();
+    for expr::DeclarationStatement {
+      loc: _,
+      associated_comments: _,
+      pattern,
+      annotation,
+      assigned_expression,
+    } in &block.statements
+    {
+      self.visit_expression(assigned_expression);
+      if let Some(annot) = annotation {
+        self.visit_annot(annot);
+      }
+      self.visit_matching_pattern(pattern);
+    }
+    if let Some(final_expr) = &block.expression {
+      self.visit_expression(final_expr);
+    }
+    let (local_defs, _) = self.context.pop_scope();
+    self.local_scoped_def_locs.insert(block.common.loc, local_defs);
   }
 
   fn visit_matching_pattern(&mut self, pattern: &pattern::MatchingPattern<()>) {

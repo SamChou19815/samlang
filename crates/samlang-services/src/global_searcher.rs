@@ -83,6 +83,23 @@ fn search_matching_pattern(
   }
 }
 
+fn search_block(
+  block: &expr::Block<Rc<Type>>,
+  request: &GlobalNameSearchRequest,
+  collector: &mut Vec<Location>,
+) {
+  for stmt in &block.statements {
+    if let Some(annot) = &stmt.annotation {
+      search_annot(annot, request, collector);
+    }
+    search_matching_pattern(&stmt.pattern, stmt.assigned_expression.type_(), request, collector);
+    search_expression(&stmt.assigned_expression, request, collector);
+  }
+  if let Some(e) = &block.expression {
+    search_expression(e, request, collector);
+  }
+}
+
 fn search_expression(
   expr: &expr::E<Rc<Type>>,
   request: &GlobalNameSearchRequest,
@@ -171,23 +188,7 @@ fn search_expression(
       }
       search_expression(&e.body, request, collector)
     }
-    expr::E::Block(e) => {
-      for stmt in &e.statements {
-        if let Some(annot) = &stmt.annotation {
-          search_annot(annot, request, collector);
-        }
-        search_matching_pattern(
-          &stmt.pattern,
-          stmt.assigned_expression.type_(),
-          request,
-          collector,
-        );
-        search_expression(&stmt.assigned_expression, request, collector);
-      }
-      if let Some(e) = &e.expression {
-        search_expression(e, request, collector);
-      }
-    }
+    expr::E::Block(e) => search_block(e, request, collector),
   }
 }
 
