@@ -7,20 +7,20 @@
     "ssg": "next build --no-lint"
   },
   "dependencies": {
-    "@monaco-editor/react": "^4.4.6",
-    "@types/node": "20.6.0",
-    "@types/react": "18.2.21",
-    "@types/react-dom": "18.2.7",
-    "autoprefixer": "10.4.15",
+    "@monaco-editor/react": "^4.6.0",
+    "@types/node": "20.10.7",
+    "@types/react": "18.2.47",
+    "@types/react-dom": "18.2.18",
+    "autoprefixer": "10.4.16",
     "dev-sam-theme": "^0.0.1",
-    "monaco-editor": "^0.34.1",
-    "next": "13.5.2",
-    "postcss": "8.4.31",
+    "monaco-editor": "^0.45.0",
+    "next": "14.0.4",
+    "postcss": "8.4.33",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "shiki": "^0.14.4",
-    "tailwindcss": "3.3.3",
-    "typescript": "5.2.2",
+    "shiki": "^0.14.7",
+    "tailwindcss": "3.4.1",
+    "typescript": "5.3.3",
     "vscode-oniguruma": "^2.0.1"
   }
 }
