@@ -79,6 +79,14 @@ fn mod_type(mut expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> expr::E<Rc
   expression
 }
 
+fn block_should_be_checked_without_hint(block: &expr::Block<()>) -> bool {
+  if let Some(final_expression) = &block.expression {
+    arguments_should_be_checked_without_hint(final_expression)
+  } else {
+    true
+  }
+}
+
 fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
   match e {
     expr::E::Literal(_, _)
@@ -109,18 +117,7 @@ fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
       }
       arguments_should_be_checked_without_hint(body)
     }
-    expr::E::Block(expr::Block {
-      common: _,
-      statements: _,
-      expression,
-      ending_associated_comments: _,
-    }) => {
-      if let Some(final_expression) = expression {
-        arguments_should_be_checked_without_hint(final_expression)
-      } else {
-        true
-      }
-    }
+    expr::E::Block(b) => block_should_be_checked_without_hint(b),
   }
 }
 
@@ -219,7 +216,7 @@ fn type_check_expression(
     expr::E::IfElse(e) => check_if_else(cx, e, hint),
     expr::E::Match(e) => check_match(cx, e, hint),
     expr::E::Lambda(e) => check_lambda(cx, e, hint),
-    expr::E::Block(e) => check_block(cx, e, hint),
+    expr::E::Block(e) => expr::E::Block(check_block(cx, e, hint)),
   }
 }
 
@@ -1494,7 +1491,7 @@ fn check_block(
   cx: &mut TypingContext,
   expression: &expr::Block<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::Block<Rc<Type>> {
   let statements = expression.statements.iter().map(|s| check_statement(cx, s)).collect_vec();
   let checked_final_expr =
     expression.expression.as_ref().map(|e| Box::new(type_check_expression(cx, e, hint)));
@@ -1503,12 +1500,12 @@ fn check_block(
   } else {
     Rc::new(Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit))
   };
-  expr::E::Block(expr::Block {
+  expr::Block {
     common: expression.common.with_new_type(type_),
     statements,
     expression: checked_final_expr,
     ending_associated_comments: expression.ending_associated_comments,
-  })
+  }
 }
 
 fn validate_tparams_signature_type_instantiation(

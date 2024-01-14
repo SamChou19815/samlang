@@ -196,6 +196,44 @@ fn apply_parenthesized_expression_list_renaming(
   }
 }
 
+fn apply_block_renaming(
+  block: &expr::Block<()>,
+  definition_and_uses: &DefinitionAndUses,
+  new_name: PStr,
+) -> expr::Block<()> {
+  expr::Block {
+    common: block.common.clone(),
+    statements: block
+      .statements
+      .iter()
+      .map(
+        |expr::DeclarationStatement {
+           loc,
+           associated_comments,
+           pattern,
+           annotation,
+           assigned_expression,
+         }| expr::DeclarationStatement {
+          loc: *loc,
+          associated_comments: *associated_comments,
+          pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
+          annotation: annotation.clone(),
+          assigned_expression: Box::new(apply_expr_renaming(
+            assigned_expression,
+            definition_and_uses,
+            new_name,
+          )),
+        },
+      )
+      .collect(),
+    expression: block
+      .expression
+      .as_ref()
+      .map(|e| Box::new(apply_expr_renaming(e, definition_and_uses, new_name))),
+    ending_associated_comments: block.ending_associated_comments,
+  }
+}
+
 fn apply_expr_renaming(
   expr: &expr::E<()>,
   definition_and_uses: &DefinitionAndUses,
@@ -299,39 +337,10 @@ fn apply_expr_renaming(
       captured: e.captured.clone(),
       body: Box::new(apply_expr_renaming(&e.body, definition_and_uses, new_name)),
     }),
-    expr::E::Block(e) => expr::E::Block(expr::Block {
-      common: e.common.clone(),
-      statements: e
-        .statements
-        .iter()
-        .map(
-          |expr::DeclarationStatement {
-             loc,
-             associated_comments,
-             pattern,
-             annotation,
-             assigned_expression,
-           }| expr::DeclarationStatement {
-            loc: *loc,
-            associated_comments: *associated_comments,
-            pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
-            annotation: annotation.clone(),
-            assigned_expression: Box::new(apply_expr_renaming(
-              assigned_expression,
-              definition_and_uses,
-              new_name,
-            )),
-          },
-        )
-        .collect(),
-      expression: e
-        .expression
-        .as_ref()
-        .map(|e| Box::new(apply_expr_renaming(e, definition_and_uses, new_name))),
-      ending_associated_comments: e.ending_associated_comments,
-    }),
+    expr::E::Block(e) => expr::E::Block(apply_block_renaming(e, definition_and_uses, new_name)),
   }
 }
+
 pub(super) fn apply_renaming(
   Module { comment_store, imports, toplevels, trailing_comments }: &Module<()>,
   definition_and_uses: &DefinitionAndUses,

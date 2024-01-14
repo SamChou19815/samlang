@@ -111,6 +111,17 @@ fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<
   }
 }
 
+fn mark_block(heap: &mut Heap, block: &expr::Block<Rc<Type>>) {
+  for stmt in &block.statements {
+    mark_expression(heap, &stmt.assigned_expression);
+    mark_annot_opt(heap, &stmt.annotation);
+    mark_matching_pattern(heap, &stmt.pattern);
+  }
+  if let Some(e) = &block.expression {
+    mark_expression(heap, e);
+  }
+}
+
 fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
   mark_type(heap, &expr.common().type_);
   match expr {
@@ -170,16 +181,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       }
       mark_expression(heap, &e.body);
     }
-    expr::E::Block(e) => {
-      for stmt in &e.statements {
-        mark_expression(heap, &stmt.assigned_expression);
-        mark_annot_opt(heap, &stmt.annotation);
-        mark_matching_pattern(heap, &stmt.pattern);
-      }
-      if let Some(e) = &e.expression {
-        mark_expression(heap, e);
-      }
-    }
+    expr::E::Block(e) => mark_block(heap, e),
   }
 }
 

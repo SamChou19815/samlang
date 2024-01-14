@@ -1434,7 +1434,7 @@ mod expression_parser {
 
     // Statement Block: { ... }
     if let Token(_, TokenContent::Operator(TokenOp::LBRACE)) = parser.peek() {
-      return expr::E::Block(parse_block(parser));
+      return expr::E::Block(parse_block(parser, vec![]));
     }
 
     let associated_comments = parser.collect_preceding_comments();
@@ -1596,8 +1596,11 @@ mod expression_parser {
     }
   }
 
-  fn parse_block(parser: &mut super::SourceParser) -> expr::Block<()> {
-    let associated_comments = parser.collect_preceding_comments();
+  fn parse_block(
+    parser: &mut super::SourceParser,
+    mut associated_comments: Vec<Comment>,
+  ) -> expr::Block<()> {
+    associated_comments.append(&mut parser.collect_preceding_comments());
     let start_loc = parser.assert_and_consume_operator(TokenOp::LBRACE);
 
     let mut statements = vec![];
