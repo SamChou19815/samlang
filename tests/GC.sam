@@ -3,7 +3,7 @@ import { ForTests } from tests.StdLib;
 class GC {
   private function allocateStringALot(n: int, acc: int): int =
     // Forcing allocating a lot of objects, test gc
-    if n == 0 then { acc } else { GC.allocateStringALot(n - 1, acc + Str.fromInt(12).toInt()) }
+    if n == 0 { acc } else { GC.allocateStringALot(n - 1, acc + Str.fromInt(12).toInt()) }
 
   function run(): unit = ForTests.assertIntEquals(1200, GC.allocateStringALot(100, 0))
 }

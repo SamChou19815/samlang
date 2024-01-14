@@ -372,8 +372,18 @@ mod tests {
     coverage_hack_for_expr(E::IfElse(IfElse {
       common: common.clone(),
       condition: Box::new(IfElseCondition::Expression(zero_expr.clone())),
-      e1: Box::new(zero_expr.clone()),
-      e2: Box::new(zero_expr.clone()),
+      e1: Box::new(Block {
+        common: common.clone(),
+        statements: vec![],
+        expression: Some(Box::new(zero_expr.clone())),
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+      }),
+      e2: Box::new(IfElseOrBlock::Block(Block {
+        common: common.clone(),
+        statements: vec![],
+        expression: Some(Box::new(zero_expr.clone())),
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+      })),
     }));
     coverage_hack_for_expr(E::IfElse(IfElse {
       common: common.clone(),
@@ -384,8 +394,28 @@ mod tests {
         },
         zero_expr.clone(),
       )),
-      e1: Box::new(zero_expr.clone()),
-      e2: Box::new(zero_expr.clone()),
+      e1: Box::new(Block {
+        common: common.clone(),
+        statements: vec![],
+        expression: Some(Box::new(zero_expr.clone())),
+        ending_associated_comments: NO_COMMENT_REFERENCE,
+      }),
+      e2: Box::new(IfElseOrBlock::IfElse(IfElse {
+        common: common.clone(),
+        condition: Box::new(IfElseCondition::Expression(zero_expr.clone())),
+        e1: Box::new(Block {
+          common: common.clone(),
+          statements: vec![],
+          expression: Some(Box::new(zero_expr.clone())),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(IfElseOrBlock::Block(Block {
+          common: common.clone(),
+          statements: vec![],
+          expression: Some(Box::new(zero_expr.clone())),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        })),
+      })),
     }));
     coverage_hack_for_expr(E::Match(Match {
       common: common.clone(),

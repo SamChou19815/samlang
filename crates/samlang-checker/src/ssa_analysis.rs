@@ -289,21 +289,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.visit_expression(&e.e1);
         self.visit_expression(&e.e2);
       }
-      expr::E::IfElse(e) => match e.condition.as_ref() {
-        expr::IfElseCondition::Expression(guard) => {
-          self.visit_expression(guard);
-          self.visit_expression(&e.e1);
-          self.visit_expression(&e.e2);
-        }
-        expr::IfElseCondition::Guard(p, guard) => {
-          self.visit_expression(guard);
-          self.context.push_scope();
-          self.visit_matching_pattern(p);
-          self.visit_expression(&e.e1);
-          self.context.pop_scope();
-          self.visit_expression(&e.e2);
-        }
-      },
+      expr::E::IfElse(e) => self.visit_if_else(e),
       expr::E::Match(e) => {
         self.visit_expression(&e.matched);
         for case in &e.cases {
@@ -330,6 +316,31 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Block(e) => {
         self.visit_block(e);
       }
+    }
+  }
+
+  fn visit_if_else(&mut self, if_else: &expr::IfElse<()>) {
+    match if_else.condition.as_ref() {
+      expr::IfElseCondition::Expression(guard) => {
+        self.visit_expression(guard);
+        self.visit_block(&if_else.e1);
+        self.visit_if_else_or_block(&if_else.e2);
+      }
+      expr::IfElseCondition::Guard(p, guard) => {
+        self.visit_expression(guard);
+        self.context.push_scope();
+        self.visit_matching_pattern(p);
+        self.visit_block(&if_else.e1);
+        self.context.pop_scope();
+        self.visit_if_else_or_block(&if_else.e2);
+      }
+    }
+  }
+
+  fn visit_if_else_or_block(&mut self, if_else_or_block: &expr::IfElseOrBlock<()>) {
+    match if_else_or_block {
+      expr::IfElseOrBlock::IfElse(e) => self.visit_if_else(e),
+      expr::IfElseOrBlock::Block(e) => self.visit_block(e),
     }
   }
 

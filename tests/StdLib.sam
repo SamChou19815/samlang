@@ -1,12 +1,13 @@
 class ForTests {
   function printlnInt(n: int): unit = Process.println(Str.fromInt(n))
 
-  function boolToString(b: bool): Str = if b then "true" else "false"
+  function boolToString(b: bool): Str = if b { "true" } else { "false" }
 
   function assertIntEquals(expected: int, actual: int): unit =
-    if actual == expected then {  } else {
+    if actual == expected {
+    } else {
       Process.panic("Actual: " :: Str.fromInt(actual) :: ", expected: " :: Str.fromInt(expected))
     }
 
-  function assertBool(b: bool, message: Str): unit = if b then {  } else { Process.panic(message) }
+  function assertBool(b: bool, message: Str): unit = if b {  } else { Process.panic(message) }
 }

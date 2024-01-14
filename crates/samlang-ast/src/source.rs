@@ -530,11 +530,17 @@ pub mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub enum IfElseOrBlock<T: Clone> {
+    IfElse(IfElse<T>),
+    Block(Block<T>),
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub struct IfElse<T: Clone> {
     pub common: ExpressionCommon<T>,
     pub condition: Box<IfElseCondition<T>>,
-    pub e1: Box<E<T>>,
-    pub e2: Box<E<T>>,
+    pub e1: Box<Block<T>>,
+    pub e2: Box<IfElseOrBlock<T>>,
   }
 
   #[derive(Clone, PartialEq, Eq)]

@@ -9,12 +9,12 @@ class CorrectOp {
   }
 
   function checkInt(a: int, b: int): unit =
-    if a == b then {  } else CorrectOp.crash(Str.fromInt(a), Str.fromInt(b))
+    if a == b {  } else { CorrectOp.crash(Str.fromInt(a), Str.fromInt(b)) }
 
-  function boolToString(b: bool): Str = if b then "true" else "false"
+  function boolToString(b: bool): Str = if b { "true" } else { "false" }
 
   function checkBool(a: bool, b: bool): unit =
-    if a == b then {  } else CorrectOp.crash(CorrectOp.boolToString(a), CorrectOp.boolToString(b))
+    if a == b {  } else { CorrectOp.crash(CorrectOp.boolToString(a), CorrectOp.boolToString(b)) }
 
   function checkAll(): unit = {
     let _ = CorrectOp.checkInt(42, 21 * 2);

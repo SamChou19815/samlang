@@ -79,6 +79,14 @@ fn mod_type(mut expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> expr::E<Rc
   expression
 }
 
+fn if_else_should_be_checked_without_hint(if_else: &expr::IfElse<()>) -> bool {
+  block_should_be_checked_without_hint(&if_else.e1)
+    && match if_else.e2.as_ref() {
+      expr::IfElseOrBlock::IfElse(nested) => if_else_should_be_checked_without_hint(nested),
+      expr::IfElseOrBlock::Block(block) => block_should_be_checked_without_hint(block),
+    }
+}
+
 fn block_should_be_checked_without_hint(block: &expr::Block<()>) -> bool {
   if let Some(final_expression) = &block.expression {
     arguments_should_be_checked_without_hint(final_expression)
@@ -98,9 +106,7 @@ fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
     | expr::E::Unary(_)
     | expr::E::Binary(_) => true,
     expr::E::Call(_) => false,
-    expr::E::IfElse(expr::IfElse { common: _, condition: _, e1, e2 }) => {
-      arguments_should_be_checked_without_hint(e1) && arguments_should_be_checked_without_hint(e2)
-    }
+    expr::E::IfElse(e) => if_else_should_be_checked_without_hint(e),
     expr::E::Match(expr::Match { common: _, matched: _, cases }) => {
       for case in cases {
         if !arguments_should_be_checked_without_hint(&case.body) {
@@ -213,7 +219,7 @@ fn type_check_expression(
     expr::E::Unary(e) => check_unary(cx, e),
     expr::E::Call(e) => check_function_call(cx, e, hint),
     expr::E::Binary(e) => check_binary(cx, e),
-    expr::E::IfElse(e) => check_if_else(cx, e, hint),
+    expr::E::IfElse(e) => expr::E::IfElse(check_if_else(cx, e, hint)),
     expr::E::Match(e) => check_match(cx, e, hint),
     expr::E::Lambda(e) => check_lambda(cx, e, hint),
     expr::E::Block(e) => expr::E::Block(check_block(cx, e, hint)),
@@ -920,7 +926,7 @@ fn check_if_else(
   cx: &mut TypingContext,
   expression: &expr::IfElse<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::IfElse<Rc<Type>> {
   let condition = Box::new(match expression.condition.as_ref() {
     expr::IfElseCondition::Expression(expr) => {
       expr::IfElseCondition::Expression(type_check_expression(cx, expr, type_hint::MISSING))
@@ -938,16 +944,21 @@ fn check_if_else(
       expr::IfElseCondition::Guard(pattern, expr)
     }
   });
-  let e1 = Box::new(type_check_expression(cx, &expression.e1, hint));
-  let e2 = Box::new(type_check_expression(cx, &expression.e2, type_hint::available(e1.type_())));
-  assignability_check(cx, e2.loc(), e2.type_(), e1.type_());
-  let type_ = e1.type_().reposition(expression.common.loc);
-  expr::E::IfElse(expr::IfElse {
-    common: expression.common.with_new_type(Rc::new(type_)),
-    condition,
-    e1,
-    e2,
-  })
+  let e1 = Box::new(check_block(cx, &expression.e1, hint));
+  let e2 = Box::new(match expression.e2.as_ref() {
+    expr::IfElseOrBlock::IfElse(e2) => {
+      let checked = check_if_else(cx, e2, type_hint::available(&e1.common.type_));
+      assignability_check(cx, e2.common.loc, &checked.common.type_, &e1.common.type_);
+      expr::IfElseOrBlock::IfElse(checked)
+    }
+    expr::IfElseOrBlock::Block(e2) => {
+      let checked = check_block(cx, e2, type_hint::available(&e1.common.type_));
+      assignability_check(cx, e2.common.loc, &checked.common.type_, &e1.common.type_);
+      expr::IfElseOrBlock::Block(checked)
+    }
+  });
+  let type_ = e1.common.type_.reposition(expression.common.loc);
+  expr::IfElse { common: expression.common.with_new_type(Rc::new(type_)), condition, e1, e2 }
 }
 
 fn check_match(

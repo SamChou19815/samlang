@@ -612,15 +612,20 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
     };
     if condition == hir::ONE {
-      let expression = self.lowered_and_add_statements(&expression.e1, &mut lowered_stmts);
+      let LoweringResult { statements: mut to_append, expression } =
+        self.lower_block(&expression.e1);
+      lowered_stmts.append(&mut to_append);
       return LoweringResult { statements: lowered_stmts, expression };
     } else if condition == hir::ZERO {
-      let expression = self.lowered_and_add_statements(&expression.e2, &mut lowered_stmts);
+      let LoweringResult { statements: mut to_append, expression } =
+        self.lower_if_else_or_block(&expression.e2);
+      lowered_stmts.append(&mut to_append);
       return LoweringResult { statements: lowered_stmts, expression };
     }
     let final_var_name = self.allocate_temp_variable();
-    let LoweringResult { statements: s1, expression: e1 } = self.lower(&expression.e1);
-    let LoweringResult { statements: s2, expression: e2 } = self.lower(&expression.e2);
+    let LoweringResult { statements: s1, expression: e1 } = self.lower_block(&expression.e1);
+    let LoweringResult { statements: s2, expression: e2 } =
+      self.lower_if_else_or_block(&expression.e2);
     let lowered_return_type = e1.type_().clone();
     lowered_stmts.push(hir::Statement::IfElse {
       condition,
@@ -637,6 +642,16 @@ impl<'a> ExpressionLoweringManager<'a> {
     LoweringResult {
       statements: lowered_stmts,
       expression: hir::Expression::var_name(final_var_name, lowered_return_type),
+    }
+  }
+
+  fn lower_if_else_or_block(
+    &mut self,
+    if_else_or_block: &source::expr::IfElseOrBlock<Rc<type_::Type>>,
+  ) -> LoweringResult {
+    match if_else_or_block {
+      source::expr::IfElseOrBlock::IfElse(e) => self.lower_if_else(e),
+      source::expr::IfElseOrBlock::Block(e) => self.lower_block(e),
     }
   }
 
@@ -2179,8 +2194,18 @@ return (_t1: _$SyntheticIDType0);"#,
           source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           source::Literal::Bool(true),
         ))),
-        e1: Box::new(dummy_source_this(heap)),
-        e2: Box::new(dummy_source_this(heap)),
+        e1: Box::new(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        })),
       }),
       heap,
       "return (_this: DUMMY_Dummy);",
@@ -2194,8 +2219,18 @@ return (_t1: _$SyntheticIDType0);"#,
           source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           source::Literal::Bool(false),
         ))),
-        e1: Box::new(dummy_source_this(heap)),
-        e2: Box::new(dummy_source_this(heap)),
+        e1: Box::new(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        })),
       }),
       heap,
       "return (_this: DUMMY_Dummy);",
@@ -2206,8 +2241,18 @@ return (_t1: _$SyntheticIDType0);"#,
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Expression(dummy_source_this(heap))),
-        e1: Box::new(dummy_source_this(heap)),
-        e2: Box::new(dummy_source_this(heap)),
+        e1: Box::new(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        })),
       }),
       heap,
       r#"let _t1: DUMMY_Dummy;
@@ -2443,8 +2488,18 @@ return (_t9: DUMMY_Dummy);"#,
           },
           dummy_source_this(heap),
         )),
-        e1: Box::new(dummy_source_this(heap)),
-        e2: Box::new(dummy_source_this(heap)),
+        e1: Box::new(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          statements: vec![],
+          expression: Some(Box::new(dummy_source_this(heap))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        })),
       }),
       heap,
       "return (_this: DUMMY_Dummy);",
@@ -2487,70 +2542,85 @@ return (_t9: DUMMY_Dummy);"#,
           },
           dummy_source_this(heap),
         )),
-        e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+        e1: Box::new(source::expr::Block {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
-          condition: Box::new(source::expr::IfElseCondition::Guard(
-            source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
-              loc: Location::dummy(),
-              tag_order: 0,
-              tag: source::Id::from(PStr::EMPTY),
-              data_variables: Some(source::pattern::TuplePattern {
-                location: Location::dummy(),
-                start_associated_comments: NO_COMMENT_REFERENCE,
-                ending_associated_comments: NO_COMMENT_REFERENCE,
-                elements: vec![
-                  source::pattern::TuplePatternElement {
-                    pattern: Box::new(source::pattern::MatchingPattern::Variant(
-                      source::pattern::VariantPattern {
-                        loc: Location::dummy(),
-                        tag_order: 0,
-                        tag: source::Id::from(PStr::EMPTY),
-                        data_variables: Some(source::pattern::TuplePattern {
-                          location: Location::dummy(),
-                          start_associated_comments: NO_COMMENT_REFERENCE,
-                          ending_associated_comments: NO_COMMENT_REFERENCE,
-                          elements: vec![
-                            source::pattern::TuplePatternElement {
-                              pattern: Box::new(source::pattern::MatchingPattern::Id(
-                                source::Id::from(heap.alloc_str_for_test("bar")),
-                                builder.int_type(),
-                              )),
-                              type_: builder.int_type(),
-                            },
-                            source::pattern::TuplePatternElement {
-                              pattern: Box::new(source::pattern::MatchingPattern::Id(
-                                source::Id::from(heap.alloc_str_for_test("baz")),
-                                builder.int_type(),
-                              )),
-                              type_: builder.int_type(),
-                            },
-                          ],
-                        }),
-                        type_: builder.int_type(),
-                      },
-                    )),
-                    type_: builder.int_type(),
-                  },
-                  source::pattern::TuplePatternElement {
-                    pattern: Box::new(source::pattern::MatchingPattern::Id(
-                      source::Id::from(heap.alloc_str_for_test("baz")),
-                      builder.int_type(),
-                    )),
-                    type_: builder.int_type(),
-                  },
-                ],
+          statements: vec![],
+          expression: Some(Box::new(source::expr::E::IfElse(source::expr::IfElse {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            condition: Box::new(source::expr::IfElseCondition::Guard(
+              source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 0,
+                tag: source::Id::from(PStr::EMPTY),
+                data_variables: Some(source::pattern::TuplePattern {
+                  location: Location::dummy(),
+                  start_associated_comments: NO_COMMENT_REFERENCE,
+                  ending_associated_comments: NO_COMMENT_REFERENCE,
+                  elements: vec![
+                    source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Variant(
+                        source::pattern::VariantPattern {
+                          loc: Location::dummy(),
+                          tag_order: 0,
+                          tag: source::Id::from(PStr::EMPTY),
+                          data_variables: Some(source::pattern::TuplePattern {
+                            location: Location::dummy(),
+                            start_associated_comments: NO_COMMENT_REFERENCE,
+                            ending_associated_comments: NO_COMMENT_REFERENCE,
+                            elements: vec![
+                              source::pattern::TuplePatternElement {
+                                pattern: Box::new(source::pattern::MatchingPattern::Id(
+                                  source::Id::from(heap.alloc_str_for_test("bar")),
+                                  builder.int_type(),
+                                )),
+                                type_: builder.int_type(),
+                              },
+                              source::pattern::TuplePatternElement {
+                                pattern: Box::new(source::pattern::MatchingPattern::Id(
+                                  source::Id::from(heap.alloc_str_for_test("baz")),
+                                  builder.int_type(),
+                                )),
+                                type_: builder.int_type(),
+                              },
+                            ],
+                          }),
+                          type_: builder.int_type(),
+                        },
+                      )),
+                      type_: builder.int_type(),
+                    },
+                    source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("baz")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    },
+                  ],
+                }),
+                type_: builder.int_type(),
               }),
-              type_: builder.int_type(),
+              dummy_source_this(heap),
+            )),
+            e1: Box::new(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              statements: vec![],
+              expression: Some(Box::new(id_expr(
+                heap.alloc_str_for_test("bar"),
+                Rc::new(dummy_source_id_type(heap)),
+              ))),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
             }),
-            dummy_source_this(heap),
-          )),
-          e1: Box::new(id_expr(
-            heap.alloc_str_for_test("bar"),
-            Rc::new(dummy_source_id_type(heap)),
-          )),
-          e2: Box::new(dummy_source_this(heap)),
-        })),
-        e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+            e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              statements: vec![],
+              expression: Some(Box::new(dummy_source_this(heap))),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+            })),
+          }))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::IfElse(source::expr::IfElse {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
             source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
@@ -2576,8 +2646,18 @@ return (_t9: DUMMY_Dummy);"#,
             }),
             dummy_source_this(heap),
           )),
-          e1: Box::new(dummy_source_this(heap)),
-          e2: Box::new(dummy_source_this(heap)),
+          e1: Box::new(source::expr::Block {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            statements: vec![],
+            expression: Some(Box::new(dummy_source_this(heap))),
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          }),
+          e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            statements: vec![],
+            expression: Some(Box::new(dummy_source_this(heap))),
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          })),
         })),
       }),
       heap,
@@ -2686,45 +2766,60 @@ return (_t14: int);"#,
           },
           dummy_source_this(heap),
         )),
-        e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+        e1: Box::new(source::expr::Block {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
-          condition: Box::new(source::expr::IfElseCondition::Guard(
-            source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
-              loc: Location::dummy(),
-              tag_order: 0,
-              tag: source::Id::from(PStr::EMPTY),
-              data_variables: Some(source::pattern::TuplePattern {
-                location: Location::dummy(),
-                start_associated_comments: NO_COMMENT_REFERENCE,
-                ending_associated_comments: NO_COMMENT_REFERENCE,
-                elements: vec![
-                  source::pattern::TuplePatternElement {
-                    pattern: Box::new(source::pattern::MatchingPattern::Id(
-                      source::Id::from(heap.alloc_str_for_test("bar")),
-                      builder.int_type(),
-                    )),
-                    type_: builder.int_type(),
-                  },
-                  source::pattern::TuplePatternElement {
-                    pattern: Box::new(source::pattern::MatchingPattern::Id(
-                      source::Id::from(heap.alloc_str_for_test("baz")),
-                      builder.int_type(),
-                    )),
-                    type_: builder.int_type(),
-                  },
-                ],
+          statements: vec![],
+          expression: Some(Box::new(source::expr::E::IfElse(source::expr::IfElse {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            condition: Box::new(source::expr::IfElseCondition::Guard(
+              source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 0,
+                tag: source::Id::from(PStr::EMPTY),
+                data_variables: Some(source::pattern::TuplePattern {
+                  location: Location::dummy(),
+                  start_associated_comments: NO_COMMENT_REFERENCE,
+                  ending_associated_comments: NO_COMMENT_REFERENCE,
+                  elements: vec![
+                    source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("bar")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    },
+                    source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("baz")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    },
+                  ],
+                }),
+                type_: builder.int_type(),
               }),
-              type_: builder.int_type(),
+              dummy_source_this(heap),
+            )),
+            e1: Box::new(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              statements: vec![],
+              expression: Some(Box::new(id_expr(
+                heap.alloc_str_for_test("bar"),
+                Rc::new(dummy_source_id_type(heap)),
+              ))),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
             }),
-            dummy_source_this(heap),
-          )),
-          e1: Box::new(id_expr(
-            heap.alloc_str_for_test("bar"),
-            Rc::new(dummy_source_id_type(heap)),
-          )),
-          e2: Box::new(dummy_source_this(heap)),
-        })),
-        e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+            e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              statements: vec![],
+              expression: Some(Box::new(dummy_source_this(heap))),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+            })),
+          }))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::IfElse(source::expr::IfElse {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
             source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
@@ -2750,8 +2845,18 @@ return (_t14: int);"#,
             }),
             dummy_source_this(heap),
           )),
-          e1: Box::new(dummy_source_this(heap)),
-          e2: Box::new(dummy_source_this(heap)),
+          e1: Box::new(source::expr::Block {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            statements: vec![],
+            expression: Some(Box::new(dummy_source_this(heap))),
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          }),
+          e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            statements: vec![],
+            expression: Some(Box::new(dummy_source_this(heap))),
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          })),
         })),
       }),
       heap,
@@ -2873,45 +2978,60 @@ return (_t10: int);"#,
           }),
           dummy_source_this(heap),
         )),
-        e1: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+        e1: Box::new(source::expr::Block {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
-          condition: Box::new(source::expr::IfElseCondition::Guard(
-            source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
-              loc: Location::dummy(),
-              tag_order: 0,
-              tag: source::Id::from(PStr::EMPTY),
-              data_variables: Some(source::pattern::TuplePattern {
-                location: Location::dummy(),
-                start_associated_comments: NO_COMMENT_REFERENCE,
-                ending_associated_comments: NO_COMMENT_REFERENCE,
-                elements: vec![
-                  source::pattern::TuplePatternElement {
-                    pattern: Box::new(source::pattern::MatchingPattern::Id(
-                      source::Id::from(heap.alloc_str_for_test("bar")),
-                      builder.int_type(),
-                    )),
-                    type_: builder.int_type(),
-                  },
-                  source::pattern::TuplePatternElement {
-                    pattern: Box::new(source::pattern::MatchingPattern::Id(
-                      source::Id::from(heap.alloc_str_for_test("baz")),
-                      builder.int_type(),
-                    )),
-                    type_: builder.int_type(),
-                  },
-                ],
+          statements: vec![],
+          expression: Some(Box::new(source::expr::E::IfElse(source::expr::IfElse {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            condition: Box::new(source::expr::IfElseCondition::Guard(
+              source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 0,
+                tag: source::Id::from(PStr::EMPTY),
+                data_variables: Some(source::pattern::TuplePattern {
+                  location: Location::dummy(),
+                  start_associated_comments: NO_COMMENT_REFERENCE,
+                  ending_associated_comments: NO_COMMENT_REFERENCE,
+                  elements: vec![
+                    source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("bar")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    },
+                    source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("baz")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    },
+                  ],
+                }),
+                type_: builder.int_type(),
               }),
-              type_: builder.int_type(),
+              dummy_source_this(heap),
+            )),
+            e1: Box::new(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              statements: vec![],
+              expression: Some(Box::new(id_expr(
+                heap.alloc_str_for_test("bar"),
+                Rc::new(dummy_source_id_type(heap)),
+              ))),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
             }),
-            dummy_source_this(heap),
-          )),
-          e1: Box::new(id_expr(
-            heap.alloc_str_for_test("bar"),
-            Rc::new(dummy_source_id_type(heap)),
-          )),
-          e2: Box::new(dummy_source_this(heap)),
-        })),
-        e2: Box::new(source::expr::E::IfElse(source::expr::IfElse {
+            e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              statements: vec![],
+              expression: Some(Box::new(dummy_source_this(heap))),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+            })),
+          }))),
+          ending_associated_comments: NO_COMMENT_REFERENCE,
+        }),
+        e2: Box::new(source::expr::IfElseOrBlock::IfElse(source::expr::IfElse {
           common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
             source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
@@ -2937,8 +3057,18 @@ return (_t10: int);"#,
             }),
             dummy_source_this(heap),
           )),
-          e1: Box::new(dummy_source_this(heap)),
-          e2: Box::new(dummy_source_this(heap)),
+          e1: Box::new(source::expr::Block {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            statements: vec![],
+            expression: Some(Box::new(dummy_source_this(heap))),
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          }),
+          e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            statements: vec![],
+            expression: Some(Box::new(dummy_source_this(heap))),
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          })),
         })),
       }),
       heap,
@@ -3595,58 +3725,71 @@ return (_t2: int);"#,
                       )),
                     }),
                   )),
-                  e1: Box::new(source::expr::E::Literal(
-                    source::expr::ExpressionCommon::dummy(builder.int_type()),
-                    source::Literal::Int(1),
-                  )),
-                  e2: Box::new(source::expr::E::Call(source::expr::Call {
+                  e1: Box::new(source::expr::Block {
                     common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                    callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
-                      common: source::expr::ExpressionCommon::dummy(builder.fun_type(
-                        vec![builder.int_type(), builder.int_type()],
-                        builder.int_type(),
-                      )),
-                      explicit_type_arguments: None,
-                      inferred_type_arguments: vec![],
-                      object: Box::new(source::expr::E::ClassId(
-                        source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
-                          type_::NominalType {
-                            reason: Reason::dummy(),
-                            is_class_statics: true,
-                            module_reference: ModuleReference::DUMMY,
-                            id: heap.alloc_str_for_test("Class1"),
-                            type_arguments: vec![],
-                          },
-                        ))),
-                        ModuleReference::DUMMY,
-                        source::Id::from(heap.alloc_str_for_test("Class1")),
-                      )),
-                      method_name: source::Id::from(heap.alloc_str_for_test("factorial")),
-                    })),
-                    arguments: source::expr::ParenthesizedExpressionList {
-                      loc: Location::dummy(),
-                      start_associated_comments: NO_COMMENT_REFERENCE,
-                      ending_associated_comments: NO_COMMENT_REFERENCE,
-                      expressions: vec![
-                        source::expr::E::Binary(source::expr::Binary {
-                          common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                          operator_preceding_comments: NO_COMMENT_REFERENCE,
-                          operator: source::expr::BinaryOperator::MINUS,
-                          e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
-                          e2: Box::new(source::expr::E::Literal(
-                            source::expr::ExpressionCommon::dummy(builder.int_type()),
-                            source::Literal::Int(1),
-                          )),
-                        }),
-                        source::expr::E::Binary(source::expr::Binary {
-                          common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                          operator_preceding_comments: NO_COMMENT_REFERENCE,
-                          operator: source::expr::BinaryOperator::MUL,
-                          e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
-                          e2: Box::new(id_expr(heap.alloc_str_for_test("acc"), builder.int_type())),
-                        }),
-                      ],
-                    },
+                    statements: vec![],
+                    expression: Some(Box::new(source::expr::E::Literal(
+                      source::expr::ExpressionCommon::dummy(builder.int_type()),
+                      source::Literal::Int(1),
+                    ))),
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
+                  }),
+                  e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
+                    common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                    statements: vec![],
+                    expression: Some(Box::new(source::expr::E::Call(source::expr::Call {
+                      common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                      callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
+                        common: source::expr::ExpressionCommon::dummy(builder.fun_type(
+                          vec![builder.int_type(), builder.int_type()],
+                          builder.int_type(),
+                        )),
+                        explicit_type_arguments: None,
+                        inferred_type_arguments: vec![],
+                        object: Box::new(source::expr::E::ClassId(
+                          source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                            type_::NominalType {
+                              reason: Reason::dummy(),
+                              is_class_statics: true,
+                              module_reference: ModuleReference::DUMMY,
+                              id: heap.alloc_str_for_test("Class1"),
+                              type_arguments: vec![],
+                            },
+                          ))),
+                          ModuleReference::DUMMY,
+                          source::Id::from(heap.alloc_str_for_test("Class1")),
+                        )),
+                        method_name: source::Id::from(heap.alloc_str_for_test("factorial")),
+                      })),
+                      arguments: source::expr::ParenthesizedExpressionList {
+                        loc: Location::dummy(),
+                        start_associated_comments: NO_COMMENT_REFERENCE,
+                        ending_associated_comments: NO_COMMENT_REFERENCE,
+                        expressions: vec![
+                          source::expr::E::Binary(source::expr::Binary {
+                            common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                            operator_preceding_comments: NO_COMMENT_REFERENCE,
+                            operator: source::expr::BinaryOperator::MINUS,
+                            e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
+                            e2: Box::new(source::expr::E::Literal(
+                              source::expr::ExpressionCommon::dummy(builder.int_type()),
+                              source::Literal::Int(1),
+                            )),
+                          }),
+                          source::expr::E::Binary(source::expr::Binary {
+                            common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                            operator_preceding_comments: NO_COMMENT_REFERENCE,
+                            operator: source::expr::BinaryOperator::MUL,
+                            e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
+                            e2: Box::new(id_expr(
+                              heap.alloc_str_for_test("acc"),
+                              builder.int_type(),
+                            )),
+                          }),
+                        ],
+                      },
+                    }))),
+                    ending_associated_comments: NO_COMMENT_REFERENCE,
                   })),
                 }),
               },

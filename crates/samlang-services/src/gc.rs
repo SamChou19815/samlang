@@ -111,6 +111,21 @@ fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<
   }
 }
 
+fn mark_if_else(heap: &mut Heap, if_else: &expr::IfElse<Rc<Type>>) {
+  match if_else.condition.as_ref() {
+    expr::IfElseCondition::Expression(e) => mark_expression(heap, e),
+    expr::IfElseCondition::Guard(p, e) => {
+      mark_matching_pattern(heap, p);
+      mark_expression(heap, e);
+    }
+  }
+  mark_block(heap, &if_else.e1);
+  match if_else.e2.as_ref() {
+    expr::IfElseOrBlock::IfElse(e) => mark_if_else(heap, e),
+    expr::IfElseOrBlock::Block(e) => mark_block(heap, e),
+  }
+}
+
 fn mark_block(heap: &mut Heap, block: &expr::Block<Rc<Type>>) {
   for stmt in &block.statements {
     mark_expression(heap, &stmt.assigned_expression);
@@ -156,17 +171,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       mark_expression(heap, &e.e1);
       mark_expression(heap, &e.e2);
     }
-    expr::E::IfElse(e) => {
-      match e.condition.as_ref() {
-        expr::IfElseCondition::Expression(e) => mark_expression(heap, e),
-        expr::IfElseCondition::Guard(p, e) => {
-          mark_matching_pattern(heap, p);
-          mark_expression(heap, e);
-        }
-      }
-      mark_expression(heap, &e.e1);
-      mark_expression(heap, &e.e2);
-    }
+    expr::E::IfElse(e) => mark_if_else(heap, e),
     expr::E::Match(e) => {
       mark_expression(heap, &e.matched);
       for case in &e.cases {
@@ -329,10 +334,10 @@ mod tests {
           let { d } = Obj.init(5, 4);
           let (_, d1) = (1, 2);
           let { e as d2 } = Obj.init(5, 4); // d = 4
-          let _ = if let { e as d3 } = Obj.init(5, 4) then {} else {};
-          let _ = if let Some(_) = Option.Some(1) then {} else {};
-          let _ = if let None = Option.None<int>() then {} else {};
-          let _ = if let (_, _) = (1,2) then {} else {};
+          let _ = if let { e as d3 } = Obj.init(5, 4) {} else {};
+          let _ = if let Some(_) = Option.Some(1) {} else {};
+          let _ = if let None = Option.None<int>() {} else {};
+          let _ = if let (_, _) = (1,2) {} else if true {} else {};
           let f = Obj.init(5, 4); // d = 4
           let g = Obj.init(d, 4); // d = 4
           let _ = f.d;
@@ -356,11 +361,11 @@ mod tests {
         function oof(): int = 14
 
         function div(a: int, b: int): int =
-          if b == 0 then (
+          if b == 0 {
             Process.panic("Division by zero is illegal!")
-          ) else (
+          } else {
             a / b
-          )
+          }
 
         function nestedVal(): int = {
           let a = {

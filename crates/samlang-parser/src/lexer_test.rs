@@ -56,14 +56,14 @@ class Main {
   function main(): unit = {
     let i: int = 1;
     let j: int = 2;
-    if ((i < j && i > 0) && j > 0) then {
+    if ((i < j && i > 0) && j > 0) {
       let a: int = 3;
       let b: int = 4;
-      if (a > b || a + b > 0 && true) then Process.println("one") else Process.println("two")
+      if (a > b || a + b > 0 && true) { Process.println("one") } else { Process.println("two") }
     } else {
       let a: int = 3;
       let b: int = 4;
-      if (a == 2 || b == 4) then { Process.println("three") } else { Process.println("four") }
+      if (a == 2 || b == 4) { Process.println("three") } else { Process.println("four") }
     }
   }
 
@@ -111,8 +111,7 @@ class Main {
       ".sam:6:31-6:32: >",
       ".sam:6:33-6:34: 0",
       ".sam:6:34-6:35: )",
-      ".sam:6:36-6:40: then",
-      ".sam:6:41-6:42: {",
+      ".sam:6:36-6:37: {",
       ".sam:7:7-7:10: let",
       ".sam:7:11-7:12: a",
       ".sam:7:12-7:13: :",
@@ -141,20 +140,23 @@ class Main {
       ".sam:9:30-9:32: &&",
       ".sam:9:33-9:37: true",
       ".sam:9:37-9:38: )",
-      ".sam:9:39-9:43: then",
-      ".sam:9:44-9:51: Process",
-      ".sam:9:51-9:52: .",
-      ".sam:9:52-9:59: println",
-      ".sam:9:59-9:60: (",
-      ".sam:9:60-9:65: \"one\"",
-      ".sam:9:65-9:66: )",
-      ".sam:9:67-9:71: else",
-      ".sam:9:72-9:79: Process",
-      ".sam:9:79-9:80: .",
-      ".sam:9:80-9:87: println",
-      ".sam:9:87-9:88: (",
-      ".sam:9:88-9:93: \"two\"",
-      ".sam:9:93-9:94: )",
+      ".sam:9:39-9:40: {",
+      ".sam:9:41-9:48: Process",
+      ".sam:9:48-9:49: .",
+      ".sam:9:49-9:56: println",
+      ".sam:9:56-9:57: (",
+      ".sam:9:57-9:62: \"one\"",
+      ".sam:9:62-9:63: )",
+      ".sam:9:64-9:65: }",
+      ".sam:9:66-9:70: else",
+      ".sam:9:71-9:72: {",
+      ".sam:9:73-9:80: Process",
+      ".sam:9:80-9:81: .",
+      ".sam:9:81-9:88: println",
+      ".sam:9:88-9:89: (",
+      ".sam:9:89-9:94: \"two\"",
+      ".sam:9:94-9:95: )",
+      ".sam:9:96-9:97: }",
       ".sam:10:5-10:6: }",
       ".sam:10:7-10:11: else",
       ".sam:10:12-10:13: {",
@@ -182,24 +184,23 @@ class Main {
       ".sam:13:23-13:25: ==",
       ".sam:13:26-13:27: 4",
       ".sam:13:27-13:28: )",
-      ".sam:13:29-13:33: then",
-      ".sam:13:34-13:35: {",
-      ".sam:13:36-13:43: Process",
-      ".sam:13:43-13:44: .",
-      ".sam:13:44-13:51: println",
-      ".sam:13:51-13:52: (",
-      ".sam:13:52-13:59: \"three\"",
-      ".sam:13:59-13:60: )",
-      ".sam:13:61-13:62: }",
-      ".sam:13:63-13:67: else",
-      ".sam:13:68-13:69: {",
-      ".sam:13:70-13:77: Process",
-      ".sam:13:77-13:78: .",
-      ".sam:13:78-13:85: println",
-      ".sam:13:85-13:86: (",
-      ".sam:13:86-13:92: \"four\"",
-      ".sam:13:92-13:93: )",
-      ".sam:13:94-13:95: }",
+      ".sam:13:29-13:30: {",
+      ".sam:13:31-13:38: Process",
+      ".sam:13:38-13:39: .",
+      ".sam:13:39-13:46: println",
+      ".sam:13:46-13:47: (",
+      ".sam:13:47-13:54: \"three\"",
+      ".sam:13:54-13:55: )",
+      ".sam:13:56-13:57: }",
+      ".sam:13:58-13:62: else",
+      ".sam:13:63-13:64: {",
+      ".sam:13:65-13:72: Process",
+      ".sam:13:72-13:73: .",
+      ".sam:13:73-13:80: println",
+      ".sam:13:80-13:81: (",
+      ".sam:13:81-13:87: \"four\"",
+      ".sam:13:87-13:88: )",
+      ".sam:13:89-13:90: }",
       ".sam:14:5-14:6: }",
       ".sam:15:3-15:4: }",
       ".sam:17:1-17:2: }",
@@ -240,7 +241,7 @@ class Main {
   function oof(): int = 14
 
   function div(a: int, b: int): int =
-    if (b == 0) then Process.panic("Division by zero is illegal!") else a / b
+    if (b == 0) {Process.panic("Division by zero is illegal!")} else {a / b}
 
   function nestedVal(): int = {
     let a: int = {
@@ -483,17 +484,20 @@ class Main {
       ".sam:32:11-32:13: ==",
       ".sam:32:14-32:15: 0",
       ".sam:32:15-32:16: )",
-      ".sam:32:17-32:21: then",
-      ".sam:32:22-32:29: Process",
-      ".sam:32:29-32:30: .",
-      ".sam:32:30-32:35: panic",
-      ".sam:32:35-32:36: (",
-      ".sam:32:36-32:66: \"Division by zero is illegal!\"",
-      ".sam:32:66-32:67: )",
-      ".sam:32:68-32:72: else",
-      ".sam:32:73-32:74: a",
-      ".sam:32:75-32:76: /",
-      ".sam:32:77-32:78: b",
+      ".sam:32:17-32:18: {",
+      ".sam:32:18-32:25: Process",
+      ".sam:32:25-32:26: .",
+      ".sam:32:26-32:31: panic",
+      ".sam:32:31-32:32: (",
+      ".sam:32:32-32:62: \"Division by zero is illegal!\"",
+      ".sam:32:62-32:63: )",
+      ".sam:32:63-32:64: }",
+      ".sam:32:65-32:69: else",
+      ".sam:32:70-32:71: {",
+      ".sam:32:71-32:72: a",
+      ".sam:32:73-32:74: /",
+      ".sam:32:75-32:76: b",
+      ".sam:32:76-32:77: }",
       ".sam:34:3-34:11: function",
       ".sam:34:12-34:21: nestedVal",
       ".sam:34:21-34:22: (",

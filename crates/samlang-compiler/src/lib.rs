@@ -214,10 +214,11 @@ class FooOrFoo(F1(Foo), F2(Foo)) {
 class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
   function print(): unit = {
     let f = (v2: int) -> (
-      if (v2 + 1 == 3) then
+      if (v2 + 1 == 3) {
         GenericObject.init(3, v2)
-      else
+      } else {
         GenericObject.init(3, 42)
+      }
     );
     let _ = Process.println(Str.fromInt(f(2).v2)); // print 2
     let _ = Process.println(Str.fromInt(f(3).v2)); // print 42

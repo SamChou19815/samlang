@@ -47,9 +47,7 @@ class Option<T>(None(unit), Some(T)) {
   function <T> getSome(d: T): Option<T> = Option.Some(d)
 
   function deepForceValue(opt: Option<Option<Option<Box<int>>>>): int =
-    if let Some(Some(Some({ content }))) = opt then { content } else {
-      Process.panic("cannot force")
-    }
+    if let Some(Some(Some({ content }))) = opt { content } else { Process.panic("cannot force") }
 
   method forceValue(): T =
     match this {
@@ -66,10 +64,10 @@ class Option<T>(None(unit), Some(T)) {
 
 class DifferentModulesDemo {
   private function assertTrue(condition: bool, message: Str): unit =
-    if condition then {  } else Process.panic(message)
+    if condition {  } else { Process.panic(message) }
 
   private function assertFalse(condition: bool, message: Str): unit =
-    if !condition then {  } else Process.panic(message)
+    if !condition {  } else { Process.panic(message) }
 
   function run(): unit = {
     let _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);

@@ -5,27 +5,35 @@ import { ForTests } from tests.StdLib;
 
 class MapTests {
   private function keyMirrorIntMapHelper(acc: Map<Int, int>, n: int): Map<Int, int> =
-    if n == 0 then { acc } else {
+    if n == 0 {
+      acc
+    } else {
       let boxedN = Int.init(n);
       MapTests.keyMirrorIntMapHelper(acc.insert(boxedN, n).insert(boxedN, n), n - 1)
     }
 
   private function validatekeyMirrorIntMapHelper(map: Map<Int, int>, n: int): unit =
-    if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+    if n == 0 {
+      ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!")
+    } else {
       let _ = ForTests.assertBool(map.containsKey(Int.init(n)), "Missing key");
       let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), n);
       MapTests.validatekeyMirrorIntMapHelper(map, n - 1)
     }
 
   private function validatekeyMirrorPlusOneIntMapHelper(map: Map<Int, int>, n: int): unit =
-    if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+    if n == 0 {
+      ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!")
+    } else {
       let _ = ForTests.assertBool(map.containsKey(Int.init(n)), "Missing key");
       let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), n + 1);
       MapTests.validatekeyMirrorPlusOneIntMapHelper(map, n - 1)
     }
 
   private function assertAllZeroMap(map: Map<Int, int>, n: int): unit =
-    if n == 0 then { ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!") } else {
+    if n == 0 {
+      ForTests.assertBool(map.get(Int.init(n)).isNone(), "Should be none!")
+    } else {
       let _ = ForTests.assertIntEquals(map.get(Int.init(n)).unwrap(), 0);
       MapTests.assertAllZeroMap(map, n - 1)
     }

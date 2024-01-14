@@ -236,14 +236,11 @@ fn create_doc_for_subexpression_considering_precedence_level(
 fn create_doc_for_if_else(
   heap: &Heap,
   comment_store: &CommentStore,
-  expression: &expr::E<()>,
   if_else: &expr::IfElse<()>,
 ) -> Document {
-  let expanded =
-    create_doc_for_if_else_customized_flattened(heap, comment_store, expression, false, if_else);
+  let expanded = create_doc_for_if_else_customized_flattened(heap, comment_store, true, if_else);
   if let Some(flattened) =
-    create_doc_for_if_else_customized_flattened(heap, comment_store, expression, true, if_else)
-      .flatten()
+    create_doc_for_if_else_customized_flattened(heap, comment_store, false, if_else).flatten()
   {
     Document::Union(Rc::new(flattened), Rc::new(expanded))
   } else {
@@ -251,50 +248,53 @@ fn create_doc_for_if_else(
   }
 }
 
-fn create_doc_for_if_else_customized_flattened(
-  heap: &Heap,
-  comment_store: &CommentStore,
-  expression: &expr::E<()>,
-  flattened: bool,
+struct FlattenedIfElseChainElement<'a> {
+  comments: CommentReference,
+  condition: &'a expr::IfElseCondition<()>,
+  e1: &'a expr::Block<()>,
+}
+
+fn flattened_if_else(
   if_else: &expr::IfElse<()>,
-) -> Document {
-  let mut documents = vec![];
-  add_if_else_first_half_docs(heap, comment_store, expression, flattened, if_else, &mut documents);
-  let mut base: &expr::E<()> = &if_else.e2;
+) -> (Vec<FlattenedIfElseChainElement>, &expr::Block<()>) {
+  let mut acc = if_else;
+  let mut chain = vec![];
   loop {
-    if let expr::E::IfElse(if_else) = base {
-      add_if_else_first_half_docs(
-        heap,
-        comment_store,
-        expression,
-        flattened,
-        if_else,
-        &mut documents,
-      );
-      base = &if_else.e2;
-    } else {
-      documents.push(expr_wrapped_with_braces_expanded_in_if_else(
-        heap,
-        comment_store,
-        expression,
-        flattened,
-        base,
-      ));
-      return Document::concat(documents);
+    match acc.e2.as_ref() {
+      expr::IfElseOrBlock::IfElse(nested) => {
+        chain.push(FlattenedIfElseChainElement {
+          comments: NO_COMMENT_REFERENCE,
+          condition: acc.condition.as_ref(),
+          e1: acc.e1.as_ref(),
+        });
+        acc = nested;
+      }
+      expr::IfElseOrBlock::Block(block) => {
+        chain.push(FlattenedIfElseChainElement {
+          comments: acc.common.associated_comments,
+          condition: acc.condition.as_ref(),
+          e1: acc.e1.as_ref(),
+        });
+        return (chain, block);
+      }
     }
   }
 }
 
-fn add_if_else_first_half_docs(
+fn create_doc_for_if_else_condition(
   heap: &Heap,
   comment_store: &CommentStore,
-  expression: &expr::E<()>,
-  flattened: bool,
-  if_else: &expr::IfElse<()>,
-  documents: &mut Vec<Document>,
-) {
-  documents.push(Document::Text(rcs("if ")));
-  match if_else.condition.as_ref() {
+  associated_comments: CommentReference,
+  condition: &expr::IfElseCondition<()>,
+) -> Document {
+  let mut documents = vec![];
+  documents.push(create_opt_preceding_comment_doc(
+    heap,
+    comment_store,
+    associated_comments,
+    Document::Text(rcs("if ")),
+  ));
+  match condition {
     expr::IfElseCondition::Expression(e) => documents.push(create_doc(heap, comment_store, e)),
     expr::IfElseCondition::Guard(p, e) => {
       documents.push(Document::Text(rcs("let ")));
@@ -303,40 +303,31 @@ fn add_if_else_first_half_docs(
       documents.push(create_doc(heap, comment_store, e));
     }
   };
-  documents.push(Document::Text(rcs(" then ")));
-  documents.push(expr_wrapped_with_braces_expanded_in_if_else(
-    heap,
-    comment_store,
-    expression,
-    flattened,
-    &if_else.e1,
-  ));
-  documents.push(Document::Text(rcs(" else ")));
+  documents.push(Document::Text(rcs(" ")));
+  Document::concat(documents)
 }
 
-fn expr_wrapped_with_braces_expanded_in_if_else(
+fn create_doc_for_if_else_customized_flattened(
   heap: &Heap,
   comment_store: &CommentStore,
-  expression: &expr::E<()>,
-  flattened: bool,
-  sub_expression: &expr::E<()>,
+  force_expanded: bool,
+  if_else: &expr::IfElse<()>,
 ) -> Document {
-  let mut expr_doc = create_doc_for_subexpression_considering_precedence_level(
-    heap,
-    comment_store,
-    expression,
-    sub_expression,
-    false,
-  );
-  if !matches!(sub_expression, expr::E::Block(_)) && !flattened {
-    expr_doc = Document::concat(vec![
-      Document::Text(rcs("{")),
-      Document::Nest(2, Rc::new(Document::Concat(Rc::new(Document::Line), Rc::new(expr_doc)))),
-      Document::Line,
-      Document::Text(rcs("}")),
-    ]);
+  let (chain, final_else) = flattened_if_else(if_else);
+  let mut documents = vec![];
+  for (i, FlattenedIfElseChainElement { comments, condition, e1 }) in chain.into_iter().enumerate()
+  {
+    documents.push(create_doc_for_if_else_condition(
+      heap,
+      comment_store,
+      if i == 0 { NO_COMMENT_REFERENCE } else { comments },
+      condition,
+    ));
+    documents.push(create_doc_for_block(heap, comment_store, force_expanded, e1));
+    documents.push(Document::Text(rcs(" else ")));
   }
-  expr_doc
+  documents.push(create_doc_for_block(heap, comment_store, force_expanded, final_else));
+  Document::concat(documents)
 }
 
 fn create_doc_for_dotted_chain(
@@ -519,6 +510,7 @@ fn create_doc_for_parenthesized_expression_list(
 fn create_doc_for_block(
   heap: &Heap,
   comment_store: &CommentStore,
+  force_expanded: bool,
   block: &expr::Block<()>,
 ) -> Document {
   let mut segments = vec![];
@@ -538,7 +530,22 @@ fn create_doc_for_block(
   }
   let final_expr_doc = block.expression.as_ref().map(|e| create_doc(heap, comment_store, e));
   if segments.is_empty() {
-    braces_surrounded_doc(final_expr_doc.unwrap_or(Document::Nil))
+    if force_expanded {
+      Document::concat(vec![
+        Document::Text(rcs("{")),
+        Document::Nest(
+          2,
+          Rc::new(Document::concat(vec![
+            Document::LineHard,
+            final_expr_doc.unwrap_or(Document::Nil),
+          ])),
+        ),
+        Document::Line,
+        Document::Text(rcs("}")),
+      ])
+    } else {
+      braces_surrounded_doc(final_expr_doc.unwrap_or(Document::Nil))
+    }
   } else {
     if let Some(d) = final_expr_doc {
       segments.push(d);
@@ -549,9 +556,14 @@ fn create_doc_for_block(
       Document::Text(rcs("{")),
       Document::Nest(
         2,
-        Rc::new(Document::concat(vec![Document::Line].into_iter().chain(segments).collect())),
+        Rc::new(Document::concat(
+          vec![if force_expanded { Document::LineHard } else { Document::Line }]
+            .into_iter()
+            .chain(segments)
+            .collect(),
+        )),
       ),
-      Document::Line,
+      if force_expanded { Document::LineHard } else { Document::Line },
       Document::Text(rcs("}")),
     ])
   }
@@ -583,7 +595,7 @@ fn create_doc_without_preceding_comment(
         false,
       )),
     ),
-    expr::E::IfElse(e) => create_doc_for_if_else(heap, comment_store, expression, e),
+    expr::E::IfElse(e) => create_doc_for_if_else(heap, comment_store, e),
 
     expr::E::Binary(e) => {
       let operator_preceding_comments_docs = if let Some(doc) = associated_comments_doc(
@@ -710,7 +722,7 @@ fn create_doc_without_preceding_comment(
       ),
     ]),
 
-    expr::E::Block(e) => create_doc_for_block(heap, comment_store, e),
+    expr::E::Block(e) => create_doc_for_block(heap, comment_store, false, e),
   }
 }
 
@@ -1521,17 +1533,17 @@ ClassName /* b */ /* c */.classMember<
     assert_reprint_expr("true || false || true", "true || false || true");
     assert_reprint_expr(r#""dev" :: "meggo" :: "vibez""#, r#""dev" :: "meggo" :: "vibez""#);
 
-    assert_reprint_expr("if (b) then a else c", "if b then a else c");
+    assert_reprint_expr("if (b) {a} else {c}", "if b { a } else { c }");
     assert_reprint_expr(
       r#"
-      if (b) then {
+      if (b) {
         // fff
         let _ = println("");
         let _ = println("");
         let _ = println("");
         /* f */
         let _ = println("");
-      } else if (b) then {
+      } else if (b) {
         let _ = println("");
         let _ = println("");
         let _ = println("");
@@ -1542,14 +1554,14 @@ ClassName /* b */ /* c */.classMember<
         let _ = println("");
         let _ = println("");
       }"#,
-      r#"if b then {
+      r#"if b {
   // fff
   let _ = println("");
   let _ = println("");
   let _ = println("");
   /* f */
   let _ = println("");
-} else if b then {
+} else if b {
   let _ = println("");
   let _ = println("");
   let _ = println("");
@@ -1647,14 +1659,14 @@ ClassName /* b */ /* c */.classMember<
 }"#,
     );
     assert_reprint_expr(
-      "{let_=if let {foo as {bar as (Fizz(baz), Buzz, _), boo}} = true then 3 else bar;}",
+      "{let_=if let {foo as {bar as (Fizz(baz), Buzz, _), boo}} = true {3} else {bar};}",
       r#"{
   let _ = if let {
     foo as {
       bar as (Fizz(baz), Buzz, _),
       boo
     }
-  } = true then {
+  } = true {
     3
   } else {
     bar

@@ -21,7 +21,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
       Nil -> this,
       Cons(v, rest) -> {
         let filteredRest = rest.filter(f);
-        if f(v) then List.Cons(v, filteredRest) else filteredRest
+        if f(v) { List.Cons(v, filteredRest) } else { filteredRest }
       },
     }
 
@@ -73,7 +73,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
   method find(f: (T) -> bool): Option<T> =
     match this {
       Nil -> Option.None(),
-      Cons(v, rest) -> if f(v) then Option.Some(v) else rest.find(f),
+      Cons(v, rest) -> if f(v) { Option.Some(v) } else { rest.find(f) },
     }
 
   method <R> findMap(f: (T) -> Option<R>): Option<R> =

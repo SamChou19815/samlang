@@ -313,7 +313,7 @@ class Main {
   function main(): unit = {
     let sam = SamObject.create("sam zhou").withDifferentLOC(100001);
     let s = sam.getSam();
-    let linesOfCode = if (sam.isGood()) then sam.getLinesOfCode() else 0;
+    let linesOfCode = if (sam.isGood()) { sam.getLinesOfCode() } else { 0 };
   }
 }
 "#,
@@ -454,7 +454,7 @@ class Main {
  */
 class Main {
   function main(): unit = {
-    let _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) then b else c;
+    let _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) {b} else {c};
   }
 }
 "#,
