@@ -13,18 +13,17 @@ impl Deref for Str {
   }
 }
 
-pub(super) fn rcs(s: &'static str) -> Str {
-  Str(Rc::from(s))
-}
-
 pub(super) fn rc_string(s: String) -> Str {
   Str(Rc::from(s))
 }
 
 #[cfg(test)]
 mod rc_string_tests {
-  use super::rcs;
   use std::collections::HashSet;
+
+  fn rcs(s: &'static str) -> super::Str {
+    super::Str(super::Rc::from(s))
+  }
 
   #[test]
   fn tests() {
@@ -51,7 +50,8 @@ pub(super) enum Document {
   Nil,
   Concat(Rc<Document>, Rc<Document>),
   Nest(usize, Rc<Document>),
-  Text(Str),
+  Text(&'static str),
+  NonStaticText(Str),
   Line,
   /// Extension to prettier's document.
   /// It behaves exactly like `LINE`, except that it is flattened to nil instead of a space.
@@ -80,8 +80,9 @@ impl Document {
       Document::Nest(indentation, d) => {
         d.flatten().map(|d| Document::Nest(*indentation, Rc::new(d)))
       }
-      Document::Text(s) => Some(Document::Text(s.clone())),
-      Document::Line => Some(Document::Text(rcs(" "))),
+      Document::Text(s) => Some(Document::Text(s)),
+      Document::NonStaticText(s) => Some(Document::NonStaticText(s.clone())),
+      Document::Line => Some(Document::Text(" ")),
       Document::LineFlattenToNil => Some(Document::Nil),
       Document::LineHard => None,
       Document::Union(d, _) => d.flatten(),
@@ -109,10 +110,10 @@ impl Document {
   }
 
   pub(super) fn bracket_flexible(
-    left: Str,
+    left: &'static str,
     separator: Document,
     doc: Document,
-    right: Str,
+    right: &'static str,
   ) -> Document {
     Self::group(Self::concat(vec![
       Self::Text(left),
@@ -122,49 +123,66 @@ impl Document {
     ]))
   }
 
-  pub(super) fn no_space_bracket(left: Str, doc: Document, right: Str) -> Document {
+  pub(super) fn no_space_bracket(
+    left: &'static str,
+    doc: Document,
+    right: &'static str,
+  ) -> Document {
     Self::bracket_flexible(left, Self::LineFlattenToNil, doc, right)
   }
 
-  pub(super) fn spaced_bracket(left: Str, doc: Document, right: Str) -> Document {
+  pub(super) fn spaced_bracket(left: &'static str, doc: Document, right: &'static str) -> Document {
     Self::bracket_flexible(left, Self::Line, doc, right)
   }
 
   pub(super) fn line_comment(text: &str) -> Document {
-    let mut multiline_docs = vec![Self::Text(rcs("// "))];
+    let mut multiline_docs = vec![Self::Text("// ")];
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
-        Rc::new(Self::Text(rc_string(format!("{word} ")))),
+        Rc::new(Self::Concat(
+          Rc::new(Self::NonStaticText(rc_string(word.to_string()))),
+          Rc::new(Self::Text(" ")),
+        )),
         Rc::new(Self::concat(vec![
-          Self::Text(rc_string(word.to_string())),
+          Self::NonStaticText(rc_string(word.to_string())),
           Self::LineHard,
-          Self::Text(rcs("// ")),
+          Self::Text("// "),
         ])),
       ));
     }
     Self::Union(
-      Rc::new(Self::Text(rc_string(format!("// {text}")))),
+      Rc::new(Self::Concat(
+        Rc::new(Self::Text("// ")),
+        Rc::new(Self::NonStaticText(rc_string(text.to_string()))),
+      )),
       Rc::new(Self::concat(multiline_docs)),
     )
   }
 
-  pub(super) fn multiline_comment(starter: &str, text: &str) -> Document {
-    let mut multiline_docs =
-      vec![Self::Text(rc_string(starter.to_string())), Self::LineHard, Self::Text(rcs(" * "))];
+  pub(super) fn multiline_comment(starter: &'static str, text: &str) -> Document {
+    let mut multiline_docs = vec![Self::Text(starter), Self::LineHard, Self::Text(" * ")];
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
-        Rc::new(Self::Text(rc_string(format!("{word} ")))),
+        Rc::new(Self::Concat(
+          Rc::new(Self::NonStaticText(rc_string(word.to_string()))),
+          Rc::new(Self::Text(" ")),
+        )),
         Rc::new(Self::concat(vec![
-          Self::Text(rc_string(word.to_string())),
+          Self::NonStaticText(rc_string(word.to_string())),
           Self::LineHard,
-          Self::Text(rcs(" * ")),
+          Self::Text(" * "),
         ])),
       ));
     }
     multiline_docs.push(Self::LineHard);
-    multiline_docs.push(Self::Text(rcs(" */")));
+    multiline_docs.push(Self::Text(" */"));
     Self::Union(
-      Rc::new(Self::Text(rc_string(format!("{starter} {text} */")))),
+      Rc::new(Self::concat(vec![
+        Self::Text(starter),
+        Self::Text(" "),
+        Self::NonStaticText(rc_string(text.to_string())),
+        Self::Text(" */"),
+      ])),
       Rc::new(Self::concat(multiline_docs)),
     )
   }
@@ -173,7 +191,8 @@ impl Document {
 /// The representation of a document that is most useful for pretty-printing.
 /// Each variant can be translated easily into a printable form without extra state.
 enum IntermediateDocumentTokenForPrinting {
-  Text(Str),
+  Text(&'static str),
+  NonStaticText(Str),
   Line { indentation: usize, hard: bool },
 }
 
@@ -211,7 +230,12 @@ fn generate_best_doc(
         list = Rc::new(DocumentList::Cons(indentation + i, d.clone(), rest.clone()))
       }
       Document::Text(s) => {
-        collector.push(IntermediateDocumentTokenForPrinting::Text(s.clone()));
+        collector.push(IntermediateDocumentTokenForPrinting::Text(s));
+        consumed += s.len();
+        list = rest.clone();
+      }
+      Document::NonStaticText(s) => {
+        collector.push(IntermediateDocumentTokenForPrinting::NonStaticText(s.clone()));
         consumed += s.len();
         list = rest.clone();
       }
@@ -260,6 +284,10 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
   for token in collector {
     match token {
       IntermediateDocumentTokenForPrinting::Text(s) => {
+        string_builder.push_str(s);
+        prev_hard_line = false;
+      }
+      IntermediateDocumentTokenForPrinting::NonStaticText(s) => {
         string_builder.push_str(&s);
         prev_hard_line = false;
       }
@@ -289,7 +317,7 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
 
 #[cfg(test)]
 mod tests {
-  use super::{pretty_print, rcs, Document};
+  use super::{pretty_print, Document};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use std::rc::Rc;
@@ -298,10 +326,10 @@ mod tests {
   fn concat_tests() {
     format!("{:?}", Document::Nest(0, Rc::new(Document::Nil)).as_nest().unwrap().1);
     assert_eq!(Document::Nil, Document::concat(vec![]));
-    assert_eq!(Document::Text(rcs("a")), Document::concat(vec![Document::Text(rcs("a"))]));
+    assert_eq!(Document::Text("a"), Document::concat(vec![Document::Text("a")]));
     assert_eq!(
-      Document::Concat(Rc::new(Document::Text(rcs("a"))), Rc::new(Document::Text(rcs("b")))),
-      Document::concat(vec![Document::Text(rcs("a")), Document::Text(rcs("b"))])
+      Document::Concat(Rc::new(Document::Text("a")), Rc::new(Document::Text("b"))),
+      Document::concat(vec![Document::Text("a"), Document::Text("b")])
     );
   }
 
@@ -374,18 +402,18 @@ mod tests {
     assert_printed(
       100,
       Document::group(Document::concat(vec![
-        Document::Text(rcs("a")),
+        Document::Text("a"),
         Document::Line,
         Document::Nest(
           2,
           Rc::new(Document::concat(vec![
-            Document::Text(rcs("c")),
+            Document::Text("c"),
             Document::LineHard,
-            Document::Text(rcs("d")),
+            Document::Text("d"),
           ])),
         ),
         Document::Line,
-        Document::Text(rcs("b")),
+        Document::Text("b"),
       ])),
       r#"a
 c
@@ -397,11 +425,7 @@ b
 
   #[test]
   fn spaced_bracket_test() {
-    assert_printed(
-      100,
-      Document::spaced_bracket(rcs("["), Document::Text(rcs("a")), rcs("]")),
-      "[ a ]\n",
-    );
+    assert_printed(100, Document::spaced_bracket("[", Document::Text("a"), "]"), "[ a ]\n");
   }
 
   struct Tree {
@@ -411,7 +435,7 @@ b
 
   fn show_tree(tree: &Tree, nil_line: bool) -> Document {
     Document::Concat(
-      Rc::new(Document::Text(rcs(tree.name))),
+      Rc::new(Document::Text(tree.name)),
       Rc::new(show_bracket(tree.children.clone(), nil_line)),
     )
   }
@@ -420,11 +444,7 @@ b
     if trees.is_empty() {
       Document::Nil
     } else {
-      Document::concat(vec![Document::no_space_bracket(
-        rcs("["),
-        show_trees(trees, nil_line),
-        rcs("]"),
-      )])
+      Document::concat(vec![Document::no_space_bracket("[", show_trees(trees, nil_line), "]")])
     }
   }
 
@@ -437,7 +457,7 @@ b
     } else {
       Document::concat(vec![
         first_doc,
-        Document::Text(rcs(",")),
+        Document::Text(","),
         if nil_line { Document::LineFlattenToNil } else { Document::Line },
         show_trees(rest, nil_line),
       ])
