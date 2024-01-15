@@ -132,14 +132,20 @@ pub mod annotation {
     Any,
   }
 
+  impl PrimitiveTypeKind {
+    pub fn kind_str(&self) -> &'static str {
+      match self {
+        Self::Unit => "unit",
+        Self::Bool => "bool",
+        Self::Int => "int",
+        Self::Any => "any",
+      }
+    }
+  }
+
   impl ToString for PrimitiveTypeKind {
     fn to_string(&self) -> String {
-      match self {
-        Self::Unit => "unit".to_string(),
-        Self::Bool => "bool".to_string(),
-        Self::Int => "int".to_string(),
-        Self::Any => "any".to_string(),
-      }
+      self.kind_str().to_string()
     }
   }
 
@@ -431,12 +437,18 @@ pub mod expr {
     NEG,
   }
 
+  impl UnaryOperator {
+    pub fn kind_str(&self) -> &'static str {
+      match self {
+        Self::NOT => "!",
+        Self::NEG => "-",
+      }
+    }
+  }
+
   impl ToString for UnaryOperator {
     fn to_string(&self) -> String {
-      match self {
-        Self::NOT => "!".to_string(),
-        Self::NEG => "-".to_string(),
-      }
+      self.kind_str().to_string()
     }
   }
 
@@ -472,24 +484,30 @@ pub mod expr {
     CONCAT,
   }
 
+  impl BinaryOperator {
+    pub fn kind_str(&self) -> &'static str {
+      match self {
+        BinaryOperator::MUL => "*",
+        BinaryOperator::DIV => "/",
+        BinaryOperator::MOD => "%",
+        BinaryOperator::PLUS => "+",
+        BinaryOperator::MINUS => "-",
+        BinaryOperator::CONCAT => "::",
+        BinaryOperator::LT => "<",
+        BinaryOperator::LE => "<=",
+        BinaryOperator::GT => ">",
+        BinaryOperator::GE => ">=",
+        BinaryOperator::EQ => "==",
+        BinaryOperator::NE => "!=",
+        BinaryOperator::AND => "&&",
+        BinaryOperator::OR => "||",
+      }
+    }
+  }
+
   impl ToString for BinaryOperator {
     fn to_string(&self) -> String {
-      match self {
-        BinaryOperator::MUL => "*".to_string(),
-        BinaryOperator::DIV => "/".to_string(),
-        BinaryOperator::MOD => "%".to_string(),
-        BinaryOperator::PLUS => "+".to_string(),
-        BinaryOperator::MINUS => "-".to_string(),
-        BinaryOperator::CONCAT => "::".to_string(),
-        BinaryOperator::LT => "<".to_string(),
-        BinaryOperator::LE => "<=".to_string(),
-        BinaryOperator::GT => ">".to_string(),
-        BinaryOperator::GE => ">=".to_string(),
-        BinaryOperator::EQ => "==".to_string(),
-        BinaryOperator::NE => "!=".to_string(),
-        BinaryOperator::AND => "&&".to_string(),
-        BinaryOperator::OR => "||".to_string(),
-      }
+      self.kind_str().to_string()
     }
   }
 
