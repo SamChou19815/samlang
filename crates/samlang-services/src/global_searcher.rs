@@ -83,6 +83,33 @@ fn search_matching_pattern(
   }
 }
 
+fn search_if_else(
+  if_else: &expr::IfElse<Rc<Type>>,
+  request: &GlobalNameSearchRequest,
+  collector: &mut Vec<Location>,
+) {
+  match if_else.condition.as_ref() {
+    expr::IfElseCondition::Expression(e) => search_expression(e, request, collector),
+    expr::IfElseCondition::Guard(p, e) => {
+      search_matching_pattern(p, e.type_(), request, collector);
+      search_expression(e, request, collector);
+    }
+  }
+  search_block(&if_else.e1, request, collector);
+  search_if_else_or_block(&if_else.e2, request, collector);
+}
+
+fn search_if_else_or_block(
+  if_else_or_block: &expr::IfElseOrBlock<Rc<Type>>,
+  request: &GlobalNameSearchRequest,
+  collector: &mut Vec<Location>,
+) {
+  match if_else_or_block {
+    expr::IfElseOrBlock::IfElse(e) => search_if_else(e, request, collector),
+    expr::IfElseOrBlock::Block(e) => search_block(e, request, collector),
+  }
+}
+
 fn search_block(
   block: &expr::Block<Rc<Type>>,
   request: &GlobalNameSearchRequest,
@@ -162,17 +189,7 @@ fn search_expression(
       search_expression(&e.e1, request, collector);
       search_expression(&e.e2, request, collector);
     }
-    expr::E::IfElse(e) => {
-      match e.condition.as_ref() {
-        expr::IfElseCondition::Expression(e) => search_expression(e, request, collector),
-        expr::IfElseCondition::Guard(p, e) => {
-          search_matching_pattern(p, e.type_(), request, collector);
-          search_expression(e, request, collector);
-        }
-      }
-      search_expression(&e.e1, request, collector);
-      search_expression(&e.e2, request, collector);
-    }
+    expr::E::IfElse(e) => search_if_else(e, request, collector),
     expr::E::Match(e) => {
       search_expression(&e.matched, request, collector);
       for case in &e.cases {
@@ -301,9 +318,9 @@ mod tests {
         let { d as _, e as d } = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
-        let _ = if let { a as d3, b as d4 } = Foo.init(5, false) then {} else {};
-        let _ = if let Some(_) = Option.Some(1) then {} else {};
-        let _ = if let (_, _) = (1,2) then {} else {};
+        let _ = if let { a as d3, b as d4 } = Foo.init(5, false) {} else {};
+        let _ = if let Some(_) = Option.Some(1) {} else {};
+        let _ = if let (_, _) = (1,2) {} else {};
         let _ = f.d;
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d
@@ -323,11 +340,11 @@ mod tests {
       function oof(): int = 14
 
       function div(a: int, b: int): int =
-        if b == 0 then (
+        if b == 0 {
           Process.panic("Division by zero is illegal!")
-        ) else (
+        } else {
           a / b
-        )
+        }
 
       function nestedVal(): int = {
         let a = {
@@ -359,7 +376,7 @@ Error ---------------------------------- foo.sam:33:24-33:44
 
 The pattern is irrefutable.
 
-  33|         let _ = if let { a as d3, b as d4 } = Foo.init(5, false) then {} else {};
+  33|         let _ = if let { a as d3, b as d4 } = Foo.init(5, false) {} else {};
                              ^^^^^^^^^^^^^^^^^^^^
 
 
@@ -367,7 +384,7 @@ Error ---------------------------------- foo.sam:35:24-35:30
 
 The pattern is irrefutable.
 
-  35|         let _ = if let (_, _) = (1,2) then {} else {};
+  35|         let _ = if let (_, _) = (1,2) {} else {};
                              ^^^^^^
 
 

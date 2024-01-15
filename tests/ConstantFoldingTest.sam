@@ -3,13 +3,17 @@ import { ForTests } from tests.StdLib;
 class ConstantFoldingTest {
   function testI(acc: int, i: int): int =
     // i >= 30
-    if i >= 30 + 100 / 100 - 2000 * 2000 / (10 * 10 * 10 * 4000) then { acc } else {
+    if i >= 30 + 100 / 100 - 2000 * 2000 / (10 * 10 * 10 * 4000) {
+      acc
+    } else {
       ConstantFoldingTest.testI(ConstantFoldingTest.testJ(acc, 0), i + 1)
     }
 
   function testJ(acc: int, j: int): int =
     // j >= 10
-    if j >= 10 + 100 * 99 * 98 * 97 * 0 then { acc } else {
+    if j >= 10 + 100 * 99 * 98 * 97 * 0 {
+      acc
+    } else {
       ConstantFoldingTest.testJ(
         acc + /* 1156 */ 34 * 34 + 4 + 1 + /* 43 */ 1231 / 28,
         /* j */ j /* plus */ + 1
@@ -17,7 +21,9 @@ class ConstantFoldingTest {
     }
 
   function test2(acc: int, i: int): int =
-    if i >= 10 * 10 * 2 then { acc } else {
+    if i >= 10 * 10 * 2 {
+      acc
+    } else {
       let increase: int = 1 + 2 * 3 - 4 / 5 % 10000000 / 12334 + (
         1 + 2 * 3 - 4 / 5 % 10000000 / 12334
       ) + (1 + 2 * 3 - 4 / 5 % 10000000 / 12334) + (1 + 2 * 3 - 4 / 5 % 10000000 / 12334) + (
@@ -27,7 +33,9 @@ class ConstantFoldingTest {
     }
 
   function test3(acc: int, i: int): int =
-    if i >= 10 * 10 * 2 then { acc } else {
+    if i >= 10 * 10 * 2 {
+      acc
+    } else {
       ConstantFoldingTest.test3(acc + 1 + 2 * 3 - 4 / 5 % 10000000 / 1234, i + 1)
     }
 

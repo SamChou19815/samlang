@@ -38,7 +38,7 @@ class List<T: Comparable<T>>(Nil, Cons(T, List<T>)) {
       (Nil, _) -> other,
       (_, Nil) -> this,
       (Cons(h1, t1), Cons(h2, t2)) -> {
-        if h1.compare(h2) < 0 then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
+        if h1.compare(h2) < 0 { t1.merge(other).cons(h1) } else { t2.merge(this).cons(h2) }
       },
     }
 

@@ -31,7 +31,7 @@ class Option<T>(None, Some(T)) {
   method filter(f: (T) -> bool): Option<T> =
     match this {
       None -> Option.None(),
-      Some(v) -> if f(v) then Option.Some(v) else Option.None(),
+      Some(v) -> if f(v) { Option.Some(v) } else { Option.None() },
     }
 
   method <R> valueMap(default: R, f: (T) -> R): R =

@@ -129,11 +129,9 @@ impl<'a> SourceParser<'a> {
 
   fn assert_and_consume_keyword(&mut self, expected_kind: Keyword) -> Location {
     let Token(location, content) = self.peek();
-    if let TokenContent::Keyword(k) = content {
-      if k == expected_kind {
-        self.consume();
-        return location;
-      }
+    if TokenContent::Keyword(expected_kind) == content {
+      self.consume();
+      return location;
     }
     self.report(
       location,
@@ -786,7 +784,7 @@ mod expression_parser {
         cases: matching_list,
       })
     } else {
-      parse_if_else(parser)
+      parse_if_else_or_higher_precedence(parser)
     }
   }
 
@@ -816,41 +814,52 @@ mod expression_parser {
     }
   }
 
-  fn parse_if_else(parser: &mut super::SourceParser) -> expr::E<()> {
-    let mut associated_comments = parser.collect_preceding_comments();
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::IF)) = parser.peek() {
-      parser.consume();
-      let condition =
-        if let Token(_peeked_let_loc, TokenContent::Keyword(Keyword::LET)) = parser.peek() {
-          associated_comments.append(&mut parser.collect_preceding_comments());
-          parser.consume();
-          let pattern = super::pattern_parser::parse_matching_pattern(parser, vec![]);
-          associated_comments.append(&mut parser.collect_preceding_comments());
-          parser.assert_and_consume_operator(TokenOp::ASSIGN);
-          let expr = parse_expression(parser);
-          expr::IfElseCondition::Guard(pattern, expr)
-        } else {
-          expr::IfElseCondition::Expression(parse_expression(parser))
-        };
-      let e1_preceding_comments = parser.collect_preceding_comments();
-      parser.assert_and_consume_keyword(Keyword::THEN);
-      let e1 = parse_expression_with_additional_preceding_comments(parser, e1_preceding_comments);
-      let e2_preceding_comments = parser.collect_preceding_comments();
-      parser.assert_and_consume_keyword(Keyword::ELSE);
-      let e2 = parse_expression_with_additional_preceding_comments(parser, e2_preceding_comments);
-      let loc = peeked_loc.union(&e2.loc());
-      return expr::E::IfElse(expr::IfElse {
-        common: expr::ExpressionCommon {
-          loc,
-          associated_comments: parser.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        condition: Box::new(condition),
-        e1: Box::new(e1),
-        e2: Box::new(e2),
-      });
+  fn parse_if_else_or_higher_precedence(parser: &mut super::SourceParser) -> expr::E<()> {
+    if let Token(_, TokenContent::Keyword(Keyword::IF)) = parser.peek() {
+      return expr::E::IfElse(parse_if_else(parser, vec![]));
     }
     parse_disjunction(parser)
+  }
+
+  fn parse_if_else(
+    parser: &mut super::SourceParser,
+    mut associated_comments: Vec<Comment>,
+  ) -> expr::IfElse<()> {
+    associated_comments.append(&mut parser.collect_preceding_comments());
+    let peeked_loc = parser.assert_and_consume_keyword(Keyword::IF);
+    let condition =
+      if let Token(_peeked_let_loc, TokenContent::Keyword(Keyword::LET)) = parser.peek() {
+        associated_comments.append(&mut parser.collect_preceding_comments());
+        parser.consume();
+        let pattern = super::pattern_parser::parse_matching_pattern(parser, vec![]);
+        associated_comments.append(&mut parser.collect_preceding_comments());
+        parser.assert_and_consume_operator(TokenOp::ASSIGN);
+        let expr = parse_expression(parser);
+        expr::IfElseCondition::Guard(pattern, expr)
+      } else {
+        expr::IfElseCondition::Expression(parse_expression(parser))
+      };
+    let e1 = parse_block(parser, vec![]);
+    let e2_preceding_comments = parser.collect_preceding_comments();
+    parser.assert_and_consume_keyword(Keyword::ELSE);
+    let (e2_loc, e2) = if let Token(_, TokenContent::Keyword(Keyword::IF)) = parser.peek() {
+      let e = parse_if_else(parser, e2_preceding_comments);
+      (e.common.loc, expr::IfElseOrBlock::IfElse(e))
+    } else {
+      let e = parse_block(parser, e2_preceding_comments);
+      (e.common.loc, expr::IfElseOrBlock::Block(e))
+    };
+    let loc = peeked_loc.union(&e2_loc);
+    expr::IfElse {
+      common: expr::ExpressionCommon {
+        loc,
+        associated_comments: parser.comments_store.create_comment_reference(associated_comments),
+        type_: (),
+      },
+      condition: Box::new(condition),
+      e1: Box::new(e1),
+      e2: Box::new(e2),
+    }
   }
 
   fn parse_disjunction(parser: &mut super::SourceParser) -> expr::E<()> {

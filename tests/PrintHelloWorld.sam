@@ -2,7 +2,7 @@ class PrintHelloWorld {
   private function globalConstantTest(): unit = {
     let a1 = "a";
     let a2 = "a";
-    if a1 == a2 then {  } else Process.panic("")
+    if a1 == a2 {  } else { Process.panic("") }
   }
 
   private function printTest(): unit = {

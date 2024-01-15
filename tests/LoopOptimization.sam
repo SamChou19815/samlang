@@ -2,7 +2,9 @@ import { ForTests } from tests.StdLib;
 
 class LoopOptimization {
   private function loopy(i: int): int =
-    if i >= 10 then { 0 } else {
+    if i >= 10 {
+      0
+    } else {
       let _ = ForTests.printlnInt(i * 3 + 100);
       LoopOptimization.loopy(i + 2)
     }

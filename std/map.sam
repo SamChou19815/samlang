@@ -32,10 +32,10 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   method get(key: K): Option<V> =
     match this {
       Empty -> Option.None(),
-      Leaf(k, v) -> if k.compare(key) == 0 then Option.Some(v) else Option.None(),
+      Leaf(k, v) -> if k.compare(key) == 0 { Option.Some(v) } else { Option.None() },
       Node(_, k, v, l, r) -> {
         let c = key.compare(k);
-        if c == 0 then Option.Some(v) else if c < 0 then l.get(key) else r.get(key)
+        if c == 0 { Option.Some(v) } else if c < 0 { l.get(key) } else { r.get(key) }
       },
     }
 
@@ -45,7 +45,7 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       Leaf(k, v) -> k.compare(key) == 0,
       Node(_, k, v, l, r) -> {
         let c = key.compare(k);
-        c == 0 || (if c < 0 then l.containsKey(key) else r.containsKey(key))
+        c == 0 || (if c < 0 { l.containsKey(key) } else { r.containsKey(key) })
       },
     }
 
@@ -54,20 +54,24 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       Empty -> Map.singleton(key, value),
       Leaf(k, v) -> {
         let c = key.compare(k);
-        if c == 0 then { if v == value then this else Map.Leaf(k, value) } else if c < 0 then {
+        if c == 0 {
+          if v == value { this } else { Map.Leaf(k, value) }
+        } else if c < 0 {
           this.sortedTwoNodesSmaller(key, value)
-        } else { this.sortedTwoNodesLarger(key, value) }
+        } else {
+          this.sortedTwoNodesLarger(key, value)
+        }
       },
       Node(h, k, v, l, r) -> {
         let c = key.compare(k);
-        if c == 0 then {
-          if v == value then this else Map.Node(h, k, value, l, r)
-        } else if c < 0 then {
+        if c == 0 {
+          if v == value { this } else { Map.Node(h, k, value, l, r) }
+        } else if c < 0 {
           let ll = l.insert(key, value);
-          if l == ll then this else Map.balanced(ll, k, v, r)
+          if l == ll { this } else { Map.balanced(ll, k, v, r) }
         } else {
           let rr = r.insert(key, value);
-          if r == rr then this else Map.balanced(l, k, v, rr)
+          if r == rr { this } else { Map.balanced(l, k, v, rr) }
         }
       },
     }
@@ -77,15 +81,19 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       Empty -> (Map.empty<K, V>(), Option.None<V>(), Map.empty<K, V>()),
       Leaf(k, v) -> {
         let c = key.compare(k);
-        if c == 0 then {
+        if c == 0 {
           (Map.empty<K, V>(), Option.Some(v), Map.empty<K, V>())
-        } else if c < 0 then { (Map.empty<K, V>(), Option.None<V>(), this) } else {
+        } else if c < 0 {
+          (Map.empty<K, V>(), Option.None<V>(), this)
+        } else {
           (this, Option.None<V>(), Map.empty<K, V>())
         }
       },
       Node(_, k, v, l, r) -> {
         let c = key.compare(k);
-        if c == 0 then { (l, Option.Some(v), r) } else if c < 0 then {
+        if c == 0 {
+          (l, Option.Some(v), r)
+        } else if c < 0 {
           let (ll, pres, rl) = l.split(key);
           (ll, pres, Map.join(rl, k, v, r))
         } else {
@@ -123,10 +131,12 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
         )
       },
       (Node(h1, k1, v1, l1, r1), _) -> {
-        if h1 >= other.height() then {
+        if h1 >= other.height() {
           let (l2, v2, r2) = other.split(k1);
           Map.concatOrJoin(l1.merge(l2, f), k1, f(k1, Option.Some(v1), v2), r1.merge(r2, f))
-        } else { Process.panic("Invalid state") }
+        } else {
+          Process.panic("Invalid state")
+        }
       },
       (_, Node(_, k2, v2, l2, r2)) -> {
         let (l1, v1, r1) = this.split(k2);
@@ -142,15 +152,17 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       },
       Leaf(k, v) -> {
         let c = key.compare(k);
-        if c == 0 then {
+        if c == 0 {
           match f(Option.Some(v)) {
             None -> Map.empty(),
-            Some(data) -> { if v == data then this else Map.Leaf(key, data) },
+            Some(data) -> { if v == data { this } else { Map.Leaf(key, data) } },
           }
         } else {
           match f(Option.None()) {
             None -> this,
-            Some(data) -> if c < 0 then { this.sortedTwoNodesSmaller(key, data) } else {
+            Some(data) -> if c < 0 {
+              this.sortedTwoNodesSmaller(key, data)
+            } else {
               this.sortedTwoNodesLarger(key, data)
             },
           }
@@ -158,17 +170,17 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       },
       Node(h, k, v, l, r) -> {
         let c = key.compare(k);
-        if c == 0 then {
+        if c == 0 {
           match f(Option.Some(v)) {
             None -> Map.internalMerge(l, r),
-            Some(data) -> if v == data then this else Map.Node(h, key, data, l, r),
+            Some(data) -> if v == data { this } else { Map.Node(h, key, data, l, r) },
           }
-        } else if c < 0 then {
+        } else if c < 0 {
           let ll = l.update(key, f);
-          if l == ll then this else Map.balanced(ll, k, v, r)
+          if l == ll { this } else { Map.balanced(ll, k, v, r) }
         } else {
           let rr = r.update(key, f);
-          if r == rr then this else Map.balanced(l, k, v, rr)
+          if r == rr { this } else { Map.balanced(l, k, v, rr) }
         }
       },
     }
@@ -192,7 +204,7 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
         }
       ),
       (Node(h1, k1, v1, l1, r1), Node(h2, k2, v2, l2, r2)) -> {
-        if h1 >= h2 then {
+        if h1 >= h2 {
           let (l2New, d, r2New) = other.split(k1);
           let l = l1.customizedUnion(l2New, f);
           let r = r1.customizedUnion(r2New, f);
@@ -221,15 +233,17 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   method remove(key: K): Map<K, V> =
     match this {
       Empty -> this,
-      Leaf(k, _) -> if key.compare(k) == 0 then Map.empty() else this,
+      Leaf(k, _) -> if key.compare(k) == 0 { Map.empty() } else { this },
       Node(_, k, v, l, r) -> {
         let c = key.compare(k);
-        if c == 0 then { Map.internalMerge(l, r) } else if c < 0 then {
+        if c == 0 {
+          Map.internalMerge(l, r)
+        } else if c < 0 {
           let ll = l.remove(key);
-          if l == ll then this else Map.balanced(ll, k, v, r)
+          if l == ll { this } else { Map.balanced(ll, k, v, r) }
         } else {
           let rr = r.remove(key);
-          if r == rr then this else Map.balanced(l, k, v, rr)
+          if r == rr { this } else { Map.balanced(l, k, v, rr) }
         }
       },
     }
@@ -252,9 +266,11 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       (_, End) -> 1,
       (More(k1, v1, r1, e1Nested), More(k2, v2, r2, e2Nested)) -> {
         let c = k1.compare(k2);
-        if c != 0 then { c } else {
+        if c != 0 {
+          c
+        } else {
           let c1 = f(v1, v2);
-          if c1 != 0 then { c } else { Map.compareHelper(f, e1Nested.cons(r1), e2Nested.cons(r2)) }
+          if c1 != 0 { c } else { Map.compareHelper(f, e1Nested.cons(r1), e2Nested.cons(r2)) }
         }
       },
     }
@@ -315,26 +331,30 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   method filter(f: (K, V) -> bool): Map<K, V> =
     match this {
       Empty -> Map.Empty(),
-      Leaf(k, v) -> if f(k, v) then this else Map.empty(),
+      Leaf(k, v) -> if f(k, v) { this } else { Map.empty() },
       Node(_, k, v, l, r) -> {
         let newL = l.filter(f);
         let keepCurrentVal = f(k, v);
         let newR = r.filter(f);
-        if keepCurrentVal then {
-          if l == newL && r == newR then this else Map.join(newL, k, v, newR)
-        } else { Map.concat(newL, newR) }
+        if keepCurrentVal {
+          if l == newL && r == newR { this } else { Map.join(newL, k, v, newR) }
+        } else {
+          Map.concat(newL, newR)
+        }
       },
     }
 
   method partition(f: (K, V) -> bool): Pair<Map<K, V>, Map<K, V>> =
     match this {
       Empty -> (Map.empty<K, V>(), Map.empty<K, V>()),
-      Leaf(k, v) -> if f(k, v) then (this, Map.empty<K, V>()) else (Map.empty<K, V>(), this),
+      Leaf(k, v) -> if f(k, v) { (this, Map.empty<K, V>()) } else { (Map.empty<K, V>(), this) },
       Node(_, k, v, l, r) -> {
         let (lt, lf) = l.partition(f);
         let currentNodeToTrue = f(k, v);
         let (rt, rf) = r.partition(f);
-        if currentNodeToTrue then { (Map.join(lt, k, v, rt), Map.concat(lf, rf)) } else {
+        if currentNodeToTrue {
+          (Map.join(lt, k, v, rt), Map.concat(lf, rf))
+        } else {
           (Map.concat(lt, rt), Map.join(lf, k, v, rf))
         }
       },
@@ -360,18 +380,14 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     match this {
       Empty -> Option.None(),
       Leaf(k, v) -> Option.Some((k, v)),
-      Node(_, k, v, child, _) -> if child.isEmpty() then { Option.Some((k, v)) } else {
-        child.min()
-      },
+      Node(_, k, v, child, _) -> if child.isEmpty() { Option.Some((k, v)) } else { child.min() },
     }
 
   method max(): Option<Pair<K, V>> =
     match this {
       Empty -> Option.None(),
       Leaf(k, v) -> Option.Some((k, v)),
-      Node(_, k, v, _, child) -> if child.isEmpty() then { Option.Some((k, v)) } else {
-        child.min()
-      },
+      Node(_, k, v, _, child) -> if child.isEmpty() { Option.Some((k, v)) } else { child.min() },
     }
 
   method minKey(): Option<K> = this.min().map((it) -> it.e0)
@@ -416,8 +432,8 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   ): Map<K, V> = {
     let lh = left.height();
     let rh = right.height();
-    let h = if lh >= rh then lh + 1 else rh + 1;
-    if h == 1 then Map.singleton(key, value) else Map.Node(h, key, value, left, right)
+    let h = if lh >= rh { lh + 1 } else { rh + 1 };
+    if h == 1 { Map.singleton(key, value) } else { Map.Node(h, key, value, left, right) }
   }
 
   /* The result can not be leaf */
@@ -429,7 +445,7 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   ): Map<K, V> = {
     let lh = left.height();
     let rh = right.height();
-    let h = if lh >= rh then lh + 1 else rh + 1;
+    let h = if lh >= rh { lh + 1 } else { rh + 1 };
     Map.Node(h, key, value, left, right)
   }
 
@@ -446,19 +462,25 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
   > = {
     let lh = l.height();
     let rh = r.height();
-    if lh > rh + 2 then {
+    if lh > rh + 2 {
       let (lk, lv, ll, lr) = l.forcedNodeWithoutHeight();
-      if ll.height() >= lr.height() then { Map.node(ll, lk, lv, Map.create(lr, k, v, r)) } else {
+      if ll.height() >= lr.height() {
+        Map.node(ll, lk, lv, Map.create(lr, k, v, r))
+      } else {
         let (lrk, lrv, lrl, lrr) = lr.forcedNodeWithoutHeight();
         Map.node(Map.create(ll, lk, lv, lrl), lrk, lrv, Map.create(lrr, k, v, r))
       }
-    } else if rh > lh + 2 then {
+    } else if rh > lh + 2 {
       let (rk, rv, rl, rr) = r.forcedNodeWithoutHeight();
-      if rr.height() >= rl.height() then { Map.node(Map.create(l, k, v, rl), rk, rv, rr) } else {
+      if rr.height() >= rl.height() {
+        Map.node(Map.create(l, k, v, rl), rk, rv, rr)
+      } else {
         let (rlk, rlv, rll, rlr) = rl.forcedNodeWithoutHeight();
         Map.node(Map.create(l, k, v, rll), rlk, rlv, Map.create(rlr, rk, rv, rr))
       }
-    } else { Map.create(l, k, v, r) }
+    } else {
+      Map.create(l, k, v, r)
+    }
   }
 
   private method minBindingFromNodeUnsafe(): Pair<K, V> = {
@@ -536,16 +558,22 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
       (Empty, _) -> Map.addMinBinding(k, v, r),
       (_, Empty) -> Map.addMaxBinding(k, v, l),
       (Leaf(_, _), Leaf(_, _)) -> Map.Node(2, k, v, l, r),
-      (Leaf(_, _), Node(rh, rk, rv, rl, rr)) -> if rh > 3 then {
+      (Leaf(_, _), Node(rh, rk, rv, rl, rr)) -> if rh > 3 {
         Map.balanced(Map.join(l, k, v, rl), rk, rv, rr)
-      } else { Map.create(l, k, v, r) },
-      (Node(lh, lk, lv, ll, lr), Leaf(_, _)) -> if lh > 3 then {
+      } else {
+        Map.create(l, k, v, r)
+      },
+      (Node(lh, lk, lv, ll, lr), Leaf(_, _)) -> if lh > 3 {
         Map.balanced(ll, lk, lv, Map.join(lr, k, v, r))
-      } else { Map.create(l, k, v, r) },
+      } else {
+        Map.create(l, k, v, r)
+      },
       (Node(lh, lk, lv, ll, lr), Node(rh, rk, rv, rl, rr)) -> {
-        if lh > rh + 2 then {
+        if lh > rh + 2 {
           Map.balanced(ll, lk, lv, Map.join(lr, k, v, r))
-        } else if rh > lh + 2 then { Map.balanced(Map.join(l, k, v, rl), rk, rv, rr) } else {
+        } else if rh > lh + 2 {
+          Map.balanced(Map.join(l, k, v, rl), rk, rv, rr)
+        } else {
           Map.create(l, k, v, r)
         }
       },

@@ -5,7 +5,7 @@ class Int(val value: int) : Comparable<Int> {
 }
 
 class Bool(val value: bool) : Comparable<Bool> {
-  method intValue(): int = if this.value then 1 else 0
+  method intValue(): int = if this.value { 1 } else { 0 }
 
   method compare(other: Bool): int = this.intValue() - other.intValue()
 }

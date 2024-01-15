@@ -141,6 +141,32 @@ fn search_optional_annotation(
   }
 }
 
+fn search_if_else(
+  if_else: &expr::IfElse<Rc<Type>>,
+  position: Position,
+  stop_at_call: bool,
+) -> Option<LocationCoverSearchResult> {
+  (match if_else.condition.as_ref() {
+    expr::IfElseCondition::Expression(e) => search_expression(e, position, stop_at_call),
+    expr::IfElseCondition::Guard(p, e) => {
+      search_matching_pattern(p, position).or_else(|| search_expression(e, position, stop_at_call))
+    }
+  })
+  .or_else(|| search_block(&if_else.e1, position, stop_at_call))
+  .or_else(|| search_if_else_or_block(&if_else.e2, position, stop_at_call))
+}
+
+fn search_if_else_or_block(
+  if_else_or_block: &expr::IfElseOrBlock<Rc<Type>>,
+  position: Position,
+  stop_at_call: bool,
+) -> Option<LocationCoverSearchResult> {
+  match if_else_or_block {
+    expr::IfElseOrBlock::IfElse(e) => search_if_else(e, position, stop_at_call),
+    expr::IfElseOrBlock::Block(e) => search_block(e, position, stop_at_call),
+  }
+}
+
 fn search_block(
   block: &expr::Block<Rc<Type>>,
   position: Position,
@@ -256,13 +282,7 @@ fn search_expression(
     }
     expr::E::Binary(e) => search_expression(&e.e1, position, stop_at_call)
       .or_else(|| search_expression(&e.e2, position, stop_at_call)),
-    expr::E::IfElse(e) => (match e.condition.as_ref() {
-      expr::IfElseCondition::Expression(e) => search_expression(e, position, stop_at_call),
-      expr::IfElseCondition::Guard(p, e) => search_matching_pattern(p, position)
-        .or_else(|| search_expression(e, position, stop_at_call)),
-    })
-    .or_else(|| search_expression(&e.e1, position, stop_at_call))
-    .or_else(|| search_expression(&e.e2, position, stop_at_call)),
+    expr::E::IfElse(e) => search_if_else(e, position, stop_at_call),
     expr::E::Match(e) => {
       let mut found = search_expression(&e.matched, position, stop_at_call);
       for case in &e.cases {
@@ -453,9 +473,9 @@ mod tests {
         let { d as _, e as d }: Obj = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
-        let _ = if let Some({ a as d3 }) = Option.Some(Foo.init(5)) then {} else {};
-        let _ = if let Some(_) = Option.Some(1) then {} else {};
-        let _ = if let Some((_, _)) = Option.Some((1,2)) then {} else {};
+        let _ = if let Some({ a as d3 }) = Option.Some(Foo.init(5)) {} else {};
+        let _ = if let Some(_) = Option.Some(1) {} else {};
+        let _ = if let Some((_, _)) = Option.Some((1,2)) {} else {};
         let _ = f.d;
         let (h, i) = (111, 122);
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
@@ -476,11 +496,11 @@ mod tests {
       function oof(): int = 14
 
       function div(a: int, b: int): int =
-        if b == 0 then (
+        if b == 0 {
           Process.panic("Division by zero is illegal!")
-        ) else (
+        } else {
           a / b
-        )
+        }
 
       function nestedVal(): int = {
         let a: int = {

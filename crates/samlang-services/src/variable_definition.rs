@@ -196,6 +196,34 @@ fn apply_parenthesized_expression_list_renaming(
   }
 }
 
+fn apply_if_else_renaming(
+  if_else: &expr::IfElse<()>,
+  definition_and_uses: &DefinitionAndUses,
+  new_name: PStr,
+) -> expr::IfElse<()> {
+  expr::IfElse {
+    common: if_else.common.clone(),
+    condition: Box::new(match if_else.condition.as_ref() {
+      expr::IfElseCondition::Expression(e) => {
+        expr::IfElseCondition::Expression(apply_expr_renaming(e, definition_and_uses, new_name))
+      }
+      expr::IfElseCondition::Guard(p, e) => expr::IfElseCondition::Guard(
+        apply_matching_pattern_renaming(p, definition_and_uses, new_name),
+        apply_expr_renaming(e, definition_and_uses, new_name),
+      ),
+    }),
+    e1: Box::new(apply_block_renaming(&if_else.e1, definition_and_uses, new_name)),
+    e2: Box::new(match if_else.e2.as_ref() {
+      expr::IfElseOrBlock::IfElse(e) => {
+        expr::IfElseOrBlock::IfElse(apply_if_else_renaming(e, definition_and_uses, new_name))
+      }
+      expr::IfElseOrBlock::Block(e) => {
+        expr::IfElseOrBlock::Block(apply_block_renaming(e, definition_and_uses, new_name))
+      }
+    }),
+  }
+}
+
 fn apply_block_renaming(
   block: &expr::Block<()>,
   definition_and_uses: &DefinitionAndUses,
@@ -286,20 +314,7 @@ fn apply_expr_renaming(
       e1: Box::new(apply_expr_renaming(&e.e1, definition_and_uses, new_name)),
       e2: Box::new(apply_expr_renaming(&e.e2, definition_and_uses, new_name)),
     }),
-    expr::E::IfElse(e) => expr::E::IfElse(expr::IfElse {
-      common: e.common.clone(),
-      condition: Box::new(match e.condition.as_ref() {
-        expr::IfElseCondition::Expression(e) => {
-          expr::IfElseCondition::Expression(apply_expr_renaming(e, definition_and_uses, new_name))
-        }
-        expr::IfElseCondition::Guard(p, e) => expr::IfElseCondition::Guard(
-          apply_matching_pattern_renaming(p, definition_and_uses, new_name),
-          apply_expr_renaming(e, definition_and_uses, new_name),
-        ),
-      }),
-      e1: Box::new(apply_expr_renaming(&e.e1, definition_and_uses, new_name)),
-      e2: Box::new(apply_expr_renaming(&e.e2, definition_and_uses, new_name)),
-    }),
+    expr::E::IfElse(e) => expr::E::IfElse(apply_if_else_renaming(e, definition_and_uses, new_name)),
     expr::E::Match(e) => expr::E::Match(expr::Match {
       common: e.common.clone(),
       matched: Box::new(apply_expr_renaming(&e.matched, definition_and_uses, new_name)),
@@ -527,7 +542,7 @@ class Main {
     let {f, g as h} = Main.init(3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (x, y) -> if x + y * 3 > h then panic(f) else println(h);
+    let lambda1 = (x, y) -> if x + y * 3 > h {panic(f)} else {println(h)};
     match lambda1(3, !h) {
       None(_) -> 1.d,
       Some(dd) -> dd,
@@ -548,7 +563,7 @@ class Main {
       &heap,
       &lookup,
       Location::from_pos(7, 12, 7, 13),
-      ("6:10-6:11", vec!["6:10-6:11", "8:13-8:14", "9:57-9:58"]),
+      ("6:10-6:11", vec!["6:10-6:11", "8:13-8:14", "9:53-9:54"]),
     );
     assert_lookup(
       &heap,
@@ -556,7 +571,7 @@ class Main {
       Location::from_pos(7, 16, 7, 17),
       (
         "6:18-6:19",
-        vec!["6:18-6:19", "7:24-7:25", "8:17-8:18", "9:44-9:45", "9:73-9:74", "10:23-10:24"],
+        vec!["6:18-6:19", "7:24-7:25", "8:17-8:18", "9:44-9:45", "9:71-9:72", "10:23-10:24"],
       ),
     );
     assert_lookup(
@@ -640,7 +655,7 @@ interface Foo {}
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let { e as d3, f } = Obj.init(5, 4) then 1 else 2;
+    let _ = if let { e as d3, f } = Obj.init(5, 4) {1} else if true {2} else {3};
   }
 }"#;
     let (_, lookup) = prepare_lookup(source);
@@ -650,13 +665,12 @@ class Main {
       Location::from_pos(3, 26, 3, 28),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let { e as renAmeD, f } = Obj.init(
-      5,
-      4
-    ) then {
+    let _ = if let { e as renAmeD, f } = Obj.init(5, 4) {
       1
-    } else {
+    } else if true {
       2
+    } else {
+      3
     };
   }
 }
@@ -666,7 +680,7 @@ class Main {
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let { renAmeD as d3 } = Obj.init(5, 4) then 1 else 2;
+    let _ = if let { renAmeD as d3 } = Obj.init(5, 4) {1} else {2};
   }
 }"#;
     let (_, lookup) = prepare_lookup(source);
@@ -676,7 +690,7 @@ class Main {
       Location::from_pos(3, 32, 3, 34),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let { renAmeD } = Obj.init(5, 4) then {
+    let _ = if let { renAmeD } = Obj.init(5, 4) {
       1
     } else {
       2
@@ -689,7 +703,7 @@ class Main {
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let Some(v) = Option.Some(1) then 1 else 2;
+    let _ = if let Some(v) = Option.Some(1) {1} else {2};
   }
 }"#;
     let (_, lookup) = prepare_lookup(source);
@@ -699,7 +713,7 @@ class Main {
       Location::from_pos(3, 24, 3, 25),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let Some(renAmeD) = Option.Some(1) then {
+    let _ = if let Some(renAmeD) = Option.Some(1) {
       1
     } else {
       2
@@ -712,7 +726,7 @@ class Main {
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let (v, _) = (1, 2) then 1 else 2;
+    let _ = if let (v, _) = (1, 2) {1} else {2};
   }
 }"#;
     let (_, lookup) = prepare_lookup(source);
@@ -722,7 +736,7 @@ class Main {
       Location::from_pos(3, 20, 3, 21),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    let _ = if let (renAmeD, _) = (1, 2) then 1 else 2;
+    let _ = if let (renAmeD, _) = (1, 2) { 1 } else { 2 };
   }
 }
 "#,
@@ -740,7 +754,7 @@ class Main {
     let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then panic(f) else println(h);
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h {panic(f)} else {println(h)};
     match lambda1(3, !h) {
       None(_) -> 1.d,
       Some(dd) -> dd,
@@ -776,7 +790,7 @@ class Main {
     let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h {
       panic(f)
     } else {
       println(h)
@@ -801,7 +815,7 @@ class Main {
     let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h {
       panic(f)
     } else {
       println(h)
@@ -826,7 +840,7 @@ class Main {
     let (i, j) = (3, renAmeD);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h {
       panic(f)
     } else {
       println(h)
@@ -851,7 +865,7 @@ class Main {
     let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = renAmeD + h;
-    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h {
       panic(renAmeD)
     } else {
       println(h)
@@ -876,10 +890,7 @@ class Main {
     let (i, j) = (3, g);
     let _ = Obj.Tagged(renAmeD);
     let _ = f + renAmeD;
-    let lambda1 = (
-      x,
-      y
-    ) -> if x + y + i + j * 3 > renAmeD then {
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > renAmeD {
       panic(f)
     } else {
       println(renAmeD)
@@ -907,7 +918,7 @@ class Main {
     let lambda1 = (
       x,
       renAmeD
-    ) -> if x + renAmeD + i + j * 3 > h then {
+    ) -> if x + renAmeD + i + j * 3 > h {
       panic(f)
     } else {
       println(h)
@@ -932,10 +943,7 @@ class Main {
     let (renAmeD, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (
-      x,
-      y
-    ) -> if x + y + renAmeD + j * 3 > h then {
+    let lambda1 = (x, y) -> if x + y + renAmeD + j * 3 > h {
       panic(f)
     } else {
       println(h)
@@ -960,7 +968,7 @@ class Main {
     let (i, j) = (3, g);
     let _ = Obj.Tagged(h);
     let _ = f + h;
-    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h {
       panic(f)
     } else {
       println(h)

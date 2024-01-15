@@ -4,7 +4,7 @@ class BuiltinStringTest {
     let _ = Process.println(value);
     let a1 = "a";
     let a2 = "a";
-    let _ = if a1 == a2 then {  } else { Process.panic("BAD") };
+    let _ = if a1 == a2 {  } else { Process.panic("BAD") };
     Process.println("Hello " :: "World!")
   }
 }

@@ -2613,12 +2613,12 @@ Found 1 error.
     let heap = &mut Heap::new();
     let builder = test_type_builder::create();
 
-    assert_checks(heap, "if true then false else true", &builder.bool_type());
-    assert_checks(heap, "if false then 1 else 0", &builder.int_type());
-    assert_checks(heap, "if false then \"\" else \"\"", &builder.string_type());
+    assert_checks(heap, "if true {false} else {true}", &builder.bool_type());
+    assert_checks(heap, "if false {1} else {0}", &builder.int_type());
+    assert_checks(heap, "if false {\"\"} else {\"\"}", &builder.string_type());
     assert_checks(
       heap,
-      "{ let _ = (b: bool, t: int, f: int) -> if b then t else f; }",
+      "{ let _ = (b: bool, t: int, f: int) -> if b {t} else {f}; }",
       &builder.unit_type(),
     );
     assert_checks(
@@ -2628,19 +2628,19 @@ Found 1 error.
     );
     assert_checks(
       heap,
-      "{ let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2; }",
+      "{ let _ = (t: Test2) -> if let Foo(_) = t {1} else {2}; }",
       &builder.unit_type(),
     );
     assert_errors(
       heap,
-      "{ let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t then 1 else 2; }",
+      "{ let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t {1} else {2}; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:31-1:56
 
 The pattern is irrefutable.
 
-  1| { let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t then 1 else 2; }
+  1| { let _ = (t: Test) -> if let {foo, bar as _, fff as _} = t {1} else {2}; }
                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -2649,14 +2649,14 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "{ let _ = (t: Test2) -> if let Foo = t then 1 else 2; }",
+      "{ let _ = (t: Test2) -> if let Foo = t {1} else {2}; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:32-1:35
 
 The pattern does not bind all fields. Expected number of elements: 1, actual number of elements: 0.
 
-  1| { let _ = (t: Test2) -> if let Foo = t then 1 else 2; }
+  1| { let _ = (t: Test2) -> if let Foo = t {1} else {2}; }
                                     ^^^
 
 
@@ -2682,25 +2682,25 @@ Found 1 error.
 
     assert_errors(
       heap,
-      "if true then false else 1",
+      "if true {false} else {1}",
       &builder.bool_type(),
       r#"
-Error ---------------------------------- DUMMY.sam:1:25-1:26
+Error ---------------------------------- DUMMY.sam:1:22-1:25
 
 `int` [1] is incompatible with `bool` [2].
 
-  1| if true then false else 1
-                             ^
+  1| if true {false} else {1}
+                          ^^^
 
-  [1] DUMMY.sam:1:25-1:26
+  [1] DUMMY.sam:1:22-1:25
   -----------------------
-  1| if true then false else 1
-                             ^
+  1| if true {false} else {1}
+                          ^^^
 
-  [2] DUMMY.sam:1:14-1:19
-  -----------------------
-  1| if true then false else 1
-                  ^^^^^
+  [2] DUMMY.sam:1:9-1:16
+  ----------------------
+  1| if true {false} else {1}
+             ^^^^^^^
 
 
 Found 1 error.
@@ -2708,25 +2708,25 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "if false then 1 else false",
+      "if false {1} else {false}",
       &builder.int_type(),
       r#"
-Error ---------------------------------- DUMMY.sam:1:22-1:27
+Error ---------------------------------- DUMMY.sam:1:19-1:26
 
 `bool` [1] is incompatible with `int` [2].
 
-  1| if false then 1 else false
-                          ^^^^^
+  1| if false {1} else {false}
+                       ^^^^^^^
 
-  [1] DUMMY.sam:1:22-1:27
+  [1] DUMMY.sam:1:19-1:26
   -----------------------
-  1| if false then 1 else false
-                          ^^^^^
+  1| if false {1} else {false}
+                       ^^^^^^^
 
-  [2] DUMMY.sam:1:15-1:16
+  [2] DUMMY.sam:1:10-1:13
   -----------------------
-  1| if false then 1 else false
-                   ^
+  1| if false {1} else {false}
+              ^^^
 
 
 Found 1 error.
@@ -2734,25 +2734,25 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "if false then \"\" else 3",
+      "if false {\"\"} else {3}",
       &builder.string_type(),
       r#"
-Error ---------------------------------- DUMMY.sam:1:23-1:24
+Error ---------------------------------- DUMMY.sam:1:20-1:23
 
 `int` [1] is incompatible with `Str` [2].
 
-  1| if false then "" else 3
-                           ^
+  1| if false {""} else {3}
+                        ^^^
 
-  [1] DUMMY.sam:1:23-1:24
+  [1] DUMMY.sam:1:20-1:23
   -----------------------
-  1| if false then "" else 3
-                           ^
+  1| if false {""} else {3}
+                        ^^^
 
-  [2] DUMMY.sam:1:15-1:17
+  [2] DUMMY.sam:1:10-1:14
   -----------------------
-  1| if false then "" else 3
-                   ^^
+  1| if false {""} else {3}
+              ^^^^
 
 
 Found 1 error.
@@ -2762,27 +2762,27 @@ Found 1 error.
       heap,
       r#"{
   let _ = (b: bool, t: bool, f: int) -> (
-    if b then t else f
+    if b {t} else {f}
   );
 }"#,
       &builder.unit_type(),
       r#"
-Error ---------------------------------- DUMMY.sam:3:22-3:23
+Error ---------------------------------- DUMMY.sam:3:19-3:22
 
 `int` [1] is incompatible with `bool` [2].
 
-  3|     if b then t else f
-                          ^
+  3|     if b {t} else {f}
+                       ^^^
 
-  [1] DUMMY.sam:3:22-3:23
+  [1] DUMMY.sam:3:19-3:22
   -----------------------
-  3|     if b then t else f
-                          ^
+  3|     if b {t} else {f}
+                       ^^^
 
-  [2] DUMMY.sam:3:15-3:16
+  [2] DUMMY.sam:3:10-3:13
   -----------------------
-  3|     if b then t else f
-                   ^
+  3|     if b {t} else {f}
+              ^^^
 
 
 Found 1 error.
@@ -2790,14 +2790,14 @@ Found 1 error.
     );
     assert_errors_full_customization(
       heap,
-      "{ let _ = (t: Test) -> if let (a, b, _) = (1, 2) then 1 else 2; }",
+      "{ let _ = (t: Test) -> if let (a, b, _) = (1, 2) {1} else {2}; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:31-1:40
 
 The pattern is irrefutable.
 
-  1| { let _ = (t: Test) -> if let (a, b, _) = (1, 2) then 1 else 2; }
+  1| { let _ = (t: Test) -> if let (a, b, _) = (1, 2) {1} else {2}; }
                                    ^^^^^^^^^
 
 
@@ -2805,7 +2805,7 @@ Error ---------------------------------- DUMMY.sam:1:38-1:39
 
 Cannot access member of `Pair<int, int>` at index 2.
 
-  1| { let _ = (t: Test) -> if let (a, b, _) = (1, 2) then 1 else 2; }
+  1| { let _ = (t: Test) -> if let (a, b, _) = (1, 2) {1} else {2}; }
                                           ^
 
 
@@ -2816,15 +2816,15 @@ Found 2 errors.
     );
     assert_errors_full_customization(
       heap,
-      r#"{ let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
-let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
-let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2;
-let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
-let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
-let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t then 1 else 2;
-let _ = (t: Test2) -> if let {s} = t then 1 else 2;
-let _ = (t: Test2) -> if let (s) = t then 1 else 2;
-let _ = if let F = 1 then 1 else 2;
+      r#"{ let _ = (t: Test) -> if let {bar, boo} = t {1} else {2};
+let _ = (t: Test) -> if let (_, bar) = t {1} else {2};
+let _ = (t: Test2) -> if let Foo(_) = t {1} else {2};
+let _ = (t: Test2) -> if let Foo(_, _) = t {1} else {2};
+let _ = (t: Test2) -> if let Foo111(_) = t {1} else {2};
+let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t {1} else {2};
+let _ = (t: Test2) -> if let {s} = t {1} else {2};
+let _ = (t: Test2) -> if let (s) = t {1} else {2};
+let _ = if let F = 1 {1} else {2};
 }"#,
       &builder.unit_type(),
       r#"
@@ -2834,7 +2834,7 @@ The pattern does not bind all fields. The following names have not been mentione
 - `fff`
 - `foo`
 
-  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+  1| { let _ = (t: Test) -> if let {bar, boo} = t {1} else {2};
                                    ^^^^^^^^^^
 
 
@@ -2842,7 +2842,7 @@ Error ---------------------------------- DUMMY.sam:1:31-1:41
 
 The pattern is irrefutable.
 
-  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+  1| { let _ = (t: Test) -> if let {bar, boo} = t {1} else {2};
                                    ^^^^^^^^^^
 
 
@@ -2850,7 +2850,7 @@ Error ---------------------------------- DUMMY.sam:1:32-1:35
 
 Cannot resolve member `bar` on `Test`.
 
-  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+  1| { let _ = (t: Test) -> if let {bar, boo} = t {1} else {2};
                                     ^^^
 
 
@@ -2858,7 +2858,7 @@ Error ---------------------------------- DUMMY.sam:1:37-1:40
 
 Cannot resolve member `boo` on `Test`.
 
-  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+  1| { let _ = (t: Test) -> if let {bar, boo} = t {1} else {2};
                                          ^^^
 
 
@@ -2866,7 +2866,7 @@ Error ---------------------------------- DUMMY.sam:2:29-2:37
 
 The pattern does not bind all fields. Expected number of elements: 3, actual number of elements: 2.
 
-  2| let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
+  2| let _ = (t: Test) -> if let (_, bar) = t {1} else {2};
                                  ^^^^^^^^
 
 
@@ -2874,7 +2874,7 @@ Error ---------------------------------- DUMMY.sam:2:29-2:37
 
 The pattern is irrefutable.
 
-  2| let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
+  2| let _ = (t: Test) -> if let (_, bar) = t {1} else {2};
                                  ^^^^^^^^
 
 
@@ -2882,7 +2882,7 @@ Error ---------------------------------- DUMMY.sam:2:33-2:36
 
 Cannot access member of `Test` at index 1.
 
-  2| let _ = (t: Test) -> if let (_, bar) = t then 1 else 2;
+  2| let _ = (t: Test) -> if let (_, bar) = t {1} else {2};
                                      ^^^
 
 
@@ -2890,7 +2890,7 @@ Error ---------------------------------- DUMMY.sam:4:37-4:38
 
 Cannot access member of `Test2` at index 1.
 
-  4| let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
+  4| let _ = (t: Test2) -> if let Foo(_, _) = t {1} else {2};
                                          ^
 
 
@@ -2898,7 +2898,7 @@ Error ---------------------------------- DUMMY.sam:5:30-5:36
 
 Cannot resolve member `Foo111` on `Test2`.
 
-  5| let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
+  5| let _ = (t: Test2) -> if let Foo111(_) = t {1} else {2};
                                   ^^^^^^
 
 
@@ -2906,7 +2906,7 @@ Error ---------------------------------- DUMMY.sam:6:30-6:36
 
 Cannot resolve member `Foo111` on `Test2`.
 
-  6| let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t then 1 else 2;
+  6| let _ = (t: Test2) -> if let Foo111(_, a, {bar as baz, b}, (eee, fff)) = t {1} else {2};
                                   ^^^^^^
 
 
@@ -2914,7 +2914,7 @@ Error ---------------------------------- DUMMY.sam:7:30-7:33
 
 `Test2` is not an instance of a struct class.
 
-  7| let _ = (t: Test2) -> if let {s} = t then 1 else 2;
+  7| let _ = (t: Test2) -> if let {s} = t {1} else {2};
                                   ^^^
 
 
@@ -2922,7 +2922,7 @@ Error ---------------------------------- DUMMY.sam:8:30-8:33
 
 `Test2` is not an instance of a struct class.
 
-  8| let _ = (t: Test2) -> if let (s) = t then 1 else 2;
+  8| let _ = (t: Test2) -> if let (s) = t {1} else {2};
                                   ^^^
 
 
@@ -2930,7 +2930,7 @@ Error ---------------------------------- DUMMY.sam:9:16-9:17
 
 `int` is not an instance of an enum class.
 
-  9| let _ = if let F = 1 then 1 else 2;
+  9| let _ = if let F = 1 {1} else {2};
                     ^
 
 
@@ -3049,7 +3049,12 @@ Found 2 errors.
 
     assert_checks(
       heap,
-      "{let _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}",
+      "{let _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) {b} else {c};}",
+      &builder.unit_type(),
+    );
+    assert_checks(
+      heap,
+      "{let _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) {b} else if true {1} else {c};}",
       &builder.unit_type(),
     );
     assert_checks(
@@ -3287,7 +3292,8 @@ Found 1 error.
     {true},
     match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
   );
-  let _ = Test.generic1(0, if true then true else false, false);
+  let _ = Test.generic1(0, if true {true} else {false}, false);
+  let _ = Test.generic1(0, if true {true} else if true {true} else {false}, false);
   let _ = Test.generic2((a: int) -> 1, 1);
   let _ = Test.generic2((a) -> 1, 1);
   let _ = Test.generic3((a: int) -> 1);
@@ -3313,31 +3319,39 @@ Cannot access member of `Test2` at index 1.
                                            ^
 
 
-Error ---------------------------------- DUMMY.sam:8:11-8:64
+Error ---------------------------------- DUMMY.sam:8:11-8:63
 
 There is not enough context information to decide the type of this expression.
 
-  8|   let _ = Test.generic1(0, if true then true else false, false);
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  8|   let _ = Test.generic1(0, if true {true} else {false}, false);
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Error -------------------------------- DUMMY.sam:12:63-12:64
+Error ---------------------------------- DUMMY.sam:9:11-9:83
 
 There is not enough context information to decide the type of this expression.
 
-  12|   let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+  9|   let _ = Test.generic1(0, if true {true} else if true {true} else {false}, false);
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error -------------------------------- DUMMY.sam:13:63-13:64
+
+There is not enough context information to decide the type of this expression.
+
+  13|   let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
                                                                     ^
 
 
-Error -------------------------------- DUMMY.sam:12:83-12:84
+Error -------------------------------- DUMMY.sam:13:83-13:84
 
 There is not enough context information to decide the type of this expression.
 
-  12|   let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+  13|   let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
                                                                                         ^
 
 
-Found 5 errors.
+Found 6 errors.
   "#,
     );
   }
@@ -3353,7 +3367,7 @@ Found 5 errors.
     let f = (d: int, e: int) -> a + b + c + d + e;
     f(1, 2)
   };
-  let _ = (b: bool, t: int, f: int) -> if b then t else f;
+  let _ = (b: bool, t: int, f: int) -> if b {t} else {f};
   f(3, 4, 5)
 }
 "#,

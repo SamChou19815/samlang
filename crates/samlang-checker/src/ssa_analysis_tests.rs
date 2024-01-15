@@ -45,7 +45,7 @@ mod tests {
   let a: int = 3;
   let b = true;
   let c = a;
-  let _ = if a && b then {
+  let _ = if a && b {
     match (!c) {
       Foo(d) -> d + a,
       Bar(_) -> b
@@ -53,7 +53,7 @@ mod tests {
   } else {
     (p1: Foo, p2) -> Baz.ouch<Foo>(p2).ahha<Foo>(p1) + a
   };
-  let _ = if let {pat1 as {pat2 as (Fizz(pat3), Buzz, _), pat4}} = true then 1 else 2;
+  let _ = if let {pat1 as {pat2 as (Fizz(pat3), Buzz, _), pat4}} = true {1} else {2};
   let a = 3;
   let {o1, o2 as o3} = {};
   o1 + o3
@@ -71,9 +71,11 @@ Invalid defines: [14:7-14:8]
 Locally Scoped Defs:
 10:10-12:4: []
 11:5-11:57: [p1, p2]
+13:73-13:76: []
+13:82-13:85: []
 15:24-15:26: []
 1:1-17:2: [a, b, c, o1, o3]
-5:26-10:4: []
+5:21-10:4: []
 7:7-7:23: [d]
 8:7-8:18: []
 Lambda Capture Locs: [11:5-11:57]

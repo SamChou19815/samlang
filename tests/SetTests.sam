@@ -5,19 +5,25 @@ import { ForTests } from tests.StdLib;
 
 class SetTests {
   private function createSetHelper(acc: Set<Int>, n: int): Set<Int> =
-    if n == 0 then { acc } else {
+    if n == 0 {
+      acc
+    } else {
       let boxedN = Int.init(n);
       SetTests.createSetHelper(acc.insert(boxedN).insert(boxedN), n - 1)
     }
 
   private function validateSetHelper(set: Set<Int>, n: int): unit =
-    if n == 0 then { ForTests.assertBool(!set.contains(Int.init(n)), "Should be none!") } else {
+    if n == 0 {
+      ForTests.assertBool(!set.contains(Int.init(n)), "Should be none!")
+    } else {
       let _ = ForTests.assertBool(set.contains(Int.init(n)), "Missing key");
       SetTests.validateSetHelper(set, n - 1)
     }
 
   private function validatePlusOneIntSetHelper(set: Set<Int>, n: int): unit =
-    if n == 0 then { ForTests.assertBool(!set.contains(Int.init(1)), "Should be none!") } else {
+    if n == 0 {
+      ForTests.assertBool(!set.contains(Int.init(1)), "Should be none!")
+    } else {
       let _ = ForTests.assertBool(set.contains(Int.init(n + 1)), "Missing key");
       SetTests.validatePlusOneIntSetHelper(set, n - 1)
     }

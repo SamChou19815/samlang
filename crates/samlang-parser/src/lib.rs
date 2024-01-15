@@ -150,9 +150,9 @@ mod tests {
     expect_good_expr("true && false");
     expect_good_expr("false || true");
     expect_good_expr("\"hello\"::\"world\"");
-    expect_good_expr("if (true) /* a */ then 3 /* a */ else /* a */ bar");
+    expect_good_expr("if (true) /* a */ {3} /* a */ else /* a */ {bar}");
     expect_good_expr(
-      "if let {foo as {bar /* a */ as (Fizz(baz,), Buzz, (_,)), boo},} = true then 3 else bar",
+      "if let {foo as {bar /* a */ as (Fizz(baz,), Buzz, (_,)), boo},} = true {3} else {bar}",
     );
     expect_good_expr("match (this) { None(_) -> 0, Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> match this { None(_) -> 1 }, Some(d) -> d }");
@@ -215,7 +215,8 @@ mod tests {
     expect_bad_expr("{: bar}");
     expect_bad_expr("{foo: }");
     expect_bad_expr("foo.");
-    expect_bad_expr("if (true) then 3");
+    expect_bad_expr("if (true) {3}");
+    expect_bad_expr("if (true) {3} else");
     expect_bad_expr("if (true) else 4");
     expect_bad_expr("if (true)");
     expect_bad_expr("match (this) { | None _  }");
@@ -300,13 +301,13 @@ mod tests {
 
     class TypeInference {
       private function <T: Int> notAnnotated(): unit = {
-        let _ = (a, b, c) -> if a(b + 1) then b else c;
+        let _ = (a, b, c) -> if a(b + 1) {b} else {c};
       }
       // Read the docs to see how we do the type inference.
       function annotated(): unit = {
         let _: ((int) -> bool, int, int) -> int =
           (a: (int) -> bool, b: int, c: int) -> (
-            if a(b + 1) then b else c
+            if a(b + 1) {b} else {c}
           );
       }
     }
@@ -381,7 +382,7 @@ mod tests {
 
     class TypeInference(val : Str, val foo: ) {
       function notAnnotated(bad: ):  = {
-        let _ = (a, b, c) -> if a(b + 1) then b else c;
+        let _ = (a, b, c) -> if a(b + 1) {b} else {c};
       }
     }
 "#;
@@ -412,7 +413,7 @@ mod tests {
 
     class TypeInference(vafl : Str, val foo: ) {
       function notAnnotated(bad: , : int):  = {
-        let _ = (a, b, c) -> if a(b + 1) then b else c;
+        let _ = (a, b, c) -> if a(b + 1) {b} else {c};
       }
     }
 
