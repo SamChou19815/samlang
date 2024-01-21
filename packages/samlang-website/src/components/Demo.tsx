@@ -3,9 +3,10 @@
 import Editor from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import Link from 'next/link';
+import { gc } from 'wasm-feature-detect';
 import type { CompilationResult } from './samlang-wasm-glue';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { initializeMonacoEditor, monacoEditorOptions, onMonacoModelMount } from './samlang-config';
 import { ALL_EXPRESSIONS, ALL_TYPES, PRINT_HELLO_WORLD, MODULES } from './samlang-programs';
 
@@ -19,12 +20,32 @@ const DemoPrograms = [
 export default function LanguageDemo(): JSX.Element {
   const [response, setResponse] = useState<CompilationResult | null>(null);
   const [chosenTab, setChosenTab] = useState(0);
+  const [displayNoWasmGC, setDisplayNoWasmGC] = useState(false);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
+  useEffect(() => {
+    gc().then((b) => setDisplayNoWasmGC(!b));
+  }, []);
 
   const showCompilerOutput = chosenTab === 0;
 
   return (
     <div>
+      {displayNoWasmGC && (
+        <div className="fixed flex flex-col opacity-95 w-full h-full z-50 bg-black text-white justify-center items-center">
+          <div>Your browser doesn't support WASM GC.</div>
+          <a href="https://webassembly.org/features/">
+            See how many other good features your browser doesn't support.
+          </a>
+          <div>
+            <button
+              className={`cursor-pointer m-2 p-2 border-solid border-white border-2 hover:bg-gray-600`}
+              onClick={() => setDisplayNoWasmGC(false)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <nav className="sticky top-0 z-40 flex h-12 bg-white pr-4 drop-shadow-sm filter">
         <div className="flex w-full flex-wrap justify-between">
           <div className="flex min-w-0 flex-auto items-center">
