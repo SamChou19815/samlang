@@ -1,4 +1,4 @@
-import type * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import type { editor, languages } from 'monaco-editor/esm/vs/editor/editor.api';
 import type * as SamlangTypes from './samlang-wasm-glue';
 
