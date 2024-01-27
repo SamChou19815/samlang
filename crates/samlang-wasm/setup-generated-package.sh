@@ -55,7 +55,7 @@ export function autoComplete(
 }>;" > samlang-demo/index.d.ts
 
 bun build --outfile samlang-demo/index.js --format esm lazy-index.js
-bun test
+node samlang-wasm.test.mjs --experimental-wasm-modules
 
 # Cleanup outputs
 # rm samlang-demo/.gitignore samlang-demo/*.wasm samlang-demo/*.js
