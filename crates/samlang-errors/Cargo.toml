@@ -4,7 +4,7 @@ version = "0.9.1"
 edition = "2021"
 
 [dependencies]
-itertools = "0.12.0"
+itertools = "0.12.1"
 samlang-ast = { path = "../samlang-ast" }
 samlang-heap = { path = "../samlang-heap" }
 
