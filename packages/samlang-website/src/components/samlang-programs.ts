@@ -8,19 +8,19 @@ export const FOURTY_TWO: string = `class Math {
     2 * 21
 }`;
 
-export const PATTERN_MATCHING: string = `class Opt<T>(
+export const PATTERN_MATCHING: string = `import {Pair} from std.tuples;
+
+class Opt<T>(
   None, Some(T)
 ) {
-  method isEmpty(): bool =
-    match (this) {
-      None -> true,
-      Some(_) -> false,
-    }
+  function <T> some(v: T): Opt<T> =
+    Opt.Some(v)
 
-  method <R> map(f: (T) -> R): Opt<R> =
-    match (this) {
-      None -> Opt.None(),
-      Some(v) -> Opt.Some(f(v)),
+  method either(other: Opt<T>): Opt<T> =
+    match (this, other) {
+      (Some(v), _) -> Opt.Some(v),
+      (_, Some(v)) -> Opt.Some(v),
+      (None, None) -> Opt.None(),
     }
 }`;
 
@@ -118,7 +118,7 @@ class AllAboutPrimitiveTypes {
 
   // We can convert between different primitive types.
   function boolToString(b: bool): Str =
-    if b then "true" else "false"
+    if b {"true"} else {"false"}
 
   // Some builtin functions also exist:
   // - Builtins.StrToInt
@@ -264,10 +264,13 @@ class BoxedInt(val i: int): Comparable<BoxedInt> {
     this.i - other.i
 }`;
 
-export const ALL_EXPRESSIONS: string = `/**
+export const ALL_EXPRESSIONS: string = `import {Pair, Triple, Tuple4} from std.tuples;
+import {Option} from std.option;
+
+/**
 * The expressions are listed in decreasing precedence order, so you know where to add parentheses.
 */
-class Expressions {
+class Expressions(val v: int) {
   /** samlang supports a limited set of literals. */
   function literals(): unit = {
     let validLiteral1 = 42;
@@ -284,6 +287,12 @@ class Expressions {
   function variables(a: int): int = {
     let b = 42;
     a + b
+  }
+
+  /** You can create complex tuples. */
+  function tuples(a: int): Tuple4<int, Pair<int, int>, Triple<int, int, int>, int> = {
+    let b = 42;
+    (a, (a, b), (a, b, 7), b)
   }
 
   /**
@@ -328,7 +337,7 @@ class Expressions {
   /** Fields and methods can be accessed by dot syntax. */
   function dot(): unit = {
     let _ = Box.init(1).a;
-    let _ = Expressions.init().oneMethod;
+    let _ = Expressions.init(1).oneMethod;
   }
 
   /** There are two kinds of unary expressions */
@@ -371,22 +380,34 @@ class Expressions {
 
   /** In samlang, we do not have ternary expression, because if-else blocks are expressions. */
   function conditionals(): Str =
-    if 1 == 2 then
+    if 1 == 2 {
       "Hello"
-    else if true then
+    } else if true {
       "World"
-    else {
+    } else {
       Process.panic("Logic is broken")
     }
 
   /**
-   * You can use match expressions to pattern match on variants. Pattern matching must be exhaustive.
+   * You can use deeply-nested match expressions to pattern match on variants.
+   * Pattern matching must be exhaustive.
    */
-  function patternMatching(opt: Option<int>): int =
-    match (opt) {
+  function patternMatchingOptMax(
+    opt1: Option<int>,
+    opt2: Option<int>,
+  ): Option<int> =
+    match (opt1, opt2) {
       // Commenting the following line to get an error
-      None -> 42,
-      Some(a) -> a,
+      (Some(v1), Some(v2)) -> {
+        if v1 > v2 {
+          Option.Some(v1)
+        } else {
+          Option.Some(v2)
+        }
+      },
+      (Some(v), None) -> Option.Some(v),
+      (None, Some(v)) -> Option.Some(v),
+      (None, None) -> Option.None(),
     }
 
   /** You can easily define an anonymous function as a lambda. */
@@ -404,5 +425,4 @@ class Expressions {
 }
 
 class Box(val a: int) {}
-class Option<T>(None, Some(T)) {}
 `;
