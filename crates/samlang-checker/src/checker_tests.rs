@@ -3020,7 +3020,7 @@ Found 3 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:25-1:64
 
-This pattern-matching is not exhausive.
+This pattern-matching is not exhaustive.
 Here is an example of a non-matching value: `Bar(_)`.
 
   1| { let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
@@ -3267,7 +3267,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:6-1:12
 
-This pattern-matching is not exhausive.
+This pattern-matching is not exhaustive.
 Here is an example of a non-matching value: `Bar(_)`.
 
   1| {let Foo(_) = Test2.Foo(false);}

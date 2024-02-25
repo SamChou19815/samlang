@@ -586,9 +586,9 @@ pub enum ErrorDetail {
   MissingClassMemberDefinitions { missing_definitions: Vec<PStr> },
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
-  NonExhausiveStructBinding { missing_bindings: Vec<PStr> },
-  NonExhausiveTupleBinding { expected_count: usize, actual_count: usize },
-  NonExhausiveMatch { counter_example: Description },
+  NonExhaustiveStructBinding { missing_bindings: Vec<PStr> },
+  NonExhaustiveTupleBinding { expected_count: usize, actual_count: usize },
+  NonExhaustiveMatch { counter_example: Description },
   NotAnEnum { description: Description },
   NotAStruct { description: Description },
   Stacked(StackableError),
@@ -678,7 +678,7 @@ impl ErrorDetail {
         printable_stream.push_location(old_loc);
         printable_stream.push_text(".");
       }
-      ErrorDetail::NonExhausiveStructBinding { missing_bindings } => {
+      ErrorDetail::NonExhaustiveStructBinding { missing_bindings } => {
         printable_stream.push_text(
           "The pattern does not bind all fields. The following names have not been mentioned:",
         );
@@ -688,7 +688,7 @@ impl ErrorDetail {
           printable_stream.push_text("`");
         }
       }
-      ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count } => {
+      ErrorDetail::NonExhaustiveTupleBinding { expected_count, actual_count } => {
         printable_stream
           .push_text("The pattern does not bind all fields. Expected number of elements: ");
         printable_stream.push_size(*expected_count);
@@ -696,9 +696,9 @@ impl ErrorDetail {
         printable_stream.push_size(*actual_count);
         printable_stream.push_text(".");
       }
-      ErrorDetail::NonExhausiveMatch { counter_example } => {
+      ErrorDetail::NonExhaustiveMatch { counter_example } => {
         printable_stream.push_text(
-          "This pattern-matching is not exhausive.\nHere is an example of a non-matching value: `",
+          "This pattern-matching is not exhaustive.\nHere is an example of a non-matching value: `",
         );
         printable_stream.push_description(counter_example);
         printable_stream.push_text("`.");
@@ -1014,25 +1014,25 @@ impl ErrorSet {
     self.report_error(new_loc, ErrorDetail::NameAlreadyBound { name, old_loc })
   }
 
-  pub fn report_non_exhausive_struct_binding_error(
+  pub fn report_non_exhaustive_struct_binding_error(
     &mut self,
     loc: Location,
     missing_bindings: Vec<PStr>,
   ) {
-    self.report_error(loc, ErrorDetail::NonExhausiveStructBinding { missing_bindings })
+    self.report_error(loc, ErrorDetail::NonExhaustiveStructBinding { missing_bindings })
   }
 
-  pub fn report_non_exhausive_tuple_binding_error(
+  pub fn report_non_exhaustive_tuple_binding_error(
     &mut self,
     loc: Location,
     expected_count: usize,
     actual_count: usize,
   ) {
-    self.report_error(loc, ErrorDetail::NonExhausiveTupleBinding { expected_count, actual_count })
+    self.report_error(loc, ErrorDetail::NonExhaustiveTupleBinding { expected_count, actual_count })
   }
 
-  pub fn report_non_exhausive_match_error(&mut self, loc: Location, counter_example: Description) {
-    self.report_error(loc, ErrorDetail::NonExhausiveMatch { counter_example })
+  pub fn report_non_exhaustive_match_error(&mut self, loc: Location, counter_example: Description) {
+    self.report_error(loc, ErrorDetail::NonExhaustiveMatch { counter_example })
   }
 
   pub fn report_not_an_enum_error(&mut self, loc: Location, description: Description) {
@@ -1207,12 +1207,12 @@ Found 2 errors."#
       heap.alloc_str_for_test("bar"),
     );
     error_set.report_name_already_bound_error(Location::dummy(), PStr::LOWER_A, Location::dummy());
-    error_set.report_non_exhausive_struct_binding_error(
+    error_set.report_non_exhaustive_struct_binding_error(
       Location::dummy(),
       vec![PStr::UPPER_A, PStr::UPPER_B],
     );
-    error_set.report_non_exhausive_tuple_binding_error(Location::dummy(), 7, 4);
-    error_set.report_non_exhausive_match_error(Location::dummy(), Description::IntType);
+    error_set.report_non_exhaustive_tuple_binding_error(Location::dummy(), 7, 4);
+    error_set.report_non_exhaustive_match_error(Location::dummy(), Description::IntType);
     error_set.report_not_an_enum_error(Location::dummy(), Description::IntType);
     error_set.report_not_a_struct_error(Location::dummy(), Description::IntType);
     error_set.report_stackable_error(Location::dummy(), {
@@ -1321,7 +1321,7 @@ The pattern does not bind all fields. Expected number of elements: 7, actual num
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-This pattern-matching is not exhausive.
+This pattern-matching is not exhaustive.
 Here is an example of a non-matching value: `int`.
 
 

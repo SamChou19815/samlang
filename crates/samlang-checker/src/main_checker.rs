@@ -992,7 +992,7 @@ fn check_match(
   if let Some(description) =
     pattern_matching::incomplete_counterexample(cx, &abstract_pattern_nodes)
   {
-    cx.error_set.report_non_exhausive_match_error(expression.common.loc, description);
+    cx.error_set.report_non_exhaustive_match_error(expression.common.loc, description);
   }
   expr::E::Match(expr::Match {
     common: expression.common.with_new_type(Rc::new(
@@ -1224,7 +1224,7 @@ fn check_matching_pattern(
         abstract_pattern_nodes.push(abstract_node);
       }
       if fields.len() > checked_destructured_names.len() {
-        cx.error_set.report_non_exhausive_tuple_binding_error(
+        cx.error_set.report_non_exhaustive_tuple_binding_error(
           *pattern_loc,
           fields.len(),
           checked_destructured_names.len(),
@@ -1318,7 +1318,7 @@ fn check_matching_pattern(
         abstract_pattern_nodes[*field_order] = abstract_node;
       }
       if !not_mentioned_fields.is_empty() {
-        cx.error_set.report_non_exhausive_struct_binding_error(
+        cx.error_set.report_non_exhaustive_struct_binding_error(
           *pattern_loc,
           not_mentioned_fields.into_iter().collect(),
         );
@@ -1418,7 +1418,7 @@ fn check_matching_pattern(
           (0, None)
         };
       if resolved_enum_variant.types.len() > checked_data_variables_len {
-        cx.error_set.report_non_exhausive_tuple_binding_error(
+        cx.error_set.report_non_exhaustive_tuple_binding_error(
           *loc,
           resolved_enum_variant.types.len(),
           checked_data_variables_len,
@@ -1487,7 +1487,7 @@ fn check_statement(
   if let Some(description) =
     pattern_matching::incomplete_counterexample(cx, &[abstract_pattern_node])
   {
-    cx.error_set.report_non_exhausive_match_error(*checked_pattern.loc(), description);
+    cx.error_set.report_non_exhaustive_match_error(*checked_pattern.loc(), description);
   }
   expr::DeclarationStatement {
     loc: *loc,
