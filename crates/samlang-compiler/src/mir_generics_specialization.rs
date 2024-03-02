@@ -120,6 +120,8 @@ impl Rewriter {
               mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
             let mut nested_stmts = vec![];
+            // Once we pass the check, we can cast the general enum type to a
+            // more specific subtype.
             nested_stmts.push(mir::Statement::Cast {
               name: casted_collector,
               type_: subtype,
@@ -147,6 +149,8 @@ impl Rewriter {
               ),
             });
           }
+          // If we are pattern matching on an unboxed case, it means that `unboxed_t` must be a
+          // pointer type. Therefore, we only need to check whether the test expression is a pointer.
           mir::EnumTypeDefinition::Unboxed(unboxed_t) => {
             debug_assert!(bindings.len() == 1);
             let binded_name = bindings[0].as_ref().unwrap().0;
@@ -155,30 +159,38 @@ impl Rewriter {
             let comparison_temp_2 = heap.alloc_temp_str();
             let comparison_temp_3 = heap.alloc_temp_str();
             let comparison_temp_4 = heap.alloc_temp_str();
+            // We need to case the high level expression into int so we can
+            // do low-level bitwise is-pointer check.
             collector.push(mir::Statement::Cast {
               name: casted_int_collector,
               type_: mir::INT_TYPE,
               assigned_expression: test_expr,
             });
             // Here we test whether this is a pointer
+            // We got lucky in the JS output, since Number([1,2]) == NaN,
+            // and the rest happens to work out.
+            // i < 1024 (small int is not a pointer)
             collector.push(mir::Statement::binary(
               comparison_temp_1,
               hir::Operator::LT,
               mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
               mir::Expression::int(1024),
             ));
+            // i & 1 (LSB == 1 is not a pointer)
             collector.push(mir::Statement::binary(
               comparison_temp_2,
               hir::Operator::LAND,
               mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
               mir::ONE,
             ));
+            // (i < 1024) || (i & 1) -> not a pointer
             collector.push(mir::Statement::binary(
               comparison_temp_3,
               hir::Operator::LOR,
               mir::Expression::var_name(comparison_temp_1, mir::INT_TYPE),
               mir::Expression::var_name(comparison_temp_2, mir::INT_TYPE),
             ));
+            // invert the previous check, is a pointer
             collector.push(mir::Statement::binary(
               comparison_temp_4,
               hir::Operator::XOR,
@@ -186,6 +198,8 @@ impl Rewriter {
               mir::ONE,
             ));
             let mut nested_stmts = vec![];
+            // Once we pass the is-pointer check, we can cast the test expression to the underlying
+            // unboxed pointer type.
             nested_stmts.push(mir::Statement::Cast {
               name: binded_name,
               type_: *unboxed_t,
@@ -206,6 +220,8 @@ impl Rewriter {
           mir::EnumTypeDefinition::Int => {
             let casted_collector = heap.alloc_temp_str();
             let comparison_temp = heap.alloc_temp_str();
+            // We cast the test expression to int to perform the test.
+            // Once we have i31 type, the test should be performed on i31.
             collector.push(mir::Statement::Cast {
               name: casted_collector,
               type_: mir::INT_TYPE,
@@ -320,6 +336,7 @@ impl Rewriter {
                 )
                 .collect(),
             });
+            // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
               name: *enum_variable_name,
               type_: mir::Type::Id(enum_type),
@@ -328,6 +345,7 @@ impl Rewriter {
           }
           mir::EnumTypeDefinition::Unboxed(_) => {
             debug_assert_eq!(associated_data_list.len(), 1);
+            // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
               name: *enum_variable_name,
               type_: mir::Type::Id(enum_type),
@@ -340,6 +358,7 @@ impl Rewriter {
           }
           mir::EnumTypeDefinition::Int => {
             debug_assert!(associated_data_list.is_empty());
+            // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
               name: *enum_variable_name,
               type_: mir::Type::Id(enum_type),
