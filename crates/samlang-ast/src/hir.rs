@@ -344,14 +344,6 @@ impl Callee {
 }
 
 #[derive(Debug, Clone)]
-pub struct GenenalLoopVariable {
-  pub name: PStr,
-  pub type_: Type,
-  pub initial_value: Expression,
-  pub loop_value: Expression,
-}
-
-#[derive(Debug, Clone)]
 pub enum Statement {
   Binary {
     name: PStr,
@@ -385,22 +377,6 @@ pub enum Statement {
     s2: Vec<Statement>,
     final_assignments: Vec<(PStr, Type, Expression, Expression)>,
   },
-  SingleIf {
-    condition: Expression,
-    invert_condition: bool,
-    statements: Vec<Statement>,
-  },
-  Break(Expression),
-  While {
-    loop_variables: Vec<GenenalLoopVariable>,
-    statements: Vec<Statement>,
-    break_collector: Option<VariableName>,
-  },
-  Cast {
-    name: PStr,
-    type_: Type,
-    assigned_expression: Expression,
-  },
   LateInitDeclaration {
     name: PStr,
     type_: Type,
@@ -433,7 +409,6 @@ impl Statement {
     &self,
     heap: &samlang_heap::Heap,
     level: usize,
-    break_collector: &Option<VariableName>,
     collector: &mut Vec<String>,
   ) {
     match self {
@@ -492,7 +467,7 @@ impl Statement {
           tag,
         ));
         for s in s1 {
-          s.debug_print_internal(heap, level + 1, break_collector, collector);
+          s.debug_print_internal(heap, level + 1, collector);
         }
         for (n, _, v1, _) in final_assignments {
           collector.push(format!(
@@ -504,7 +479,7 @@ impl Statement {
         }
         collector.push(format!("{}}} else {{\n", "  ".repeat(level)));
         for s in s2 {
-          s.debug_print_internal(heap, level + 1, break_collector, collector);
+          s.debug_print_internal(heap, level + 1, collector);
         }
         for (n, _, _, v2) in final_assignments {
           collector.push(format!(
@@ -527,7 +502,7 @@ impl Statement {
         }
         collector.push(format!("{}if {} {{\n", "  ".repeat(level), condition.debug_print(heap)));
         for s in s1 {
-          s.debug_print_internal(heap, level + 1, break_collector, collector);
+          s.debug_print_internal(heap, level + 1, collector);
         }
         for (n, _, v1, _) in final_assignments {
           collector.push(format!(
@@ -539,7 +514,7 @@ impl Statement {
         }
         collector.push(format!("{}}} else {{\n", "  ".repeat(level)));
         for s in s2 {
-          s.debug_print_internal(heap, level + 1, break_collector, collector);
+          s.debug_print_internal(heap, level + 1, collector);
         }
         for (n, _, _, v2) in final_assignments {
           collector.push(format!(
@@ -550,71 +525,6 @@ impl Statement {
           ));
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
-      }
-      Statement::SingleIf { condition, invert_condition, statements } => {
-        let invert_str = if *invert_condition { "!" } else { "" };
-        collector.push(format!(
-          "{}if {}{} {{\n",
-          "  ".repeat(level),
-          invert_str,
-          condition.debug_print(heap)
-        ));
-        for s in statements {
-          s.debug_print_internal(heap, level + 1, break_collector, collector);
-        }
-        collector.push(format!("{}}}\n", "  ".repeat(level)));
-      }
-      Statement::Break(break_value) => {
-        let break_collector_str =
-          if let Some(s) = break_collector { s.name.as_str(heap) } else { "undefined" };
-        collector.push(format!(
-          "{}{} = {};\n",
-          "  ".repeat(level),
-          break_collector_str,
-          break_value.debug_print(heap)
-        ));
-        collector.push(format!("{}break;\n", "  ".repeat(level)));
-      }
-      Statement::While { loop_variables, break_collector, statements } => {
-        for v in loop_variables {
-          collector.push(format!(
-            "{}let {}: {} = {};\n",
-            "  ".repeat(level),
-            v.name.as_str(heap),
-            v.type_.pretty_print(heap),
-            v.initial_value.debug_print(heap)
-          ));
-        }
-        if let Some(c) = break_collector {
-          collector.push(format!(
-            "{}let {}: {};\n",
-            "  ".repeat(level),
-            c.name.as_str(heap),
-            c.type_.pretty_print(heap)
-          ));
-        }
-        collector.push(format!("{}while (true) {{\n", "  ".repeat(level)));
-        for nested in statements {
-          nested.debug_print_internal(heap, level + 1, break_collector, collector);
-        }
-        for v in loop_variables {
-          collector.push(format!(
-            "{}{} = {};\n",
-            "  ".repeat(level + 1),
-            v.name.as_str(heap),
-            v.loop_value.debug_print(heap)
-          ));
-        }
-        collector.push(format!("{}}}\n", "  ".repeat(level)));
-      }
-      Statement::Cast { name, type_, assigned_expression } => {
-        collector.push(format!(
-          "{}let {} = {} as {};\n",
-          "  ".repeat(level),
-          name.as_str(heap),
-          assigned_expression.debug_print(heap),
-          type_.pretty_print(heap),
-        ));
       }
       Statement::LateInitDeclaration { name, type_ } => {
         collector.push(format!(
@@ -674,7 +584,7 @@ impl Statement {
 
   fn debug_print_leveled(&self, heap: &samlang_heap::Heap, level: usize) -> String {
     let mut collector = vec![];
-    self.debug_print_internal(heap, level, &None, &mut collector);
+    self.debug_print_internal(heap, level, &mut collector);
     collector.join("").trim_end().to_string()
   }
 
