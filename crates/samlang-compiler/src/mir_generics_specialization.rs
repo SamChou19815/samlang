@@ -258,30 +258,6 @@ impl Rewriter {
           ),
         });
       }
-      hir::Statement::SingleIf { condition, invert_condition, statements } => {
-        collector.push(mir::Statement::SingleIf {
-          condition: self.rewrite_expr(heap, condition, generics_replacement_map),
-          invert_condition: *invert_condition,
-          statements: self.rewrite_stmts(heap, statements, generics_replacement_map),
-        });
-      }
-      hir::Statement::Break(_) => {
-        panic!("Break should not appear before tailrec optimization.")
-      }
-      hir::Statement::While { .. } => {
-        panic!("While should not appear before tailrec optimization.")
-      }
-      hir::Statement::Cast { name, type_, assigned_expression } => {
-        collector.push(mir::Statement::Cast {
-          name: *name,
-          type_: self.rewrite_type(heap, type_, generics_replacement_map),
-          assigned_expression: self.rewrite_expr(
-            heap,
-            assigned_expression,
-            generics_replacement_map,
-          ),
-        });
-      }
       hir::Statement::LateInitDeclaration { name, type_ } => {
         collector.push(mir::Statement::LateInitDeclaration {
           name: *name,
@@ -890,74 +866,6 @@ sources.mains = [_DUMMY_I$main]
     );
   }
 
-  #[should_panic]
-  #[test]
-  fn panic_test_1() {
-    let heap = &mut Heap::new();
-
-    let sources = hir::Sources {
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![hir::TypeDefinition {
-        name: hir::STRING_TYPE.into_id().unwrap().name,
-        type_parameters: vec![],
-        mappings: hir::TypeDefinitionMappings::Enum(vec![]),
-      }],
-      main_function_names: vec![hir::FunctionName {
-        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
-        fn_name: PStr::MAIN_FN,
-      }],
-      functions: vec![hir::Function {
-        name: hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
-          fn_name: PStr::MAIN_FN,
-        },
-        parameters: vec![],
-        type_parameters: vec![],
-        type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-        body: vec![hir::Statement::Break(hir::ZERO)],
-        return_value: hir::ZERO,
-      }],
-    };
-    perform_generics_specialization(heap, sources);
-  }
-
-  #[should_panic]
-  #[test]
-  fn panic_test_2() {
-    let heap = &mut Heap::new();
-
-    let sources = hir::Sources {
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![hir::TypeDefinition {
-        name: hir::STRING_TYPE.into_id().unwrap().name,
-        type_parameters: vec![],
-        mappings: hir::TypeDefinitionMappings::Enum(vec![]),
-      }],
-      main_function_names: vec![hir::FunctionName {
-        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
-        fn_name: PStr::MAIN_FN,
-      }],
-      functions: vec![hir::Function {
-        name: hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
-          fn_name: PStr::MAIN_FN,
-        },
-        parameters: vec![],
-        type_parameters: vec![],
-        type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-        body: vec![hir::Statement::While {
-          loop_variables: vec![],
-          statements: vec![],
-          break_collector: None,
-        }],
-        return_value: hir::ZERO,
-      }],
-    };
-    perform_generics_specialization(heap, sources);
-  }
-
   #[test]
   fn comprehensive_test() {
     let heap = &mut Heap::new();
@@ -1158,11 +1066,6 @@ sources.mains = [_DUMMY_I$main]
               hir::Statement::IfElse {
                 condition: hir::ONE,
                 s1: vec![
-                  hir::Statement::SingleIf {
-                    condition: hir::ZERO,
-                    invert_condition: false,
-                    statements: vec![],
-                  },
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
@@ -1236,11 +1139,6 @@ sources.mains = [_DUMMY_I$main]
                     type_: hir::INT_TYPE,
                     pointer_expression: hir::Expression::var_name(PStr::LOWER_A, type_i),
                     index: 0,
-                  },
-                  hir::Statement::Cast {
-                    name: heap.alloc_str_for_test("cast"),
-                    type_: hir::INT_TYPE,
-                    assigned_expression: hir::Expression::var_name(PStr::LOWER_A, hir::INT_TYPE),
                   },
                   hir::Statement::LateInitDeclaration {
                     name: heap.alloc_str_for_test("late_init"),
@@ -1428,15 +1326,12 @@ variant type DUMMY_Enum2 = [Boxed(int, int), int]
 function _DUMMY_I$main(): int {
   let finalV: int;
   if 1 {
-    if 0 {
-    }
     let a: DUMMY_I__int__Str = _DUMMY_I__int$creatorIA(0);
     let a2: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIA(G1);
     let b: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIB(G1);
     _DUMMY_I__DUMMY_I__int__Str$functor_fun(G1);
     _DUMMY_I__DUMMY_J$functor_fun(G1);
     let v1: int = (a: DUMMY_I__int__Str)[0];
-    let cast = (a: int) as int;
     let late_init: int;
     late_init = (a: int);
     finalV = (v1: int);

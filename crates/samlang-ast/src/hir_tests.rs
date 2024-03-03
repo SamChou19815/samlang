@@ -285,11 +285,6 @@ mod tests {
           e1: ZERO,
           e2: ZERO,
         },
-        Statement::Cast {
-          name: heap.alloc_str_for_test("cast"),
-          type_: INT_TYPE,
-          assigned_expression: ZERO,
-        },
         Statement::LateInitDeclaration { name: heap.alloc_str_for_test("cast"), type_: INT_TYPE },
         Statement::LateInitAssignment {
           name: heap.alloc_str_for_test("cast"),
@@ -299,32 +294,19 @@ mod tests {
           test_expr: ZERO,
           tag: 0,
           bindings: vec![None, Some((PStr::UNDERSCORE, INT_TYPE))],
-          s1: vec![Statement::Break(ZERO)],
-          s2: vec![Statement::Break(ZERO)],
+          s1: vec![Statement::Binary {
+            name: heap.alloc_str_for_test("dd"),
+            operator: Operator::XOR.clone(),
+            e1: ZERO,
+            e2: ZERO,
+          }],
+          s2: vec![Statement::Binary {
+            name: heap.alloc_str_for_test("dd"),
+            operator: Operator::XOR.clone(),
+            e1: ZERO,
+            e2: ZERO,
+          }],
           final_assignments: vec![(PStr::LOWER_A, INT_TYPE, ZERO, ZERO)],
-        },
-        Statement::While {
-          loop_variables: vec![],
-          statements: vec![Statement::SingleIf {
-            condition: ZERO,
-            invert_condition: false,
-            statements: vec![],
-          }],
-          break_collector: None,
-        },
-        Statement::While {
-          loop_variables: vec![GenenalLoopVariable {
-            name: PStr::UNDERSCORE,
-            type_: INT_TYPE,
-            initial_value: ZERO,
-            loop_value: ZERO,
-          }],
-          statements: vec![Statement::SingleIf {
-            condition: ZERO,
-            invert_condition: true,
-            statements: vec![Statement::Break(ZERO)],
-          }],
-          break_collector: Some(VariableName { name: PStr::UNDERSCORE, type_: INT_TYPE }),
         },
       ],
       s2: vec![
@@ -407,7 +389,6 @@ mod tests {
           ),
           index: 0,
         },
-        Statement::Break(ZERO),
       ],
       final_assignments: vec![(
         heap.alloc_str_for_test("bar"),
@@ -433,30 +414,14 @@ if 0 {
   let dd = 0 << 0;
   let dd = 0 >>> 0;
   let dd = 0 ^ 0;
-  let cast = 0 as int;
   let cast: int;
   cast = 0;
   let [_, _: int] if tagof(0)==0 {
-    undefined = 0;
-    break;
+    let dd = 0 ^ 0;
     a = 0;
   } else {
-    undefined = 0;
-    break;
+    let dd = 0 ^ 0;
     a = 0;
-  }
-  while (true) {
-    if 0 {
-    }
-  }
-  let _: int = 0;
-  let _: int;
-  while (true) {
-    if !0 {
-      _ = 0;
-      break;
-    }
-    _ = 0;
   }
   bar = (b1: int);
 } else {
@@ -470,8 +435,6 @@ if 0 {
   $stresso<int>((d: int));
   (d: int)((d: int));
   let f: int = (big: DUMMY_FooBar)[0];
-  undefined = 0;
-  break;
   bar = (b2: int);
 }"#;
     assert_eq!(expected, stmt.debug_print(heap));
