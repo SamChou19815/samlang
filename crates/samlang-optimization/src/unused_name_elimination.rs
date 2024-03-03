@@ -401,13 +401,13 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::binary(
                 PStr::LOWER_A,
-                samlang_ast::hir::Operator::GE,
+                samlang_ast::hir::BinaryOperator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
               s2: vec![Statement::binary(
                 PStr::LOWER_A,
-                samlang_ast::hir::Operator::GE,
+                samlang_ast::hir::BinaryOperator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],

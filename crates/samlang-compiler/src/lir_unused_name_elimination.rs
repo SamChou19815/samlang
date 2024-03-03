@@ -312,7 +312,7 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::binary(
                 PStr::LOWER_A,
-                hir::Operator::GE,
+                hir::BinaryOperator::GE,
                 Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
                   INT_TYPE,

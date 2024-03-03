@@ -1,7 +1,7 @@
 use super::optimization_common::LocalValueContextForOptimization;
 use itertools::Itertools;
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{
     Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression,
     GenenalLoopVariable, Statement, Type, VariableName, INT_TYPE, ZERO,
@@ -80,7 +80,7 @@ mod estimator {
   #[cfg(test)]
   mod tests {
     use samlang_ast::{
-      hir::Operator,
+      hir::BinaryOperator,
       mir::{
         Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
         SymbolTable, Type, INT_TYPE, ZERO,
@@ -103,7 +103,7 @@ mod estimator {
             pointer_expression: ZERO,
             index: 2,
           },
-          Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO),
+          Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO),
           Statement::StructInit {
             struct_variable_name: PStr::EMPTY,
             type_name: table.create_type_name_for_test(PStr::EMPTY),
@@ -135,14 +135,14 @@ mod estimator {
           },
           Statement::IfElse {
             condition: ZERO,
-            s1: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
-            s2: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
+            s1: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
+            s2: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
             final_assignments: vec![],
           },
           Statement::SingleIf {
             condition: ZERO,
             invert_condition: false,
-            statements: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
+            statements: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
@@ -151,7 +151,7 @@ mod estimator {
               initial_value: ZERO,
               loop_value: ZERO,
             }],
-            statements: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
+            statements: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
             break_collector: None,
           },
           Statement::Cast { name: PStr::EMPTY, type_: INT_TYPE, assigned_expression: ZERO },
@@ -386,7 +386,7 @@ fn perform_inline_rewrite_on_function_stmt(
         // Using this to move the value around, will be optimized away eventually.
         rewritten_body.push(Statement::Binary(Binary {
           name: c,
-          operator: Operator::PLUS,
+          operator: BinaryOperator::PLUS,
           e1: inline_rewrite_expr(return_value_of_function_to_be_inlined, &mut cx),
           e2: ZERO,
         }));

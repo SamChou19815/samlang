@@ -181,7 +181,7 @@ impl TypeDefinition {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Operator {
+pub enum BinaryOperator {
   MUL,
   DIV,
   MOD,
@@ -200,25 +200,25 @@ pub enum Operator {
   NE,
 }
 
-impl Operator {
+impl BinaryOperator {
   pub fn as_str(&self) -> &'static str {
     match self {
-      Operator::MUL => "*",
-      Operator::DIV => "/",
-      Operator::MOD => "%",
-      Operator::PLUS => "+",
-      Operator::MINUS => "-",
-      Operator::LAND => "&",
-      Operator::LOR => "|",
-      Operator::SHL => "<<",
-      Operator::SHR => ">>>",
-      Operator::XOR => "^",
-      Operator::LT => "<",
-      Operator::LE => "<=",
-      Operator::GT => ">",
-      Operator::GE => ">=",
-      Operator::EQ => "==",
-      Operator::NE => "!=",
+      BinaryOperator::MUL => "*",
+      BinaryOperator::DIV => "/",
+      BinaryOperator::MOD => "%",
+      BinaryOperator::PLUS => "+",
+      BinaryOperator::MINUS => "-",
+      BinaryOperator::LAND => "&",
+      BinaryOperator::LOR => "|",
+      BinaryOperator::SHL => "<<",
+      BinaryOperator::SHR => ">>>",
+      BinaryOperator::XOR => "^",
+      BinaryOperator::LT => "<",
+      BinaryOperator::LE => "<=",
+      BinaryOperator::GT => ">",
+      BinaryOperator::GE => ">=",
+      BinaryOperator::EQ => "==",
+      BinaryOperator::NE => "!=",
     }
   }
 }
@@ -347,7 +347,7 @@ impl Callee {
 pub enum Statement {
   Binary {
     name: PStr,
-    operator: Operator,
+    operator: BinaryOperator,
     e1: Expression,
     e2: Expression,
   },

@@ -2,7 +2,7 @@ use super::dead_code_elimination;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{Binary, Expression, GenenalLoopVariable, Statement, Type, VariableName},
 };
 use samlang_heap::PStr;
@@ -52,12 +52,12 @@ impl GuardOperator {
     }
   }
 
-  pub(super) fn to_op(self) -> Operator {
+  pub(super) fn to_op(self) -> BinaryOperator {
     match self {
-      GuardOperator::LT => Operator::LT,
-      GuardOperator::LE => Operator::LE,
-      GuardOperator::GT => Operator::GT,
-      GuardOperator::GE => Operator::GE,
+      GuardOperator::LT => BinaryOperator::LT,
+      GuardOperator::LE => BinaryOperator::LE,
+      GuardOperator::GT => BinaryOperator::GT,
+      GuardOperator::GE => BinaryOperator::GE,
     }
   }
 }
@@ -345,7 +345,7 @@ fn try_merge_into_derived_induction_variable_without_swap(
     if let Some(another_variable) =
       binary_statement.e2.as_variable().and_then(|it| existing_set.get(&it.name))
     {
-      if binary_statement.operator == Operator::PLUS {
+      if binary_statement.operator == BinaryOperator::PLUS {
         if let Some(merged) =
           merge_variable_addition_into_derived_induction_variable(existing, another_variable)
         {
@@ -358,10 +358,10 @@ fn try_merge_into_derived_induction_variable_without_swap(
       get_loop_invariant_expression_opt(&binary_statement.e2, non_loop_invariant_variables)
     {
       match binary_statement.operator {
-        Operator::PLUS | Operator::MUL => {
+        BinaryOperator::PLUS | BinaryOperator::MUL => {
           if let Some(merged) = merge_constant_operation_into_derived_induction_variable(
             existing,
-            binary_statement.operator == Operator::PLUS,
+            binary_statement.operator == BinaryOperator::PLUS,
             &e2,
           ) {
             existing_set.insert(binary_statement.name, merged);
@@ -388,7 +388,7 @@ fn try_merge_into_derived_induction_variable(
     return;
   }
   match binary_statement.operator {
-    Operator::PLUS | Operator::MUL => {}
+    BinaryOperator::PLUS | BinaryOperator::MUL => {}
     _ => return,
   }
   let Binary { name, operator, e1, e2 } = binary_statement.clone();
@@ -407,12 +407,12 @@ struct LoopGuardStructure {
   break_collector: Option<(PStr, Type, Expression)>,
 }
 
-fn get_guard_operator(operator: Operator, invert_condition: bool) -> Option<GuardOperator> {
+fn get_guard_operator(operator: BinaryOperator, invert_condition: bool) -> Option<GuardOperator> {
   let guard_op = match operator {
-    Operator::LT => GuardOperator::LT,
-    Operator::LE => GuardOperator::LE,
-    Operator::GT => GuardOperator::GT,
-    Operator::GE => GuardOperator::GE,
+    BinaryOperator::LT => GuardOperator::LT,
+    BinaryOperator::LE => GuardOperator::LE,
+    BinaryOperator::GT => GuardOperator::GT,
+    BinaryOperator::GE => GuardOperator::GE,
     _ => return None,
   };
   Some(if invert_condition { guard_op } else { guard_op.invert() })
@@ -478,7 +478,7 @@ fn extract_basic_induction_variables(
         match stmt {
           Statement::Binary(Binary {
             name,
-            operator: Operator::PLUS,
+            operator: BinaryOperator::PLUS,
             e1: Expression::Variable(e1_var),
             e2,
           }) if name.eq(&basic_induction_loop_increment_collector.name)
@@ -678,15 +678,15 @@ mod tests {
     let heap = &mut samlang_heap::Heap::new();
     let table = &SymbolTable::new();
 
-    get_guard_operator(Operator::LT, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::LE, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::GE, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::GT, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::LT, true).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::LE, true).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::GE, true).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(Operator::GT, true).unwrap().invert().clone().invert().to_op();
-    assert!(get_guard_operator(Operator::EQ, true).is_none());
+    get_guard_operator(BinaryOperator::LT, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::LE, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::GE, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::GT, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::LT, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::LE, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::GE, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::GT, true).unwrap().invert().clone().invert().to_op();
+    assert!(get_guard_operator(BinaryOperator::EQ, true).is_none());
 
     BasicInductionVariableWithLoopGuard {
       name: PStr::LOWER_A,
@@ -846,13 +846,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::StringName(PStr::LOWER_A)
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_TYPE),
           Expression::StringName(PStr::LOWER_A),
         )
@@ -890,13 +890,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_TYPE),
           Expression::int(3),
         ),
@@ -953,25 +953,25 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_J, INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_x"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             Expression::int(5),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_y"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
             Expression::int(6),
           ),
@@ -995,37 +995,37 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_z"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("tmp_y"), INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_useless_1"),
-            Operator::MINUS,
+            BinaryOperator::MINUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("tmp_y"), INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_useless_2"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("tmp_useless_1"), INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_useless_3"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             ZERO,
             Expression::var_name(heap.alloc_str_for_test("tmp_useless_1"), INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_useless_4"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_useless_1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("tmp_useless_1"), INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_useless_6"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(PStr::LOWER_J, INT_TYPE),
           ),
@@ -1056,13 +1056,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE),
         )
@@ -1087,13 +1087,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_TYPE),
           Expression::StringName(heap.alloc_str_for_test("outside")),
         )
@@ -1120,13 +1120,13 @@ mod tests {
         &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             ZERO,
           )
@@ -1156,13 +1156,13 @@ mod tests {
         &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO,
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           )
@@ -1195,13 +1195,13 @@ mod tests {
         &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             ONE
           )
@@ -1232,13 +1232,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::MUL,
+          BinaryOperator::MUL,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::int(2)
         )
@@ -1268,13 +1268,13 @@ mod tests {
         &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           )
@@ -1302,13 +1302,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::int(2)
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::MUL,
+          BinaryOperator::MUL,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
         )
@@ -1335,13 +1335,13 @@ mod tests {
         &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE
           ),
           Statement::binary(
             heap.alloc_str_for_test("t1"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             ONE
           )
@@ -1370,13 +1370,13 @@ mod tests {
       &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE
         ),
         Statement::binary(
           heap.alloc_str_for_test("t1"),
-          Operator::DIV,
+          BinaryOperator::DIV,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           ONE
         )
@@ -1450,7 +1450,7 @@ mod tests {
       (
         &vec![Statement::binary(
           heap.alloc_str_for_test("cc"),
-          Operator::LT,
+          BinaryOperator::LT,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ZERO
         ),],
@@ -1483,7 +1483,7 @@ mod tests {
     assert!(extract_loop_guard_structure(
       (
         &vec![
-          Statement::binary(PStr::LOWER_A, Operator::PLUS, ZERO, ZERO),
+          Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO),
           Statement::StructInit {
             struct_variable_name: PStr::LOWER_A,
             type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
@@ -1501,7 +1501,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1522,7 +1522,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1544,7 +1544,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1561,7 +1561,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1582,7 +1582,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1603,7 +1603,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1644,7 +1644,7 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1670,7 +1670,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::EQ,
+            BinaryOperator::EQ,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1691,7 +1691,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1716,7 +1716,7 @@ mod tests {
         &vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1747,7 +1747,7 @@ mod tests {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1769,7 +1769,7 @@ mod tests {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::EQ,
+            BinaryOperator::EQ,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1780,7 +1780,7 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           )
@@ -1797,7 +1797,7 @@ mod tests {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1808,7 +1808,7 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           )
@@ -1825,7 +1825,7 @@ mod tests {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::GE,
+            BinaryOperator::GE,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO
           ),
@@ -1836,7 +1836,7 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE
           ),
@@ -1885,7 +1885,7 @@ mod tests {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::GE,
+            BinaryOperator::GE,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ZERO,
           ),
@@ -1896,25 +1896,25 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE,
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_J, INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_x"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             Expression::int(5),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_y"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
             Expression::int(6),
           ),

@@ -2,7 +2,7 @@
 mod tests {
   use super::super::lir::*;
   use crate::{
-    hir::{GlobalVariable, Operator},
+    hir::{BinaryOperator, GlobalVariable},
     mir::{FunctionName, SymbolTable},
   };
   use pretty_assertions::assert_eq;
@@ -122,13 +122,18 @@ mod tests {
                 type_: Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
                 expression_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
               },
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::LT, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::LE, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::GT, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::GE, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::EQ, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::NE, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::XOR.clone(), ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LT, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LE, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::GT, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::GE, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::EQ, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::NE, ZERO, ZERO),
+              Statement::binary(
+                heap.alloc_str_for_test("dd"),
+                BinaryOperator::XOR.clone(),
+                ZERO,
+                ZERO,
+              ),
               Statement::While {
                 loop_variables: vec![],
                 statements: vec![Statement::SingleIf {
@@ -154,17 +159,17 @@ mod tests {
               },
             ],
             s2: vec![
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::PLUS, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::MINUS, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::PLUS, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
               Statement::binary(
                 heap.alloc_str_for_test("dd"),
-                Operator::MINUS,
+                BinaryOperator::MINUS,
                 ZERO,
                 Expression::int(-2147483648),
               ),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::MUL, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::DIV, ZERO, ZERO),
-              Statement::binary(heap.alloc_str_for_test("dd"), Operator::MOD, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MUL, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::DIV, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MOD, ZERO, ZERO),
               Statement::Call {
                 callee: Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("h")),

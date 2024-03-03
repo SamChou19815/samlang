@@ -2,62 +2,62 @@ use super::optimization_common::{
   if_else_or_null, single_if_or_null, IndexAccessBindedValue, LocalValueContextForOptimization,
 };
 use itertools::Itertools;
-use samlang_ast::{hir::Operator, mir::*};
+use samlang_ast::{hir::BinaryOperator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, PStr};
 
-fn evaluate_bin_op(operator: Operator, v1: i32, v2: i32) -> Option<i32> {
+fn evaluate_bin_op(operator: BinaryOperator, v1: i32, v2: i32) -> Option<i32> {
   match operator {
-    Operator::MUL => Some(v1 * v2),
-    Operator::DIV => {
+    BinaryOperator::MUL => Some(v1 * v2),
+    BinaryOperator::DIV => {
       if v2 == 0 {
         None
       } else {
         Some(v1 / v2)
       }
     }
-    Operator::MOD => {
+    BinaryOperator::MOD => {
       if v2 == 0 {
         None
       } else {
         Some(v1 % v2)
       }
     }
-    Operator::PLUS => Some(v1 + v2),
-    Operator::MINUS => Some(v1 - v2),
-    Operator::LAND => Some(v1 & v2),
-    Operator::LOR => Some(v1 | v2),
-    Operator::SHL => Some(v1 << v2),
-    Operator::SHR => {
+    BinaryOperator::PLUS => Some(v1 + v2),
+    BinaryOperator::MINUS => Some(v1 - v2),
+    BinaryOperator::LAND => Some(v1 & v2),
+    BinaryOperator::LOR => Some(v1 | v2),
+    BinaryOperator::SHL => Some(v1 << v2),
+    BinaryOperator::SHR => {
       Some(i32::from_be_bytes(((u32::from_be_bytes(v1.to_be_bytes())) >> v2).to_be_bytes()))
     }
-    Operator::XOR => Some(v1 ^ v2),
-    Operator::LT => Some((v1 < v2) as i32),
-    Operator::LE => Some((v1 <= v2) as i32),
-    Operator::GT => Some((v1 > v2) as i32),
-    Operator::GE => Some((v1 >= v2) as i32),
-    Operator::EQ => Some((v1 == v2) as i32),
-    Operator::NE => Some((v1 != v2) as i32),
+    BinaryOperator::XOR => Some(v1 ^ v2),
+    BinaryOperator::LT => Some((v1 < v2) as i32),
+    BinaryOperator::LE => Some((v1 <= v2) as i32),
+    BinaryOperator::GT => Some((v1 > v2) as i32),
+    BinaryOperator::GE => Some((v1 >= v2) as i32),
+    BinaryOperator::EQ => Some((v1 == v2) as i32),
+    BinaryOperator::NE => Some((v1 != v2) as i32),
   }
 }
 
 #[derive(Clone)]
 struct BinaryExpression {
-  operator: Operator,
+  operator: BinaryOperator,
   e1: VariableName,
   e2: i32,
 }
 
 fn merge_binary_expression(
-  outer_operator: Operator,
+  outer_operator: BinaryOperator,
   inner: &BinaryExpression,
   outer_const: i32,
 ) -> Option<BinaryExpression> {
   match outer_operator {
-    Operator::PLUS => {
-      if inner.operator == Operator::PLUS {
+    BinaryOperator::PLUS => {
+      if inner.operator == BinaryOperator::PLUS {
         Some(BinaryExpression {
-          operator: Operator::PLUS,
+          operator: BinaryOperator::PLUS,
           e1: inner.e1,
           e2: inner.e2 + outer_const,
         })
@@ -65,15 +65,24 @@ fn merge_binary_expression(
         None
       }
     }
-    Operator::MUL => {
-      if inner.operator == Operator::MUL {
-        Some(BinaryExpression { operator: Operator::MUL, e1: inner.e1, e2: inner.e2 * outer_const })
+    BinaryOperator::MUL => {
+      if inner.operator == BinaryOperator::MUL {
+        Some(BinaryExpression {
+          operator: BinaryOperator::MUL,
+          e1: inner.e1,
+          e2: inner.e2 * outer_const,
+        })
       } else {
         None
       }
     }
-    Operator::LT | Operator::LE | Operator::GT | Operator::GE | Operator::EQ | Operator::NE => {
-      if inner.operator == Operator::PLUS {
+    BinaryOperator::LT
+    | BinaryOperator::LE
+    | BinaryOperator::GT
+    | BinaryOperator::GE
+    | BinaryOperator::EQ
+    | BinaryOperator::NE => {
+      if inner.operator == BinaryOperator::PLUS {
         Some(BinaryExpression {
           operator: outer_operator,
           e1: inner.e1,
@@ -156,21 +165,21 @@ fn optimize_stmt(
       let operator = *operator;
       if let Expression::IntLiteral(v2) = &e2 {
         if *v2 == 0 {
-          if operator == Operator::PLUS {
+          if operator == BinaryOperator::PLUS {
             value_cx.checked_bind(*name, e1);
             return false;
           }
-          if operator == Operator::MUL {
+          if operator == BinaryOperator::MUL {
             value_cx.checked_bind(*name, ZERO);
             return false;
           }
         }
         if *v2 == 1 {
-          if operator == Operator::MOD {
+          if operator == BinaryOperator::MOD {
             value_cx.checked_bind(*name, ZERO);
             return false;
           }
-          if operator == Operator::MUL || operator == Operator::DIV {
+          if operator == BinaryOperator::MUL || operator == BinaryOperator::DIV {
             value_cx.checked_bind(*name, e1);
             return false;
           }
@@ -184,11 +193,11 @@ fn optimize_stmt(
       }
       match (&e1, &e2) {
         (Expression::Variable(v1), Expression::Variable(v2)) if v1.name.eq(&v2.name) => {
-          if operator == Operator::MINUS || operator == Operator::MOD {
+          if operator == BinaryOperator::MINUS || operator == BinaryOperator::MOD {
             value_cx.checked_bind(*name, ZERO);
             return false;
           }
-          if operator == Operator::DIV {
+          if operator == BinaryOperator::DIV {
             value_cx.checked_bind(*name, ONE);
             return false;
           }
@@ -284,7 +293,7 @@ fn optimize_stmt(
             return false;
           }
           (Expression::IntLiteral(0), Expression::IntLiteral(1)) => {
-            collector.push(Statement::binary(*n, Operator::XOR, condition, ONE));
+            collector.push(Statement::binary(*n, BinaryOperator::XOR, condition, ONE));
             return false;
           }
           _ => {}
@@ -571,7 +580,7 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 mod boilterplate_tests {
   use super::super::optimization_common::LocalValueContextForOptimization;
   use super::{optimize_callee, BinaryExpression};
-  use samlang_ast::{hir::Operator, mir::*};
+  use samlang_ast::{hir::BinaryOperator, mir::*};
   use samlang_heap::{Heap, PStr};
 
   #[test]
@@ -579,7 +588,7 @@ mod boilterplate_tests {
     assert_eq!(
       1,
       BinaryExpression {
-        operator: Operator::PLUS,
+        operator: BinaryOperator::PLUS,
         e1: VariableName { name: PStr::INVALID_PSTR, type_: INT_TYPE },
         e2: 1,
       }

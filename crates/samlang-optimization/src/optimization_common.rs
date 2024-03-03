@@ -1,4 +1,4 @@
-use samlang_ast::{hir::Operator, mir::*};
+use samlang_ast::{hir::BinaryOperator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 use std::ops::{Deref, DerefMut};
@@ -22,7 +22,7 @@ pub(super) struct IndexAccessBindedValue {
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct BinaryBindedValue {
-  pub(super) operator: Operator,
+  pub(super) operator: BinaryOperator,
   pub(super) e1: Expression,
   pub(super) e2: Expression,
 }
@@ -128,7 +128,7 @@ mod tests {
       IndexAccessBindedValue { type_: INT_TYPE, pointer_expression: ZERO, index: 0 }.clone(),
     );
     let bv2 = BindedValue::Binary(
-      BinaryBindedValue { operator: Operator::PLUS, e1: ZERO, e2: ZERO }.clone(),
+      BinaryBindedValue { operator: BinaryOperator::PLUS, e1: ZERO, e2: ZERO }.clone(),
     );
     let _ = bv1.clone();
     let _ = bv2.clone();

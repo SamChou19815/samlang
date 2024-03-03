@@ -4,7 +4,7 @@ use super::loop_induction_analysis::{
 };
 use itertools::Itertools;
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{Callee, Expression, Statement, VariableName, INT_TYPE},
 };
 
@@ -123,19 +123,19 @@ pub(super) fn optimize(
   let prefix_statements = vec![
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_initial_value_temp_temporary,
-      Operator::MUL,
+      BinaryOperator::MUL,
       only_relevant_induction_loop_variables.multiplier.to_expression(),
       optimizable_while_loop.basic_induction_variable_with_loop_guard.initial_value,
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_initial_value_name,
-      Operator::PLUS,
+      BinaryOperator::PLUS,
       only_relevant_induction_loop_variables.immediate.to_expression(),
       Expression::var_name(new_initial_value_temp_temporary, INT_TYPE),
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_guard_value_temp_temporary,
-      Operator::MUL,
+      BinaryOperator::MUL,
       only_relevant_induction_loop_variables.multiplier.to_expression(),
       optimizable_while_loop
         .basic_induction_variable_with_loop_guard
@@ -144,7 +144,7 @@ pub(super) fn optimize(
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_guard_value_name,
-      Operator::PLUS,
+      BinaryOperator::PLUS,
       only_relevant_induction_loop_variables.immediate.to_expression(),
       Expression::var_name(new_guard_value_temp_temporary, INT_TYPE),
     )),
@@ -198,7 +198,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
       SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -277,7 +277,7 @@ mod tests {
             pointer_expression: ZERO,
             index: 3
           },
-          Statement::binary(PStr::LOWER_A, Operator::NE, ZERO, ZERO),
+          Statement::binary(PStr::LOWER_A, BinaryOperator::NE, ZERO, ZERO),
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::SingleIf {

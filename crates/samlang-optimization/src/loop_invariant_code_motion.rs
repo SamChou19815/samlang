@@ -121,7 +121,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
       SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -174,7 +174,7 @@ mod tests {
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
-          Operator::LT,
+          BinaryOperator::LT,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ZERO,
         ),
@@ -185,25 +185,25 @@ mod tests {
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_TYPE),
           Expression::int(3),
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_x"),
-          Operator::MUL,
+          BinaryOperator::MUL,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::int(5),
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_y"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
           Expression::int(6),
         ),
@@ -227,13 +227,13 @@ mod tests {
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_z"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("tmp_y"), INT_TYPE),
         ),
         Statement::binary(
           PStr::LOWER_C,
-          Operator::MINUS,
+          BinaryOperator::MINUS,
           Expression::var_name(PStr::LOWER_A, INT_TYPE),
           Expression::var_name(PStr::LOWER_B, INT_TYPE),
         ),
@@ -251,7 +251,7 @@ mod tests {
         },
         Statement::binary(
           PStr::LOWER_F,
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_B, INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("x"), INT_TYPE),
         ),

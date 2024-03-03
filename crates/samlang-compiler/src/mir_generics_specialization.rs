@@ -115,7 +115,7 @@ impl Rewriter {
             });
             collector.push(mir::Statement::binary(
               comparison_temp,
-              hir::Operator::EQ,
+              hir::BinaryOperator::EQ,
               mir::Expression::var_name(variable_for_tag, mir::INT_TYPE),
               mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
@@ -172,28 +172,28 @@ impl Rewriter {
             // i < 1024 (small int is not a pointer)
             collector.push(mir::Statement::binary(
               comparison_temp_1,
-              hir::Operator::LT,
+              hir::BinaryOperator::LT,
               mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
               mir::Expression::int(1024),
             ));
             // i & 1 (LSB == 1 is not a pointer)
             collector.push(mir::Statement::binary(
               comparison_temp_2,
-              hir::Operator::LAND,
+              hir::BinaryOperator::LAND,
               mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
               mir::ONE,
             ));
             // (i < 1024) || (i & 1) -> not a pointer
             collector.push(mir::Statement::binary(
               comparison_temp_3,
-              hir::Operator::LOR,
+              hir::BinaryOperator::LOR,
               mir::Expression::var_name(comparison_temp_1, mir::INT_TYPE),
               mir::Expression::var_name(comparison_temp_2, mir::INT_TYPE),
             ));
             // invert the previous check, is a pointer
             collector.push(mir::Statement::binary(
               comparison_temp_4,
-              hir::Operator::XOR,
+              hir::BinaryOperator::XOR,
               mir::Expression::var_name(comparison_temp_3, mir::INT_TYPE),
               mir::ONE,
             ));
@@ -229,7 +229,7 @@ impl Rewriter {
             });
             collector.push(mir::Statement::binary(
               comparison_temp,
-              hir::Operator::EQ,
+              hir::BinaryOperator::EQ,
               mir::Expression::var_name(casted_collector, mir::INT_TYPE),
               mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
@@ -734,7 +734,7 @@ pub(super) fn perform_generics_specialization(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::hir::{GlobalVariable, Operator};
+  use samlang_ast::hir::{BinaryOperator, GlobalVariable};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   fn assert_specialized(sources: hir::Sources, heap: &mut Heap, expected: &str) {
@@ -1165,7 +1165,7 @@ sources.mains = [_DUMMY_I$main]
                   },
                   hir::Statement::Binary {
                     name: heap.alloc_str_for_test("v1"),
-                    operator: Operator::PLUS,
+                    operator: BinaryOperator::PLUS,
                     e1: hir::ZERO,
                     e2: hir::ZERO,
                   },

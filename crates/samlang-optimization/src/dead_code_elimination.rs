@@ -1,5 +1,5 @@
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement},
 };
 use samlang_heap::PStr;
@@ -88,8 +88,8 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
   match stmt {
     Statement::Binary(binary) => {
       if !set.contains(&binary.name)
-        && binary.operator != Operator::DIV
-        && binary.operator != Operator::MOD
+        && binary.operator != BinaryOperator::DIV
+        && binary.operator != BinaryOperator::MOD
       {
         false
       } else {

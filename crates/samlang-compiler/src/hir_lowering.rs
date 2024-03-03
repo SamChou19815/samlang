@@ -319,13 +319,13 @@ impl<'a> ExpressionLoweringManager<'a> {
     statements.push(match expression.operator {
       source::expr::UnaryOperator::NOT => hir::Statement::Binary {
         name: value_name,
-        operator: hir::Operator::XOR,
+        operator: hir::BinaryOperator::XOR,
         e1: result_expr,
         e2: hir::ONE,
       },
       source::expr::UnaryOperator::NEG => hir::Statement::Binary {
         name: value_name,
-        operator: hir::Operator::MINUS,
+        operator: hir::BinaryOperator::MINUS,
         e1: hir::ZERO,
         e2: result_expr,
       },
@@ -562,17 +562,17 @@ impl<'a> ExpressionLoweringManager<'a> {
           expression: hir::Expression::var_name(return_collector_name, hir::STRING_TYPE),
         };
       }
-      source::expr::BinaryOperator::MUL => hir::Operator::MUL,
-      source::expr::BinaryOperator::DIV => hir::Operator::DIV,
-      source::expr::BinaryOperator::MOD => hir::Operator::MOD,
-      source::expr::BinaryOperator::PLUS => hir::Operator::PLUS,
-      source::expr::BinaryOperator::MINUS => hir::Operator::MINUS,
-      source::expr::BinaryOperator::LT => hir::Operator::LT,
-      source::expr::BinaryOperator::LE => hir::Operator::LE,
-      source::expr::BinaryOperator::GT => hir::Operator::GT,
-      source::expr::BinaryOperator::GE => hir::Operator::GE,
-      source::expr::BinaryOperator::EQ => hir::Operator::EQ,
-      source::expr::BinaryOperator::NE => hir::Operator::NE,
+      source::expr::BinaryOperator::MUL => hir::BinaryOperator::MUL,
+      source::expr::BinaryOperator::DIV => hir::BinaryOperator::DIV,
+      source::expr::BinaryOperator::MOD => hir::BinaryOperator::MOD,
+      source::expr::BinaryOperator::PLUS => hir::BinaryOperator::PLUS,
+      source::expr::BinaryOperator::MINUS => hir::BinaryOperator::MINUS,
+      source::expr::BinaryOperator::LT => hir::BinaryOperator::LT,
+      source::expr::BinaryOperator::LE => hir::BinaryOperator::LE,
+      source::expr::BinaryOperator::GT => hir::BinaryOperator::GT,
+      source::expr::BinaryOperator::GE => hir::BinaryOperator::GE,
+      source::expr::BinaryOperator::EQ => hir::BinaryOperator::EQ,
+      source::expr::BinaryOperator::NE => hir::BinaryOperator::NE,
     };
     let mut lowered_stmts = vec![];
     let e1 = self.lowered_and_add_statements(&expression.e1, &mut lowered_stmts);

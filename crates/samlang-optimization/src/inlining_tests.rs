@@ -3,7 +3,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -51,7 +51,7 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("b0"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("i0"), INT_TYPE),
             Expression::int(3),
           ),
@@ -81,13 +81,13 @@ mod tests {
             condition: ZERO,
             s1: vec![Statement::binary(
               PStr::LOWER_A,
-              Operator::PLUS,
+              BinaryOperator::PLUS,
               Expression::var_name(PStr::LOWER_A, INT_TYPE),
               Expression::int(3),
             )],
             s2: vec![Statement::binary(
               PStr::LOWER_A,
-              Operator::PLUS,
+              BinaryOperator::PLUS,
               Expression::var_name(PStr::LOWER_A, INT_TYPE),
               Expression::int(3),
             )],
@@ -104,14 +104,14 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::binary(
               PStr::LOWER_A,
-              Operator::PLUS,
+              BinaryOperator::PLUS,
               Expression::var_name(PStr::LOWER_A, INT_TYPE),
               Expression::int(3),
             )],
           },
           Statement::binary(
             PStr::LOWER_A,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_A, INT_TYPE),
             Expression::int(3),
           ),
@@ -181,7 +181,7 @@ mod tests {
           body: vec![
             Statement::binary(
               PStr::LOWER_C,
-              Operator::EQ,
+              BinaryOperator::EQ,
               Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
               ZERO,
             ),
@@ -191,13 +191,13 @@ mod tests {
               s2: vec![
                 Statement::binary(
                   heap.alloc_str_for_test("n1"),
-                  Operator::MINUS,
+                  BinaryOperator::MINUS,
                   Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
                   ONE,
                 ),
                 Statement::binary(
                   heap.alloc_str_for_test("acc1"),
-                  Operator::MUL,
+                  BinaryOperator::MUL,
                   Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
                   Expression::var_name(heap.alloc_str_for_test("acc"), INT_TYPE),
                 ),
@@ -421,7 +421,7 @@ function __$insanelyBigFunction(a: int): int {
             condition: Expression::var_name(heap.alloc_str_for_test("bar"), INT_TYPE),
             s1: vec![],
             s2: vec![
-              Statement::binary(heap.alloc_str_for_test("vvv"), Operator::PLUS, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("vvv"), BinaryOperator::PLUS, ZERO, ZERO),
               Statement::Call {
                 callee: Callee::FunctionName(FunctionNameExpression {
                   name: FunctionName::new_for_test(heap.alloc_str_for_test("fooBar")),
@@ -500,7 +500,7 @@ function __$main(): int {
             condition: Expression::var_name(heap.alloc_str_for_test("bar"), INT_TYPE),
             invert_condition: false,
             statements: vec![
-              Statement::binary(heap.alloc_str_for_test("vvv"), Operator::PLUS, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("vvv"), BinaryOperator::PLUS, ZERO, ZERO),
               Statement::Call {
                 callee: Callee::FunctionName(FunctionNameExpression {
                   name: FunctionName::new_for_test(heap.alloc_str_for_test("fooBar")),
