@@ -1,5 +1,5 @@
 use super::{
-  hir::{GlobalVariable, Operator},
+  hir::{BinaryOperator, GlobalVariable},
   mir::{FunctionName, SymbolTable, TypeNameId},
 };
 use enum_as_inner::EnumAsInner;
@@ -133,7 +133,7 @@ pub struct GenenalLoopVariable {
 pub enum Statement {
   Binary {
     name: PStr,
-    operator: Operator,
+    operator: BinaryOperator,
     e1: Expression,
     e2: Expression,
   },
@@ -192,10 +192,10 @@ pub enum Statement {
 }
 
 impl Statement {
-  pub fn binary(name: PStr, operator: Operator, e1: Expression, e2: Expression) -> Statement {
+  pub fn binary(name: PStr, operator: BinaryOperator, e1: Expression, e2: Expression) -> Statement {
     match (operator, &e2) {
-      (Operator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
-        Statement::Binary { name, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
+      (BinaryOperator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
+        Statement::Binary { name, operator: BinaryOperator::PLUS, e1, e2: Expression::int(-n) }
       }
       _ => Statement::Binary { name, operator, e1, e2 },
     }
@@ -238,7 +238,7 @@ impl Statement {
         collector.push_str(name.as_str(heap));
         collector.push_str(" = ");
         match *operator {
-          Operator::DIV => {
+          BinaryOperator::DIV => {
             // Necessary to preserve semantics
             collector.push_str("Math.floor(");
             e1.pretty_print(collector, heap, table);
@@ -248,12 +248,12 @@ impl Statement {
             e2.pretty_print(collector, heap, table);
             collector.push(')');
           }
-          Operator::LT
-          | Operator::LE
-          | Operator::GT
-          | Operator::GE
-          | Operator::EQ
-          | Operator::NE => {
+          BinaryOperator::LT
+          | BinaryOperator::LE
+          | BinaryOperator::GT
+          | BinaryOperator::GE
+          | BinaryOperator::EQ
+          | BinaryOperator::NE => {
             // Necessary to make TS happy
             collector.push_str("Number(");
             e1.pretty_print(collector, heap, table);
@@ -263,15 +263,15 @@ impl Statement {
             e2.pretty_print(collector, heap, table);
             collector.push(')');
           }
-          Operator::MUL
-          | Operator::MOD
-          | Operator::PLUS
-          | Operator::MINUS
-          | Operator::LAND
-          | Operator::LOR
-          | Operator::SHL
-          | Operator::SHR
-          | Operator::XOR => {
+          BinaryOperator::MUL
+          | BinaryOperator::MOD
+          | BinaryOperator::PLUS
+          | BinaryOperator::MINUS
+          | BinaryOperator::LAND
+          | BinaryOperator::LOR
+          | BinaryOperator::SHL
+          | BinaryOperator::SHR
+          | BinaryOperator::XOR => {
             e1.pretty_print(collector, heap, table);
             collector.push(' ');
             collector.push_str(operator.as_str());

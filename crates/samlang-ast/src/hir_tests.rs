@@ -54,10 +54,10 @@ mod tests {
       std::cmp::Ordering::Equal
     );
     format!("{:?}", Expression::StringName(PStr::LOWER_A));
-    format!("{:?}", Operator::GE);
-    assert!(Operator::MINUS <= Operator::GE);
-    format!("{:?}", Operator::MINUS.partial_cmp(&Operator::GE));
-    format!("{:?}", Operator::MINUS.cmp(&Operator::GE));
+    format!("{:?}", BinaryOperator::GE);
+    assert!(BinaryOperator::MINUS <= BinaryOperator::GE);
+    format!("{:?}", BinaryOperator::MINUS.partial_cmp(&BinaryOperator::GE));
+    format!("{:?}", BinaryOperator::MINUS.cmp(&BinaryOperator::GE));
     format!("{:?}", ZERO.type_());
     format!("{:?}", Expression::StringName(PStr::LOWER_A).type_().as_id());
     assert!(Expression::StringName(PStr::LOWER_A).type_().as_id().is_some());
@@ -128,7 +128,7 @@ mod tests {
     assert!(Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
       .eq(&(Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]))));
     let mut hasher = DefaultHasher::new();
-    Operator::DIV.hash(&mut hasher);
+    BinaryOperator::DIV.hash(&mut hasher);
     Callee::FunctionName(FunctionNameExpression::new(
       FunctionName { type_name: TypeName::new_for_test(PStr::UPPER_A), fn_name: PStr::LOWER_A },
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
@@ -221,67 +221,67 @@ mod tests {
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::LT,
+          operator: BinaryOperator::LT,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::LE,
+          operator: BinaryOperator::LE,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::GT,
+          operator: BinaryOperator::GT,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::GE,
+          operator: BinaryOperator::GE,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::EQ,
+          operator: BinaryOperator::EQ,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::NE,
+          operator: BinaryOperator::NE,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::LAND,
+          operator: BinaryOperator::LAND,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::LOR,
+          operator: BinaryOperator::LOR,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::SHL,
+          operator: BinaryOperator::SHL,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::SHR,
+          operator: BinaryOperator::SHR,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::XOR.clone(),
+          operator: BinaryOperator::XOR.clone(),
           e1: ZERO,
           e2: ZERO,
         },
@@ -296,13 +296,13 @@ mod tests {
           bindings: vec![None, Some((PStr::UNDERSCORE, INT_TYPE))],
           s1: vec![Statement::Binary {
             name: heap.alloc_str_for_test("dd"),
-            operator: Operator::XOR.clone(),
+            operator: BinaryOperator::XOR.clone(),
             e1: ZERO,
             e2: ZERO,
           }],
           s2: vec![Statement::Binary {
             name: heap.alloc_str_for_test("dd"),
-            operator: Operator::XOR.clone(),
+            operator: BinaryOperator::XOR.clone(),
             e1: ZERO,
             e2: ZERO,
           }],
@@ -312,37 +312,37 @@ mod tests {
       s2: vec![
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::PLUS,
+          operator: BinaryOperator::PLUS,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::MINUS,
+          operator: BinaryOperator::MINUS,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::MINUS,
+          operator: BinaryOperator::MINUS,
           e1: ZERO,
           e2: Expression::int(-2147483648),
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::MUL,
+          operator: BinaryOperator::MUL,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::DIV,
+          operator: BinaryOperator::DIV,
           e1: ZERO,
           e2: ZERO,
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: Operator::MOD,
+          operator: BinaryOperator::MOD,
           e1: ZERO,
           e2: ZERO,
         },

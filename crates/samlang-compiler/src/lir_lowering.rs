@@ -390,19 +390,19 @@ fn generate_inc_ref_fn() -> lir::Function {
     body: vec![
       lir::Statement::binary(
         tiny_int,
-        hir::Operator::LT,
+        hir::BinaryOperator::LT,
         lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
       lir::Statement::binary(
         is_odd,
-        hir::Operator::LAND,
+        hir::BinaryOperator::LAND,
         lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::ONE,
       ),
       lir::Statement::binary(
         not_ptr,
-        hir::Operator::LOR,
+        hir::BinaryOperator::LOR,
         lir::Expression::Variable(tiny_int, lir::INT_TYPE),
         lir::Expression::Variable(is_odd, lir::INT_TYPE),
       ),
@@ -418,13 +418,13 @@ fn generate_inc_ref_fn() -> lir::Function {
           },
           lir::Statement::binary(
             old_ref_count,
-            hir::Operator::LAND,
+            hir::BinaryOperator::LAND,
             lir::Expression::Variable(header, lir::INT_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
             is_zero,
-            hir::Operator::EQ,
+            hir::BinaryOperator::EQ,
             lir::Expression::Variable(old_ref_count, lir::INT_TYPE),
             lir::ZERO,
           ),
@@ -434,25 +434,25 @@ fn generate_inc_ref_fn() -> lir::Function {
             statements: vec![
               lir::Statement::binary(
                 ref_count,
-                hir::Operator::PLUS,
+                hir::BinaryOperator::PLUS,
                 lir::Expression::Variable(old_ref_count, lir::INT_TYPE),
                 lir::ONE,
               ),
               lir::Statement::binary(
                 lower,
-                hir::Operator::LAND,
+                hir::BinaryOperator::LAND,
                 lir::Expression::Variable(ref_count, lir::INT_TYPE),
                 lir::Expression::int(65535),
               ),
               lir::Statement::binary(
                 upper,
-                hir::Operator::LAND,
+                hir::BinaryOperator::LAND,
                 lir::Expression::Variable(header, lir::INT_TYPE),
                 lir::Expression::int(!65535),
               ),
               lir::Statement::binary(
                 new_header,
-                hir::Operator::LOR,
+                hir::BinaryOperator::LOR,
                 lir::Expression::Variable(upper, lir::INT_TYPE),
                 lir::Expression::Variable(lower, lir::INT_TYPE),
               ),
@@ -496,19 +496,19 @@ fn generate_dec_ref_fn() -> lir::Function {
     body: vec![
       lir::Statement::binary(
         tiny_int,
-        hir::Operator::LT,
+        hir::BinaryOperator::LT,
         lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
       lir::Statement::binary(
         is_odd,
-        hir::Operator::LAND,
+        hir::BinaryOperator::LAND,
         lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::ONE,
       ),
       lir::Statement::binary(
         not_ptr,
-        hir::Operator::LOR,
+        hir::BinaryOperator::LOR,
         lir::Expression::Variable(tiny_int, lir::INT_TYPE),
         lir::Expression::Variable(is_odd, lir::INT_TYPE),
       ),
@@ -524,13 +524,13 @@ fn generate_dec_ref_fn() -> lir::Function {
           },
           lir::Statement::binary(
             ref_count,
-            hir::Operator::LAND,
+            hir::BinaryOperator::LAND,
             lir::Expression::Variable(header, lir::INT_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
             is_zero,
-            hir::Operator::EQ,
+            hir::BinaryOperator::EQ,
             lir::Expression::Variable(ref_count, lir::INT_TYPE),
             lir::ZERO,
           ),
@@ -540,7 +540,7 @@ fn generate_dec_ref_fn() -> lir::Function {
             statements: vec![
               lir::Statement::binary(
                 gt_one,
-                hir::Operator::GT,
+                hir::BinaryOperator::GT,
                 lir::Expression::Variable(ref_count, lir::INT_TYPE),
                 lir::ONE,
               ),
@@ -549,7 +549,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                 s1: vec![
                   lir::Statement::binary(
                     new_header,
-                    hir::Operator::MINUS,
+                    hir::BinaryOperator::MINUS,
                     lir::Expression::Variable(header, lir::INT_TYPE),
                     lir::Expression::int(1),
                   ),
@@ -562,7 +562,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                 s2: vec![
                   lir::Statement::binary(
                     is_ref_bit_set,
-                    hir::Operator::SHR,
+                    hir::BinaryOperator::SHR,
                     lir::Expression::Variable(header, lir::INT_TYPE),
                     lir::Expression::int(16),
                   ),
@@ -584,7 +584,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                     statements: vec![
                       lir::Statement::binary(
                         should_stop,
-                        hir::Operator::GT,
+                        hir::BinaryOperator::GT,
                         lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                         lir::Expression::int(16),
                       ),
@@ -595,7 +595,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                       },
                       lir::Statement::binary(
                         is_ref,
-                        hir::Operator::LAND,
+                        hir::BinaryOperator::LAND,
                         lir::Expression::Variable(is_ref_bit_set, lir::INT_TYPE),
                         lir::ONE,
                       ),
@@ -605,13 +605,13 @@ fn generate_dec_ref_fn() -> lir::Function {
                         statements: vec![
                           lir::Statement::binary(
                             byte_offset,
-                            hir::Operator::SHL,
+                            hir::BinaryOperator::SHL,
                             lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                             lir::Expression::int(2),
                           ),
                           lir::Statement::binary(
                             field_ptr,
-                            hir::Operator::PLUS,
+                            hir::BinaryOperator::PLUS,
                             lir::Expression::Variable(ptr, lir::INT_TYPE),
                             lir::Expression::Variable(byte_offset, lir::INT_TYPE),
                           ),
@@ -628,13 +628,13 @@ fn generate_dec_ref_fn() -> lir::Function {
                       },
                       lir::Statement::binary(
                         new_is_ref_bit_set,
-                        hir::Operator::SHR,
+                        hir::BinaryOperator::SHR,
                         lir::Expression::Variable(bitset, lir::INT_TYPE),
                         lir::ONE,
                       ),
                       lir::Statement::binary(
                         new_i,
-                        hir::Operator::PLUS,
+                        hir::BinaryOperator::PLUS,
                         lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                         lir::ONE,
                       ),
@@ -738,7 +738,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     lir,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
@@ -896,7 +896,7 @@ mod tests {
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
-            Statement::binary(heap.alloc_str_for_test("v1"), Operator::PLUS, ZERO, ZERO),
+            Statement::binary(heap.alloc_str_for_test("v1"), BinaryOperator::PLUS, ZERO, ZERO),
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("O"),
               type_name: obj_type.as_id().unwrap().clone(),

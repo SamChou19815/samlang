@@ -396,7 +396,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
       GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_TYPE, ZERO,
@@ -467,7 +467,7 @@ mod tests {
           body: vec![
             Statement::binary(
               dummy_name,
-              Operator::PLUS,
+              BinaryOperator::PLUS,
               Expression::var_name(PStr::LOWER_A, INT_TYPE),
               Expression::var_name(PStr::LOWER_B, INT_TYPE),
             ),

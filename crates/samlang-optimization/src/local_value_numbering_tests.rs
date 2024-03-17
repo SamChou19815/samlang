@@ -4,7 +4,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -56,19 +56,19 @@ mod tests {
         },
         Statement::binary(
           heap.alloc_str_for_test("b0"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("i0"), INT_TYPE),
           Expression::int(3),
         ),
         Statement::binary(
           heap.alloc_str_for_test("b1"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("i0"), INT_TYPE),
           Expression::int(3),
         ),
         Statement::binary(
           heap.alloc_str_for_test("b3"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
         ),
@@ -280,7 +280,7 @@ return 0;"#,
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("is_zero"),
-            Operator::EQ,
+            BinaryOperator::EQ,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -289,7 +289,7 @@ return 0;"#,
             s1: vec![],
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
-              Operator::MINUS,
+              BinaryOperator::MINUS,
               Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
               ONE,
             )],
@@ -347,7 +347,7 @@ return 0;"#,
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("is_zero"),
-            Operator::EQ,
+            BinaryOperator::EQ,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -356,7 +356,7 @@ return 0;"#,
             s1: vec![],
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
-              Operator::MINUS,
+              BinaryOperator::MINUS,
               Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
               ONE,
             )],

@@ -333,7 +333,7 @@ mod tests {
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
-            Statement::binary(PStr::UNDERSCORE, samlang_ast::hir::Operator::PLUS, ZERO, ZERO),
+            Statement::binary(PStr::UNDERSCORE, samlang_ast::hir::BinaryOperator::PLUS, ZERO, ZERO),
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(PStr::LOWER_F),

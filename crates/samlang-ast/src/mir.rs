@@ -1,4 +1,4 @@
-use super::hir::{GlobalVariable, Operator};
+use super::hir::{BinaryOperator, GlobalVariable};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -429,7 +429,7 @@ pub const ONE: Expression = Expression::IntLiteral(1);
 #[derive(Debug, Clone)]
 pub struct Binary {
   pub name: PStr,
-  pub operator: Operator,
+  pub operator: BinaryOperator,
   pub e1: Expression,
   pub e2: Expression,
 }
@@ -529,13 +529,13 @@ pub enum Statement {
 impl Statement {
   pub fn binary_unwrapped(
     name: PStr,
-    operator: Operator,
+    operator: BinaryOperator,
     e1: Expression,
     e2: Expression,
   ) -> Binary {
     match (operator, &e2) {
-      (Operator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
-        Binary { name, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
+      (BinaryOperator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
+        Binary { name, operator: BinaryOperator::PLUS, e1, e2: Expression::int(-n) }
       }
       _ => Binary { name, operator, e1, e2 },
     }
@@ -543,7 +543,7 @@ impl Statement {
 
   pub fn binary_flexible_unwrapped(
     name: PStr,
-    operator: Operator,
+    operator: BinaryOperator,
     e1: Expression,
     e2: Expression,
   ) -> Binary {
@@ -551,58 +551,60 @@ impl Statement {
     Self::binary_unwrapped(name, operator, e1, e2)
   }
 
-  pub fn binary(name: PStr, operator: Operator, e1: Expression, e2: Expression) -> Statement {
+  pub fn binary(name: PStr, operator: BinaryOperator, e1: Expression, e2: Expression) -> Statement {
     Statement::Binary(Self::binary_unwrapped(name, operator, e1, e2))
   }
 
   pub fn flexible_order_binary(
-    operator: Operator,
+    operator: BinaryOperator,
     e1: Expression,
     e2: Expression,
-  ) -> (Operator, Expression, Expression) {
+  ) -> (BinaryOperator, Expression, Expression) {
     let Binary { name: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
       Self::binary_unwrapped(PStr::INVALID_PSTR, operator, e1, e2);
     match op {
-      Operator::DIV | Operator::MOD | Operator::MINUS | Operator::SHL | Operator::SHR => {
-        (op, normalized_e1, normalized_e2)
-      }
-      Operator::MUL
-      | Operator::PLUS
-      | Operator::LAND
-      | Operator::LOR
-      | Operator::XOR
-      | Operator::EQ
-      | Operator::NE => {
+      BinaryOperator::DIV
+      | BinaryOperator::MOD
+      | BinaryOperator::MINUS
+      | BinaryOperator::SHL
+      | BinaryOperator::SHR => (op, normalized_e1, normalized_e2),
+      BinaryOperator::MUL
+      | BinaryOperator::PLUS
+      | BinaryOperator::LAND
+      | BinaryOperator::LOR
+      | BinaryOperator::XOR
+      | BinaryOperator::EQ
+      | BinaryOperator::NE => {
         if normalized_e1 > normalized_e2 {
           (op, normalized_e1, normalized_e2)
         } else {
           (op, normalized_e2, normalized_e1)
         }
       }
-      Operator::LT => {
+      BinaryOperator::LT => {
         if normalized_e1 < normalized_e2 {
-          (Operator::GT, normalized_e2, normalized_e1)
+          (BinaryOperator::GT, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
       }
-      Operator::LE => {
+      BinaryOperator::LE => {
         if normalized_e1 < normalized_e2 {
-          (Operator::GE, normalized_e2, normalized_e1)
+          (BinaryOperator::GE, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
       }
-      Operator::GT => {
+      BinaryOperator::GT => {
         if normalized_e1 < normalized_e2 {
-          (Operator::LT, normalized_e2, normalized_e1)
+          (BinaryOperator::LT, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
       }
-      Operator::GE => {
+      BinaryOperator::GE => {
         if normalized_e1 < normalized_e2 {
-          (Operator::LE, normalized_e2, normalized_e1)
+          (BinaryOperator::LE, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }

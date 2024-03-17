@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{
     Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
     ZERO,
@@ -39,7 +39,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
         rest_stmts_iterator
           .chain(vec![Statement::Binary(Statement::binary_unwrapped(
             *return_collector,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             ZERO,
             ZERO,
           ))])
@@ -259,7 +259,7 @@ mod tests {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-        body: vec![Statement::binary(PStr::LOWER_A, Operator::PLUS, ZERO, ZERO)],
+        body: vec![Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO)],
         return_value: Expression::var_name(PStr::LOWER_A, INT_TYPE),
       },
       heap,
@@ -364,7 +364,7 @@ mod tests {
         body: vec![
           Statement::binary(
             PStr::LOWER_A,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -404,7 +404,7 @@ mod tests {
         body: vec![
           Statement::binary(
             PStr::LOWER_A,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -447,7 +447,7 @@ mod tests {
         body: vec![
           Statement::binary(
             PStr::LOWER_A,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -513,7 +513,7 @@ mod tests {
         body: vec![
           Statement::binary(
             PStr::LOWER_A,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -568,7 +568,7 @@ mod tests {
         body: vec![
           Statement::binary(
             PStr::LOWER_A,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -626,7 +626,7 @@ mod tests {
             s2: vec![
               Statement::binary(
                 heap.alloc_str_for_test("nn"),
-                Operator::MINUS,
+                BinaryOperator::MINUS,
                 Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
                 Expression::int(1),
               ),

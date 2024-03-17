@@ -103,7 +103,7 @@ impl<'a> LoweringManager<'a> {
             vec![wasm::Instruction::IfElse {
               condition: wasm::InlineInstruction::Binary(
                 Box::new(condition),
-                hir::Operator::XOR,
+                hir::BinaryOperator::XOR,
                 Box::new(wasm::InlineInstruction::Const(1)),
               ),
               s1: s2,
@@ -119,7 +119,7 @@ impl<'a> LoweringManager<'a> {
         if *invert_condition {
           condition = wasm::InlineInstruction::Binary(
             Box::new(condition),
-            hir::Operator::XOR,
+            hir::BinaryOperator::XOR,
             Box::new(wasm::InlineInstruction::Const(1)),
           );
         }
@@ -280,7 +280,7 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{GlobalVariable, Operator},
+    hir::{BinaryOperator, GlobalVariable},
     lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
     mir, wasm,
   };
@@ -376,7 +376,7 @@ mod tests {
           },
           Statement::binary(
             heap.alloc_str_for_test("bin"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::Variable(PStr::LOWER_F, INT_TYPE),
             ZERO,
           ),

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use super::super::hir::{GlobalVariable, Operator};
+  use super::super::hir::{BinaryOperator, GlobalVariable};
   use super::super::mir::*;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
@@ -41,7 +41,7 @@ mod tests {
     ZERO.convert_to_callee();
     Statement::Break(ZERO).as_binary();
     assert!(Statement::Break(ZERO).into_break().is_ok());
-    Statement::binary(heap.alloc_str_for_test("name"), Operator::DIV, ZERO, ZERO)
+    Statement::binary(heap.alloc_str_for_test("name"), BinaryOperator::DIV, ZERO, ZERO)
       .clone()
       .as_binary();
     let call = Statement::Call {
@@ -74,7 +74,7 @@ mod tests {
     Expression::var_name(PStr::LOWER_A, INT_TYPE).hash(&mut hasher);
     Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
       .hash(&mut hasher);
-    Statement::binary_flexible_unwrapped(PStr::LOWER_A, Operator::DIV, ZERO, ZERO);
+    Statement::binary_flexible_unwrapped(PStr::LOWER_A, BinaryOperator::DIV, ZERO, ZERO);
     Callee::FunctionName(FunctionNameExpression {
       name: FunctionName::new_for_test(heap.alloc_str_for_test("s")),
       type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
@@ -157,17 +157,17 @@ mod tests {
           },
           context: ZERO,
         },
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LT, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LE, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::GT, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::GE, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::EQ, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::NE, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LAND, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LOR, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::SHL, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::SHR, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::XOR.clone(), ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LT, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::GT, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::GE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::EQ, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::NE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LAND, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LOR, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::SHL, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::SHR, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR.clone(), ZERO, ZERO),
         Statement::Cast {
           name: heap.alloc_str_for_test("cast"),
           type_: INT_TYPE,
@@ -203,17 +203,17 @@ mod tests {
         },
       ],
       s2: vec![
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::PLUS, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::MINUS, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::PLUS, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
         Statement::binary(
           heap.alloc_str_for_test("dd"),
-          Operator::MINUS,
+          BinaryOperator::MINUS,
           ZERO,
           Expression::int(-2147483648),
         ),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::MUL, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::DIV, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), Operator::MOD, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MUL, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::DIV, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MOD, ZERO, ZERO),
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("h")),
@@ -388,25 +388,29 @@ sources.mains = [__$ddd]"#;
   #[test]
   fn flexible_order_binary_tests() {
     assert_eq!(
-      (Operator::PLUS, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, ZERO, ONE)
+      (BinaryOperator::PLUS, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::PLUS, ZERO, ONE)
     );
     assert_eq!(
-      (Operator::PLUS, ZERO, ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, ZERO, ZERO)
+      (BinaryOperator::PLUS, ZERO, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::PLUS, ZERO, ZERO)
     );
     assert_eq!(
-      (Operator::PLUS, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, ONE, ZERO)
+      (BinaryOperator::PLUS, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::PLUS, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(PStr::LOWER_A), ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, ZERO, Expression::StringName(PStr::LOWER_A)),
-    );
-    assert_eq!(
-      (Operator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
+      (BinaryOperator::PLUS, Expression::StringName(PStr::LOWER_A), ZERO),
       Statement::flexible_order_binary(
-        Operator::PLUS,
+        BinaryOperator::PLUS,
+        ZERO,
+        Expression::StringName(PStr::LOWER_A)
+      ),
+    );
+    assert_eq!(
+      (BinaryOperator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
+      Statement::flexible_order_binary(
+        BinaryOperator::PLUS,
         ZERO,
         Expression::var_name(PStr::LOWER_A, INT_TYPE)
       ),
@@ -415,98 +419,102 @@ sources.mains = [__$ddd]"#;
     let a = PStr::LOWER_A;
     let b = PStr::LOWER_B;
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(b), Expression::StringName(a),),
+      (BinaryOperator::PLUS, Expression::StringName(b), Expression::StringName(a),),
       Statement::flexible_order_binary(
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::StringName(a),
         Expression::StringName(b),
       ),
     );
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(PStr::LOWER_B), ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, Expression::StringName(PStr::LOWER_B), ZERO),
+      (BinaryOperator::PLUS, Expression::StringName(PStr::LOWER_B), ZERO),
+      Statement::flexible_order_binary(
+        BinaryOperator::PLUS,
+        Expression::StringName(PStr::LOWER_B),
+        ZERO
+      ),
     );
     assert_eq!(
       (
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
         Expression::StringName(PStr::LOWER_A),
       ),
       Statement::flexible_order_binary(
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::StringName(PStr::LOWER_A),
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
       ),
     );
 
     assert_eq!(
-      (Operator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
+      (BinaryOperator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
       Statement::flexible_order_binary(
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
         ZERO
       ),
     );
     assert_eq!(
       (
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
         Expression::StringName(PStr::LOWER_B),
       ),
       Statement::flexible_order_binary(
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
         Expression::StringName(PStr::LOWER_B),
       ),
     );
     assert_eq!(
       (
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::var_name(PStr::LOWER_B, INT_TYPE),
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
       ),
       Statement::flexible_order_binary(
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         Expression::var_name(PStr::LOWER_A, INT_TYPE),
         Expression::var_name(PStr::LOWER_B, INT_TYPE),
       ),
     );
 
     assert_eq!(
-      (Operator::GT, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::LT, ZERO, ONE)
+      (BinaryOperator::GT, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::LT, ZERO, ONE)
     );
     assert_eq!(
-      (Operator::LT, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::LT, ONE, ZERO)
+      (BinaryOperator::LT, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::LT, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::LE, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::LE, ONE, ZERO)
+      (BinaryOperator::LE, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::LE, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::GE, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::LE, ZERO, ONE)
+      (BinaryOperator::GE, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::LE, ZERO, ONE)
     );
     assert_eq!(
-      (Operator::LT, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::GT, ZERO, ONE)
+      (BinaryOperator::LT, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::GT, ZERO, ONE)
     );
     assert_eq!(
-      (Operator::GT, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::GT, ONE, ZERO)
+      (BinaryOperator::GT, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::GT, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::LE, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::GE, ZERO, ONE)
+      (BinaryOperator::LE, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::GE, ZERO, ONE)
     );
     assert_eq!(
-      (Operator::GE, ONE, ZERO),
-      Statement::flexible_order_binary(Operator::GE, ONE, ZERO)
+      (BinaryOperator::GE, ONE, ZERO),
+      Statement::flexible_order_binary(BinaryOperator::GE, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::DIV, ZERO, ONE),
-      Statement::flexible_order_binary(Operator::DIV, ZERO, ONE)
+      (BinaryOperator::DIV, ZERO, ONE),
+      Statement::flexible_order_binary(BinaryOperator::DIV, ZERO, ONE)
     );
   }
 }

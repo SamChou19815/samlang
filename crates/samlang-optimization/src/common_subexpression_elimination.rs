@@ -83,7 +83,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
       Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -116,8 +116,8 @@ mod tests {
       vec![Statement::IfElse {
         condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
         s1: vec![
-          Statement::binary(heap.alloc_str_for_test("ddddd"), Operator::PLUS, ONE, ONE),
-          Statement::binary(PStr::LOWER_A, Operator::PLUS, ONE, ZERO),
+          Statement::binary(heap.alloc_str_for_test("ddddd"), BinaryOperator::PLUS, ONE, ONE),
+          Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("ddd"),
             type_: INT_TYPE,
@@ -138,7 +138,7 @@ mod tests {
           },
         ],
         s2: vec![
-          Statement::binary(heap.alloc_str_for_test("fd"), Operator::PLUS, ONE, ZERO),
+          Statement::binary(heap.alloc_str_for_test("fd"), BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("eee"),
             type_: INT_TYPE,

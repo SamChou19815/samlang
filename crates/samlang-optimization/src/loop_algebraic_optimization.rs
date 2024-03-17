@@ -3,7 +3,7 @@ use super::loop_induction_analysis::{
   PotentialLoopInvariantExpression,
 };
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{Binary, Expression, Statement, INT_TYPE, ZERO},
 };
 
@@ -91,7 +91,7 @@ pub(super) fn optimize(
           *initial_guard_value + *guard_increment_amount * num_of_loop_iterations;
         return Some(vec![Statement::Binary(Binary {
           name: *n,
-          operator: Operator::PLUS,
+          operator: BinaryOperator::PLUS,
           e1: Expression::int(basic_induction_variable_with_loop_guard_final_value),
           e2: ZERO,
         })]);
@@ -102,7 +102,7 @@ pub(super) fn optimize(
       // without looping around.
       return Some(vec![Statement::Binary(Binary {
         name: *n,
-        operator: Operator::PLUS,
+        operator: BinaryOperator::PLUS,
         e1: *e,
         e2: ZERO,
       })]);
@@ -121,13 +121,13 @@ pub(super) fn optimize(
     Some(vec![
       Statement::Binary(Statement::binary_flexible_unwrapped(
         increment_temporary,
-        Operator::MUL,
+        BinaryOperator::MUL,
         relevant_general_induction_variable.increment_amount.to_expression(),
         Expression::int(num_of_loop_iterations),
       )),
       Statement::Binary(Statement::binary_flexible_unwrapped(
         *break_collector.0,
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         relevant_general_induction_variable.initial_value,
         Expression::var_name(increment_temporary, INT_TYPE),
       )),
@@ -137,7 +137,7 @@ pub(super) fn optimize(
     // without looping around.
     Some(vec![Statement::Binary(Binary {
       name: *break_collector.0,
-      operator: Operator::PLUS,
+      operator: BinaryOperator::PLUS,
       e1: Expression::Variable(*break_collector.2),
       e2: ZERO,
     })])

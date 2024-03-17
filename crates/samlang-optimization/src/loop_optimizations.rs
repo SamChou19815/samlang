@@ -5,7 +5,7 @@ use super::{
   optimization_common::take_mut,
 };
 use itertools::Itertools;
-use samlang_ast::hir::Operator;
+use samlang_ast::hir::BinaryOperator;
 use samlang_ast::mir::{
   Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_TYPE, ZERO,
 };
@@ -78,7 +78,7 @@ fn expand_optimizable_while_loop(
     .chain(statements)
     .chain(vec![Statement::Binary(Statement::binary_unwrapped(
       basic_induction_variable_with_loop_guard_value_collector,
-      Operator::PLUS,
+      BinaryOperator::PLUS,
       Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_TYPE),
       basic_induction_variable_with_loop_guard.increment_amount.to_expression(),
     ))])
@@ -86,7 +86,7 @@ fn expand_optimizable_while_loop(
       |(v, collector)| {
         Statement::Binary(Statement::binary_unwrapped(
           collector,
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(v.name, INT_TYPE),
           v.increment_amount.to_expression(),
         ))
@@ -97,13 +97,13 @@ fn expand_optimizable_while_loop(
       vec![
         Statement::Binary(Statement::binary_flexible_unwrapped(
           step_1_temp,
-          Operator::MUL,
+          BinaryOperator::MUL,
           Expression::var_name(v.base_name, INT_TYPE),
           v.multiplier.to_expression(),
         )),
         Statement::Binary(Statement::binary_flexible_unwrapped(
           v.name,
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(step_1_temp, INT_TYPE),
           v.immediate.to_expression(),
         )),
@@ -230,7 +230,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -294,7 +294,7 @@ mod tests {
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
-          Operator::GE,
+          BinaryOperator::GE,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::int(10),
         ),
@@ -310,13 +310,13 @@ mod tests {
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_TYPE),
           Expression::int(10),
         ),
@@ -346,7 +346,7 @@ mod tests {
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
-          Operator::GE,
+          BinaryOperator::GE,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::int(10),
         ),
@@ -357,13 +357,13 @@ mod tests {
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::int(10),
         ),
@@ -399,7 +399,7 @@ mod tests {
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
-          Operator::GE,
+          BinaryOperator::GE,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::int(10),
         ),
@@ -410,19 +410,19 @@ mod tests {
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::int(9),
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_k"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::int(9),
         ),
@@ -435,7 +435,7 @@ mod tests {
   fn loop_optimization_tests() {
     let heap = &mut Heap::new();
     assert_loop_optimized(
-      (vec![], vec![Statement::binary(PStr::LOWER_A, Operator::PLUS, ZERO, ZERO)], None),
+      (vec![], vec![Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO)], None),
       heap,
       "let a = 0 + 0;\nwhile (true) {\n}",
     );
@@ -519,7 +519,7 @@ while (true) {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::int(10),
           ),
@@ -530,13 +530,13 @@ while (true) {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(PStr::LOWER_A, INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::int(2),
           ),
@@ -581,7 +581,7 @@ while (true) {
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::int(10),
           ),
@@ -592,13 +592,13 @@ while (true) {
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE,
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             Expression::int(10),
           ),
@@ -636,7 +636,7 @@ while (true) {
         }],
         s2: vec![Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
-          Operator::MUL,
+          BinaryOperator::MUL,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           Expression::int(2),
         )],
@@ -726,7 +726,7 @@ return (bc: int);"#,
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             ONE,
           ),
@@ -740,13 +740,13 @@ return (bc: int);"#,
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::int(-1),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("acc"), INT_TYPE),
           ),
@@ -774,7 +774,7 @@ return (bc: int);"#,
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
-            Operator::LT,
+            BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("L"), INT_TYPE),
           ),
@@ -785,13 +785,13 @@ return (bc: int);"#,
           },
           Statement::binary(
             heap.alloc_str_for_test("t"),
-            Operator::MUL,
+            BinaryOperator::MUL,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
             PStr::LOWER_J,
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_A, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("t"), INT_TYPE),
           ),
@@ -806,7 +806,7 @@ return (bc: int);"#,
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
-            Operator::PLUS,
+            BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_TYPE),
             Expression::int(2),
           ),

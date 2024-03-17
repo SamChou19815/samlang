@@ -3,7 +3,7 @@ use super::loop_induction_analysis::{
   OptimizableWhileLoop,
 };
 use samlang_ast::{
-  hir::Operator,
+  hir::BinaryOperator,
   mir::{Expression, Statement, INT_TYPE},
 };
 use samlang_heap::Heap;
@@ -48,13 +48,13 @@ pub(super) fn optimize(
       let new_initial_value_name = heap.alloc_temp_str();
       prefix_statements.push(Statement::Binary(Statement::binary_flexible_unwrapped(
         new_initial_value_temp_temporary,
-        Operator::MUL,
+        BinaryOperator::MUL,
         derived_induction_variable.multiplier.to_expression(),
         associated_basic_induction_variable.initial_value,
       )));
       prefix_statements.push(Statement::Binary(Statement::binary_flexible_unwrapped(
         new_initial_value_name,
-        Operator::PLUS,
+        BinaryOperator::PLUS,
         derived_induction_variable.immediate.to_expression(),
         Expression::var_name(new_initial_value_temp_temporary, INT_TYPE),
       )));

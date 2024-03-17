@@ -4,7 +4,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::Operator,
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -42,10 +42,10 @@ mod tests {
     let table = &mut SymbolTable::new();
 
     let stmts = vec![
-      Statement::binary(heap.alloc_str_for_test("u1"), Operator::DIV, ZERO, ONE),
-      Statement::binary(heap.alloc_str_for_test("u2"), Operator::MOD, ZERO, ONE),
-      Statement::binary(heap.alloc_str_for_test("u3"), Operator::PLUS, ZERO, ONE),
-      Statement::binary(heap.alloc_str_for_test("p"), Operator::PLUS, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("u1"), BinaryOperator::DIV, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("u2"), BinaryOperator::MOD, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("u3"), BinaryOperator::PLUS, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("p"), BinaryOperator::PLUS, ZERO, ONE),
       Statement::IndexedAccess {
         name: PStr::LOWER_I,
         type_: INT_TYPE,
@@ -110,10 +110,10 @@ return (ii: int);"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("u1"), Operator::DIV, ZERO, ONE),
-        Statement::binary(heap.alloc_str_for_test("u2"), Operator::MOD, ZERO, ONE),
-        Statement::binary(heap.alloc_str_for_test("u3"), Operator::PLUS, ZERO, ONE),
-        Statement::binary(heap.alloc_str_for_test("p"), Operator::PLUS, ZERO, ONE),
+        Statement::binary(heap.alloc_str_for_test("u1"), BinaryOperator::DIV, ZERO, ONE),
+        Statement::binary(heap.alloc_str_for_test("u2"), BinaryOperator::MOD, ZERO, ONE),
+        Statement::binary(heap.alloc_str_for_test("u3"), BinaryOperator::PLUS, ZERO, ONE),
+        Statement::binary(heap.alloc_str_for_test("p"), BinaryOperator::PLUS, ZERO, ONE),
         Statement::IndexedAccess {
           name: PStr::LOWER_I,
           type_: INT_TYPE,
@@ -202,7 +202,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(PStr::LOWER_B, Operator::EQ, ZERO, ONE),
+        Statement::binary(PStr::LOWER_B, BinaryOperator::EQ, ZERO, ONE),
         Statement::IfElse {
           condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
@@ -246,7 +246,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(PStr::LOWER_B, Operator::EQ, ZERO, ONE),
+        Statement::binary(PStr::LOWER_B, BinaryOperator::EQ, ZERO, ONE),
         Statement::IfElse {
           condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
@@ -298,7 +298,7 @@ return (ma: int);"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(PStr::LOWER_B, Operator::EQ, ZERO, ONE),
+        Statement::binary(PStr::LOWER_B, BinaryOperator::EQ, ZERO, ONE),
         Statement::IfElse {
           condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
@@ -344,7 +344,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(PStr::LOWER_B, Operator::EQ, ZERO, ONE),
+        Statement::binary(PStr::LOWER_B, BinaryOperator::EQ, ZERO, ONE),
         Statement::IfElse {
           condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
@@ -393,7 +393,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(PStr::LOWER_B, Operator::EQ, ZERO, ONE),
+        Statement::binary(PStr::LOWER_B, BinaryOperator::EQ, ZERO, ONE),
         Statement::IfElse {
           condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
           s1: vec![],
@@ -415,7 +415,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(PStr::LOWER_B, Operator::EQ, ZERO, ONE),
+        Statement::binary(PStr::LOWER_B, BinaryOperator::EQ, ZERO, ONE),
         Statement::SingleIf {
           condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
           invert_condition: false,
@@ -469,7 +469,7 @@ return 0;"#,
           Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
           Statement::binary(
             heap.alloc_str_for_test("is_zero"),
-            Operator::EQ,
+            BinaryOperator::EQ,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -499,7 +499,7 @@ return 0;"#,
             ],
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
-              Operator::MINUS,
+              BinaryOperator::MINUS,
               Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
               ONE,
             )],
@@ -560,7 +560,7 @@ return 0;"#,
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("is_zero"),
-            Operator::EQ,
+            BinaryOperator::EQ,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
@@ -603,7 +603,7 @@ return 0;"#,
         }],
         statements: vec![Statement::binary(
           heap.alloc_str_for_test("n1"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
           ZERO,
         )],
@@ -637,7 +637,7 @@ return (v: int);"#,
         }],
         statements: vec![Statement::binary(
           heap.alloc_str_for_test("n1"),
-          Operator::PLUS,
+          BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
           ZERO,
         )],
