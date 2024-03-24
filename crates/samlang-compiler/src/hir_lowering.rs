@@ -317,11 +317,10 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.lower(&expression.argument);
     let value_name = self.allocate_temp_variable();
     statements.push(match expression.operator {
-      source::expr::UnaryOperator::NOT => hir::Statement::Binary {
+      source::expr::UnaryOperator::NOT => hir::Statement::Unary {
         name: value_name,
-        operator: hir::BinaryOperator::XOR,
-        e1: result_expr,
-        e2: hir::ONE,
+        operator: hir::UnaryOperator::Not,
+        operand: result_expr,
       },
       source::expr::UnaryOperator::NEG => hir::Statement::Binary {
         name: value_name,
@@ -1771,7 +1770,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) ^ 1;\nreturn (_t1: int);",
+      "let _t1 = !(_this: DUMMY_Dummy);\nreturn (_t1: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(

@@ -13,7 +13,7 @@ pub(super) fn collect_use_from_expression(expression: &Expression, set: &mut Has
 
 fn collect_use_from_while_parts(
   loop_variables: &Vec<GenenalLoopVariable>,
-  stmts: &Vec<Statement>,
+  stmts: &[Statement],
   set: &mut HashSet<PStr>,
 ) {
   for v in loop_variables {
@@ -25,6 +25,9 @@ fn collect_use_from_while_parts(
 
 fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
   match stmt {
+    Statement::Unary { name: _, operator: _, operand } => {
+      collect_use_from_expression(operand, set);
+    }
     Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
       collect_use_from_expression(e1, set);
       collect_use_from_expression(e2, set);
@@ -78,7 +81,7 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
   }
 }
 
-pub(super) fn collect_use_from_stmts(stmts: &Vec<Statement>, set: &mut HashSet<PStr>) {
+pub(super) fn collect_use_from_stmts(stmts: &[Statement], set: &mut HashSet<PStr>) {
   for stmt in stmts {
     collect_use_from_stmt(stmt, set)
   }
@@ -86,6 +89,14 @@ pub(super) fn collect_use_from_stmts(stmts: &Vec<Statement>, set: &mut HashSet<P
 
 fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
   match stmt {
+    Statement::Unary { name, operator: _, operand } => {
+      if !set.contains(name) {
+        false
+      } else {
+        collect_use_from_expression(operand, set);
+        true
+      }
+    }
     Statement::Binary(binary) => {
       if !set.contains(&binary.name)
         && binary.operator != BinaryOperator::DIV

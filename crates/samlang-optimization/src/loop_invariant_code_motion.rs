@@ -30,6 +30,14 @@ pub(super) fn optimize(
   let mut inner_stmts = vec![];
   for stmt in stmts {
     match &stmt {
+      Statement::Unary { name, operator: _, operand } => {
+        if expression_is_loop_invariant(operand, &non_loop_invariant_variables) {
+          hoisted_stmts.push(stmt);
+        } else {
+          non_loop_invariant_variables.insert(*name);
+          inner_stmts.push(stmt);
+        }
+      }
       Statement::Binary(b) => {
         if expression_is_loop_invariant(&b.e1, &non_loop_invariant_variables)
           && expression_is_loop_invariant(&b.e2, &non_loop_invariant_variables)
@@ -121,7 +129,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
       SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -183,12 +191,18 @@ mod tests {
           invert_condition: false,
           statements: vec![Statement::Break(ZERO)],
         },
+        Statement::Unary { name: PStr::UNDERSCORE, operator: UnaryOperator::Not, operand: ZERO },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_TYPE),
           ONE,
         ),
+        Statement::Unary {
+          name: heap.alloc_str_for_test("non_lv_unary"),
+          operator: UnaryOperator::Not,
+          operand: Expression::var_name(PStr::LOWER_I, INT_TYPE),
+        },
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::PLUS,
@@ -320,7 +334,8 @@ mod tests {
       .map(|s| s.debug_print(heap, table))
       .join("\n");
     assert_eq!(
-      r#"let c = (a: int) - (b: int);
+      r#"let _ = !0;
+let c = (a: int) - (b: int);
 let d: int = (c: int)[0];
 let h: _I = Closure { fun: (__$f: () -> int), context: (d: int) };
 let kk: _I = [0];
@@ -338,6 +353,7 @@ while (true) {
     break;
   }
   let tmp_i = (i: int) + 1;
+  let non_lv_unary = !(i: int);
   let tmp_j = (j: int) + 3;
   let tmp_x = (i: int) * 5;
   let tmp_y = (tmp_x: int) + 6;
@@ -372,8 +388,27 @@ while (true) {
     );
     assert_eq!(
       vec![
-        "bad", "cc", "e", "f", "fc", "g", "i", "j", "kk2", "l2", "l3", "tmp_i", "tmp_j", "tmp_x",
-        "tmp_y", "tmp_z", "x", "y", "z", "zzzz",
+        "bad",
+        "cc",
+        "e",
+        "f",
+        "fc",
+        "g",
+        "i",
+        "j",
+        "kk2",
+        "l2",
+        "l3",
+        "non_lv_unary",
+        "tmp_i",
+        "tmp_j",
+        "tmp_x",
+        "tmp_y",
+        "tmp_z",
+        "x",
+        "y",
+        "z",
+        "zzzz",
       ],
       non_loop_invariant_variables.iter().map(|it| it.as_str(heap)).sorted().collect_vec()
     );

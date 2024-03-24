@@ -21,7 +21,10 @@ mod estimator {
   fn estimate_stmt_inline_cost(stmt: &Statement) -> usize {
     match stmt {
       Statement::LateInitDeclaration { .. } => 0,
-      Statement::Binary(_) | Statement::Cast { .. } | Statement::LateInitAssignment { .. } => 1,
+      Statement::Unary { .. }
+      | Statement::Binary(_)
+      | Statement::Cast { .. }
+      | Statement::LateInitAssignment { .. } => 1,
       Statement::IndexedAccess { .. } => 2,
       Statement::Call { .. } => 10,
       Statement::IfElse { condition: _, s1, s2, final_assignments } => {
@@ -217,6 +220,11 @@ fn inline_rewrite_stmt(
   stmt: &Statement,
 ) -> Statement {
   match stmt {
+    Statement::Unary { name, operator, operand } => Statement::Unary {
+      name: bind_with_mangled_name(cx, heap, prefix, name, &INT_TYPE),
+      operator: *operator,
+      operand: inline_rewrite_expr(operand, cx),
+    },
     Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
       name: bind_with_mangled_name(cx, heap, prefix, name, &INT_TYPE),
       operator: *operator,

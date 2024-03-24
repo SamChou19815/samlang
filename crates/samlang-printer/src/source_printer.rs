@@ -939,7 +939,7 @@ fn create_doc_for_interface_member(
   // Special case for statement block as body for prettier result.
   // We want to lift the leading `{` to the same line as `=`.
   let body_doc_with_potential_indentation = match body_doc {
-    Document::Concat(d1, d2) if d1.as_text().map(|s| (*s).eq("{")).unwrap_or(false) => {
+    Document::Concat(d1, d2) if matches!(d1.as_ref(), Document::Text(s) if (*s).eq("{")) => {
       Document::Concat(Rc::new(Document::Text(" {")), d2)
     }
     _ => Document::group(Document::Nest(

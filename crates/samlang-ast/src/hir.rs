@@ -122,7 +122,7 @@ pub struct ClosureTypeDefinition {
   pub function_type: FunctionType,
 }
 
-fn name_with_tparams(heap: &samlang_heap::Heap, name: TypeName, tparams: &Vec<PStr>) -> String {
+fn name_with_tparams(heap: &samlang_heap::Heap, name: TypeName, tparams: &[PStr]) -> String {
   if tparams.is_empty() {
     name.pretty_print(heap)
   } else {
@@ -178,6 +178,11 @@ impl TypeDefinition {
       ),
     }
   }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UnaryOperator {
+  Not,
+  IsPointer,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -345,6 +350,11 @@ impl Callee {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
+  Unary {
+    name: PStr,
+    operator: UnaryOperator,
+    operand: Expression,
+  },
   Binary {
     name: PStr,
     operator: BinaryOperator,
@@ -412,6 +422,22 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
+      Statement::Unary { name, operator: UnaryOperator::Not, operand } => {
+        collector.push(format!(
+          "{}let {} = !{};\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          operand.debug_print(heap),
+        ));
+      }
+      Statement::Unary { name, operator: UnaryOperator::IsPointer, operand } => {
+        collector.push(format!(
+          "{}let {} = is_pointer({});\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          operand.debug_print(heap),
+        ));
+      }
       Statement::Binary { name, operator, e1, e2 } => {
         collector.push(format!(
           "{}let {} = {} {} {};\n",

@@ -189,7 +189,8 @@ pub(super) struct OptimizableWhileLoop {
 
 fn stmt_contains_break(stmt: &Statement) -> bool {
   match stmt {
-    Statement::Binary(_)
+    Statement::Unary { .. }
+    | Statement::Binary(_)
     | Statement::IndexedAccess { .. }
     | Statement::Call { .. }
     | Statement::Cast { .. }

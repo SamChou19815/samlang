@@ -25,6 +25,7 @@ fn stmt_uses_basic_induction_var(
   v: &BasicInductionVariableWithLoopGuard,
 ) -> bool {
   match stmt {
+    Statement::Unary { name: _, operator: _, operand } => expr_uses_basic_induction_var(operand, v),
     Statement::Binary(b) => {
       expr_uses_basic_induction_var(&b.e1, v) || expr_uses_basic_induction_var(&b.e2, v)
     }
@@ -198,7 +199,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
       SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -277,6 +278,7 @@ mod tests {
             pointer_expression: ZERO,
             index: 3
           },
+          Statement::Unary { name: PStr::LOWER_A, operator: UnaryOperator::Not, operand: ZERO },
           Statement::binary(PStr::LOWER_A, BinaryOperator::NE, ZERO, ZERO),
           Statement::IfElse {
             condition: ZERO,

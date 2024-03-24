@@ -3,7 +3,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -296,6 +296,11 @@ mod tests {
           parameters: vec![PStr::LOWER_A],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
+            Statement::Unary {
+              name: heap.alloc_str_for_test("u0"),
+              operator: UnaryOperator::Not,
+              operand: Expression::var_name(PStr::LOWER_A, INT_TYPE),
+            },
             Statement::Cast { name: PStr::UNDERSCORE, type_: INT_TYPE, assigned_expression: ZERO },
             Statement::LateInitDeclaration { name: PStr::LOWER_B, type_: INT_TYPE },
             Statement::LateInitAssignment { name: PStr::LOWER_B, assigned_expression: ZERO },
@@ -375,6 +380,7 @@ function __$loop(): int {
 }
 
 function __$moveMove(a: int): int {
+  let u0 = !(a: int);
   let _ = 0 as int;
   let b: int;
   b = 0;
@@ -385,6 +391,7 @@ function __$moveMove(a: int): int {
 function __$insanelyBigFunction(a: int): int {
   let _t2c: int = (a: int)[0];
   (a: int)();
+  let _t4u0 = !(a: int);
   let _t4_ = 0 as int;
   let _t4b: int;
   _t4b = 0;

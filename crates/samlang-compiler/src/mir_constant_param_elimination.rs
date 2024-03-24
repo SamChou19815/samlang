@@ -76,6 +76,9 @@ fn collect_def_function_usages_stmt(
   stmt: &Statement,
 ) {
   match stmt {
+    Statement::Unary { name: _, operator: _, operand, .. } => {
+      collect_def_function_usages_expr(state, operand);
+    }
     Statement::Binary(b) => {
       collect_def_function_usages_expr(state, &b.e1);
       collect_def_function_usages_expr(state, &b.e2);
@@ -157,7 +160,8 @@ fn collect_global_usages_stmt(
   stmt: &Statement,
 ) {
   match stmt {
-    Statement::Binary(_)
+    Statement::Unary { .. }
+    | Statement::Binary(_)
     | Statement::IndexedAccess { .. }
     | Statement::Break(_)
     | Statement::Cast { .. }
@@ -254,6 +258,9 @@ fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
 
 fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
   match stmt {
+    Statement::Unary { name: _, operator: _, operand } => {
+      rewrite_expr(state, operand);
+    }
     Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
       rewrite_expr(state, e1);
       rewrite_expr(state, e2);
@@ -396,7 +403,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
       GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_TYPE, ZERO,
@@ -465,6 +472,11 @@ mod tests {
             return_type: Box::new(INT_TYPE),
           },
           body: vec![
+            Statement::Unary {
+              name: dummy_name,
+              operator: UnaryOperator::Not,
+              operand: Expression::var_name(PStr::LOWER_A, INT_TYPE),
+            },
             Statement::binary(
               dummy_name,
               BinaryOperator::PLUS,
@@ -605,6 +617,7 @@ function __$str_const(): int {
 }
 
 function __$func_with_consts(b: _B, e: _E): int {
+  let _ = !0;
   let _ = 0 + (b: int);
   let _: int = 0[0];
   let _: __ = Closure { fun: (__$otherwise_optimizable: () -> int), context: 0 };

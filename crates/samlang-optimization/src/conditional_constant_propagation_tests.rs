@@ -3,7 +3,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -41,11 +41,16 @@ mod tests {
 
     assert_correctly_optimized(
       vec![
+        Statement::Unary {
+          name: heap.alloc_str_for_test("c00"),
+          operator: UnaryOperator::Not,
+          operand: Expression::int(0),
+        },
         Statement::binary(
           heap.alloc_str_for_test("c0"),
           BinaryOperator::SHL,
           Expression::int(3),
-          Expression::int(1),
+          Expression::var_name(heap.alloc_str_for_test("c00"), INT_TYPE),
         ),
         Statement::binary(
           heap.alloc_str_for_test("c1"),
@@ -178,6 +183,16 @@ mod tests {
           Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("a5"), INT_TYPE),
         ),
+        Statement::Unary {
+          name: heap.alloc_str_for_test("a7"),
+          operator: UnaryOperator::Not,
+          operand: Expression::var_name(heap.alloc_str_for_test("a6"), INT_TYPE),
+        },
+        Statement::Unary {
+          name: heap.alloc_str_for_test("a8"),
+          operator: UnaryOperator::IsPointer,
+          operand: Expression::var_name(heap.alloc_str_for_test("a6"), INT_TYPE),
+        },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
           type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Id")),
@@ -185,6 +200,8 @@ mod tests {
             Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("a6"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("a5"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("a7"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("a8"), INT_TYPE),
           ],
         },
         Statement::ClosureInit {
@@ -303,7 +320,9 @@ mod tests {
 let i0: int = 6[2];
 let b8 = (i0: int) * (i0: int);
 let a6 = (i1: int) / 30;
-let s: _Id = [0, (a6: int), 30];
+let a7 = !(a6: int);
+let a8 = is_pointer((a6: int));
+let s: _Id = [0, (a6: int), 30, (a7: int), (a8: int)];
 let s: _Id = Closure { fun: (__$closure: () -> int), context: 0 };
 __$fff(1, 0, 0, 0, 0, 0, 1);
 let a9 = 6 / 0;

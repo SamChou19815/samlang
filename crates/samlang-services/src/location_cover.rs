@@ -18,7 +18,7 @@ pub(super) enum LocationCoverSearchResult<'a> {
     is_method: bool,
     type_: Rc<Type>,
   },
-  TypedName(Location, PStr, Type, bool), // bool: binding
+  TypedName(Location, Type, bool), // bool: binding
 }
 
 fn search_matching_pattern(
@@ -38,7 +38,7 @@ fn search_matching_pattern(
       .flat_map(|it| &it.elements)
       .find_map(|p| search_matching_pattern(&p.pattern, position)),
     pattern::MatchingPattern::Id(id, type_) if id.loc.contains_position(position) => {
-      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone(), true))
+      Some(LocationCoverSearchResult::TypedName(id.loc, type_.as_ref().clone(), true))
     }
     pattern::MatchingPattern::Id(_, _) | pattern::MatchingPattern::Wildcard { .. } => None,
   }
@@ -60,7 +60,6 @@ fn search_optional_type_parameters(
     if tparam.name.loc.contains_position(position) {
       return Some(LocationCoverSearchResult::TypedName(
         tparam.name.loc,
-        tparam.name.name,
         Type::Generic(Reason::new(tparam.name.loc, Some(tparam.name.loc)), tparam.name.name),
         true,
       ));
@@ -83,7 +82,6 @@ fn search_id_annotation(
   if id_annot.id.loc.contains_position(position) {
     return Some(LocationCoverSearchResult::TypedName(
       id_annot.id.loc,
-      id_annot.id.name,
       Type::Nominal(NominalType::from_annotation(id_annot)),
       false,
     ));
@@ -109,11 +107,10 @@ fn search_annotation(
   match annotation {
     annotation::T::Primitive(_, _, _) => None,
     annotation::T::Id(id_annot) => search_id_annotation(id_annot, position),
-    annotation::T::Generic(loc, id) => {
+    annotation::T::Generic(loc, _) => {
       if loc.contains_position(position) {
         return Some(LocationCoverSearchResult::TypedName(
           *loc,
-          id.name,
           Type::from_annotation(annotation),
           false,
         ));
@@ -199,12 +196,9 @@ fn search_expression(
   }
   let found_from_children = match expr {
     expr::E::Literal(_, _) => None,
-    expr::E::LocalId(common, id) => Some(LocationCoverSearchResult::TypedName(
-      id.loc,
-      id.name,
-      common.type_.as_ref().clone(),
-      false,
-    )),
+    expr::E::LocalId(common, id) => {
+      Some(LocationCoverSearchResult::TypedName(id.loc, common.type_.as_ref().clone(), false))
+    }
     expr::E::ClassId(_, mod_ref, id) => {
       // We already checked at the start whether the expression contains the target.
       Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
@@ -299,14 +293,12 @@ fn search_expression(
           return if let Some(annot) = &param.annotation {
             Some(LocationCoverSearchResult::TypedName(
               param.name.loc,
-              param.name.name,
               Type::from_annotation(annot),
               true,
             ))
           } else {
             Some(LocationCoverSearchResult::TypedName(
               param.name.loc,
-              param.name.name,
               param.type_.as_ref().clone(),
               false,
             ))
@@ -368,7 +360,6 @@ pub(super) fn search_module_locally(
         if param.name.loc.contains_position(position) {
           return Some(LocationCoverSearchResult::TypedName(
             param.name.loc,
-            param.name.name,
             Type::from_annotation(&param.annotation),
             true,
           ));

@@ -324,7 +324,7 @@ impl TypeParameterSignature {
     self.to_description().pretty_print(heap)
   }
 
-  pub fn pretty_print_list(list: &Vec<TypeParameterSignature>, heap: &Heap) -> String {
+  pub fn pretty_print_list(list: &[TypeParameterSignature], heap: &Heap) -> String {
     if list.is_empty() {
       "".to_string()
     } else {
@@ -685,7 +685,9 @@ mod type_tests {
     builder.int_type().as_generic();
     builder.int_type().as_fn();
     builder.simple_nominal_type(Heap::new().alloc_str_for_test("")).as_nominal();
+    builder.simple_nominal_type(Heap::new().alloc_str_for_test("")).as_generic();
     builder.fun_type(vec![], builder.int_type()).as_fn();
+    builder.fun_type(vec![], builder.int_type()).as_generic();
   }
 
   #[test]
@@ -791,7 +793,7 @@ mod type_tests {
         .pretty_print(&heap)
     );
 
-    assert_eq!("", TypeParameterSignature::pretty_print_list(&vec![], &heap));
+    assert_eq!("", TypeParameterSignature::pretty_print_list(&[], &heap));
     assert_eq!(
       "<A : B, C>",
       TypeParameterSignature::pretty_print_list(

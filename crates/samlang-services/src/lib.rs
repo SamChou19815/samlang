@@ -249,7 +249,7 @@ pub mod query {
       }
       // Don't return results of arbitrary expressions
       location_cover::LocationCoverSearchResult::Expression(_) => None,
-      location_cover::LocationCoverSearchResult::TypedName(location, _, type_, _) => {
+      location_cover::LocationCoverSearchResult::TypedName(location, type_, _) => {
         Some(TypeQueryResult {
           contents: vec![TypeQueryContent {
             language: "samlang",
@@ -357,7 +357,7 @@ pub mod query {
           &global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
         ))
       }
-      location_cover::LocationCoverSearchResult::TypedName(loc, _, _, _) => {
+      location_cover::LocationCoverSearchResult::TypedName(loc, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
         variable_definition::VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
@@ -394,7 +394,7 @@ pub mod query {
       location_cover::LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
         Some(state_searcher_utils::find_toplevel(state, &mod_ref, &class_name)?.loc())
       }
-      location_cover::LocationCoverSearchResult::TypedName(loc, _, _, _) => {
+      location_cover::LocationCoverSearchResult::TypedName(loc, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
         variable_definition::VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
@@ -485,7 +485,7 @@ pub mod rewrite {
     }
     let def_or_use_loc =
       match state_searcher_utils::search_at_pos(state, module_reference, position, false) {
-        Some(location_cover::LocationCoverSearchResult::TypedName(loc, _, _, _)) => loc,
+        Some(location_cover::LocationCoverSearchResult::TypedName(loc, _, _)) => loc,
         Some(location_cover::LocationCoverSearchResult::Expression(e)) => e.loc(),
         _ => return None,
       };
@@ -644,7 +644,7 @@ pub mod completion {
             },
           );
         }
-        location_cover::LocationCoverSearchResult::TypedName(_, _, _, false) => {
+        location_cover::LocationCoverSearchResult::TypedName(_, _, false) => {
           let parsed = state.parsed_modules.get(module_reference).unwrap();
           let (_, local_cx) =
             type_check_module(*module_reference, parsed, &state.global_cx, &mut ErrorSet::new());
