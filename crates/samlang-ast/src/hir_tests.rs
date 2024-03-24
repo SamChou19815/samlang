@@ -10,6 +10,10 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert!(ZERO.as_int_literal().is_some());
+    Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).as_id();
+    Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).is_int();
+    assert!(INT_TYPE.is_int());
+    assert!(INT_TYPE.as_id().is_none());
     format!(
       "{:?}",
       Expression::var_name(
