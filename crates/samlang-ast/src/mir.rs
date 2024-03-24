@@ -1,3 +1,5 @@
+use crate::hir;
+
 use super::hir::{BinaryOperator, GlobalVariable};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
@@ -470,6 +472,11 @@ impl GenenalLoopVariable {
 
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum Statement {
+  Unary {
+    name: PStr,
+    operator: hir::UnaryOperator,
+    operand: Expression,
+  },
   Binary(Binary),
   IndexedAccess {
     name: PStr,
@@ -621,6 +628,22 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
+      Statement::Unary { name, operator: hir::UnaryOperator::Not, operand } => {
+        collector.push(format!(
+          "{}let {} = !{};\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          operand.debug_print(heap, table),
+        ));
+      }
+      Statement::Unary { name, operator: hir::UnaryOperator::IsPointer, operand } => {
+        collector.push(format!(
+          "{}let {} = is_pointer({});\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          operand.debug_print(heap, table),
+        ));
+      }
       Statement::Binary(s) => {
         let e1 = s.e1.debug_print(heap, table);
         let e2 = s.e2.debug_print(heap, table);

@@ -4,7 +4,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
@@ -12,6 +12,19 @@ mod tests {
   };
   use samlang_heap::{Heap, PStr};
   use std::collections::HashSet;
+
+  #[test]
+  fn used_test() {
+    let heap = &mut Heap::new();
+    dead_code_elimination::collect_use_from_stmts(
+      &[Statement::Unary {
+        name: heap.alloc_str_for_test("uu"),
+        operator: UnaryOperator::Not,
+        operand: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+      }],
+      &mut HashSet::new(),
+    );
+  }
 
   fn assert_correctly_optimized(
     stmts: Vec<Statement>,
@@ -110,7 +123,22 @@ return (ii: int);"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("u1"), BinaryOperator::DIV, ZERO, ONE),
+        Statement::Unary {
+          name: heap.alloc_str_for_test("u0_unused"),
+          operator: UnaryOperator::Not,
+          operand: ONE,
+        },
+        Statement::Unary {
+          name: heap.alloc_str_for_test("u0"),
+          operator: UnaryOperator::Not,
+          operand: ONE,
+        },
+        Statement::binary(
+          heap.alloc_str_for_test("u1"),
+          BinaryOperator::DIV,
+          Expression::var_name(heap.alloc_str_for_test("u0"), INT_TYPE),
+          ONE,
+        ),
         Statement::binary(heap.alloc_str_for_test("u2"), BinaryOperator::MOD, ZERO, ONE),
         Statement::binary(heap.alloc_str_for_test("u3"), BinaryOperator::PLUS, ZERO, ONE),
         Statement::binary(heap.alloc_str_for_test("p"), BinaryOperator::PLUS, ZERO, ONE),
@@ -182,7 +210,8 @@ return (ii: int);"#,
       ZERO,
       heap,
       table,
-      r#"let u1 = 0 / 1;
+      r#"let u0 = !1;
+let u1 = (u0: int) / 1;
 let u2 = 0 % 1;
 let p = 0 + 1;
 let i1: int = (p: int)[3];

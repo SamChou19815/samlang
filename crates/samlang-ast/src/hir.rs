@@ -179,6 +179,11 @@ impl TypeDefinition {
     }
   }
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UnaryOperator {
+  Not,
+  IsPointer,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum BinaryOperator {
@@ -345,6 +350,11 @@ impl Callee {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
+  Unary {
+    name: PStr,
+    operator: UnaryOperator,
+    operand: Expression,
+  },
   Binary {
     name: PStr,
     operator: BinaryOperator,
@@ -412,6 +422,22 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
+      Statement::Unary { name, operator: UnaryOperator::Not, operand } => {
+        collector.push(format!(
+          "{}let {} = !{};\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          operand.debug_print(heap),
+        ));
+      }
+      Statement::Unary { name, operator: UnaryOperator::IsPointer, operand } => {
+        collector.push(format!(
+          "{}let {} = is_pointer({});\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          operand.debug_print(heap),
+        ));
+      }
       Statement::Binary { name, operator, e1, e2 } => {
         collector.push(format!(
           "{}let {} = {} {} {};\n",

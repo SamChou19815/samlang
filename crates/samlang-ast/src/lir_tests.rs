@@ -2,7 +2,7 @@
 mod tests {
   use super::super::lir::*;
   use crate::{
-    hir::{BinaryOperator, GlobalVariable},
+    hir::{BinaryOperator, GlobalVariable, UnaryOperator},
     mir::{FunctionName, SymbolTable},
   };
   use pretty_assertions::assert_eq;
@@ -159,6 +159,16 @@ mod tests {
               },
             ],
             s2: vec![
+              Statement::Unary {
+                name: heap.alloc_str_for_test("dd"),
+                operator: UnaryOperator::Not,
+                operand: ZERO,
+              },
+              Statement::Unary {
+                name: heap.alloc_str_for_test("dd"),
+                operator: UnaryOperator::IsPointer,
+                operand: ZERO,
+              },
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::PLUS, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
               Statement::binary(
@@ -287,6 +297,8 @@ function __$f(v1: (t0: number) => number): number {{
     }}
     bar = b1;
   }} else {{
+    let dd = !0;
+    let dd = typeof 0 === 'object';
     let dd = 0 + 0;
     let dd = 0 + 0;
     let dd = 0 - -2147483648;

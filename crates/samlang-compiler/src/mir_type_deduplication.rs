@@ -57,6 +57,9 @@ fn rewrite_expressions(state: &State, expressions: Vec<Expression>) -> Vec<Expre
 
 fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
   match stmt {
+    Statement::Unary { name, operator, operand } => {
+      Statement::Unary { name, operator, operand: rewrite_expr(state, operand) }
+    }
     Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
       name,
       operator,
@@ -333,6 +336,11 @@ mod tests {
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
+            Statement::Unary {
+              name: PStr::UNDERSCORE,
+              operator: samlang_ast::hir::UnaryOperator::Not,
+              operand: ZERO,
+            },
             Statement::binary(PStr::UNDERSCORE, samlang_ast::hir::BinaryOperator::PLUS, ZERO, ZERO),
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
@@ -393,6 +401,7 @@ variant type _E = [Boxed(int), Unboxed(int), int]
 function __$main(): int {
   let _: int;
   if 1 {
+    let _ = !0;
     let _ = 0 + 0;
     __$f(0);
     (f: int)();
