@@ -14,6 +14,10 @@ mod tests {
     assert!(INT_TYPE <= INT_TYPE);
     format!("{:?}", INT_TYPE.cmp(&INT_TYPE));
     assert!(ZERO.as_int_literal().is_some());
+    Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).as_id();
+    Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int();
+    assert!(INT_TYPE.is_int());
+    assert!(INT_TYPE.as_id().is_none());
     format!(
       "{:?}",
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
