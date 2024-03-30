@@ -1,4 +1,3 @@
-use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use std::{ops::Deref, rc::Rc};
 
@@ -45,7 +44,7 @@ mod rc_string_tests {
 /// Quote:
 /// > "... we introduce a new representation for documents, with one constructor corresponding to each
 /// operator that builds a document."
-#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Document {
   Nil,
   Concat(Rc<Document>, Rc<Document>),
@@ -323,8 +322,14 @@ mod tests {
   use std::rc::Rc;
 
   #[test]
+  fn boilterplate() {
+    assert_eq!(Document::Nil, Document::Nil);
+    assert_eq!(Document::Text("a").clone(), Document::Text("a"));
+    assert!(Document::Line.eq(&Document::Line));
+  }
+
+  #[test]
   fn concat_tests() {
-    format!("{:?}", Document::Nest(0, Rc::new(Document::Nil)).as_nest().unwrap().1);
     assert_eq!(Document::Nil, Document::concat(vec![]));
     assert_eq!(Document::Text("a"), Document::concat(vec![Document::Text("a")]));
     assert_eq!(

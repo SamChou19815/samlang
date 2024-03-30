@@ -122,7 +122,7 @@ pub struct ClosureTypeDefinition {
   pub function_type: FunctionType,
 }
 
-fn name_with_tparams(heap: &samlang_heap::Heap, name: TypeName, tparams: &Vec<PStr>) -> String {
+fn name_with_tparams(heap: &samlang_heap::Heap, name: TypeName, tparams: &[PStr]) -> String {
   if tparams.is_empty() {
     name.pretty_print(heap)
   } else {
