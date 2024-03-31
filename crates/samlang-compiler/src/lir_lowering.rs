@@ -126,6 +126,9 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, stmt: mir::Statement) -> Vec<lir::Statement> {
     match stmt {
+      mir::Statement::Unary { name, operator, operand } => {
+        vec![lir::Statement::Unary { name, operator, operand: lower_expression(operand) }]
+      }
       mir::Statement::Binary(mir::Binary { name, operator, e1, e2 }) => {
         vec![lir::Statement::Binary {
           name,
@@ -738,7 +741,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::BinaryOperator,
+    hir::{BinaryOperator, UnaryOperator},
     lir,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
@@ -896,6 +899,11 @@ mod tests {
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
+            Statement::Unary {
+              name: heap.alloc_str_for_test("v1"),
+              operator: UnaryOperator::Not,
+              operand: ZERO,
+            },
             Statement::binary(heap.alloc_str_for_test("v1"), BinaryOperator::PLUS, ZERO, ZERO),
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("O"),
@@ -1066,6 +1074,7 @@ function __$cc(): number {{
   return 0;
 }}
 function __$main(): number {{
+  let v1 = !0;
   let v1 = 0 + 0;
   let _t3 = obj as unknown as any;
   __$inc_ref(_t3);

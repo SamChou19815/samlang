@@ -1,4 +1,7 @@
-use samlang_ast::{hir::BinaryOperator, mir::*};
+use samlang_ast::{
+  hir::{BinaryOperator, UnaryOperator},
+  mir::*,
+};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 use std::ops::{Deref, DerefMut};
@@ -28,9 +31,16 @@ pub(super) struct BinaryBindedValue {
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) struct UnaryBindedValue {
+  pub(super) operator: UnaryOperator,
+  pub(super) operand: Expression,
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum BindedValue {
   IndexedAccess(IndexAccessBindedValue),
   Binary(BinaryBindedValue),
+  Unary(UnaryBindedValue),
 }
 
 pub(super) struct LocalValueContextForOptimization(LocalStackedContext<PStr, Expression>);
@@ -130,15 +140,21 @@ mod tests {
     let bv2 = BindedValue::Binary(
       BinaryBindedValue { operator: BinaryOperator::PLUS, e1: ZERO, e2: ZERO }.clone(),
     );
+    let bv3 =
+      BindedValue::Unary(UnaryBindedValue { operator: UnaryOperator::Not, operand: ZERO }.clone());
     let _ = bv1.clone();
     let _ = bv2.clone();
+    let _ = bv3.clone();
     assert_eq!(Some(std::cmp::Ordering::Equal), bv1.partial_cmp(&bv1));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv2.partial_cmp(&bv2));
+    assert_eq!(Some(std::cmp::Ordering::Equal), bv3.partial_cmp(&bv3));
     assert_eq!(true, bv1.eq(&bv1));
     assert_eq!(true, bv2.eq(&bv2));
+    assert_eq!(true, bv3.eq(&bv3));
     let mut hasher = DefaultHasher::new();
     bv1.hash(&mut hasher);
     bv2.hash(&mut hasher);
+    bv3.hash(&mut hasher);
   }
 
   #[should_panic]

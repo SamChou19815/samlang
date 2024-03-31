@@ -55,6 +55,13 @@ impl Rewriter {
     collector: &mut Vec<mir::Statement>,
   ) {
     match stmt {
+      hir::Statement::Unary { name, operator, operand } => {
+        collector.push(mir::Statement::Unary {
+          name: *name,
+          operator: *operator,
+          operand: self.rewrite_expr(heap, operand, generics_replacement_map),
+        });
+      }
       hir::Statement::Binary { name, operator, e1, e2 } => {
         collector.push(mir::Statement::Binary(mir::Statement::binary_unwrapped(
           *name,
@@ -155,10 +162,7 @@ impl Rewriter {
             debug_assert!(bindings.len() == 1);
             let binded_name = bindings[0].as_ref().unwrap().0;
             let casted_int_collector = heap.alloc_temp_str();
-            let comparison_temp_1 = heap.alloc_temp_str();
-            let comparison_temp_2 = heap.alloc_temp_str();
-            let comparison_temp_3 = heap.alloc_temp_str();
-            let comparison_temp_4 = heap.alloc_temp_str();
+            let comparison_temp = heap.alloc_temp_str();
             // We need to case the high level expression into int so we can
             // do low-level bitwise is-pointer check.
             collector.push(mir::Statement::Cast {
@@ -167,36 +171,11 @@ impl Rewriter {
               assigned_expression: test_expr,
             });
             // Here we test whether this is a pointer
-            // We got lucky in the JS output, since Number([1,2]) == NaN,
-            // and the rest happens to work out.
-            // i < 1024 (small int is not a pointer)
-            collector.push(mir::Statement::binary(
-              comparison_temp_1,
-              hir::BinaryOperator::LT,
-              mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
-              mir::Expression::int(1024),
-            ));
-            // i & 1 (LSB == 1 is not a pointer)
-            collector.push(mir::Statement::binary(
-              comparison_temp_2,
-              hir::BinaryOperator::LAND,
-              mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
-              mir::ONE,
-            ));
-            // (i < 1024) || (i & 1) -> not a pointer
-            collector.push(mir::Statement::binary(
-              comparison_temp_3,
-              hir::BinaryOperator::LOR,
-              mir::Expression::var_name(comparison_temp_1, mir::INT_TYPE),
-              mir::Expression::var_name(comparison_temp_2, mir::INT_TYPE),
-            ));
-            // invert the previous check, is a pointer
-            collector.push(mir::Statement::binary(
-              comparison_temp_4,
-              hir::BinaryOperator::XOR,
-              mir::Expression::var_name(comparison_temp_3, mir::INT_TYPE),
-              mir::ONE,
-            ));
+            collector.push(mir::Statement::Unary {
+              name: comparison_temp,
+              operator: hir::UnaryOperator::IsPointer,
+              operand: mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
+            });
             let mut nested_stmts = vec![];
             // Once we pass the is-pointer check, we can cast the test expression to the underlying
             // unboxed pointer type.
@@ -207,7 +186,7 @@ impl Rewriter {
             });
             nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
             collector.push(mir::Statement::IfElse {
-              condition: mir::Expression::var_name(comparison_temp_4, mir::INT_TYPE),
+              condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
               s1: nested_stmts,
               s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
               final_assignments: self.rewrite_final_assignments(
@@ -734,7 +713,7 @@ pub(super) fn perform_generics_specialization(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::hir::{BinaryOperator, GlobalVariable};
+  use samlang_ast::hir::{BinaryOperator, GlobalVariable, UnaryOperator};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   fn assert_specialized(sources: hir::Sources, heap: &mut Heap, expected: &str) {
@@ -1163,6 +1142,11 @@ sources.mains = [_DUMMY_I$main]
                     return_type: hir::INT_TYPE,
                     return_collector: None,
                   },
+                  hir::Statement::Unary {
+                    name: heap.alloc_str_for_test("v1"),
+                    operator: UnaryOperator::Not,
+                    operand: hir::ZERO,
+                  },
                   hir::Statement::Binary {
                     name: heap.alloc_str_for_test("v1"),
                     operator: BinaryOperator::PLUS,
@@ -1337,6 +1321,7 @@ function _DUMMY_I$main(): int {
     finalV = (v1: int);
   } else {
     _DUMMY_I$main();
+    let v1 = !0;
     let v1 = 0 + 0;
     let j: DUMMY_J = [0];
     let v2: int = (j: DUMMY_J)[0];
@@ -1346,39 +1331,36 @@ function _DUMMY_I$main(): int {
   }
   let b = 0 as DUMMY_Enum;
   let _t1 = (b: DUMMY_Enum) as int;
-  let _t2 = (_t1: int) < 1024;
-  let _t3 = (_t1: int) & 1;
-  let _t4 = (_t2: int) | (_t3: int);
-  let _t5 = (_t4: int) ^ 1;
-  if (_t5: int) {
+  let _t2 = is_pointer((_t1: int));
+  if (_t2: int) {
     let a = (b: DUMMY_Enum) as DUMMY_J;
   } else {
   }
-  let _t6 = (b: DUMMY_Enum) as int;
-  let _t7 = (_t6: int) == 3;
-  if (_t7: int) {
+  let _t3 = (b: DUMMY_Enum) as int;
+  let _t4 = (_t3: int) == 3;
+  if (_t4: int) {
   } else {
   }
-  let _t8: int = (b: DUMMY_Enum3)[0];
-  let _t9 = (_t8: int) == 3;
-  if (_t9: int) {
-    let _t10 = (b: DUMMY_Enum3) as DUMMY_Enum3$_Sub1;
-    let a: int = (_t10: DUMMY_Enum3$_Sub1)[1];
+  let _t5: int = (b: DUMMY_Enum3)[0];
+  let _t6 = (_t5: int) == 3;
+  if (_t6: int) {
+    let _t7 = (b: DUMMY_Enum3) as DUMMY_Enum3$_Sub1;
+    let a: int = (_t7: DUMMY_Enum3$_Sub1)[1];
   } else {
   }
-  let _t11: DUMMY_Enum2$_Sub0 = [1, 0];
-  let b = (_t11: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
-  let _t12: DUMMY_Enum3$_Sub0 = [1, 0];
-  let b = (_t12: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
-  let _t13: int = (b: DUMMY_Enum2)[0];
-  let _t14 = (_t13: int) == 1;
+  let _t8: DUMMY_Enum2$_Sub0 = [1, 0];
+  let b = (_t8: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
+  let _t9: DUMMY_Enum3$_Sub0 = [1, 0];
+  let b = (_t9: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
+  let _t10: int = (b: DUMMY_Enum2)[0];
+  let _t11 = (_t10: int) == 1;
+  if (_t11: int) {
+    let _t12 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
+  } else {
+  }
+  let _t13 = (b: DUMMY_Enum2) as int;
+  let _t14 = (_t13: int) == 3;
   if (_t14: int) {
-    let _t15 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
-  } else {
-  }
-  let _t16 = (b: DUMMY_Enum2) as int;
-  let _t17 = (_t16: int) == 3;
-  if (_t17: int) {
   } else {
   }
   let b = 3 as DUMMY_Enum2;

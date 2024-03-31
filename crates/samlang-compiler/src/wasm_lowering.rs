@@ -46,6 +46,45 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, s: &lir::Statement) -> Vec<wasm::Instruction> {
     match s {
+      lir::Statement::Unary { name, operator: hir::UnaryOperator::Not, operand } => {
+        let operand = Box::new(self.lower_expr(operand));
+        vec![wasm::Instruction::Inline(self.set(
+          name,
+          wasm::InlineInstruction::Binary(
+            operand,
+            hir::BinaryOperator::XOR,
+            Box::new(wasm::InlineInstruction::Const(1)),
+          ),
+        ))]
+      }
+      lir::Statement::Unary { name, operator: hir::UnaryOperator::IsPointer, operand } => {
+        let operand1 = Box::new(self.lower_expr(operand));
+        let operand2 = Box::new(self.lower_expr(operand));
+        vec![wasm::Instruction::Inline(self.set(
+          name,
+          // invert the previous check, is a pointer
+          wasm::InlineInstruction::Binary(
+            // (i < 1024) || (i & 1) -> not a pointer
+            Box::new(wasm::InlineInstruction::Binary(
+              // i < 1024 (small int is not a pointer)
+              Box::new(wasm::InlineInstruction::Binary(
+                operand1,
+                hir::BinaryOperator::LT,
+                Box::new(wasm::InlineInstruction::Const(1024)),
+              )),
+              hir::BinaryOperator::LOR,
+              // i & 1 (LSB == 1 is not a pointer)
+              Box::new(wasm::InlineInstruction::Binary(
+                operand2,
+                hir::BinaryOperator::LAND,
+                Box::new(wasm::InlineInstruction::Const(1)),
+              )),
+            )),
+            hir::BinaryOperator::XOR,
+            Box::new(wasm::InlineInstruction::Const(1)),
+          ),
+        ))]
+      }
       lir::Statement::Binary { name, operator, e1, e2 } => {
         let i1 = Box::new(self.lower_expr(e1));
         let i2 = Box::new(self.lower_expr(e2));
@@ -280,7 +319,7 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, GlobalVariable},
+    hir::{BinaryOperator, GlobalVariable, UnaryOperator},
     lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
     mir, wasm,
   };
@@ -374,6 +413,16 @@ mod tests {
               ),
             )],
           },
+          Statement::Unary {
+            name: heap.alloc_str_for_test("un1"),
+            operator: UnaryOperator::Not,
+            operand: ZERO,
+          },
+          Statement::Unary {
+            name: heap.alloc_str_for_test("un2"),
+            operator: UnaryOperator::IsPointer,
+            operand: ZERO,
+          },
           Statement::binary(
             heap.alloc_str_for_test("bin"),
             BinaryOperator::PLUS,
@@ -433,6 +482,8 @@ mod tests {
   (local $i i32)
   (local $rc i32)
   (local $s i32)
+  (local $un1 i32)
+  (local $un2 i32)
   (local $v i32)
   (if (i32.xor (i32.const 0) (i32.const 1)) (then
     (local.set $c (i32.const 0))
@@ -468,6 +519,8 @@ mod tests {
     )
     (local.set $f (i32.const 0))
   ))
+  (local.set $un1 (i32.xor (i32.const 0) (i32.const 1)))
+  (local.set $un2 (i32.xor (i32.or (i32.lt_s (i32.const 0) (i32.const 1024)) (i32.and (i32.const 0) (i32.const 1))) (i32.const 1)))
   (local.set $bin (i32.add (local.get $f) (i32.const 0)))
   (drop (call $__$main (i32.const 0)))
   (local.set $rc (call_indirect $0 (type $i32_=>_i32) (i32.const 0) (local.get $f)))

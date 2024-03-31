@@ -1,5 +1,7 @@
+use crate::hir;
+
 use super::{
-  hir::{BinaryOperator, GlobalVariable},
+  hir::{BinaryOperator, GlobalVariable, UnaryOperator},
   mir::{FunctionName, SymbolTable, TypeNameId},
 };
 use enum_as_inner::EnumAsInner;
@@ -131,6 +133,11 @@ pub struct GenenalLoopVariable {
 }
 
 pub enum Statement {
+  Unary {
+    name: PStr,
+    operator: UnaryOperator,
+    operand: Expression,
+  },
   Binary {
     name: PStr,
     operator: BinaryOperator,
@@ -232,6 +239,22 @@ impl Statement {
     collector: &mut String,
   ) {
     match self {
+      Statement::Unary { name, operator: hir::UnaryOperator::Not, operand } => {
+        Self::append_spaces(collector, level);
+        collector.push_str("let ");
+        collector.push_str(name.as_str(heap));
+        collector.push_str(" = !");
+        operand.pretty_print(collector, heap, table);
+        collector.push_str(";\n");
+      }
+      Statement::Unary { name, operator: hir::UnaryOperator::IsPointer, operand } => {
+        Self::append_spaces(collector, level);
+        collector.push_str("let ");
+        collector.push_str(name.as_str(heap));
+        collector.push_str(" = typeof ");
+        operand.pretty_print(collector, heap, table);
+        collector.push_str(" === 'object';\n");
+      }
       Statement::Binary { name, operator, e1, e2 } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
