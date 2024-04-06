@@ -11,6 +11,6 @@
     "webdev": "bun run --cwd packages/samlang-website dev"
   },
   "devDependencies": {
-    "bun-types": "^1.0.24"
+    "bun-types": "^1.1.2"
   }
 }
