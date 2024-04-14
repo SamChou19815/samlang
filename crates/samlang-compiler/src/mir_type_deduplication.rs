@@ -18,7 +18,7 @@ fn rewrite_id_type_name(state: &State, id: TypeNameId) -> TypeNameId {
 
 fn rewrite_type(state: &State, type_: Type) -> Type {
   match type_ {
-    Type::Int => Type::Int,
+    Type::Int32 => Type::Int32,
     Type::Id(id) => Type::Id(rewrite_id_type_name(state, id)),
   }
 }
