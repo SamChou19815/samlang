@@ -1,6 +1,4 @@
-use crate::hir;
-
-use super::hir::{BinaryOperator, GlobalVariable};
+use super::hir;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -62,7 +60,7 @@ impl TypeName {
     for t in &self.suffix {
       collector.push('_');
       match t {
-        Type::Int => collector.push_str("int"),
+        Type::Int32 => collector.push_str("int"),
         Type::Id(id) => id.write_encoded(collector, heap, table),
       }
     }
@@ -195,7 +193,7 @@ impl SymbolTable {
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
 pub enum Type {
-  Int,
+  Int32,
   Id(TypeNameId),
 }
 
@@ -206,13 +204,13 @@ impl Type {
 
   pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Type::Int => "int".to_string(),
+      Type::Int32 => "int".to_string(),
       Type::Id(id) => id.encoded_for_test(heap, table),
     }
   }
 }
 
-pub const INT_TYPE: Type = Type::Int;
+pub const INT_TYPE: Type = Type::Int32;
 
 #[derive(Debug, Clone)]
 pub struct ClosureTypeDefinition {
@@ -431,7 +429,7 @@ pub const ONE: Expression = Expression::IntLiteral(1);
 #[derive(Debug, Clone)]
 pub struct Binary {
   pub name: PStr,
-  pub operator: BinaryOperator,
+  pub operator: hir::BinaryOperator,
   pub e1: Expression,
   pub e2: Expression,
 }
@@ -536,13 +534,13 @@ pub enum Statement {
 impl Statement {
   pub fn binary_unwrapped(
     name: PStr,
-    operator: BinaryOperator,
+    operator: hir::BinaryOperator,
     e1: Expression,
     e2: Expression,
   ) -> Binary {
     match (operator, &e2) {
-      (BinaryOperator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
-        Binary { name, operator: BinaryOperator::PLUS, e1, e2: Expression::int(-n) }
+      (hir::BinaryOperator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
+        Binary { name, operator: hir::BinaryOperator::PLUS, e1, e2: Expression::int(-n) }
       }
       _ => Binary { name, operator, e1, e2 },
     }
@@ -550,7 +548,7 @@ impl Statement {
 
   pub fn binary_flexible_unwrapped(
     name: PStr,
-    operator: BinaryOperator,
+    operator: hir::BinaryOperator,
     e1: Expression,
     e2: Expression,
   ) -> Binary {
@@ -558,60 +556,65 @@ impl Statement {
     Self::binary_unwrapped(name, operator, e1, e2)
   }
 
-  pub fn binary(name: PStr, operator: BinaryOperator, e1: Expression, e2: Expression) -> Statement {
+  pub fn binary(
+    name: PStr,
+    operator: hir::BinaryOperator,
+    e1: Expression,
+    e2: Expression,
+  ) -> Statement {
     Statement::Binary(Self::binary_unwrapped(name, operator, e1, e2))
   }
 
   pub fn flexible_order_binary(
-    operator: BinaryOperator,
+    operator: hir::BinaryOperator,
     e1: Expression,
     e2: Expression,
-  ) -> (BinaryOperator, Expression, Expression) {
+  ) -> (hir::BinaryOperator, Expression, Expression) {
     let Binary { name: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
       Self::binary_unwrapped(PStr::INVALID_PSTR, operator, e1, e2);
     match op {
-      BinaryOperator::DIV
-      | BinaryOperator::MOD
-      | BinaryOperator::MINUS
-      | BinaryOperator::SHL
-      | BinaryOperator::SHR => (op, normalized_e1, normalized_e2),
-      BinaryOperator::MUL
-      | BinaryOperator::PLUS
-      | BinaryOperator::LAND
-      | BinaryOperator::LOR
-      | BinaryOperator::XOR
-      | BinaryOperator::EQ
-      | BinaryOperator::NE => {
+      hir::BinaryOperator::DIV
+      | hir::BinaryOperator::MOD
+      | hir::BinaryOperator::MINUS
+      | hir::BinaryOperator::SHL
+      | hir::BinaryOperator::SHR => (op, normalized_e1, normalized_e2),
+      hir::BinaryOperator::MUL
+      | hir::BinaryOperator::PLUS
+      | hir::BinaryOperator::LAND
+      | hir::BinaryOperator::LOR
+      | hir::BinaryOperator::XOR
+      | hir::BinaryOperator::EQ
+      | hir::BinaryOperator::NE => {
         if normalized_e1 > normalized_e2 {
           (op, normalized_e1, normalized_e2)
         } else {
           (op, normalized_e2, normalized_e1)
         }
       }
-      BinaryOperator::LT => {
+      hir::BinaryOperator::LT => {
         if normalized_e1 < normalized_e2 {
-          (BinaryOperator::GT, normalized_e2, normalized_e1)
+          (hir::BinaryOperator::GT, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
       }
-      BinaryOperator::LE => {
+      hir::BinaryOperator::LE => {
         if normalized_e1 < normalized_e2 {
-          (BinaryOperator::GE, normalized_e2, normalized_e1)
+          (hir::BinaryOperator::GE, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
       }
-      BinaryOperator::GT => {
+      hir::BinaryOperator::GT => {
         if normalized_e1 < normalized_e2 {
-          (BinaryOperator::LT, normalized_e2, normalized_e1)
+          (hir::BinaryOperator::LT, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
       }
-      BinaryOperator::GE => {
+      hir::BinaryOperator::GE => {
         if normalized_e1 < normalized_e2 {
-          (BinaryOperator::LE, normalized_e2, normalized_e1)
+          (hir::BinaryOperator::LE, normalized_e2, normalized_e1)
         } else {
           (op, normalized_e1, normalized_e2)
         }
@@ -890,7 +893,7 @@ impl Function {
 #[derive(Debug)]
 pub struct Sources {
   pub symbol_table: SymbolTable,
-  pub global_variables: Vec<GlobalVariable>,
+  pub global_variables: Vec<hir::GlobalVariable>,
   pub closure_types: Vec<ClosureTypeDefinition>,
   pub type_definitions: Vec<TypeDefinition>,
   pub main_function_names: Vec<FunctionName>,

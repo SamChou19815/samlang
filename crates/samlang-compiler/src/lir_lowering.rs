@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, HashSet};
 
 fn lower_type(type_: mir::Type) -> lir::Type {
   match type_ {
-    mir::Type::Int => lir::Type::Primitive(lir::PrimitiveType::Int),
+    mir::Type::Int32 => lir::Type::Primitive(lir::PrimitiveType::Int),
     mir::Type::Id(name) => lir::Type::Id(name),
   }
 }

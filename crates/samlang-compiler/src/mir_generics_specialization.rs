@@ -491,7 +491,7 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> mir::Type {
     match type_ {
-      hir::Type::Int => mir::Type::Int,
+      hir::Type::Int => mir::Type::Int32,
       hir::Type::Id(id) => self.rewrite_id_type(heap, id, generics_replacement_map),
     }
   }
@@ -584,7 +584,7 @@ impl Rewriter {
   fn type_permit_enum_boxed_optimization(&self, type_: &mir::Type) -> bool {
     match type_ {
       // We cannot distinguish unboxed int from tags
-      mir::Type::Int => false,
+      mir::Type::Int32 => false,
       mir::Type::Id(type_id) => {
         match &self.specialized_type_definitions.get(type_id).unwrap().mappings {
           // Structs are always pointers.

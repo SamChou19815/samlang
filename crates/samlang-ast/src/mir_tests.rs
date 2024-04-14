@@ -15,8 +15,8 @@ mod tests {
     format!("{:?}", INT_TYPE.cmp(&INT_TYPE));
     assert!(ZERO.as_int_literal().is_some());
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).as_id();
-    Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int();
-    assert!(INT_TYPE.is_int());
+    Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int32();
+    assert!(INT_TYPE.is_int32());
     assert!(INT_TYPE.as_id().is_none());
     format!(
       "{:?}",
