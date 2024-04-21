@@ -11,13 +11,17 @@ mod tests {
     let heap = &mut Heap::new();
     let table = &mut SymbolTable::new();
 
-    assert!(INT_TYPE <= INT_TYPE);
-    format!("{:?}", INT_TYPE.cmp(&INT_TYPE));
+    assert!(INT_32_TYPE <= INT_32_TYPE);
+    format!("{:?}", INT_32_TYPE.cmp(&INT_32_TYPE));
+    assert!(INT_31_TYPE <= INT_31_TYPE);
+    format!("{:?}", INT_31_TYPE.cmp(&INT_31_TYPE));
     assert!(ZERO.as_int_literal().is_some());
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).as_id();
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int32();
-    assert!(INT_TYPE.is_int32());
-    assert!(INT_TYPE.as_id().is_none());
+    assert!(INT_32_TYPE.is_int32());
+    assert!(INT_32_TYPE.as_id().is_none());
+    assert!(INT_31_TYPE.is_int31());
+    assert!(INT_31_TYPE.as_id().is_none());
     format!(
       "{:?}",
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
@@ -27,20 +31,24 @@ mod tests {
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
     );
     format!("{:?}", Expression::StringName(PStr::LOWER_A));
-    format!("{:?}", INT_TYPE);
+    format!("{:?}", INT_32_TYPE);
     assert_eq!(
       "(s: int)",
-      VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap, table)
+      VariableName::new(heap.alloc_str_for_test("s"), INT_32_TYPE).debug_print(heap, table)
+    );
+    assert_eq!(
+      "(s: i31)",
+      VariableName::new(heap.alloc_str_for_test("s"), INT_31_TYPE).debug_print(heap, table)
     );
     GenenalLoopVariable {
       name: PStr::LOWER_A,
-      type_: INT_TYPE,
+      type_: INT_32_TYPE,
       initial_value: ZERO,
       loop_value: ZERO,
     }
     .pretty_print(heap, table);
-    format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE));
-    Expression::var_name(PStr::LOWER_A, INT_TYPE).convert_to_callee();
+    format!("{:?}", Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE));
+    Expression::var_name(PStr::LOWER_A, INT_32_TYPE).convert_to_callee();
     Expression::StringName(PStr::LOWER_A).convert_to_callee();
     ZERO.convert_to_callee();
     Statement::Break(ZERO).as_binary();
@@ -51,10 +59,10 @@ mod tests {
     let call = Statement::Call {
       callee: Callee::FunctionName(FunctionNameExpression {
         name: FunctionName::new_for_test(PStr::LOWER_A),
-        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
       }),
       arguments: vec![],
-      return_type: INT_TYPE,
+      return_type: INT_32_TYPE,
       return_collector: None,
     };
     format!("{:?}", call);
@@ -69,19 +77,19 @@ mod tests {
         )
     );
     assert!(
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
-        == FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+      FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) }
+        == FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) }
     );
     let mut hasher = DefaultHasher::new();
     ZERO.hash(&mut hasher);
     Expression::StringName(PStr::LOWER_A).hash(&mut hasher);
-    Expression::var_name(PStr::LOWER_A, INT_TYPE).hash(&mut hasher);
+    Expression::var_name(PStr::LOWER_A, INT_32_TYPE).hash(&mut hasher);
     Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
       .hash(&mut hasher);
     Statement::binary_flexible_unwrapped(PStr::LOWER_A, BinaryOperator::DIV, ZERO, ZERO);
     Callee::FunctionName(FunctionNameExpression {
       name: FunctionName::new_for_test(heap.alloc_str_for_test("s")),
-      type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
+      type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) },
     })
     .as_function_name();
     assert!(TypeDefinitionMappings::Struct(vec![]).as_struct().is_some());
@@ -89,6 +97,12 @@ mod tests {
     let mut table = SymbolTable::new();
     let mut type_name_id = table.create_type_name_for_test(PStr::UPPER_A);
     format!("{:?}", type_name_id);
+    assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
+    type_name_id = table.create_type_name_with_suffix(
+      ModuleReference::ROOT,
+      PStr::UPPER_A,
+      vec![INT_31_TYPE, INT_32_TYPE],
+    );
     assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id = table.create_simple_type_name(ModuleReference::ROOT, PStr::UPPER_A);
     type_name_id = table.derived_type_name_with_subtype_tag(type_name_id, 1);
@@ -101,9 +115,13 @@ mod tests {
     let heap = &mut Heap::new();
     let table = &mut SymbolTable::new();
 
-    assert_eq!("int", INT_TYPE.pretty_print(heap, table));
+    assert_eq!("int", INT_32_TYPE.pretty_print(heap, table));
+    assert_eq!("i31", INT_31_TYPE.pretty_print(heap, table));
     assert_eq!("0", ZERO.clone().debug_print(heap, table));
-    assert_eq!("(a: int)", Expression::var_name(PStr::LOWER_A, INT_TYPE).debug_print(heap, table));
+    assert_eq!(
+      "(a: int)",
+      Expression::var_name(PStr::LOWER_A, INT_32_TYPE).debug_print(heap, table)
+    );
     assert_eq!(
       "(a: _A)",
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
@@ -119,10 +137,10 @@ mod tests {
 
     let d1 = TypeDefinition {
       name: table.create_type_name_for_test(PStr::UPPER_A),
-      mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
+      mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE, INT_32_TYPE]),
     };
     let ed1 = EnumTypeDefinition::Unboxed(Type::Id(table.create_type_name_for_test(PStr::UPPER_D)));
-    let ed2 = EnumTypeDefinition::Boxed(vec![INT_TYPE, INT_TYPE]);
+    let ed2 = EnumTypeDefinition::Boxed(vec![INT_32_TYPE, INT_32_TYPE]);
     let ed3 = EnumTypeDefinition::Int;
     assert!(ed1.eq(&ed1));
     assert!(ed2.eq(&ed2));
@@ -157,7 +175,7 @@ mod tests {
           closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("CCC")),
           function_name: FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
-            type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+            type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
           },
           context: ZERO,
         },
@@ -174,10 +192,13 @@ mod tests {
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR.clone(), ZERO, ZERO),
         Statement::Cast {
           name: heap.alloc_str_for_test("cast"),
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           assigned_expression: ZERO,
         },
-        Statement::LateInitDeclaration { name: heap.alloc_str_for_test("cast"), type_: INT_TYPE },
+        Statement::LateInitDeclaration {
+          name: heap.alloc_str_for_test("cast"),
+          type_: INT_32_TYPE,
+        },
         Statement::LateInitAssignment {
           name: heap.alloc_str_for_test("cast"),
           assigned_expression: ZERO,
@@ -194,7 +215,7 @@ mod tests {
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
             name: PStr::UNDERSCORE,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: ZERO,
             loop_value: ZERO,
           }],
@@ -203,7 +224,7 @@ mod tests {
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           }],
-          break_collector: Some(VariableName { name: PStr::UNDERSCORE, type_: INT_TYPE }),
+          break_collector: Some(VariableName { name: PStr::UNDERSCORE, type_: INT_32_TYPE }),
         },
       ],
       s2: vec![
@@ -231,33 +252,33 @@ mod tests {
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("h")),
-            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           }),
           arguments: vec![Expression::var_name(
             heap.alloc_str_for_test("big"),
             Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
           )],
-          return_type: INT_TYPE,
+          return_type: INT_32_TYPE,
           return_collector: Some(heap.alloc_str_for_test("vibez")),
         },
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
-            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           }),
-          arguments: vec![Expression::var_name(PStr::LOWER_D, INT_TYPE)],
-          return_type: INT_TYPE,
+          arguments: vec![Expression::var_name(PStr::LOWER_D, INT_32_TYPE)],
+          return_type: INT_32_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Callee::Variable(VariableName { name: PStr::LOWER_D, type_: INT_TYPE }),
-          arguments: vec![Expression::var_name(PStr::LOWER_D, INT_TYPE)],
-          return_type: INT_TYPE,
+          callee: Callee::Variable(VariableName { name: PStr::LOWER_D, type_: INT_32_TYPE }),
+          arguments: vec![Expression::var_name(PStr::LOWER_D, INT_32_TYPE)],
+          return_type: INT_32_TYPE,
           return_collector: None,
         },
         Statement::IndexedAccess {
           name: PStr::LOWER_F,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
             Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
@@ -268,9 +289,9 @@ mod tests {
       ],
       final_assignments: vec![(
         heap.alloc_str_for_test("bar"),
-        INT_TYPE,
-        Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
-        Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
+        INT_32_TYPE,
+        Expression::var_name(heap.alloc_str_for_test("b1"), INT_32_TYPE),
+        Expression::var_name(heap.alloc_str_for_test("b2"), INT_32_TYPE),
       )],
     };
     format!("{:?}", stmt.clone());
@@ -339,22 +360,22 @@ if 0 {
       .clone()],
       closure_types: vec![ClosureTypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_A),
-        function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
       }
       .clone()],
       type_definitions: vec![TypeDefinition {
         name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
-        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
+        mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE, INT_32_TYPE]),
       }
       .clone()],
       main_function_names: vec![FunctionName::new_for_test(heap.alloc_str_for_test("ddd"))],
       functions: vec![Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
         parameters: vec![PStr::LOWER_F],
-        type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![Statement::IndexedAccess {
           name: PStr::LOWER_F,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
             Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
@@ -388,7 +409,7 @@ sources.mains = [__$ddd]"#;
       functions: vec![Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
         parameters: vec![PStr::LOWER_F],
-        type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![],
         return_value: ZERO,
       }],
@@ -424,11 +445,11 @@ sources.mains = [__$ddd]"#;
       ),
     );
     assert_eq!(
-      (BinaryOperator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
+      (BinaryOperator::PLUS, Expression::var_name(PStr::LOWER_A, INT_32_TYPE), ZERO),
       Statement::flexible_order_binary(
         BinaryOperator::PLUS,
         ZERO,
-        Expression::var_name(PStr::LOWER_A, INT_TYPE)
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE)
       ),
     );
 
@@ -453,46 +474,46 @@ sources.mains = [__$ddd]"#;
     assert_eq!(
       (
         BinaryOperator::PLUS,
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
         Expression::StringName(PStr::LOWER_A),
       ),
       Statement::flexible_order_binary(
         BinaryOperator::PLUS,
         Expression::StringName(PStr::LOWER_A),
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
       ),
     );
 
     assert_eq!(
-      (BinaryOperator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
+      (BinaryOperator::PLUS, Expression::var_name(PStr::LOWER_A, INT_32_TYPE), ZERO),
       Statement::flexible_order_binary(
         BinaryOperator::PLUS,
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
         ZERO
       ),
     );
     assert_eq!(
       (
         BinaryOperator::PLUS,
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
         Expression::StringName(PStr::LOWER_B),
       ),
       Statement::flexible_order_binary(
         BinaryOperator::PLUS,
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
         Expression::StringName(PStr::LOWER_B),
       ),
     );
     assert_eq!(
       (
         BinaryOperator::PLUS,
-        Expression::var_name(PStr::LOWER_B, INT_TYPE),
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_B, INT_32_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
       ),
       Statement::flexible_order_binary(
         BinaryOperator::PLUS,
-        Expression::var_name(PStr::LOWER_A, INT_TYPE),
-        Expression::var_name(PStr::LOWER_B, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
+        Expression::var_name(PStr::LOWER_B, INT_32_TYPE),
       ),
     );
 

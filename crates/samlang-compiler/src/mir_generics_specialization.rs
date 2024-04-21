@@ -116,14 +116,14 @@ impl Rewriter {
             let casted_collector = heap.alloc_temp_str();
             collector.push(mir::Statement::IndexedAccess {
               name: variable_for_tag,
-              type_: mir::INT_TYPE,
+              type_: mir::INT_32_TYPE,
               pointer_expression: test_expr,
               index: 0,
             });
             collector.push(mir::Statement::binary(
               comparison_temp,
               hir::BinaryOperator::EQ,
-              mir::Expression::var_name(variable_for_tag, mir::INT_TYPE),
+              mir::Expression::var_name(variable_for_tag, mir::INT_32_TYPE),
               mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
             let mut nested_stmts = vec![];
@@ -146,7 +146,7 @@ impl Rewriter {
             }
             nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
             collector.push(mir::Statement::IfElse {
-              condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
+              condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
               s1: nested_stmts,
               s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
               final_assignments: self.rewrite_final_assignments(
@@ -167,14 +167,14 @@ impl Rewriter {
             // do low-level bitwise is-pointer check.
             collector.push(mir::Statement::Cast {
               name: casted_int_collector,
-              type_: mir::INT_TYPE,
+              type_: mir::INT_32_TYPE,
               assigned_expression: test_expr,
             });
             // Here we test whether this is a pointer
             collector.push(mir::Statement::Unary {
               name: comparison_temp,
               operator: hir::UnaryOperator::IsPointer,
-              operand: mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
+              operand: mir::Expression::var_name(casted_int_collector, mir::INT_32_TYPE),
             });
             let mut nested_stmts = vec![];
             // Once we pass the is-pointer check, we can cast the test expression to the underlying
@@ -186,7 +186,7 @@ impl Rewriter {
             });
             nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
             collector.push(mir::Statement::IfElse {
-              condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
+              condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
               s1: nested_stmts,
               s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
               final_assignments: self.rewrite_final_assignments(
@@ -203,17 +203,17 @@ impl Rewriter {
             // Once we have i31 type, the test should be performed on i31.
             collector.push(mir::Statement::Cast {
               name: casted_collector,
-              type_: mir::INT_TYPE,
+              type_: mir::INT_32_TYPE,
               assigned_expression: test_expr,
             });
             collector.push(mir::Statement::binary(
               comparison_temp,
               hir::BinaryOperator::EQ,
-              mir::Expression::var_name(casted_collector, mir::INT_TYPE),
+              mir::Expression::var_name(casted_collector, mir::INT_32_TYPE),
               mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
             collector.push(mir::Statement::IfElse {
-              condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
+              condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
               s1: self.rewrite_stmts(heap, s1, generics_replacement_map),
               s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
               final_assignments: self.rewrite_final_assignments(
@@ -536,11 +536,11 @@ impl Rewriter {
                 mir_variants.push(mir::EnumTypeDefinition::Int);
               } else {
                 if let Some((i, t)) = already_unused_boxed_optimization {
-                  mir_variants[i] = mir::EnumTypeDefinition::Boxed(vec![mir::INT_TYPE, t]);
+                  mir_variants[i] = mir::EnumTypeDefinition::Boxed(vec![mir::INT_32_TYPE, t]);
                   already_unused_boxed_optimization = None;
                 }
                 let mut mapping_types = Vec::with_capacity(types.len() + 1);
-                mapping_types.push(mir::INT_TYPE);
+                mapping_types.push(mir::INT_32_TYPE);
                 for t in types {
                   mapping_types.push(self.rewrite_type(heap, t, &solved_targs_replacement_map));
                 }
@@ -584,7 +584,7 @@ impl Rewriter {
   fn type_permit_enum_boxed_optimization(&self, type_: &mir::Type) -> bool {
     match type_ {
       // We cannot distinguish unboxed int from tags
-      mir::Type::Int32 => false,
+      mir::Type::Int32 | mir::Type::Int31 => false,
       mir::Type::Id(type_id) => {
         match &self.specialized_type_definitions.get(type_id).unwrap().mappings {
           // Structs are always pointers.

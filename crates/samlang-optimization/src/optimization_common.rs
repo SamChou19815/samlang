@@ -135,7 +135,7 @@ mod tests {
     assert_eq!(false, single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
     let bv1 = BindedValue::IndexedAccess(
-      IndexAccessBindedValue { type_: INT_TYPE, pointer_expression: ZERO, index: 0 }.clone(),
+      IndexAccessBindedValue { type_: INT_32_TYPE, pointer_expression: ZERO, index: 0 }.clone(),
     );
     let bv2 = BindedValue::Binary(
       BinaryBindedValue { operator: BinaryOperator::PLUS, e1: ZERO, e2: ZERO }.clone(),

@@ -251,7 +251,7 @@ mod tests {
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
       FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
-      TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE, ZERO,
+      TypeDefinition, TypeDefinitionMappings, VariableName, INT_32_TYPE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -275,22 +275,22 @@ mod tests {
       closure_types: vec![
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
-          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         },
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
-          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         },
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("RefByType")),
-          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
           mappings: TypeDefinitionMappings::Struct(vec![
-            INT_TYPE,
+            INT_32_TYPE,
             Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Foo"))),
             Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Bar"))),
           ]),
@@ -303,14 +303,14 @@ mod tests {
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
-          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE]),
+          mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE]),
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Int,
-            EnumTypeDefinition::Unboxed(INT_TYPE),
-            EnumTypeDefinition::Boxed(vec![INT_TYPE]),
+            EnumTypeDefinition::Unboxed(INT_32_TYPE),
+            EnumTypeDefinition::Boxed(vec![INT_32_TYPE]),
           ]),
         },
         TypeDefinition {
@@ -338,14 +338,14 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
-              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             }),
             arguments: vec![],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           }],
           return_value: ZERO,
@@ -353,7 +353,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
           body: vec![
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
@@ -365,22 +365,22 @@ mod tests {
               closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
               function_name: (FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
-                type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
               }),
               context: ZERO,
             },
             Statement::IndexedAccess {
               name: PStr::LOWER_A,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               pointer_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
               index: 0,
             },
             Statement::Cast {
               name: PStr::LOWER_A,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
-            Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_TYPE },
+            Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_32_TYPE },
             Statement::LateInitAssignment {
               name: PStr::LOWER_A,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
@@ -388,16 +388,19 @@ mod tests {
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("baz")),
-                type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
               }),
               arguments: vec![Expression::StringName(heap.alloc_str_for_test("haha"))],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("baz"), INT_TYPE)),
+              callee: Callee::Variable(VariableName::new(
+                heap.alloc_str_for_test("baz"),
+                INT_32_TYPE,
+              )),
               arguments: vec![Expression::StringName(heap.alloc_str_for_test("haha"))],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Unary {
@@ -419,7 +422,7 @@ mod tests {
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
-              final_assignments: vec![(heap.alloc_str_for_test("fff"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(heap.alloc_str_for_test("fff"), INT_32_TYPE, ZERO, ZERO)],
             },
             Statement::SingleIf {
               condition: ZERO,
@@ -429,7 +432,7 @@ mod tests {
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
                 name: PStr::LOWER_F,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
@@ -446,11 +449,14 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![Statement::Call {
-            callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("baz"), INT_TYPE)),
-            arguments: vec![Expression::var_name(heap.alloc_str_for_test("baz"), INT_TYPE)],
-            return_type: INT_TYPE,
+            callee: Callee::Variable(VariableName::new(
+              heap.alloc_str_for_test("baz"),
+              INT_32_TYPE,
+            )),
+            arguments: vec![Expression::var_name(heap.alloc_str_for_test("baz"), INT_32_TYPE)],
+            return_type: INT_32_TYPE,
             return_collector: None,
           }],
           return_value: ZERO,
@@ -458,7 +464,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("baz")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![],
           return_value: ZERO,
         },

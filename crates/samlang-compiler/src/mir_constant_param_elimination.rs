@@ -406,10 +406,11 @@ mod tests {
     hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
-      GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_TYPE, ZERO,
+      GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_31_TYPE,
+      INT_32_TYPE, ZERO,
     },
   };
-  use samlang_heap::{Heap, PStr};
+  use samlang_heap::{Heap, ModuleReference, PStr};
 
   #[test]
   fn boilerplate() {
@@ -439,8 +440,8 @@ mod tests {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
           parameters: vec![PStr::LOWER_A, PStr::LOWER_B],
           type_: FunctionType {
-            argument_types: vec![INT_TYPE, INT_TYPE],
-            return_type: Box::new(INT_TYPE),
+            argument_types: vec![INT_32_TYPE, INT_32_TYPE],
+            return_type: Box::new(INT_32_TYPE),
           },
           body: vec![],
           return_value: ZERO,
@@ -448,8 +449,11 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("str_const")),
           parameters: vec![PStr::LOWER_A],
-          type_: FunctionType { argument_types: vec![INT_TYPE], return_type: Box::new(INT_TYPE) },
-          body: vec![Statement::Break(Expression::var_name(PStr::LOWER_A, INT_TYPE))],
+          type_: FunctionType {
+            argument_types: vec![INT_32_TYPE],
+            return_type: Box::new(INT_32_TYPE),
+          },
+          body: vec![Statement::Break(Expression::var_name(PStr::LOWER_A, INT_32_TYPE))],
           return_value: ZERO,
         },
         Function {
@@ -469,24 +473,24 @@ mod tests {
               Type::Id(table.create_type_name_for_test(PStr::UPPER_D)),
               Type::Id(table.create_type_name_for_test(PStr::UPPER_E)),
             ],
-            return_type: Box::new(INT_TYPE),
+            return_type: Box::new(INT_32_TYPE),
           },
           body: vec![
             Statement::Unary {
               name: dummy_name,
               operator: UnaryOperator::Not,
-              operand: Expression::var_name(PStr::LOWER_A, INT_TYPE),
+              operand: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
             },
             Statement::binary(
               dummy_name,
               BinaryOperator::PLUS,
-              Expression::var_name(PStr::LOWER_A, INT_TYPE),
-              Expression::var_name(PStr::LOWER_B, INT_TYPE),
+              Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
+              Expression::var_name(PStr::LOWER_B, INT_32_TYPE),
             ),
             Statement::IndexedAccess {
               name: dummy_name,
-              type_: INT_TYPE,
-              pointer_expression: Expression::var_name(PStr::LOWER_A, INT_TYPE),
+              type_: INT_32_TYPE,
+              pointer_expression: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
               index: 0,
             },
             Statement::ClosureInit {
@@ -494,22 +498,28 @@ mod tests {
               closure_type_name: table.create_type_name_for_test(dummy_name),
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
-                type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
+                type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) },
               },
               context: ZERO,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName { name: dummy_name, type_: INT_TYPE }),
+              callee: Callee::Variable(VariableName { name: dummy_name, type_: INT_32_TYPE }),
               arguments: vec![ZERO],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("func_with_consts")),
                 type_: FunctionType {
-                  argument_types: vec![INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE],
-                  return_type: Box::new(INT_TYPE),
+                  argument_types: vec![
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                  ],
+                  return_type: Box::new(INT_32_TYPE),
                 },
               }),
               // a: matching constant
@@ -521,59 +531,65 @@ mod tests {
                 ZERO,
                 Expression::int(1),
                 Expression::int(2),
-                Expression::var_name(PStr::LOWER_D, INT_TYPE),
-                Expression::var_name(PStr::LOWER_E, INT_TYPE),
+                Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
+                Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
               ],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("func_with_consts")),
                 type_: FunctionType {
-                  argument_types: vec![INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE],
-                  return_type: Box::new(INT_TYPE),
+                  argument_types: vec![
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                    INT_32_TYPE,
+                  ],
+                  return_type: Box::new(INT_32_TYPE),
                 },
               }),
               arguments: vec![
                 ZERO,
                 Expression::int(3),
                 Expression::int(3),
-                Expression::var_name(PStr::LOWER_D, INT_TYPE),
-                Expression::var_name(PStr::LOWER_E, INT_TYPE),
+                Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
+                Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
               ],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("str_const")),
                 type_: FunctionType {
-                  argument_types: vec![INT_TYPE],
-                  return_type: Box::new(INT_TYPE),
+                  argument_types: vec![INT_32_TYPE],
+                  return_type: Box::new(INT_32_TYPE),
                 },
               }),
               arguments: vec![Expression::StringName(heap.alloc_str_for_test("STR"))],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
                 type_: FunctionType {
-                  argument_types: vec![INT_TYPE, INT_TYPE],
-                  return_type: Box::new(INT_TYPE),
+                  argument_types: vec![INT_32_TYPE, INT_32_TYPE],
+                  return_type: Box::new(INT_32_TYPE),
                 },
               }),
               arguments: vec![ZERO, ZERO],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::IfElse {
-              condition: Expression::var_name(PStr::LOWER_E, INT_TYPE),
+              condition: Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
               s1: vec![Statement::Break(ZERO)],
               s2: vec![Statement::Break(ZERO)],
-              final_assignments: vec![(dummy_name, INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(dummy_name, INT_32_TYPE, ZERO, ZERO)],
             },
             Statement::SingleIf {
               condition: ZERO,
@@ -583,19 +599,23 @@ mod tests {
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
                 name: dummy_name,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![Statement::Break(ZERO)],
               break_collector: None,
             },
-            Statement::Cast { name: dummy_name, type_: INT_TYPE, assigned_expression: ZERO },
-            Statement::LateInitDeclaration { name: dummy_name, type_: INT_TYPE },
+            Statement::Cast { name: dummy_name, type_: INT_31_TYPE, assigned_expression: ZERO },
+            Statement::LateInitDeclaration { name: dummy_name, type_: INT_31_TYPE },
             Statement::LateInitAssignment { name: dummy_name, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: dummy_name,
-              type_name: table.create_type_name_for_test(dummy_name),
+              type_name: table.create_type_name_with_suffix(
+                ModuleReference::DUMMY,
+                dummy_name,
+                vec![INT_31_TYPE],
+              ),
               expression_list: vec![ZERO, ZERO],
             },
           ],
@@ -646,10 +666,10 @@ function __$func_with_consts(b: _B, e: _E): int {
     break;
     _ = 0;
   }
-  let _ = 0 as int;
-  let _: int;
+  let _ = 0 as i31;
+  let _: i31;
   _ = 0;
-  let _: __ = [0, 0];
+  let _: DUMMY____i31 = [0, 0];
   return 0;
 }
     "#

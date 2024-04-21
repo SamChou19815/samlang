@@ -5,7 +5,7 @@ use super::loop_induction_analysis::{
 use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Callee, Expression, Statement, VariableName, INT_TYPE},
+  mir::{Callee, Expression, Statement, VariableName, INT_32_TYPE},
 };
 
 pub(super) struct LoopInductionVariableEliminationResult {
@@ -132,7 +132,7 @@ pub(super) fn optimize(
       new_initial_value_name,
       BinaryOperator::PLUS,
       only_relevant_induction_loop_variables.immediate.to_expression(),
-      Expression::var_name(new_initial_value_temp_temporary, INT_TYPE),
+      Expression::var_name(new_initial_value_temp_temporary, INT_32_TYPE),
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_guard_value_temp_temporary,
@@ -147,18 +147,18 @@ pub(super) fn optimize(
       new_guard_value_name,
       BinaryOperator::PLUS,
       only_relevant_induction_loop_variables.immediate.to_expression(),
-      Expression::var_name(new_guard_value_temp_temporary, INT_TYPE),
+      Expression::var_name(new_guard_value_temp_temporary, INT_32_TYPE),
     )),
   ];
 
   let basic_induction_variable_with_loop_guard = BasicInductionVariableWithLoopGuard {
     name: only_relevant_induction_loop_variables.name,
-    initial_value: Expression::var_name(new_initial_value_name, INT_TYPE),
+    initial_value: Expression::var_name(new_initial_value_name, INT_32_TYPE),
     increment_amount: added_invariant_expression_in_loop,
     guard_operator: GuardOperator::LT,
     guard_expression: PotentialLoopInvariantExpression::Var(VariableName {
       name: new_guard_value_name,
-      type_: INT_TYPE,
+      type_: INT_32_TYPE,
     }),
   };
   let derived_induction_variables = optimizable_while_loop
@@ -202,7 +202,7 @@ mod tests {
     hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-      SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
+      SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -224,9 +224,9 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_A,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(PStr::LOWER_I, INT_TYPE)
+          loop_value: Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
         }],
         derived_induction_variables: vec![],
         statements: vec![],
@@ -251,8 +251,8 @@ mod tests {
         statements: vec![],
         break_collector: Some((
           PStr::LOWER_A,
-          INT_TYPE,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE)
+          INT_32_TYPE,
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
         ))
       },
       heap,
@@ -274,7 +274,7 @@ mod tests {
         statements: vec![
           Statement::IndexedAccess {
             name: PStr::LOWER_A,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             pointer_expression: ZERO,
             index: 3
           },
@@ -292,22 +292,26 @@ mod tests {
               closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(PStr::LOWER_A),
-                type_: Type::new_fn_unwrapped(vec![], INT_TYPE)
+                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
               },
               context: ZERO
             }],
-            final_assignments: vec![(PStr::LOWER_A, INT_TYPE, ZERO, ZERO)]
+            final_assignments: vec![(PStr::LOWER_A, INT_32_TYPE, ZERO, ZERO)]
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
               name: PStr::LOWER_A,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               initial_value: ZERO,
               loop_value: ZERO
             }],
             statements: vec![
-              Statement::Cast { name: PStr::LOWER_A, type_: INT_TYPE, assigned_expression: ZERO },
-              Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_TYPE },
+              Statement::Cast {
+                name: PStr::LOWER_A,
+                type_: INT_32_TYPE,
+                assigned_expression: ZERO
+              },
+              Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_32_TYPE },
               Statement::LateInitAssignment { name: PStr::LOWER_A, assigned_expression: ZERO },
               Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
@@ -320,16 +324,16 @@ mod tests {
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::LOWER_A),
-              type_: Type::new_fn_unwrapped(vec![], INT_TYPE)
+              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
             }),
             arguments: vec![ZERO],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None
           },
           Statement::Call {
-            callee: Callee::Variable(VariableName::new(PStr::LOWER_A, INT_TYPE)),
+            callee: Callee::Variable(VariableName::new(PStr::LOWER_A, INT_32_TYPE)),
             arguments: vec![ZERO],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None
           },
         ],
@@ -351,9 +355,9 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE)
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE)
         }],
         derived_induction_variables: vec![
           DerivedInductionVariableWithName {
@@ -383,7 +387,7 @@ mod tests {
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             PStr::LOWER_A,
-            INT_TYPE
+            INT_32_TYPE
           )),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
@@ -391,16 +395,16 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
           base_name: PStr::LOWER_I,
           multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
             PStr::LOWER_A,
-            INT_TYPE
+            INT_32_TYPE
           )),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],
@@ -429,9 +433,9 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
@@ -485,16 +489,16 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
           base_name: PStr::LOWER_I,
           multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
             PStr::LOWER_A,
-            INT_TYPE,
+            INT_32_TYPE,
           )),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],
@@ -537,7 +541,7 @@ mod tests {
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             PStr::LOWER_A,
-            INT_TYPE,
+            INT_32_TYPE,
           )),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
@@ -545,9 +549,9 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),

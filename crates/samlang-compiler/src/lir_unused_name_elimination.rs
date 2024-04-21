@@ -215,7 +215,7 @@ mod tests {
     hir,
     lir::{
       Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
-      INT_TYPE, ZERO,
+      INT_32_TYPE, ZERO,
     },
     mir::{FunctionName, SymbolTable},
   };
@@ -240,11 +240,11 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
-          mappings: vec![INT_TYPE],
+          mappings: vec![INT_32_TYPE],
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
-          mappings: vec![INT_TYPE],
+          mappings: vec![INT_32_TYPE],
         },
       ],
       main_function_names: vec![FunctionName::new_for_test(PStr::MAIN_FN)],
@@ -252,14 +252,14 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![Statement::Call {
             callee: Expression::FnName(
               FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
               Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Foo"))),
             ),
             arguments: vec![],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           }],
           return_value: ZERO,
@@ -267,27 +267,27 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
           body: vec![
             Statement::Cast {
               name: PStr::LOWER_A,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               expression_list: vec![Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                INT_TYPE,
+                INT_32_TYPE,
               )],
             },
             Statement::IndexedAccess {
               name: PStr::LOWER_A,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                INT_TYPE,
+                INT_32_TYPE,
               ),
               index: 0,
             },
@@ -295,20 +295,20 @@ mod tests {
               assigned_expression: ZERO,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                INT_TYPE,
+                INT_32_TYPE,
               ),
               index: 0,
             },
             Statement::Call {
               callee: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("baz")),
-                INT_TYPE,
+                INT_32_TYPE,
               ),
               arguments: vec![Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("haha")),
-                INT_TYPE,
+                INT_32_TYPE,
               )],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Unary {
@@ -323,19 +323,19 @@ mod tests {
                 hir::BinaryOperator::GE,
                 Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
-                  INT_TYPE,
+                  INT_32_TYPE,
                 ),
                 Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                  INT_TYPE,
+                  INT_32_TYPE,
                 ),
               )],
               s2: vec![Statement::Cast {
                 name: PStr::LOWER_A,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 assigned_expression: ZERO,
               }],
-              final_assignments: vec![(heap.alloc_str_for_test("fff"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(heap.alloc_str_for_test("fff"), INT_32_TYPE, ZERO, ZERO)],
             },
             Statement::SingleIf {
               condition: ZERO,
@@ -345,27 +345,27 @@ mod tests {
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
                 name: PStr::LOWER_F,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
-              break_collector: Some((PStr::LOWER_D, INT_TYPE)),
+              break_collector: Some((PStr::LOWER_D, INT_32_TYPE)),
             },
           ],
           return_value: Expression::FnName(
             FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-            INT_TYPE,
+            INT_32_TYPE,
           ),
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![Statement::Call {
             callee: Expression::StringName(heap.alloc_str_for_test("foo")),
             arguments: vec![],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           }],
           return_value: ZERO,
@@ -373,7 +373,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("baz")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![],
           return_value: ZERO,
         },

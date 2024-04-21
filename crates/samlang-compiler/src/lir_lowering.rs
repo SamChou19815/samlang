@@ -6,7 +6,8 @@ use std::collections::{BTreeMap, HashSet};
 
 fn lower_type(type_: mir::Type) -> lir::Type {
   match type_ {
-    mir::Type::Int32 => lir::Type::Primitive(lir::PrimitiveType::Int),
+    mir::Type::Int32 => lir::Type::Primitive(lir::PrimitiveType::Int32),
+    mir::Type::Int31 => lir::Type::Primitive(lir::PrimitiveType::Int31),
     mir::Type::Id(name) => lir::Type::Id(name),
   }
 }
@@ -21,7 +22,7 @@ fn lower_fn_type(
 }
 
 fn unknown_member_destructor_type() -> lir::FunctionType {
-  lir::Type::new_fn_unwrapped(vec![lir::ANY_TYPE], lir::INT_TYPE)
+  lir::Type::new_fn_unwrapped(vec![lir::ANY_TYPE], lir::INT_32_TYPE)
 }
 
 fn lower_expression(expr: mir::Expression) -> lir::Expression {
@@ -117,7 +118,7 @@ impl<'a> LoweringManager<'a> {
           lir::Type::Fn(unknown_member_destructor_type()),
         ),
         arguments: vec![lir::Expression::Variable(variable_name, var_type)],
-        return_type: lir::INT_TYPE,
+        return_type: lir::INT_32_TYPE,
         return_collector: None,
       });
     }
@@ -366,7 +367,7 @@ impl<'a> LoweringManager<'a> {
         lir::Type::Fn(unknown_member_destructor_type()),
       ),
       arguments: vec![lir::Expression::Variable(casted, lir::ANY_TYPE)],
-      return_type: lir::INT_TYPE,
+      return_type: lir::INT_32_TYPE,
       return_collector: None,
     });
     true
@@ -406,61 +407,61 @@ fn generate_inc_ref_fn() -> lir::Function {
       lir::Statement::binary(
         not_ptr,
         hir::BinaryOperator::LOR,
-        lir::Expression::Variable(tiny_int, lir::INT_TYPE),
-        lir::Expression::Variable(is_odd, lir::INT_TYPE),
+        lir::Expression::Variable(tiny_int, lir::INT_32_TYPE),
+        lir::Expression::Variable(is_odd, lir::INT_32_TYPE),
       ),
       lir::Statement::SingleIf {
-        condition: lir::Expression::Variable(not_ptr, lir::INT_TYPE),
+        condition: lir::Expression::Variable(not_ptr, lir::INT_32_TYPE),
         invert_condition: true,
         statements: vec![
           lir::Statement::IndexedAccess {
             name: header,
-            type_: lir::INT_TYPE,
+            type_: lir::INT_32_TYPE,
             pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
             index: 0,
           },
           lir::Statement::binary(
             old_ref_count,
             hir::BinaryOperator::LAND,
-            lir::Expression::Variable(header, lir::INT_TYPE),
+            lir::Expression::Variable(header, lir::INT_32_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
             is_zero,
             hir::BinaryOperator::EQ,
-            lir::Expression::Variable(old_ref_count, lir::INT_TYPE),
+            lir::Expression::Variable(old_ref_count, lir::INT_32_TYPE),
             lir::ZERO,
           ),
           lir::Statement::SingleIf {
-            condition: lir::Expression::Variable(is_zero, lir::INT_TYPE),
+            condition: lir::Expression::Variable(is_zero, lir::INT_32_TYPE),
             invert_condition: true,
             statements: vec![
               lir::Statement::binary(
                 ref_count,
                 hir::BinaryOperator::PLUS,
-                lir::Expression::Variable(old_ref_count, lir::INT_TYPE),
+                lir::Expression::Variable(old_ref_count, lir::INT_32_TYPE),
                 lir::ONE,
               ),
               lir::Statement::binary(
                 lower,
                 hir::BinaryOperator::LAND,
-                lir::Expression::Variable(ref_count, lir::INT_TYPE),
+                lir::Expression::Variable(ref_count, lir::INT_32_TYPE),
                 lir::Expression::int(65535),
               ),
               lir::Statement::binary(
                 upper,
                 hir::BinaryOperator::LAND,
-                lir::Expression::Variable(header, lir::INT_TYPE),
+                lir::Expression::Variable(header, lir::INT_32_TYPE),
                 lir::Expression::int(!65535),
               ),
               lir::Statement::binary(
                 new_header,
                 hir::BinaryOperator::LOR,
-                lir::Expression::Variable(upper, lir::INT_TYPE),
-                lir::Expression::Variable(lower, lir::INT_TYPE),
+                lir::Expression::Variable(upper, lir::INT_32_TYPE),
+                lir::Expression::Variable(lower, lir::INT_32_TYPE),
               ),
               lir::Statement::IndexedAssign {
-                assigned_expression: lir::Expression::Variable(new_header, lir::INT_TYPE),
+                assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
                 pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
                 index: 0,
               },
@@ -512,52 +513,52 @@ fn generate_dec_ref_fn() -> lir::Function {
       lir::Statement::binary(
         not_ptr,
         hir::BinaryOperator::LOR,
-        lir::Expression::Variable(tiny_int, lir::INT_TYPE),
-        lir::Expression::Variable(is_odd, lir::INT_TYPE),
+        lir::Expression::Variable(tiny_int, lir::INT_32_TYPE),
+        lir::Expression::Variable(is_odd, lir::INT_32_TYPE),
       ),
       lir::Statement::SingleIf {
-        condition: lir::Expression::Variable(not_ptr, lir::INT_TYPE),
+        condition: lir::Expression::Variable(not_ptr, lir::INT_32_TYPE),
         invert_condition: true,
         statements: vec![
           lir::Statement::IndexedAccess {
             name: header,
-            type_: lir::INT_TYPE,
+            type_: lir::INT_32_TYPE,
             pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
             index: 0,
           },
           lir::Statement::binary(
             ref_count,
             hir::BinaryOperator::LAND,
-            lir::Expression::Variable(header, lir::INT_TYPE),
+            lir::Expression::Variable(header, lir::INT_32_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
             is_zero,
             hir::BinaryOperator::EQ,
-            lir::Expression::Variable(ref_count, lir::INT_TYPE),
+            lir::Expression::Variable(ref_count, lir::INT_32_TYPE),
             lir::ZERO,
           ),
           lir::Statement::SingleIf {
-            condition: lir::Expression::Variable(is_zero, lir::INT_TYPE),
+            condition: lir::Expression::Variable(is_zero, lir::INT_32_TYPE),
             invert_condition: true,
             statements: vec![
               lir::Statement::binary(
                 gt_one,
                 hir::BinaryOperator::GT,
-                lir::Expression::Variable(ref_count, lir::INT_TYPE),
+                lir::Expression::Variable(ref_count, lir::INT_32_TYPE),
                 lir::ONE,
               ),
               lir::Statement::IfElse {
-                condition: lir::Expression::Variable(gt_one, lir::INT_TYPE),
+                condition: lir::Expression::Variable(gt_one, lir::INT_32_TYPE),
                 s1: vec![
                   lir::Statement::binary(
                     new_header,
                     hir::BinaryOperator::MINUS,
-                    lir::Expression::Variable(header, lir::INT_TYPE),
+                    lir::Expression::Variable(header, lir::INT_32_TYPE),
                     lir::Expression::int(1),
                   ),
                   lir::Statement::IndexedAssign {
-                    assigned_expression: lir::Expression::Variable(new_header, lir::INT_TYPE),
+                    assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
                     pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
                     index: 0,
                   },
@@ -566,57 +567,57 @@ fn generate_dec_ref_fn() -> lir::Function {
                   lir::Statement::binary(
                     is_ref_bit_set,
                     hir::BinaryOperator::SHR,
-                    lir::Expression::Variable(header, lir::INT_TYPE),
+                    lir::Expression::Variable(header, lir::INT_32_TYPE),
                     lir::Expression::int(16),
                   ),
                   lir::Statement::While {
                     loop_variables: vec![
                       lir::GenenalLoopVariable {
                         name: bitset,
-                        type_: lir::INT_TYPE,
-                        initial_value: lir::Expression::Variable(is_ref_bit_set, lir::INT_TYPE),
-                        loop_value: lir::Expression::Variable(new_is_ref_bit_set, lir::INT_TYPE),
+                        type_: lir::INT_32_TYPE,
+                        initial_value: lir::Expression::Variable(is_ref_bit_set, lir::INT_32_TYPE),
+                        loop_value: lir::Expression::Variable(new_is_ref_bit_set, lir::INT_32_TYPE),
                       },
                       lir::GenenalLoopVariable {
                         name: PStr::LOWER_I,
-                        type_: lir::INT_TYPE,
+                        type_: lir::INT_32_TYPE,
                         initial_value: lir::ONE,
-                        loop_value: lir::Expression::Variable(new_i, lir::INT_TYPE),
+                        loop_value: lir::Expression::Variable(new_i, lir::INT_32_TYPE),
                       },
                     ],
                     statements: vec![
                       lir::Statement::binary(
                         should_stop,
                         hir::BinaryOperator::GT,
-                        lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
+                        lir::Expression::Variable(PStr::LOWER_I, lir::INT_32_TYPE),
                         lir::Expression::int(16),
                       ),
                       lir::Statement::SingleIf {
-                        condition: lir::Expression::Variable(should_stop, lir::INT_TYPE),
+                        condition: lir::Expression::Variable(should_stop, lir::INT_32_TYPE),
                         invert_condition: false,
                         statements: vec![lir::Statement::Break(lir::ZERO)],
                       },
                       lir::Statement::binary(
                         is_ref,
                         hir::BinaryOperator::LAND,
-                        lir::Expression::Variable(is_ref_bit_set, lir::INT_TYPE),
+                        lir::Expression::Variable(is_ref_bit_set, lir::INT_32_TYPE),
                         lir::ONE,
                       ),
                       lir::Statement::SingleIf {
-                        condition: lir::Expression::Variable(is_ref, lir::INT_TYPE),
+                        condition: lir::Expression::Variable(is_ref, lir::INT_32_TYPE),
                         invert_condition: false,
                         statements: vec![
                           lir::Statement::binary(
                             byte_offset,
                             hir::BinaryOperator::SHL,
-                            lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
+                            lir::Expression::Variable(PStr::LOWER_I, lir::INT_32_TYPE),
                             lir::Expression::int(2),
                           ),
                           lir::Statement::binary(
                             field_ptr,
                             hir::BinaryOperator::PLUS,
-                            lir::Expression::Variable(ptr, lir::INT_TYPE),
-                            lir::Expression::Variable(byte_offset, lir::INT_TYPE),
+                            lir::Expression::Variable(ptr, lir::INT_32_TYPE),
+                            lir::Expression::Variable(byte_offset, lir::INT_32_TYPE),
                           ),
                           lir::Statement::Call {
                             callee: lir::Expression::FnName(
@@ -624,7 +625,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                               lir::Type::Fn(unknown_member_destructor_type()),
                             ),
                             arguments: vec![lir::Expression::Variable(field_ptr, lir::ANY_TYPE)],
-                            return_type: lir::INT_TYPE,
+                            return_type: lir::INT_32_TYPE,
                             return_collector: None,
                           },
                         ],
@@ -632,13 +633,13 @@ fn generate_dec_ref_fn() -> lir::Function {
                       lir::Statement::binary(
                         new_is_ref_bit_set,
                         hir::BinaryOperator::SHR,
-                        lir::Expression::Variable(bitset, lir::INT_TYPE),
+                        lir::Expression::Variable(bitset, lir::INT_32_TYPE),
                         lir::ONE,
                       ),
                       lir::Statement::binary(
                         new_i,
                         hir::BinaryOperator::PLUS,
-                        lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
+                        lir::Expression::Variable(PStr::LOWER_I, lir::INT_32_TYPE),
                         lir::ONE,
                       ),
                     ],
@@ -650,7 +651,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                       lir::Type::Fn(unknown_member_destructor_type()),
                     ),
                     arguments: vec![lir::Expression::Variable(ptr, lir::ANY_TYPE)],
-                    return_type: lir::INT_TYPE,
+                    return_type: lir::INT_32_TYPE,
                     return_collector: None,
                   },
                 ],
@@ -685,14 +686,14 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
     };
     type_defs.push(lir::TypeDefinition {
       name,
-      mappings: vec![lir::INT_TYPE, lir::Type::Fn(fn_type.clone()), lir::ANY_TYPE],
+      mappings: vec![lir::INT_32_TYPE, lir::Type::Fn(fn_type.clone()), lir::ANY_TYPE],
     });
     closure_def_map.insert(name, fn_type);
   }
   for type_def in type_definitions {
     match &type_def.mappings {
       mir::TypeDefinitionMappings::Struct(types) => {
-        let mir_mappings = vec![lir::INT_TYPE]
+        let mir_mappings = vec![lir::INT_32_TYPE]
           .into_iter()
           .chain(types.iter().cloned().map(lower_type))
           .collect_vec();
@@ -706,7 +707,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
             mir::EnumTypeDefinition::Boxed(types) => {
               let name = symbol_table.derived_type_name_with_subtype_tag(type_def.name, i as u32);
               let mut mappings = Vec::with_capacity(types.len() + 1);
-              mappings.push(lir::INT_TYPE);
+              mappings.push(lir::INT_32_TYPE);
               for t in types {
                 mappings.push(lower_type(*t));
               }
@@ -716,7 +717,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
         }
         type_defs.push(lir::TypeDefinition {
           name: type_def.name,
-          mappings: vec![lir::INT_TYPE, lir::INT_TYPE],
+          mappings: vec![lir::INT_32_TYPE, lir::INT_32_TYPE],
         });
         type_def_map.insert(type_def.name, type_def);
       }
@@ -746,7 +747,8 @@ mod tests {
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
       FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
-      TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_TYPE, ONE, ZERO,
+      TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_31_TYPE, INT_32_TYPE,
+      ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -792,19 +794,19 @@ mod tests {
       global_variables: vec![],
       closure_types: vec![ClosureTypeDefinition {
         name: table.create_type_name_for_test(heap.alloc_str_for_test("CC")),
-        function_type: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+        function_type: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
       }],
       type_definitions: vec![
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Object")),
-          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
+          mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE, INT_32_TYPE]),
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant")),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Int,
-            EnumTypeDefinition::Unboxed(INT_TYPE),
-            EnumTypeDefinition::Boxed(vec![INT_TYPE, INT_TYPE]),
+            EnumTypeDefinition::Unboxed(INT_32_TYPE),
+            EnumTypeDefinition::Boxed(vec![INT_32_TYPE, INT_31_TYPE]),
           ]),
         },
         TypeDefinition {
@@ -830,7 +832,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("cc")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_31_TYPE),
           body: vec![
             Statement::Call {
               callee: Callee::Variable(VariableName::new(
@@ -838,24 +840,24 @@ mod tests {
                 closure_type.clone(),
               )),
               arguments: vec![ZERO],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v1"),
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               pointer_expression: Expression::var_name(PStr::LOWER_A, obj_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v2"),
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v3"),
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
               index: 1,
             },
@@ -877,7 +879,7 @@ mod tests {
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
                 name: PStr::UNDERSCORE,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
@@ -897,7 +899,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![
             Statement::Unary {
               name: heap.alloc_str_for_test("v1"),
@@ -933,7 +935,7 @@ mod tests {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
                 type_: Type::new_fn_unwrapped(
                   vec![Type::Id(table.create_type_name_for_test(PStr::STR_TYPE))],
-                  INT_TYPE,
+                  INT_32_TYPE,
                 ),
               },
               context: Expression::StringName(heap.alloc_str_for_test("G1")),
@@ -943,7 +945,7 @@ mod tests {
               closure_type_name: *closure_type.as_id().unwrap(),
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("bbb")),
-                type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+                type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
               },
               context: ZERO,
             },
@@ -953,7 +955,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("compiled_program_main")),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![
             Statement::IfElse {
               condition: ONE,
@@ -961,19 +963,19 @@ mod tests {
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionNameExpression {
                     name: FunctionName::new_for_test(PStr::MAIN_FN),
-                    type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                    type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
                   }),
                   arguments: vec![ZERO],
-                  return_type: INT_TYPE,
+                  return_type: INT_32_TYPE,
                   return_collector: None,
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionNameExpression {
                     name: FunctionName::new_for_test(heap.alloc_str_for_test("cc")),
-                    type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                    type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
                   }),
                   arguments: vec![ZERO],
-                  return_type: INT_TYPE,
+                  return_type: INT_32_TYPE,
                   return_collector: Some(heap.alloc_str_for_test("ccc")),
                 },
               ],
@@ -996,7 +998,7 @@ mod tests {
                     name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
                     type_: Type::new_fn_unwrapped(
                       vec![Type::Id(table.create_type_name_for_test(PStr::STR_TYPE))],
-                      INT_TYPE,
+                      INT_32_TYPE,
                     ),
                   },
                   context: Expression::var_name(
@@ -1016,27 +1018,32 @@ mod tests {
               condition: ONE,
               s1: vec![Statement::Cast {
                 name: heap.alloc_str_for_test("cast"),
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 assigned_expression: ZERO,
               }],
               s2: vec![
                 Statement::LateInitDeclaration {
                   name: heap.alloc_str_for_test("cast"),
-                  type_: INT_TYPE,
+                  type_: INT_32_TYPE,
                 },
                 Statement::LateInitAssignment {
                   name: heap.alloc_str_for_test("cast"),
                   assigned_expression: ZERO,
                 },
               ],
-              final_assignments: vec![(heap.alloc_str_for_test("finalV2"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(
+                heap.alloc_str_for_test("finalV2"),
+                INT_32_TYPE,
+                ZERO,
+                ZERO,
+              )],
             },
             Statement::While {
               loop_variables: vec![],
               statements: vec![],
               break_collector: Some(VariableName::new(
                 heap.alloc_str_for_test("finalV3"),
-                INT_TYPE,
+                INT_32_TYPE,
               )),
             },
           ],
@@ -1049,7 +1056,7 @@ mod tests {
       r#"{}type _CC = [number, (t0: any, t1: number) => number, any];
 type _Object = [number, number, number];
 type _Variant = [number, number];
-function __$cc(): number {{
+function __$cc(): i31 {{
   let _t1: (t0: any, t1: number) => number = cc[1];
   let _t2: any = cc[2];
   _t1(_t2, 0);

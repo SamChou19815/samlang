@@ -320,7 +320,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     hir::{BinaryOperator, GlobalVariable, UnaryOperator},
-    lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
+    lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_32_TYPE, ZERO},
     mir, wasm,
   };
   use samlang_heap::{Heap, PStr};
@@ -354,7 +354,7 @@ mod tests {
       functions: vec![Function {
         name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![heap.alloc_str_for_test("bar")],
-        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         body: vec![
           Statement::IfElse { condition: ZERO, s1: vec![], s2: vec![], final_assignments: vec![] },
           Statement::IfElse {
@@ -362,7 +362,7 @@ mod tests {
             s1: vec![],
             s2: vec![Statement::Cast {
               name: PStr::LOWER_C,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               assigned_expression: ZERO,
             }],
             final_assignments: vec![],
@@ -372,13 +372,17 @@ mod tests {
             s1: vec![Statement::While {
               loop_variables: vec![GenenalLoopVariable {
                 name: PStr::LOWER_I,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![
-                Statement::Cast { name: PStr::LOWER_C, type_: INT_TYPE, assigned_expression: ZERO },
-                Statement::LateInitDeclaration { name: PStr::LOWER_C, type_: INT_TYPE },
+                Statement::Cast {
+                  name: PStr::LOWER_C,
+                  type_: INT_32_TYPE,
+                  assigned_expression: ZERO,
+                },
+                Statement::LateInitDeclaration { name: PStr::LOWER_C, type_: INT_32_TYPE },
                 Statement::LateInitAssignment { name: PStr::LOWER_C, assigned_expression: ZERO },
               ],
               break_collector: None,
@@ -391,7 +395,7 @@ mod tests {
                   invert_condition: false,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((PStr::LOWER_B, INT_TYPE)),
+                break_collector: Some((PStr::LOWER_B, INT_32_TYPE)),
               },
               Statement::While {
                 loop_variables: vec![],
@@ -405,11 +409,11 @@ mod tests {
             ],
             final_assignments: vec![(
               PStr::LOWER_F,
-              INT_TYPE,
+              INT_32_TYPE,
               Expression::StringName(heap.alloc_str_for_test("FOO")),
               Expression::FnName(
                 mir::FunctionName::new_for_test(PStr::MAIN_FN),
-                Type::new_fn(vec![], INT_TYPE),
+                Type::new_fn(vec![], INT_32_TYPE),
               ),
             )],
           },
@@ -426,41 +430,41 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("bin"),
             BinaryOperator::PLUS,
-            Expression::Variable(PStr::LOWER_F, INT_TYPE),
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
             ZERO,
           ),
           Statement::Call {
             callee: Expression::FnName(
               mir::FunctionName::new_for_test(PStr::MAIN_FN),
-              Type::new_fn(vec![], INT_TYPE),
+              Type::new_fn(vec![], INT_32_TYPE),
             ),
             arguments: vec![ZERO],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(PStr::LOWER_F, INT_TYPE),
+            callee: Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
             arguments: vec![ZERO],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: Some(heap.alloc_str_for_test("rc")),
           },
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("v"),
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::IndexedAssign {
-            assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
+            assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test("s"),
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             expression_list: vec![
               ZERO,
-              Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
+              Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
             ],
           },
         ],

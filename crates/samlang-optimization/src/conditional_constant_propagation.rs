@@ -255,7 +255,7 @@ fn optimize_stmt(
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       let pointer_expression = optimize_expr(value_cx, pointer_expression);
       if let Some(computed) = index_access_cx.get(&IndexAccessBindedValue {
-        type_: INT_TYPE,
+        type_: INT_32_TYPE,
         pointer_expression,
         index: *index,
       }) {
@@ -463,7 +463,7 @@ fn optimize_stmt(
       for (i, e) in expression_list.iter().enumerate() {
         let optimized = optimize_expr(value_cx, e);
         let key = IndexAccessBindedValue {
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           pointer_expression: Expression::Variable(VariableName {
             name: *struct_variable_name,
             type_: Type::Id(*type_name),
@@ -609,7 +609,7 @@ mod boilterplate_tests {
       1,
       BinaryExpression {
         operator: BinaryOperator::PLUS,
-        e1: VariableName { name: PStr::INVALID_PSTR, type_: INT_TYPE },
+        e1: VariableName { name: PStr::INVALID_PSTR, type_: INT_32_TYPE },
         e2: 1,
       }
       .clone()
@@ -622,20 +622,20 @@ mod boilterplate_tests {
   fn panic_test() {
     let mut value_cx = LocalValueContextForOptimization::new();
     let heap = &mut Heap::new();
-    value_cx.checked_bind(PStr::LOWER_A, Expression::var_name(PStr::LOWER_A, INT_TYPE));
+    value_cx.checked_bind(PStr::LOWER_A, Expression::var_name(PStr::LOWER_A, INT_32_TYPE));
     value_cx.checked_bind(PStr::LOWER_B, Expression::StringName(heap.alloc_str_for_test("1")));
     value_cx.checked_bind(PStr::LOWER_C, Expression::StringName(PStr::UPPER_A));
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: PStr::LOWER_A, type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: PStr::LOWER_A, type_: INT_32_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: PStr::LOWER_B, type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: PStr::LOWER_B, type_: INT_32_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: PStr::LOWER_C, type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: PStr::LOWER_C, type_: INT_32_TYPE }),
     );
   }
 }

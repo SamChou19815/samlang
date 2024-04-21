@@ -4,7 +4,7 @@ use super::loop_induction_analysis::{
 };
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Binary, Expression, Statement, INT_TYPE, ZERO},
+  mir::{Binary, Expression, Statement, INT_32_TYPE, ZERO},
 };
 
 fn analyze_number_of_iterations_to_break_less_than_guard(
@@ -129,7 +129,7 @@ pub(super) fn optimize(
         *break_collector.0,
         BinaryOperator::PLUS,
         relevant_general_induction_variable.initial_value,
-        Expression::var_name(increment_temporary, INT_TYPE),
+        Expression::var_name(increment_temporary, INT_32_TYPE),
       )),
     ])
   } else {
@@ -152,7 +152,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_TYPE, ZERO};
+  use samlang_ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_32_TYPE, ZERO};
   use samlang_heap::{Heap, PStr};
 
   #[test]
@@ -237,7 +237,7 @@ mod tests {
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
-          initial_value: Expression::var_name(PStr::LOWER_A, INT_TYPE),
+          initial_value: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Int(0),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(0),
@@ -343,7 +343,7 @@ mod tests {
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
         statements: vec![],
-        break_collector: Some((heap.alloc_str_for_test("bc"), INT_TYPE, Expression::int(3))),
+        break_collector: Some((heap.alloc_str_for_test("bc"), INT_32_TYPE, Expression::int(3))),
       },
       heap,
       "let bc = 3 + 0;",
@@ -364,8 +364,8 @@ mod tests {
         statements: vec![],
         break_collector: Some((
           heap.alloc_str_for_test("bc"),
-          INT_TYPE,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          INT_32_TYPE,
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
         )),
       },
       heap,
@@ -383,10 +383,10 @@ mod tests {
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
           name: PStr::LOWER_J,
-          initial_value: Expression::var_name(heap.alloc_str_for_test("j_init"), INT_TYPE),
+          initial_value: Expression::var_name(heap.alloc_str_for_test("j_init"), INT_32_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             heap.alloc_str_for_test("outside"),
-            INT_TYPE,
+            INT_32_TYPE,
           )),
         }],
         loop_variables_that_are_not_basic_induction_variables: vec![],
@@ -394,8 +394,8 @@ mod tests {
         statements: vec![],
         break_collector: Some((
           heap.alloc_str_for_test("bc"),
-          INT_TYPE,
-          Expression::var_name(PStr::LOWER_J, INT_TYPE),
+          INT_32_TYPE,
+          Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
         )),
       },
       heap,
@@ -413,10 +413,10 @@ mod tests {
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
           name: PStr::LOWER_J,
-          initial_value: Expression::var_name(heap.alloc_str_for_test("j_init"), INT_TYPE),
+          initial_value: Expression::var_name(heap.alloc_str_for_test("j_init"), INT_32_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             heap.alloc_str_for_test("outside"),
-            INT_TYPE,
+            INT_32_TYPE,
           )),
         }],
         loop_variables_that_are_not_basic_induction_variables: vec![],
@@ -424,8 +424,8 @@ mod tests {
         statements: vec![],
         break_collector: Some((
           heap.alloc_str_for_test("bc"),
-          INT_TYPE,
-          Expression::var_name(heap.alloc_str_for_test("aa"), INT_TYPE),
+          INT_32_TYPE,
+          Expression::var_name(heap.alloc_str_for_test("aa"), INT_32_TYPE),
         )),
       },
       heap,

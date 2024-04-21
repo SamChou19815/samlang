@@ -61,6 +61,7 @@ impl TypeName {
       collector.push('_');
       match t {
         Type::Int32 => collector.push_str("int"),
+        Type::Int31 => collector.push_str("i31"),
         Type::Id(id) => id.write_encoded(collector, heap, table),
       }
     }
@@ -194,6 +195,7 @@ impl SymbolTable {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
 pub enum Type {
   Int32,
+  Int31,
   Id(TypeNameId),
 }
 
@@ -205,12 +207,14 @@ impl Type {
   pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
       Type::Int32 => "int".to_string(),
+      Type::Int31 => "i31".to_string(),
       Type::Id(id) => id.encoded_for_test(heap, table),
     }
   }
 }
 
-pub const INT_TYPE: Type = Type::Int32;
+pub const INT_32_TYPE: Type = Type::Int32;
+pub const INT_31_TYPE: Type = Type::Int31;
 
 #[derive(Debug, Clone)]
 pub struct ClosureTypeDefinition {
