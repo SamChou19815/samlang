@@ -115,7 +115,7 @@ pub fn optimize_sources(
 #[cfg(test)]
 mod tests {
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_TYPE, ZERO};
+  use samlang_ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_32_TYPE, ZERO};
   use samlang_heap::{Heap, PStr};
 
   fn sources() -> Sources {
@@ -128,7 +128,7 @@ mod tests {
       functions: vec![Function {
         name: FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         body: vec![],
         return_value: ZERO,
       }],

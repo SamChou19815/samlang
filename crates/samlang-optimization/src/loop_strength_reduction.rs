@@ -4,7 +4,7 @@ use super::loop_induction_analysis::{
 };
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Expression, Statement, INT_TYPE},
+  mir::{Expression, Statement, INT_32_TYPE},
 };
 use samlang_heap::Heap;
 use std::collections::HashMap;
@@ -56,11 +56,11 @@ pub(super) fn optimize(
         new_initial_value_name,
         BinaryOperator::PLUS,
         derived_induction_variable.immediate.to_expression(),
-        Expression::var_name(new_initial_value_temp_temporary, INT_TYPE),
+        Expression::var_name(new_initial_value_temp_temporary, INT_32_TYPE),
       )));
       new_general_induction_variables.push(GeneralBasicInductionVariable {
         name: derived_induction_variable.name,
-        initial_value: Expression::var_name(new_initial_value_name, INT_TYPE),
+        initial_value: Expression::var_name(new_initial_value_name, INT_32_TYPE),
         increment_amount: added_invariant_expression_in_loop,
       });
     } else {
@@ -93,7 +93,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{SymbolTable, VariableName, INT_TYPE, ONE};
+  use samlang_ast::mir::{SymbolTable, VariableName, INT_32_TYPE, ONE};
   use samlang_heap::{Heap, PStr};
 
   #[test]
@@ -118,7 +118,7 @@ mod tests {
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             PStr::LOWER_C,
-            INT_TYPE,
+            INT_32_TYPE,
           )),
         }],
         loop_variables_that_are_not_basic_induction_variables: vec![],
@@ -128,11 +128,11 @@ mod tests {
             base_name: PStr::LOWER_I,
             multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
               PStr::LOWER_A,
-              INT_TYPE,
+              INT_32_TYPE,
             )),
             immediate: PotentialLoopInvariantExpression::Var(VariableName::new(
               PStr::LOWER_B,
-              INT_TYPE,
+              INT_32_TYPE,
             )),
           },
           DerivedInductionVariableWithName {
@@ -140,11 +140,11 @@ mod tests {
             base_name: PStr::LOWER_J,
             multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
               PStr::LOWER_A,
-              INT_TYPE,
+              INT_32_TYPE,
             )),
             immediate: PotentialLoopInvariantExpression::Var(VariableName::new(
               PStr::LOWER_B,
-              INT_TYPE,
+              INT_32_TYPE,
             )),
           },
         ],

@@ -9,14 +9,16 @@ use samlang_heap::{Heap, PStr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PrimitiveType {
-  Int,
+  Int32,
+  Int31,
   Any,
 }
 
 impl PrimitiveType {
   fn as_str(&self) -> &'static str {
     match self {
-      PrimitiveType::Int => "number",
+      PrimitiveType::Int32 => "number",
+      PrimitiveType::Int31 => "i31",
       PrimitiveType::Any => "any",
     }
   }
@@ -89,7 +91,8 @@ impl Type {
   }
 }
 
-pub const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
+pub const INT_32_TYPE: Type = Type::Primitive(PrimitiveType::Int32);
+pub const INT_31_TYPE: Type = Type::Primitive(PrimitiveType::Int31);
 pub const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 
 #[derive(Debug, Clone, EnumAsInner)]

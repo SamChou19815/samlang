@@ -19,6 +19,7 @@ fn rewrite_id_type_name(state: &State, id: TypeNameId) -> TypeNameId {
 fn rewrite_type(state: &State, type_: Type) -> Type {
   match type_ {
     Type::Int32 => Type::Int32,
+    Type::Int31 => Type::Int31,
     Type::Id(id) => Type::Id(rewrite_id_type_name(state, id)),
   }
 }
@@ -241,7 +242,7 @@ pub(super) fn deduplicate(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{FunctionName, SymbolTable, INT_TYPE, ONE, ZERO};
+  use samlang_ast::mir::{FunctionName, SymbolTable, INT_31_TYPE, INT_32_TYPE, ONE, ZERO};
   use samlang_heap::{Heap, PStr};
 
   #[should_panic]
@@ -275,7 +276,12 @@ mod tests {
 
     assert_eq!(
       "() -> int",
-      rewrite_fn_type(&HashMap::new(), Type::new_fn_unwrapped(vec![], INT_TYPE))
+      rewrite_fn_type(&HashMap::new(), Type::new_fn_unwrapped(vec![], INT_32_TYPE))
+        .pretty_print(heap, table)
+    );
+    assert_eq!(
+      "() -> i31",
+      rewrite_fn_type(&HashMap::new(), Type::new_fn_unwrapped(vec![], INT_31_TYPE))
         .pretty_print(heap, table)
     );
   }
@@ -290,11 +296,11 @@ mod tests {
       closure_types: vec![
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_A),
-          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         },
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_B),
-          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         },
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_C),
@@ -308,22 +314,22 @@ mod tests {
         TypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_C),
           mappings: TypeDefinitionMappings::Struct(vec![
-            INT_TYPE,
+            INT_32_TYPE,
             Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
           ]),
         },
         TypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_D),
           mappings: TypeDefinitionMappings::Struct(vec![
-            INT_TYPE,
+            INT_32_TYPE,
             Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
           ]),
         },
         TypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_E),
           mappings: TypeDefinitionMappings::Enum(vec![
-            EnumTypeDefinition::Boxed(vec![INT_TYPE]),
-            EnumTypeDefinition::Unboxed(INT_TYPE),
+            EnumTypeDefinition::Boxed(vec![INT_32_TYPE]),
+            EnumTypeDefinition::Unboxed(INT_32_TYPE),
             EnumTypeDefinition::Int,
           ]),
         },
@@ -332,7 +338,7 @@ mod tests {
       functions: vec![Function {
         name: FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
@@ -345,16 +351,16 @@ mod tests {
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(PStr::LOWER_F),
-                type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+                type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
               }),
               arguments: vec![ZERO],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName { name: PStr::LOWER_F, type_: INT_TYPE }),
+              callee: Callee::Variable(VariableName { name: PStr::LOWER_F, type_: INT_32_TYPE }),
               arguments: vec![],
-              return_type: INT_TYPE,
+              return_type: INT_32_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
@@ -365,8 +371,12 @@ mod tests {
             },
           ],
           s2: vec![
-            Statement::Cast { name: PStr::UNDERSCORE, type_: INT_TYPE, assigned_expression: ZERO },
-            Statement::LateInitDeclaration { name: PStr::UNDERSCORE, type_: INT_TYPE },
+            Statement::Cast {
+              name: PStr::UNDERSCORE,
+              type_: INT_32_TYPE,
+              assigned_expression: ZERO,
+            },
+            Statement::LateInitDeclaration { name: PStr::UNDERSCORE, type_: INT_32_TYPE },
             Statement::LateInitAssignment { name: PStr::UNDERSCORE, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: PStr::UNDERSCORE,
@@ -380,13 +390,13 @@ mod tests {
                 name: FunctionName::new_for_test(PStr::LOWER_F),
                 type_: Type::new_fn_unwrapped(
                   vec![Type::Id(table.create_type_name_for_test(PStr::UPPER_E))],
-                  INT_TYPE,
+                  INT_32_TYPE,
                 ),
               },
-              context: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
+              context: Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
             },
           ],
-          final_assignments: vec![(PStr::UNDERSCORE, INT_TYPE, ZERO, ZERO)],
+          final_assignments: vec![(PStr::UNDERSCORE, INT_32_TYPE, ZERO, ZERO)],
         }],
         return_value: ZERO,
       }],

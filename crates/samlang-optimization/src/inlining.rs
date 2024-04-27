@@ -4,7 +4,7 @@ use samlang_ast::{
   hir::BinaryOperator,
   mir::{
     Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression,
-    GenenalLoopVariable, Statement, Type, VariableName, INT_TYPE, ZERO,
+    GenenalLoopVariable, Statement, Type, VariableName, INT_32_TYPE, ZERO,
   },
 };
 use samlang_heap::{Heap, PStr};
@@ -86,7 +86,7 @@ mod estimator {
       hir::BinaryOperator,
       mir::{
         Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-        SymbolTable, Type, INT_TYPE, ZERO,
+        SymbolTable, Type, INT_32_TYPE, ZERO,
       },
     };
     use samlang_heap::PStr;
@@ -98,11 +98,11 @@ mod estimator {
       let actual = super::estimate_fn_inline_cost(&Function {
         name: FunctionName::new_for_test(PStr::EMPTY),
         parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
         body: vec![
           Statement::IndexedAccess {
             name: PStr::EMPTY,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             pointer_expression: ZERO,
             index: 2,
           },
@@ -117,24 +117,24 @@ mod estimator {
             closure_type_name: table.create_type_name_for_test(PStr::EMPTY),
             function_name: FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::EMPTY),
-              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             },
             context: ZERO,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::EMPTY),
-              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             }),
             arguments: vec![ZERO, ZERO],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           },
           Statement::IfElse {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(PStr::EMPTY, INT_TYPE, ZERO, ZERO)],
+            final_assignments: vec![(PStr::EMPTY, INT_32_TYPE, ZERO, ZERO)],
           },
           Statement::IfElse {
             condition: ZERO,
@@ -150,15 +150,15 @@ mod estimator {
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
               name: PStr::EMPTY,
-              type_: INT_TYPE,
+              type_: INT_32_TYPE,
               initial_value: ZERO,
               loop_value: ZERO,
             }],
             statements: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
             break_collector: None,
           },
-          Statement::Cast { name: PStr::EMPTY, type_: INT_TYPE, assigned_expression: ZERO },
-          Statement::LateInitDeclaration { name: PStr::EMPTY, type_: INT_TYPE },
+          Statement::Cast { name: PStr::EMPTY, type_: INT_32_TYPE, assigned_expression: ZERO },
+          Statement::LateInitDeclaration { name: PStr::EMPTY, type_: INT_32_TYPE },
           Statement::LateInitAssignment { name: PStr::EMPTY, assigned_expression: ZERO },
         ],
         return_value: ZERO,
@@ -221,12 +221,12 @@ fn inline_rewrite_stmt(
 ) -> Statement {
   match stmt {
     Statement::Unary { name, operator, operand } => Statement::Unary {
-      name: bind_with_mangled_name(cx, heap, prefix, name, &INT_TYPE),
+      name: bind_with_mangled_name(cx, heap, prefix, name, &INT_32_TYPE),
       operator: *operator,
       operand: inline_rewrite_expr(operand, cx),
     },
     Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
-      name: bind_with_mangled_name(cx, heap, prefix, name, &INT_TYPE),
+      name: bind_with_mangled_name(cx, heap, prefix, name, &INT_32_TYPE),
       operator: *operator,
       e1: inline_rewrite_expr(e1, cx),
       e2: inline_rewrite_expr(e2, cx),

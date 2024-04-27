@@ -10,8 +10,9 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
-    assert!(INT_TYPE.as_fn().is_none());
+    assert!(PrimitiveType::Int32.eq(&PrimitiveType::Int32));
+    assert!(PrimitiveType::Int31.eq(&PrimitiveType::Int31));
+    assert!(INT_32_TYPE.as_fn().is_none());
     assert!(ZERO.as_fn_name().is_none());
 
     let table = &mut SymbolTable::new();
@@ -21,7 +22,7 @@ mod tests {
         .clone()
     );
     format!("{:?}", Expression::StringName(PStr::LOWER_A).clone());
-    format!("{:?}", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).clone());
+    format!("{:?}", Type::new_fn(vec![INT_32_TYPE, INT_31_TYPE], INT_32_TYPE).clone());
   }
 
   #[test]
@@ -35,12 +36,12 @@ mod tests {
     );
     assert_eq!(
       false,
-      Type::Id(table.create_type_name_for_test(PStr::LOWER_A)).is_the_same_type(&INT_TYPE)
+      Type::Id(table.create_type_name_for_test(PStr::LOWER_A)).is_the_same_type(&INT_32_TYPE)
     );
     assert_eq!(
       true,
-      Type::new_fn(vec![(INT_TYPE)], INT_TYPE)
-        .is_the_same_type(&Type::new_fn(vec![(INT_TYPE)], INT_TYPE))
+      Type::new_fn(vec![(INT_32_TYPE)], INT_32_TYPE)
+        .is_the_same_type(&Type::new_fn(vec![(INT_32_TYPE)], INT_32_TYPE))
     );
   }
 
@@ -63,7 +64,7 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
-          mappings: vec![INT_TYPE, INT_TYPE],
+          mappings: vec![INT_32_TYPE, INT_31_TYPE],
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
@@ -75,17 +76,17 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![],
           return_value: ZERO,
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
           parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
-          type_: Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE),
+          type_: Type::new_fn_unwrapped(vec![INT_32_TYPE, INT_32_TYPE], INT_32_TYPE),
           body: vec![Statement::IndexedAccess {
             name: PStr::LOWER_F,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             pointer_expression: Expression::Variable(
               heap.alloc_str_for_test("big"),
               Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
@@ -99,10 +100,10 @@ mod tests {
           parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
           type_: Type::new_fn_unwrapped(
             vec![
-              Type::Fn(Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE)),
-              Type::Fn(Type::new_fn_unwrapped(vec![], INT_TYPE)),
+              Type::Fn(Type::new_fn_unwrapped(vec![INT_32_TYPE, INT_32_TYPE], INT_32_TYPE)),
+              Type::Fn(Type::new_fn_unwrapped(vec![], INT_32_TYPE)),
             ],
-            INT_TYPE,
+            INT_32_TYPE,
           ),
           body: vec![],
           return_value: ZERO,
@@ -111,8 +112,8 @@ mod tests {
           name: FunctionName::new_for_test(PStr::LOWER_F),
           parameters: vec![heap.alloc_str_for_test("v1")],
           type_: Type::new_fn_unwrapped(
-            vec![Type::Fn(Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))],
-            INT_TYPE,
+            vec![Type::Fn(Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE))],
+            INT_32_TYPE,
           ),
           body: vec![Statement::IfElse {
             condition: ZERO,
@@ -146,7 +147,7 @@ mod tests {
               Statement::While {
                 loop_variables: vec![GenenalLoopVariable {
                   name: PStr::UNDERSCORE,
-                  type_: INT_TYPE,
+                  type_: INT_32_TYPE,
                   initial_value: ZERO,
                   loop_value: ZERO,
                 }],
@@ -155,7 +156,7 @@ mod tests {
                   invert_condition: true,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((PStr::UNDERSCORE, INT_TYPE)),
+                break_collector: Some((PStr::UNDERSCORE, INT_32_TYPE)),
               },
             ],
             s2: vec![
@@ -183,45 +184,45 @@ mod tests {
               Statement::Call {
                 callee: Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("h")),
-                  Type::new_fn(vec![], INT_TYPE),
+                  Type::new_fn(vec![], INT_32_TYPE),
                 ),
                 arguments: vec![Expression::Variable(
                   heap.alloc_str_for_test("big"),
                   Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
                 )],
-                return_type: INT_TYPE,
+                return_type: INT_32_TYPE,
                 return_collector: Some(heap.alloc_str_for_test("vibez")),
               },
               Statement::Call {
                 callee: Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
-                  Type::new_fn(vec![], INT_TYPE),
+                  Type::new_fn(vec![], INT_32_TYPE),
                 ),
-                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_TYPE)],
-                return_type: INT_TYPE,
+                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_32_TYPE)],
+                return_type: INT_32_TYPE,
                 return_collector: None,
               },
               Statement::Call {
-                callee: Expression::Variable(PStr::LOWER_D, INT_TYPE),
-                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_TYPE)],
-                return_type: INT_TYPE,
+                callee: Expression::Variable(PStr::LOWER_D, INT_32_TYPE),
+                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_32_TYPE)],
+                return_type: INT_32_TYPE,
                 return_collector: None,
               },
               Statement::Call {
-                callee: Expression::Variable(PStr::LOWER_D, INT_TYPE),
-                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_TYPE), ZERO],
-                return_type: INT_TYPE,
+                callee: Expression::Variable(PStr::LOWER_D, INT_32_TYPE),
+                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_32_TYPE), ZERO],
+                return_type: INT_32_TYPE,
                 return_collector: None,
               },
               Statement::Call {
-                callee: Expression::Variable(PStr::LOWER_D, INT_TYPE),
+                callee: Expression::Variable(PStr::LOWER_D, INT_32_TYPE),
                 arguments: vec![],
-                return_type: INT_TYPE,
+                return_type: INT_32_TYPE,
                 return_collector: None,
               },
               Statement::IndexedAccess {
                 name: PStr::LOWER_F,
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
                 pointer_expression: Expression::Variable(
                   heap.alloc_str_for_test("big"),
                   Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
@@ -233,10 +234,14 @@ mod tests {
                 pointer_expression: ZERO,
                 index: 0,
               },
-              Statement::Cast { name: PStr::LOWER_C, type_: INT_TYPE, assigned_expression: ZERO },
+              Statement::Cast {
+                name: PStr::LOWER_C,
+                type_: INT_32_TYPE,
+                assigned_expression: ZERO,
+              },
               Statement::LateInitDeclaration {
                 name: heap.alloc_str_for_test("c"),
-                type_: INT_TYPE,
+                type_: INT_32_TYPE,
               },
               Statement::LateInitAssignment {
                 name: heap.alloc_str_for_test("c"),
@@ -246,9 +251,9 @@ mod tests {
             ],
             final_assignments: vec![(
               heap.alloc_str_for_test("bar"),
-              INT_TYPE,
-              Expression::Variable(heap.alloc_str_for_test("b1"), INT_TYPE),
-              Expression::Variable(heap.alloc_str_for_test("b2"), INT_TYPE),
+              INT_32_TYPE,
+              Expression::Variable(heap.alloc_str_for_test("b1"), INT_32_TYPE),
+              Expression::Variable(heap.alloc_str_for_test("b2"), INT_32_TYPE),
             )],
           }],
           return_value: ZERO,
@@ -259,7 +264,7 @@ mod tests {
     let expected = format!(
       r#"{}const dev_meggo: _Str = [0, `vibez` as unknown as number];
 const esc: _Str = [0, `f"\"` as unknown as number];
-type _Foo = [number, number];
+type _Foo = [number, i31];
 type _Foo = [];
 function __$main(): number {{
   return 0;

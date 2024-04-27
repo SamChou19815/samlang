@@ -93,7 +93,7 @@ mod tests {
     hir::{BinaryOperator, UnaryOperator},
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
-      Type, VariableName, INT_TYPE, ONE, ZERO,
+      Type, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -102,7 +102,7 @@ mod tests {
     let mut f = Function {
       name: FunctionName::new_for_test(PStr::LOWER_A),
       parameters: vec![],
-      type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+      type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
       body: stmts,
       return_value: ZERO,
     };
@@ -121,7 +121,7 @@ mod tests {
 
     assert_correctly_optimized(
       vec![Statement::IfElse {
-        condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
+        condition: Expression::var_name(PStr::LOWER_B, INT_32_TYPE),
         s1: vec![
           Statement::binary(heap.alloc_str_for_test("ddddd"), BinaryOperator::PLUS, ONE, ONE),
           Statement::Unary {
@@ -132,20 +132,20 @@ mod tests {
           Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("ddd"),
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(heap.alloc_str_for_test("fff")),
-              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             }),
             arguments: vec![
-              Expression::var_name(PStr::LOWER_A, INT_TYPE),
-              Expression::var_name(heap.alloc_str_for_test("ddd"), INT_TYPE),
+              Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("ddd"), INT_32_TYPE),
             ],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           },
         ],
@@ -158,17 +158,20 @@ mod tests {
           Statement::binary(heap.alloc_str_for_test("fd"), BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("eee"),
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::Call {
-            callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("eeee"), INT_TYPE)),
+            callee: Callee::Variable(VariableName::new(
+              heap.alloc_str_for_test("eeee"),
+              INT_32_TYPE,
+            )),
             arguments: vec![
-              Expression::var_name(heap.alloc_str_for_test("fd"), INT_TYPE),
-              Expression::var_name(heap.alloc_str_for_test("eee"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("fd"), INT_32_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("eee"), INT_32_TYPE),
             ],
-            return_type: INT_TYPE,
+            return_type: INT_32_TYPE,
             return_collector: None,
           },
         ],

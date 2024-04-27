@@ -7,7 +7,7 @@ use super::{
 use itertools::Itertools;
 use samlang_ast::hir::BinaryOperator;
 use samlang_ast::mir::{
-  Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_TYPE, ZERO,
+  Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_32_TYPE, ZERO,
 };
 use samlang_heap::Heap;
 use std::collections::HashSet;
@@ -42,19 +42,19 @@ fn expand_optimizable_while_loop(
     .filter(|v| useful_used_set.contains(&v.name))
     .chain(vec![GenenalLoopVariable {
       name: basic_induction_variable_with_loop_guard.name,
-      type_: INT_TYPE,
+      type_: INT_32_TYPE,
       initial_value: basic_induction_variable_with_loop_guard.initial_value,
       loop_value: Expression::var_name(
         basic_induction_variable_with_loop_guard_value_collector,
-        INT_TYPE,
+        INT_32_TYPE,
       ),
     }])
     .chain(general_basic_induction_variables_with_loop_value_collectors.iter().map(|(v, n)| {
       GenenalLoopVariable {
         name: v.name,
-        type_: INT_TYPE,
+        type_: INT_32_TYPE,
         initial_value: v.initial_value,
-        loop_value: Expression::var_name(*n, INT_TYPE),
+        loop_value: Expression::var_name(*n, INT_32_TYPE),
       }
     }))
     .collect_vec();
@@ -65,11 +65,11 @@ fn expand_optimizable_while_loop(
       Statement::Binary(Statement::binary_unwrapped(
         loop_condition_variable,
         basic_induction_variable_with_loop_guard.guard_operator.invert().to_op(),
-        Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_TYPE),
+        Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_32_TYPE),
         basic_induction_variable_with_loop_guard.guard_expression.to_expression(),
       )),
       Statement::SingleIf {
-        condition: Expression::var_name(loop_condition_variable, INT_TYPE),
+        condition: Expression::var_name(loop_condition_variable, INT_32_TYPE),
         invert_condition: false,
         statements: vec![Statement::Break(*break_value)],
       },
@@ -79,7 +79,7 @@ fn expand_optimizable_while_loop(
     .chain(vec![Statement::Binary(Statement::binary_unwrapped(
       basic_induction_variable_with_loop_guard_value_collector,
       BinaryOperator::PLUS,
-      Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_TYPE),
+      Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_32_TYPE),
       basic_induction_variable_with_loop_guard.increment_amount.to_expression(),
     ))])
     .chain(general_basic_induction_variables_with_loop_value_collectors.into_iter().map(
@@ -87,7 +87,7 @@ fn expand_optimizable_while_loop(
         Statement::Binary(Statement::binary_unwrapped(
           collector,
           BinaryOperator::PLUS,
-          Expression::var_name(v.name, INT_TYPE),
+          Expression::var_name(v.name, INT_32_TYPE),
           v.increment_amount.to_expression(),
         ))
       },
@@ -98,13 +98,13 @@ fn expand_optimizable_while_loop(
         Statement::Binary(Statement::binary_flexible_unwrapped(
           step_1_temp,
           BinaryOperator::MUL,
-          Expression::var_name(v.base_name, INT_TYPE),
+          Expression::var_name(v.base_name, INT_32_TYPE),
           v.multiplier.to_expression(),
         )),
         Statement::Binary(Statement::binary_flexible_unwrapped(
           v.name,
           BinaryOperator::PLUS,
-          Expression::var_name(step_1_temp, INT_TYPE),
+          Expression::var_name(step_1_temp, INT_32_TYPE),
           v.immediate.to_expression(),
         )),
       ]
@@ -233,7 +233,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
+      Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -259,7 +259,7 @@ mod tests {
     let mut f = Function {
       name: FunctionName::new_for_test(PStr::INVALID_PSTR),
       parameters: vec![],
-      type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+      type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
       body: stmts,
       return_value,
     };
@@ -280,48 +280,48 @@ mod tests {
       vec![
         GenenalLoopVariable {
           name: PStr::LOWER_I,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
         },
         GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         },
       ],
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
           BinaryOperator::GE,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           Expression::int(10),
         ),
         Statement::Cast {
           name: heap.alloc_str_for_test("cast"),
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           assigned_expression: ZERO,
         },
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
           invert_condition: false,
-          statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_32_TYPE))],
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_J, INT_TYPE),
+          Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
           Expression::int(10),
         ),
       ],
-      Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_32_TYPE)),
     )
   }
 
@@ -332,43 +332,43 @@ mod tests {
       vec![
         GenenalLoopVariable {
           name: PStr::LOWER_I,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
         },
         GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         },
       ],
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
           BinaryOperator::GE,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
           invert_condition: false,
-          statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_32_TYPE))],
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
           Expression::int(10),
         ),
       ],
-      Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_32_TYPE)),
     )
   }
 
@@ -379,55 +379,55 @@ mod tests {
       vec![
         GenenalLoopVariable {
           name: PStr::LOWER_I,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
         },
         GenenalLoopVariable {
           name: PStr::LOWER_J,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
         },
         GenenalLoopVariable {
           name: PStr::LOWER_K,
-          type_: INT_TYPE,
+          type_: INT_32_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_k"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_k"), INT_32_TYPE),
         },
       ],
       vec![
         Statement::binary(
           heap.alloc_str_for_test("cc"),
           BinaryOperator::GE,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
           invert_condition: false,
-          statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_32_TYPE))],
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
           Expression::int(9),
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_k"),
           BinaryOperator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
           Expression::int(9),
         ),
       ],
-      Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_32_TYPE)),
     )
   }
 
@@ -505,43 +505,43 @@ while (true) {
         vec![
           GenenalLoopVariable {
             name: PStr::LOWER_I,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
           },
           GenenalLoopVariable {
             name: PStr::LOWER_J,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
           },
         ],
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::int(10),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
             invert_condition: false,
-            statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_TYPE))],
+            statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_32_TYPE))],
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
-            Expression::var_name(PStr::LOWER_A, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             BinaryOperator::MUL,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::int(2),
           ),
         ],
-        Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_TYPE)),
+        Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_32_TYPE)),
       ),
       heap,
       r#"let j: int = 0;
@@ -567,39 +567,39 @@ while (true) {
         vec![
           GenenalLoopVariable {
             name: PStr::LOWER_I,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
           },
           GenenalLoopVariable {
             name: PStr::LOWER_J,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
           },
         ],
         vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::int(10),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
             invert_condition: false,
-            statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_TYPE))],
+            statements: vec![Statement::Break(Expression::var_name(PStr::LOWER_J, INT_32_TYPE))],
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             ONE,
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             BinaryOperator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
             Expression::int(10),
           ),
         ],
@@ -637,7 +637,7 @@ while (true) {
         s2: vec![Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::MUL,
-          Expression::var_name(PStr::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           Expression::int(2),
         )],
         final_assignments: vec![],
@@ -651,7 +651,7 @@ while (true) {
     let (loop_variables, statements, break_collector) = optimizable_loop_1(heap);
     assert_stmts_optimized(
       vec![Statement::While { loop_variables, statements, break_collector }],
-      Expression::var_name(heap.alloc_str_for_test("bc"), INT_TYPE),
+      Expression::var_name(heap.alloc_str_for_test("bc"), INT_32_TYPE),
       heap,
       "let cast = 0 as int;\nreturn 100;",
     );
@@ -660,7 +660,7 @@ while (true) {
     let (loop_variables, statements, break_collector) = optimizable_loop_2(heap);
     assert_stmts_optimized(
       vec![Statement::While { loop_variables, statements, break_collector }],
-      Expression::var_name(heap.alloc_str_for_test("bc"), INT_TYPE),
+      Expression::var_name(heap.alloc_str_for_test("bc"), INT_32_TYPE),
       heap,
       r#"let j: int = 16;
 let tmp_j: int = 17;
@@ -682,7 +682,7 @@ return (bc: int);"#,
     let (loop_variables, statements, break_collector) = optimizable_loop_3(heap);
     assert_stmts_optimized(
       vec![Statement::While { loop_variables, statements, break_collector }],
-      Expression::var_name(heap.alloc_str_for_test("bc"), INT_TYPE),
+      Expression::var_name(heap.alloc_str_for_test("bc"), INT_32_TYPE),
       heap,
       r#"let j: int = 15;
 let i: int = 6;
@@ -712,48 +712,48 @@ return (bc: int);"#,
         loop_variables: vec![
           GenenalLoopVariable {
             name: PStr::LOWER_I,
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: Expression::int(4),
-            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
           },
           GenenalLoopVariable {
             name: heap.alloc_str_for_test("acc"),
-            type_: INT_TYPE,
+            type_: INT_32_TYPE,
             initial_value: ONE,
-            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
           },
         ],
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             ONE,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("acc"),
-              INT_TYPE,
+              INT_32_TYPE,
             ))],
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::int(-1),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             BinaryOperator::MUL,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
-            Expression::var_name(heap.alloc_str_for_test("acc"), INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("acc"), INT_32_TYPE),
           ),
         ],
-        break_collector: Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_TYPE)),
+        break_collector: Some(VariableName::new(heap.alloc_str_for_test("bc"), INT_32_TYPE)),
       }],
-      Expression::var_name(heap.alloc_str_for_test("bc"), INT_TYPE),
+      Expression::var_name(heap.alloc_str_for_test("bc"), INT_32_TYPE),
       heap,
       "\nreturn 24;",
     );
@@ -767,47 +767,47 @@ return (bc: int);"#,
       vec![Statement::While {
         loop_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_I,
-          type_: INT_TYPE,
-          initial_value: Expression::var_name(heap.alloc_str_for_test("init_i"), INT_TYPE),
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
+          type_: INT_32_TYPE,
+          initial_value: Expression::var_name(heap.alloc_str_for_test("init_i"), INT_32_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
         }],
         statements: vec![
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
-            Expression::var_name(heap.alloc_str_for_test("L"), INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("L"), INT_32_TYPE),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           },
           Statement::binary(
             heap.alloc_str_for_test("t"),
             BinaryOperator::MUL,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
             PStr::LOWER_J,
             BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_A, INT_TYPE),
-            Expression::var_name(heap.alloc_str_for_test("t"), INT_TYPE),
+            Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("t"), INT_32_TYPE),
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::LOWER_F),
-              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             }),
-            arguments: vec![Expression::var_name(PStr::LOWER_J, INT_TYPE)],
-            return_type: INT_TYPE,
+            arguments: vec![Expression::var_name(PStr::LOWER_J, INT_32_TYPE)],
+            return_type: INT_32_TYPE,
             return_collector: None,
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_TYPE),
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::int(2),
           ),
         ],
