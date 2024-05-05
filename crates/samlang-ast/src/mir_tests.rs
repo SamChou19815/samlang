@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use super::super::hir::{BinaryOperator, GlobalVariable, UnaryOperator};
+  use super::super::hir::{BinaryOperator, GlobalString, UnaryOperator};
   use super::super::mir::*;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
@@ -127,7 +127,7 @@ mod tests {
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
         .debug_print(heap, table)
     );
-    assert_eq!("a", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap, table));
+    assert_eq!("\"a\"", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap, table));
   }
 
   #[test]
@@ -297,7 +297,7 @@ mod tests {
     format!("{:?}", stmt.clone());
     let expected = r#"let bar: int;
 if 0 {
-  let baz: _FooBar = [meggo];
+  let baz: _FooBar = ["meggo"];
   let closure: _CCC = Closure { fun: (__$foo: (int) -> int), context: 0 };
   let dd = 0 < 0;
   let dd = 0 <= 0;
@@ -353,11 +353,7 @@ if 0 {
     let mut table = SymbolTable::new();
 
     let sources1 = Sources {
-      global_variables: vec![GlobalVariable {
-        name: heap.alloc_str_for_test("dev_meggo"),
-        content: heap.alloc_str_for_test("vibez"),
-      }
-      .clone()],
+      global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez")).clone()],
       closure_types: vec![ClosureTypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_A),
         function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
@@ -388,7 +384,7 @@ if 0 {
       symbol_table: table,
     };
     format!("{sources1:?}");
-    let expected1 = r#"const dev_meggo = 'vibez';
+    let expected1 = r#"const GLOBAL_STRING_0 = 'dev_meggo_vibez';
 
 closure type _A = () -> int
 object type _Foo = [int, int]

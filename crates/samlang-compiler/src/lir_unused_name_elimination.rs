@@ -196,7 +196,7 @@ pub(super) fn optimize_lir_sources_by_eliminating_unused_ones(
     symbol_table,
     global_variables: global_variables
       .into_iter()
-      .filter(|it| used_str_names.contains(&it.name))
+      .filter(|it| used_str_names.contains(&it.0))
       .collect_vec(),
     type_definitions: type_definitions
       .into_iter()
@@ -228,14 +228,8 @@ mod tests {
 
     let optimized = super::optimize_lir_sources_by_eliminating_unused_ones(Sources {
       global_variables: vec![
-        hir::GlobalVariable {
-          name: heap.alloc_str_for_test("bar"),
-          content: heap.alloc_str_for_test("fff"),
-        },
-        hir::GlobalVariable {
-          name: heap.alloc_str_for_test("fsdfsdf"),
-          content: heap.alloc_str_for_test("fff"),
-        },
+        hir::GlobalString(heap.alloc_str_for_test("bar")),
+        hir::GlobalString(heap.alloc_str_for_test("fsdfsdf")),
       ],
       type_definitions: vec![
         TypeDefinition {
@@ -383,7 +377,7 @@ mod tests {
 
     assert_eq!(
       vec!["bar"],
-      optimized.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
+      optimized.global_variables.iter().map(|it| it.0.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["_Foo"],

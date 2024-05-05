@@ -742,7 +742,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, UnaryOperator},
+    hir::{self, BinaryOperator, UnaryOperator},
     lir,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
@@ -791,7 +791,7 @@ mod tests {
     let variant_type =
       &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Variant")));
     let sources = Sources {
-      global_variables: vec![],
+      global_variables: vec![hir::GlobalString(heap.alloc_str_for_test("G1"))],
       closure_types: vec![ClosureTypeDefinition {
         name: table.create_type_name_for_test(heap.alloc_str_for_test("CC")),
         function_type: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
@@ -1053,7 +1053,8 @@ mod tests {
       symbol_table: table,
     };
     let expected = format!(
-      r#"{}type _CC = [number, (t0: any, t1: number) => number, any];
+      r#"{}const GLOBAL_STRING_0: _Str = [0, `G1` as unknown as number];
+type _CC = [number, (t0: any, t1: number) => number, any];
 type _Object = [number, number, number];
 type _Variant = [number, number];
 function __$cc(): i31 {{
@@ -1087,13 +1088,13 @@ function __$main(): number {{
   __$inc_ref(_t3);
   let O: _Object = [131073, 0, obj];
   let v1: _Variant = [1, 0, 0];
-  let _t4 = G1 as unknown as any;
+  let _t4 = GLOBAL_STRING_0 as unknown as any;
   __$inc_ref(_t4);
-  let v2: _Variant = [131073, 0, G1];
-  let _t5 = G1 as unknown as any;
+  let v2: _Variant = [131073, 0, GLOBAL_STRING_0];
+  let _t5 = GLOBAL_STRING_0 as unknown as any;
   __$inc_ref(_t5);
   let _t6 = __$aaa as unknown as (t0: any) => number;
-  let _t7 = G1 as unknown as any;
+  let _t7 = GLOBAL_STRING_0 as unknown as any;
   let c1: _CC = [131073, _t6, _t7];
   let _t8 = __$bbb as unknown as (t0: any) => number;
   let _t9 = 0 as unknown as any;

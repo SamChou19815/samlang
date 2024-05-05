@@ -631,7 +631,7 @@ function __$otherwise_optimizable(a: int, b: int): int {
 }
 
 function __$str_const(): int {
-  undefined = STR;
+  undefined = "STR";
   break;
   return 0;
 }

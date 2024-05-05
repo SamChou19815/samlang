@@ -209,7 +209,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source::expr::E::Literal(_, source::Literal::String(s)) => LoweringResult {
         statements: vec![],
-        expression: hir::Expression::StringName(self.string_manager.allocate(self.heap, *s).name),
+        expression: hir::Expression::StringName(self.string_manager.allocate(*s).0),
       },
       source::expr::E::LocalId(_, id) => LoweringResult {
         statements: vec![],
@@ -528,9 +528,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           let concat_pstr = self.heap.alloc_string(concat_string);
           return LoweringResult {
             statements: vec![],
-            expression: hir::Expression::StringName(
-              self.string_manager.allocate(self.heap, concat_pstr).name,
-            ),
+            expression: hir::Expression::StringName(self.string_manager.allocate(concat_pstr).0),
           };
         }
         let mut lowered_stmts = vec![];
@@ -869,7 +867,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         }),
         arguments: vec![
           hir::ZERO,
-          hir::Expression::StringName(self.string_manager.allocate(self.heap, PStr::EMPTY).name),
+          hir::Expression::StringName(self.string_manager.allocate(PStr::EMPTY).0),
         ],
         return_type: final_return_type.clone(),
         return_collector: Some(unreachable_branch_collector),
@@ -1599,7 +1597,7 @@ mod tests {
         source::Literal::String(heap.alloc_str_for_test("foo")),
       ),
       heap,
-      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
+      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn \"foo\";",
     );
 
     // This & variable lowering works.
@@ -2050,7 +2048,7 @@ return (_t1: _Str);"#,
         )),
       }),
       heap,
-      "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
+      "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn \"hello world\";",
     );
   }
 
@@ -2343,7 +2341,7 @@ if (_t8: int) {
   if (_t4: int) {
     _t2 = (_this: DUMMY_Dummy);
   } else {
-    let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
+    let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
     _t2 = (_t1: DUMMY_Dummy);
   }
   _t5 = (_t2: DUMMY_Dummy);
@@ -2463,7 +2461,7 @@ if (_t11: int) {
     if (_t4: int) {
       _t2 = (_this: DUMMY_Dummy);
     } else {
-      let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
+      let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
       _t2 = (_t1: DUMMY_Dummy);
     }
     _t5 = (_t2: DUMMY_Dummy);
@@ -3399,7 +3397,7 @@ return (_t2: int);"#,
       r#"const GLOBAL_STRING_0 = 'foo';
 
 let _t1: int;
-_t1 = GLOBAL_STRING_0;
+_t1 = "foo";
 let _t2: int;
 _t2 = (_t1: int);
 return (_t2: int);"#,

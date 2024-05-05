@@ -317,7 +317,7 @@ impl Expression {
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
-      Expression::StringName(n) => n.as_str(heap).to_string(),
+      Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
       Expression::Variable(v) => v.debug_print(heap),
     }
   }
@@ -661,14 +661,11 @@ impl Function {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct GlobalVariable {
-  pub name: PStr,
-  pub content: PStr,
-}
+pub struct GlobalString(pub PStr);
 
 #[derive(Debug)]
 pub struct Sources {
-  pub global_variables: Vec<GlobalVariable>,
+  pub global_variables: Vec<GlobalString>,
   pub closure_types: Vec<ClosureTypeDefinition>,
   pub type_definitions: Vec<TypeDefinition>,
   pub main_function_names: Vec<FunctionName>,
@@ -678,8 +675,8 @@ pub struct Sources {
 impl Sources {
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     let mut lines = vec![];
-    for v in &self.global_variables {
-      lines.push(format!("const {} = '{}';\n", v.name.as_str(heap), v.content.as_str(heap)));
+    for (i, v) in self.global_variables.iter().enumerate() {
+      lines.push(format!("const GLOBAL_STRING_{} = '{}';\n", i, v.0.as_str(heap)));
     }
     for d in &self.closure_types {
       lines.push(d.pretty_print(heap));
