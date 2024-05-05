@@ -163,7 +163,7 @@ mod tests {
       Expression::var_name(PStr::LOWER_A, Type::new_id(PStr::UPPER_A, vec![(INT_TYPE)]))
         .debug_print(heap)
     );
-    assert_eq!("a", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap));
+    assert_eq!("\"a\"", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap));
   }
 
   #[test]
@@ -414,8 +414,8 @@ mod tests {
     format!("{:?}", stmt.clone());
     let expected = r#"let bar: int;
 if 0 {
-  let baz: DUMMY_FooBar = [meggo];
-  let baz: DUMMY_Enum = [0, meggo];
+  let baz: DUMMY_FooBar = ["meggo"];
+  let baz: DUMMY_Enum = [0, "meggo"];
   let closure: DUMMY_CCC = Closure { fun: (A$foo: (int) -> int), context: 0 };
   let dd = 0 < 0;
   let dd = 0 <= 0;
@@ -461,11 +461,7 @@ if 0 {
     let heap = &mut Heap::new();
 
     let sources1 = Sources {
-      global_variables: vec![GlobalVariable {
-        name: heap.alloc_str_for_test("dev_meggo"),
-        content: heap.alloc_str_for_test("vibez"),
-      }
-      .clone()],
+      global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez")).clone()],
       closure_types: vec![ClosureTypeDefinition {
         name: TypeName { module_reference: None, type_name: PStr::UPPER_C },
         type_parameters: vec![],
@@ -504,7 +500,7 @@ if 0 {
       .clone()],
     };
     format!("{sources1:?}");
-    let expected1 = r#"const dev_meggo = 'vibez';
+    let expected1 = r#"const GLOBAL_STRING_0 = 'dev_meggo_vibez';
 
 closure type C = () -> int
 object type Foo = [int, int]

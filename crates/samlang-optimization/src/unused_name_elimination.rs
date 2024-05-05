@@ -236,7 +236,7 @@ pub(super) fn optimize_sources(sources: &mut Sources) {
     &sources.type_definitions,
     &sources.main_function_names,
   );
-  sources.global_variables.retain(|it| used_str_names.contains(&it.name));
+  sources.global_variables.retain(|it| used_str_names.contains(&it.0));
   sources.closure_types.retain(|it| used_types.contains(&it.name));
   sources.type_definitions.retain(|it| used_types.contains(&it.name));
   sources.functions.retain(|it| used_fn_names.contains(&it.name));
@@ -247,7 +247,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::GlobalVariable,
+    hir::GlobalString,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
       FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
@@ -263,14 +263,8 @@ mod tests {
 
     let mut sources = Sources {
       global_variables: vec![
-        GlobalVariable {
-          name: heap.alloc_str_for_test("bar"),
-          content: heap.alloc_str_for_test("fff"),
-        },
-        GlobalVariable {
-          name: heap.alloc_str_for_test("fsdfsdf"),
-          content: heap.alloc_str_for_test("fff"),
-        },
+        GlobalString(heap.alloc_str_for_test("bar")),
+        GlobalString(heap.alloc_str_for_test("fsdfsdf")),
       ],
       closure_types: vec![
         ClosureTypeDefinition {
@@ -475,7 +469,7 @@ mod tests {
 
     assert_eq!(
       vec!["bar"],
-      sources.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
+      sources.global_variables.iter().map(|it| it.0.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["_Foo", "_Bar", "_RefByType", "_RefByType2", "_RefByType3"],

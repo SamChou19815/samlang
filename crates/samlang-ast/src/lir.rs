@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use crate::hir;
 
 use super::{
-  hir::{BinaryOperator, GlobalVariable, UnaryOperator},
+  hir::{BinaryOperator, GlobalString, UnaryOperator},
   mir::{FunctionName, SymbolTable, TypeNameId},
 };
 use enum_as_inner::EnumAsInner;
@@ -116,11 +118,21 @@ impl Expression {
     }
   }
 
-  fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+  fn pretty_print(
+    &self,
+    collector: &mut String,
+    heap: &Heap,
+    symbol_table: &SymbolTable,
+    str_table: &HashMap<PStr, usize>,
+  ) {
     match self {
       Expression::IntLiteral(i) => collector.push_str(&i.to_string()),
-      Expression::StringName(n) | Expression::Variable(n, _) => collector.push_str(n.as_str(heap)),
-      Expression::FnName(n, _) => n.write_encoded(collector, heap, table),
+      Expression::Variable(n, _) => collector.push_str(n.as_str(heap)),
+      Expression::StringName(n) => {
+        collector.push_str("GLOBAL_STRING_");
+        collector.push_str(&str_table.get(n).unwrap().to_string());
+      }
+      Expression::FnName(n, _) => n.write_encoded(collector, heap, symbol_table),
     }
   }
 }
@@ -220,15 +232,16 @@ impl Statement {
   fn print_expression_list(
     collector: &mut String,
     heap: &Heap,
-    table: &SymbolTable,
+    symbol_table: &SymbolTable,
+    str_table: &HashMap<PStr, usize>,
     expressions: &[Expression],
   ) {
     let mut iter = expressions.iter();
     if let Some(e) = iter.next() {
-      e.pretty_print(collector, heap, table);
+      e.pretty_print(collector, heap, symbol_table, str_table);
       for e in iter {
         collector.push_str(", ");
-        e.pretty_print(collector, heap, table);
+        e.pretty_print(collector, heap, symbol_table, str_table);
       }
     }
   }
@@ -236,7 +249,8 @@ impl Statement {
   fn pretty_print_internal(
     &self,
     heap: &Heap,
-    table: &SymbolTable,
+    symbol_table: &SymbolTable,
+    str_table: &HashMap<PStr, usize>,
     level: usize,
     break_collector: &Option<(PStr, Type)>,
     collector: &mut String,
@@ -247,7 +261,7 @@ impl Statement {
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
         collector.push_str(" = !");
-        operand.pretty_print(collector, heap, table);
+        operand.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(";\n");
       }
       Statement::Unary { name, operator: hir::UnaryOperator::IsPointer, operand } => {
@@ -255,7 +269,7 @@ impl Statement {
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
         collector.push_str(" = typeof ");
-        operand.pretty_print(collector, heap, table);
+        operand.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(" === 'object';\n");
       }
       Statement::Binary { name, operator, e1, e2 } => {
@@ -267,11 +281,11 @@ impl Statement {
           BinaryOperator::DIV => {
             // Necessary to preserve semantics
             collector.push_str("Math.floor(");
-            e1.pretty_print(collector, heap, table);
+            e1.pretty_print(collector, heap, symbol_table, str_table);
             collector.push(' ');
             collector.push_str(operator.as_str());
             collector.push(' ');
-            e2.pretty_print(collector, heap, table);
+            e2.pretty_print(collector, heap, symbol_table, str_table);
             collector.push(')');
           }
           BinaryOperator::LT
@@ -282,11 +296,11 @@ impl Statement {
           | BinaryOperator::NE => {
             // Necessary to make TS happy
             collector.push_str("Number(");
-            e1.pretty_print(collector, heap, table);
+            e1.pretty_print(collector, heap, symbol_table, str_table);
             collector.push(' ');
             collector.push_str(operator.as_str());
             collector.push(' ');
-            e2.pretty_print(collector, heap, table);
+            e2.pretty_print(collector, heap, symbol_table, str_table);
             collector.push(')');
           }
           BinaryOperator::MUL
@@ -298,11 +312,11 @@ impl Statement {
           | BinaryOperator::SHL
           | BinaryOperator::SHR
           | BinaryOperator::XOR => {
-            e1.pretty_print(collector, heap, table);
+            e1.pretty_print(collector, heap, symbol_table, str_table);
             collector.push(' ');
             collector.push_str(operator.as_str());
             collector.push(' ');
-            e2.pretty_print(collector, heap, table);
+            e2.pretty_print(collector, heap, symbol_table, str_table);
           }
         };
         collector.push_str(";\n");
@@ -312,20 +326,20 @@ impl Statement {
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
         collector.push_str(": ");
-        type_.pretty_print(collector, heap, table);
+        type_.pretty_print(collector, heap, symbol_table);
         collector.push_str(" = ");
-        pointer_expression.pretty_print(collector, heap, table);
+        pointer_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push('[');
         collector.push_str(&index.to_string());
         collector.push_str("];\n");
       }
       Statement::IndexedAssign { assigned_expression, pointer_expression, index } => {
         Self::append_spaces(collector, level);
-        pointer_expression.pretty_print(collector, heap, table);
+        pointer_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push('[');
         collector.push_str(&index.to_string());
         collector.push_str("] = ");
-        assigned_expression.pretty_print(collector, heap, table);
+        assigned_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(";\n");
       }
       Statement::Call { callee, arguments, return_type, return_collector } => {
@@ -334,12 +348,12 @@ impl Statement {
           collector.push_str("let ");
           collector.push_str(c.as_str(heap));
           collector.push_str(": ");
-          return_type.pretty_print(collector, heap, table);
+          return_type.pretty_print(collector, heap, symbol_table);
           collector.push_str(" = ");
         }
-        callee.pretty_print(collector, heap, table);
+        callee.pretty_print(collector, heap, symbol_table, str_table);
         collector.push('(');
-        Self::print_expression_list(collector, heap, table, arguments);
+        Self::print_expression_list(collector, heap, symbol_table, str_table, arguments);
         collector.push_str(");\n");
       }
       Statement::IfElse { condition, s1, s2, final_assignments } => {
@@ -348,33 +362,47 @@ impl Statement {
           collector.push_str("let ");
           collector.push_str(n.as_str(heap));
           collector.push_str(": ");
-          t.pretty_print(collector, heap, table);
+          t.pretty_print(collector, heap, symbol_table);
           collector.push_str(";\n");
         }
         Self::append_spaces(collector, level);
         collector.push_str("if (");
-        condition.pretty_print(collector, heap, table);
+        condition.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(") {\n");
         for s in s1 {
-          s.pretty_print_internal(heap, table, level + 1, break_collector, collector);
+          s.pretty_print_internal(
+            heap,
+            symbol_table,
+            str_table,
+            level + 1,
+            break_collector,
+            collector,
+          );
         }
         for (n, _, v1, _) in final_assignments {
           Self::append_spaces(collector, level + 1);
           collector.push_str(n.as_str(heap));
           collector.push_str(" = ");
-          v1.pretty_print(collector, heap, table);
+          v1.pretty_print(collector, heap, symbol_table, str_table);
           collector.push_str(";\n");
         }
         Self::append_spaces(collector, level);
         collector.push_str("} else {\n");
         for s in s2 {
-          s.pretty_print_internal(heap, table, level + 1, break_collector, collector);
+          s.pretty_print_internal(
+            heap,
+            symbol_table,
+            str_table,
+            level + 1,
+            break_collector,
+            collector,
+          );
         }
         for (n, _, _, v2) in final_assignments {
           Self::append_spaces(collector, level + 1);
           collector.push_str(n.as_str(heap));
           collector.push_str(" = ");
-          v2.pretty_print(collector, heap, table);
+          v2.pretty_print(collector, heap, symbol_table, str_table);
           collector.push_str(";\n");
         }
         Self::append_spaces(collector, level);
@@ -386,10 +414,17 @@ impl Statement {
         if *invert_condition {
           collector.push('!');
         }
-        condition.pretty_print(collector, heap, table);
+        condition.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(") {\n");
         for s in statements {
-          s.pretty_print_internal(heap, table, level + 1, break_collector, collector);
+          s.pretty_print_internal(
+            heap,
+            symbol_table,
+            str_table,
+            level + 1,
+            break_collector,
+            collector,
+          );
         }
         Self::append_spaces(collector, level);
         collector.push_str("}\n");
@@ -399,7 +434,7 @@ impl Statement {
           Self::append_spaces(collector, level);
           collector.push_str(break_collector_str.as_str(heap));
           collector.push_str(" = ");
-          break_value.pretty_print(collector, heap, table);
+          break_value.pretty_print(collector, heap, symbol_table, str_table);
           collector.push_str(";\n");
         }
         Self::append_spaces(collector, level);
@@ -411,9 +446,9 @@ impl Statement {
           collector.push_str("let ");
           collector.push_str(v.name.as_str(heap));
           collector.push_str(": ");
-          v.type_.pretty_print(collector, heap, table);
+          v.type_.pretty_print(collector, heap, symbol_table);
           collector.push_str(" = ");
-          v.initial_value.pretty_print(collector, heap, table);
+          v.initial_value.pretty_print(collector, heap, symbol_table, str_table);
           collector.push_str(";\n");
         }
         if let Some((n, t)) = break_collector {
@@ -421,19 +456,26 @@ impl Statement {
           collector.push_str("let ");
           collector.push_str(n.as_str(heap));
           collector.push_str(": ");
-          t.pretty_print(collector, heap, table);
+          t.pretty_print(collector, heap, symbol_table);
           collector.push_str(";\n");
         }
         Self::append_spaces(collector, level);
         collector.push_str("while (true) {\n");
         for nested in statements {
-          nested.pretty_print_internal(heap, table, level + 1, break_collector, collector);
+          nested.pretty_print_internal(
+            heap,
+            symbol_table,
+            str_table,
+            level + 1,
+            break_collector,
+            collector,
+          );
         }
         for v in loop_variables {
           Self::append_spaces(collector, level + 1);
           collector.push_str(v.name.as_str(heap));
           collector.push_str(" = ");
-          v.loop_value.pretty_print(collector, heap, table);
+          v.loop_value.pretty_print(collector, heap, symbol_table, str_table);
           collector.push_str(";\n");
         }
         Self::append_spaces(collector, level);
@@ -444,9 +486,9 @@ impl Statement {
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
         collector.push_str(" = ");
-        assigned_expression.pretty_print(collector, heap, table);
+        assigned_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(" as unknown as ");
-        type_.pretty_print(collector, heap, table);
+        type_.pretty_print(collector, heap, symbol_table);
         collector.push_str(";\n");
       }
       Statement::LateInitDeclaration { name, type_ } => {
@@ -454,14 +496,14 @@ impl Statement {
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
         collector.push_str(": ");
-        type_.pretty_print(collector, heap, table);
+        type_.pretty_print(collector, heap, symbol_table);
         collector.push_str(" = undefined as any;\n");
       }
       Statement::LateInitAssignment { name, assigned_expression } => {
         Self::append_spaces(collector, level);
         collector.push_str(name.as_str(heap));
         collector.push_str(" = ");
-        assigned_expression.pretty_print(collector, heap, table);
+        assigned_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(";\n");
       }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {
@@ -469,9 +511,9 @@ impl Statement {
         collector.push_str("let ");
         collector.push_str(struct_variable_name.as_str(heap));
         collector.push_str(": ");
-        type_.pretty_print(collector, heap, table);
+        type_.pretty_print(collector, heap, symbol_table);
         collector.push_str(" = [");
-        Self::print_expression_list(collector, heap, table, expression_list);
+        Self::print_expression_list(collector, heap, symbol_table, str_table, expression_list);
         collector.push_str("];\n");
       }
     }
@@ -487,30 +529,36 @@ pub struct Function {
 }
 
 impl Function {
-  fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+  fn pretty_print(
+    &self,
+    collector: &mut String,
+    heap: &Heap,
+    symbol_table: &SymbolTable,
+    str_table: &HashMap<PStr, usize>,
+  ) {
     collector.push_str("function ");
-    self.name.write_encoded(collector, heap, table);
+    self.name.write_encoded(collector, heap, symbol_table);
     collector.push('(');
     let mut iter = self.parameters.iter().zip(&self.type_.argument_types);
     if let Some((n, t)) = iter.next() {
       collector.push_str(n.as_str(heap));
       collector.push_str(": ");
-      t.pretty_print(collector, heap, table);
+      t.pretty_print(collector, heap, symbol_table);
       for (n, t) in iter {
         collector.push_str(", ");
         collector.push_str(n.as_str(heap));
         collector.push_str(": ");
-        t.pretty_print(collector, heap, table);
+        t.pretty_print(collector, heap, symbol_table);
       }
     }
     collector.push_str("): ");
-    self.type_.return_type.pretty_print(collector, heap, table);
+    self.type_.return_type.pretty_print(collector, heap, symbol_table);
     collector.push_str(" {\n");
     for s in &self.body {
-      s.pretty_print_internal(heap, table, 1, &None, collector);
+      s.pretty_print_internal(heap, symbol_table, str_table, 1, &None, collector);
     }
     collector.push_str("  return ");
-    self.return_value.pretty_print(collector, heap, table);
+    self.return_value.pretty_print(collector, heap, symbol_table, str_table);
     collector.push_str(";\n}\n");
   }
 }
@@ -522,7 +570,7 @@ pub struct TypeDefinition {
 
 pub struct Sources {
   pub symbol_table: SymbolTable,
-  pub global_variables: Vec<GlobalVariable>,
+  pub global_variables: Vec<GlobalString>,
   pub type_definitions: Vec<TypeDefinition>,
   pub main_function_names: Vec<FunctionName>,
   pub functions: Vec<Function>,
@@ -566,12 +614,14 @@ impl Sources {
   pub fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = ts_prolog();
 
-    for v in &self.global_variables {
-      collector.push_str("const ");
-      collector.push_str(v.name.as_str(heap));
+    let mut str_lookup_table = HashMap::new();
+    for (i, hir::GlobalString(s)) in self.global_variables.iter().enumerate() {
+      collector.push_str("const GLOBAL_STRING_");
+      collector.push_str(&i.to_string());
       collector.push_str(": _Str = [0, `");
-      collector.push_str(v.content.as_str(heap));
+      collector.push_str(s.as_str(heap));
       collector.push_str("` as unknown as number];\n");
+      str_lookup_table.insert(*s, i);
     }
     for d in &self.type_definitions {
       collector.push_str("type ");
@@ -588,7 +638,7 @@ impl Sources {
       collector.push_str("];\n");
     }
     for f in &self.functions {
-      f.pretty_print(&mut collector, heap, &self.symbol_table);
+      f.pretty_print(&mut collector, heap, &self.symbol_table, &str_lookup_table);
     }
     collector
   }

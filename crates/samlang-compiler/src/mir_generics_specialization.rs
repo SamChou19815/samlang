@@ -697,7 +697,7 @@ pub(super) fn perform_generics_specialization(
     symbol_table,
     global_variables: global_variables
       .into_iter()
-      .filter(|it| used_string_names.contains(&it.name))
+      .filter(|it| used_string_names.contains(&it.0))
       .collect(),
     closure_types: specialized_closure_definitions.into_iter().sorted_by_key(|d| d.name).collect(),
     type_definitions: specialized_type_definitions
@@ -713,7 +713,7 @@ pub(super) fn perform_generics_specialization(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::hir::{BinaryOperator, GlobalVariable, UnaryOperator};
+  use samlang_ast::hir::{BinaryOperator, GlobalString, UnaryOperator};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   fn assert_specialized(sources: hir::Sources, heap: &mut Heap, expected: &str) {
@@ -790,10 +790,7 @@ sources.mains = [_DUMMY_I$main]
 
     assert_specialized(
       hir::Sources {
-        global_variables: vec![GlobalVariable {
-          name: heap.alloc_str_for_test("G1"),
-          content: PStr::LOWER_A,
-        }],
+        global_variables: vec![GlobalString(heap.alloc_str_for_test("G1"))],
         closure_types: vec![],
         type_definitions: vec![hir::TypeDefinition {
           name: hir::STRING_TYPE.into_id().unwrap().name,
@@ -832,11 +829,11 @@ sources.mains = [_DUMMY_I$main]
         }],
       },
       heap,
-      r#"const G1 = 'a';
+      r#"const GLOBAL_STRING_0 = 'G1';
 
 variant type _Str = []
 function _DUMMY_I$main(): int {
-  __Process$println(G1);
+  __Process$println("G1");
   return 0;
 }
 
@@ -863,8 +860,8 @@ sources.mains = [_DUMMY_I$main]
     assert_specialized(
       hir::Sources {
         global_variables: vec![
-          GlobalVariable { name: heap.alloc_str_for_test("G1"), content: PStr::LOWER_A },
-          GlobalVariable { name: heap.alloc_str_for_test("G2"), content: PStr::LOWER_A },
+          GlobalString(heap.alloc_str_for_test("G1")),
+          GlobalString(heap.alloc_str_for_test("G2")),
         ],
         closure_types: vec![hir::ClosureTypeDefinition {
           name: hir::TypeName::new_for_test(heap.alloc_str_for_test("CC")),
@@ -1296,7 +1293,7 @@ sources.mains = [_DUMMY_I$main]
       },
       heap,
       r#"
-const G1 = 'a';
+const GLOBAL_STRING_0 = 'G1';
 
 closure type DUMMY_CC___Str__Str = (_Str) -> _Str
 closure type DUMMY_CC__int__Str = (int) -> _Str
@@ -1311,10 +1308,10 @@ function _DUMMY_I$main(): int {
   let finalV: int;
   if 1 {
     let a: DUMMY_I__int__Str = _DUMMY_I__int$creatorIA(0);
-    let a2: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIA(G1);
-    let b: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIB(G1);
-    _DUMMY_I__DUMMY_I__int__Str$functor_fun(G1);
-    _DUMMY_I__DUMMY_J$functor_fun(G1);
+    let a2: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIA("G1");
+    let b: DUMMY_I__int__Str = _DUMMY_I___Str$creatorIB("G1");
+    _DUMMY_I__DUMMY_I__int__Str$functor_fun("G1");
+    _DUMMY_I__DUMMY_J$functor_fun("G1");
     let v1: int = (a: DUMMY_I__int__Str)[0];
     let late_init: int;
     late_init = (a: int);
@@ -1325,8 +1322,8 @@ function _DUMMY_I$main(): int {
     let v1 = 0 + 0;
     let j: DUMMY_J = [0];
     let v2: int = (j: DUMMY_J)[0];
-    let c1: DUMMY_CC___Str__Str = Closure { fun: (_DUMMY_I___Str$creatorIA: (_Str) -> DUMMY_I___Str__Str), context: G1 };
-    let c2: DUMMY_CC__int__Str = Closure { fun: (_DUMMY_I___Str$creatorIA: (_Str) -> DUMMY_I___Str__Str), context: G1 };
+    let c1: DUMMY_CC___Str__Str = Closure { fun: (_DUMMY_I___Str$creatorIA: (_Str) -> DUMMY_I___Str__Str), context: "G1" };
+    let c2: DUMMY_CC__int__Str = Closure { fun: (_DUMMY_I___Str$creatorIA: (_Str) -> DUMMY_I___Str__Str), context: "G1" };
     finalV = (v2: int);
   }
   let b = 0 as DUMMY_Enum;
@@ -1532,7 +1529,7 @@ function _DUMMY_I$creatorJ(): DUMMY_J {
 function _DUMMY_I$main(): int {
   _DUMMY_I$creatorJ();
   (v: int)((b: DUMMY_StrOption));
-  return creatorJ;
+  return "creatorJ";
 }
 
 sources.mains = [_DUMMY_I$main]"#,

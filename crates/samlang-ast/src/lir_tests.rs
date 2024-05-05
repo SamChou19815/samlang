@@ -2,7 +2,7 @@
 mod tests {
   use super::super::lir::*;
   use crate::{
-    hir::{BinaryOperator, GlobalVariable, UnaryOperator},
+    hir::{BinaryOperator, GlobalString, UnaryOperator},
     mir::{FunctionName, SymbolTable},
   };
   use pretty_assertions::assert_eq;
@@ -52,14 +52,8 @@ mod tests {
 
     let sources = Sources {
       global_variables: vec![
-        GlobalVariable {
-          name: heap.alloc_str_for_test("dev_meggo"),
-          content: heap.alloc_str_for_test("vibez"),
-        },
-        GlobalVariable {
-          name: heap.alloc_str_for_test("esc"),
-          content: heap.alloc_str_for_test(r#"f"\""#),
-        },
+        GlobalString(heap.alloc_str_for_test("dev_meggo_vibez")),
+        GlobalString(heap.alloc_str_for_test(r#"f"\""#)),
       ],
       type_definitions: vec![
         TypeDefinition {
@@ -121,7 +115,9 @@ mod tests {
               Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("baz"),
                 type_: Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
-                expression_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
+                expression_list: vec![Expression::StringName(
+                  heap.alloc_str_for_test("dev_meggo_vibez"),
+                )],
               },
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LT, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LE, ZERO, ZERO),
@@ -262,8 +258,8 @@ mod tests {
       symbol_table: table,
     };
     let expected = format!(
-      r#"{}const dev_meggo: _Str = [0, `vibez` as unknown as number];
-const esc: _Str = [0, `f"\"` as unknown as number];
+      r#"{}const GLOBAL_STRING_0: _Str = [0, `dev_meggo_vibez` as unknown as number];
+const GLOBAL_STRING_1: _Str = [0, `f"\"` as unknown as number];
 type _Foo = [number, i31];
 type _Foo = [];
 function __$main(): number {{
@@ -279,7 +275,7 @@ function __$Bar2(f: (t0: number, t1: number) => number, g: () => number): number
 function __$f(v1: (t0: number) => number): number {{
   let bar: number;
   if (0) {{
-    let baz: _FooBar = [meggo];
+    let baz: _FooBar = [GLOBAL_STRING_0];
     let dd = Number(0 < 0);
     let dd = Number(0 <= 0);
     let dd = Number(0 > 0);

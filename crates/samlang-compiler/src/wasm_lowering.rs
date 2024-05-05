@@ -278,13 +278,13 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
   let mut global_variables = vec![];
-  for hir::GlobalVariable { name, content } in &sources.global_variables {
+  for hir::GlobalString(content) in &sources.global_variables {
     let content_str = content.as_str(heap);
     let mut bytes = vec![0, 0, 0, 0];
     bytes.extend_from_slice(&(content_str.len() as u32).to_le_bytes());
     bytes.extend_from_slice(content_str.as_bytes());
     let global_variable = wasm::GlobalData { constant_pointer: data_start, bytes };
-    global_variables_to_pointer_mapping.insert(*name, data_start);
+    global_variables_to_pointer_mapping.insert(*content, data_start);
     data_start += content_str.len() + 8;
     let pad = data_start % 8;
     if pad != 0 {
@@ -319,7 +319,7 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, GlobalVariable, UnaryOperator},
+    hir::{BinaryOperator, GlobalString, UnaryOperator},
     lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_32_TYPE, ZERO},
     mir, wasm,
   };
@@ -340,14 +340,8 @@ mod tests {
     let sources = Sources {
       symbol_table: mir::SymbolTable::new(),
       global_variables: vec![
-        GlobalVariable {
-          name: heap.alloc_str_for_test("FOO"),
-          content: heap.alloc_str_for_test("foo"),
-        },
-        GlobalVariable {
-          name: heap.alloc_str_for_test("BAR"),
-          content: heap.alloc_str_for_test("bar"),
-        },
+        GlobalString(heap.alloc_str_for_test("FOO")),
+        GlobalString(heap.alloc_str_for_test("BAR")),
       ],
       type_definitions: vec![],
       main_function_names: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
@@ -474,8 +468,8 @@ mod tests {
     let actual =
       super::compile_lir_to_wasm(heap, &sources).pretty_print(heap, &sources.symbol_table);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
-(data (i32.const 4096) "\00\00\00\00\03\00\00\00foo")
-(data (i32.const 4112) "\00\00\00\00\03\00\00\00bar")
+(data (i32.const 4096) "\00\00\00\00\03\00\00\00FOO")
+(data (i32.const 4112) "\00\00\00\00\03\00\00\00BAR")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $__$main)
 (func $__$main (param $bar i32) (result i32)
