@@ -149,6 +149,7 @@ mod lsp {
 
     fn get_diagnostics(&self, absolute_source_path: &Path) -> Vec<(Url, Vec<Diagnostic>)> {
       let heap = &self.0.heap;
+      let sources = &self.0.string_sources;
       let mut collected = vec![];
       for module_reference in self.0.all_modules() {
         if let Some(url) =
@@ -159,14 +160,21 @@ mod lsp {
             .get_errors(module_reference)
             .iter()
             .map(|e| {
-              let (loc, message, related_locs) = e.to_ide_format(heap);
+              let samlang_errors::ErrorInIDEFormat {
+                location: loc,
+                ide_error,
+                full_error,
+                reference_locs,
+              } = e.to_ide_format(heap, sources);
+              let mut extra_data_map = serde_json::Map::new();
+              extra_data_map.insert("rendered".to_string(), serde_json::Value::String(full_error));
               Diagnostic {
                 range: samlang_loc_to_lsp_range(&loc),
                 severity: Some(DiagnosticSeverity::ERROR),
-                message,
+                message: ide_error,
                 source: Some("samlang".to_string()),
                 related_information: Some(
-                  related_locs
+                  reference_locs
                     .iter()
                     .enumerate()
                     .filter_map(|(i, l)| {
@@ -182,6 +190,7 @@ mod lsp {
                     })
                     .collect(),
                 ),
+                data: Some(serde_json::Value::Object(extra_data_map)),
                 ..Default::default()
               }
             })

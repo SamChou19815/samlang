@@ -10,7 +10,7 @@
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": [],
+    "types": ["vscode"],
     "module": "es2015",
     "target": "es2019",
     "outDir": "out",

@@ -15,7 +15,7 @@ use std::{
 pub struct ServerState {
   pub heap: Heap,
   enable_profiling: bool,
-  pub(super) string_sources: HashMap<ModuleReference, String>,
+  pub string_sources: HashMap<ModuleReference, String>,
   pub(super) parsed_modules: HashMap<ModuleReference, Module<()>>,
   dep_graph: DependencyGraph,
   pub(super) checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,

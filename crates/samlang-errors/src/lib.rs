@@ -796,6 +796,14 @@ impl ErrorDetail {
   }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ErrorInIDEFormat {
+  pub location: Location,
+  pub ide_error: String,
+  pub full_error: String,
+  pub reference_locs: Vec<Location>,
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CompileTimeError {
   pub location: Location,
@@ -826,14 +834,22 @@ impl CompileTimeError {
     printer.push('\n');
   }
 
-  pub fn to_ide_format(&self, heap: &Heap) -> (Location, String, Vec<Location>) {
-    let empty_sources = HashMap::new();
-    let mut printer = printer::ErrorPrinterState::new(ErrorPrinterStyle::IDE, &empty_sources);
-    let printable_error_segments = printer.print_error_detail(heap, &self.detail);
-    let printed_error = printer.consume();
+  pub fn to_ide_format(
+    &self,
+    heap: &Heap,
+    sources: &HashMap<ModuleReference, String>,
+  ) -> ErrorInIDEFormat {
+    let mut ide_printer = printer::ErrorPrinterState::new(ErrorPrinterStyle::IDE, sources);
+    let printable_error_segments = ide_printer.print_error_detail(heap, &self.detail);
+    let ide_error = ide_printer.consume();
     let reference_locs =
       printable_error_segments.into_iter().filter_map(|s| s.get_loc_reference_opt()).collect_vec();
-    (self.location, printed_error, reference_locs)
+
+    let mut full_error_printer =
+      printer::ErrorPrinterState::new(ErrorPrinterStyle::Terminal, sources);
+    ErrorSet::print_one_error_message(heap, &mut full_error_printer, self);
+    let full_error = full_error_printer.consume();
+    ErrorInIDEFormat { location: self.location, ide_error, full_error, reference_locs }
   }
 }
 
@@ -1073,6 +1089,15 @@ mod tests {
   #[test]
   fn boilterplate() {
     format!("{:?}", ErrorPrinterStyle::IDE);
+    format!(
+      "{:?}",
+      ErrorInIDEFormat {
+        location: Location::dummy(),
+        ide_error: "ide".to_string(),
+        full_error: "full".to_string(),
+        reference_locs: vec![]
+      }
+    );
     assert!(ErrorPrinterStyle::Terminal.clone() != ErrorPrinterStyle::Text);
     format!(
       "{:?}",
@@ -1127,8 +1152,19 @@ Found 1 error.
       error_set.pretty_print_error_messages_no_frame_for_test(&heap)
     );
     assert_eq!(
-      (Location::dummy(), "Cannot resolve module `DUMMY`.".to_string(), vec![]),
-      error_set.errors()[0].to_ide_format(&heap)
+      ErrorInIDEFormat {
+        location: Location::dummy(),
+        ide_error: "Cannot resolve module `DUMMY`.".to_string(),
+        full_error: r#"Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Cannot resolve module `DUMMY`.
+
+
+"#
+        .to_string(),
+        reference_locs: vec![]
+      },
+      error_set.errors()[0].to_ide_format(&heap, &HashMap::new())
     );
 
     error_set.report_cannot_resolve_name_error(

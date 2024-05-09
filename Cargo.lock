@@ -543,6 +543,7 @@ dependencies = [
  "samlang-printer",
  "samlang-profiling",
  "samlang-services",
+ "serde_json",
  "tokio",
  "tower-lsp",
 ]
