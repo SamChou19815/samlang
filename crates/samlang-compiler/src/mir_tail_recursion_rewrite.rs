@@ -158,7 +158,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
   function: Function,
 ) -> Result<Function, Function> {
   let expected_return_collector = match &function.return_value {
-    Expression::IntLiteral(_) => None,
+    Expression::Int32Literal(_) => None,
     Expression::Variable(v) => Some(v.name),
     Expression::StringName(_) => return Err(function),
   };
@@ -628,7 +628,7 @@ mod tests {
                 heap.alloc_str_for_test("nn"),
                 BinaryOperator::MINUS,
                 Expression::var_name(heap.alloc_str_for_test("n"), INT_32_TYPE),
-                Expression::int(1),
+                Expression::i32(1),
               ),
               Statement::Call {
                 callee: Callee::FunctionName(FunctionNameExpression {
@@ -643,7 +643,7 @@ mod tests {
             final_assignments: vec![(
               heap.alloc_str_for_test("nested_return"),
               INT_32_TYPE,
-              Expression::int(1),
+              Expression::i32(1),
               Expression::var_name(heap.alloc_str_for_test("r"), INT_32_TYPE),
             )],
           }],

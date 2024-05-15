@@ -19,7 +19,7 @@ fn collect_used_names_from_expression(
   expression: &Expression,
 ) {
   match expression {
-    Expression::IntLiteral(_) => {}
+    Expression::Int32Literal(_) => {}
     Expression::Variable(_, t) => collect_for_type_set(t, type_set),
     Expression::StringName(n) => {
       str_name_set.insert(*n);

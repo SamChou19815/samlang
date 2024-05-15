@@ -352,7 +352,7 @@ pub struct FunctionNameExpression {
 
 #[derive(Debug, Clone, Copy, EnumAsInner)]
 pub enum Expression {
-  IntLiteral(i32),
+  Int32Literal(i32),
   StringName(PStr),
   Variable(VariableName),
 }
@@ -360,12 +360,12 @@ pub enum Expression {
 impl Ord for Expression {
   fn cmp(&self, other: &Self) -> Ordering {
     match self {
-      Expression::IntLiteral(i1) => match other {
-        Expression::IntLiteral(i2) => i1.cmp(i2),
+      Expression::Int32Literal(i1) => match other {
+        Expression::Int32Literal(i2) => i1.cmp(i2),
         _ => Ordering::Less,
       },
       Expression::StringName(n1) => match other {
-        Expression::IntLiteral(_) => Ordering::Greater,
+        Expression::Int32Literal(_) => Ordering::Greater,
         Expression::StringName(n2) => n1.cmp(n2),
         Expression::Variable(_) => Ordering::Less,
       },
@@ -395,7 +395,7 @@ impl Hash for Expression {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     core::mem::discriminant(self).hash(state);
     match self {
-      Expression::IntLiteral(i) => i.hash(state),
+      Expression::Int32Literal(i) => i.hash(state),
       Expression::StringName(n) => n.hash(state),
       Expression::Variable(v) => v.hash(state),
     }
@@ -403,8 +403,8 @@ impl Hash for Expression {
 }
 
 impl Expression {
-  pub fn int(value: i32) -> Expression {
-    Expression::IntLiteral(value)
+  pub fn i32(value: i32) -> Expression {
+    Expression::Int32Literal(value)
   }
 
   pub fn var_name(name: PStr, type_: Type) -> Expression {
@@ -413,7 +413,7 @@ impl Expression {
 
   pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Expression::IntLiteral(i) => i.to_string(),
+      Expression::Int32Literal(i) => i.to_string(),
       Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
       Expression::Variable(v) => v.debug_print(heap, table),
     }
@@ -421,14 +421,14 @@ impl Expression {
 
   pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
-      Expression::IntLiteral(_) | Expression::StringName(_) => None,
+      Expression::Int32Literal(_) | Expression::StringName(_) => None,
       Expression::Variable(v) => Some(Callee::Variable(v)),
     }
   }
 }
 
-pub const ZERO: Expression = Expression::IntLiteral(0);
-pub const ONE: Expression = Expression::IntLiteral(1);
+pub const ZERO: Expression = Expression::Int32Literal(0);
+pub const ONE: Expression = Expression::Int32Literal(1);
 
 #[derive(Debug, Clone)]
 pub struct Binary {
@@ -543,8 +543,8 @@ impl Statement {
     e2: Expression,
   ) -> Binary {
     match (operator, &e2) {
-      (hir::BinaryOperator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
-        Binary { name, operator: hir::BinaryOperator::PLUS, e1, e2: Expression::int(-n) }
+      (hir::BinaryOperator::MINUS, Expression::Int32Literal(n)) if *n != -2147483648 => {
+        Binary { name, operator: hir::BinaryOperator::PLUS, e1, e2: Expression::i32(-n) }
       }
       _ => Binary { name, operator, e1, e2 },
     }

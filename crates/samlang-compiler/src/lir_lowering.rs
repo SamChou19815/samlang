@@ -27,7 +27,7 @@ fn unknown_member_destructor_type() -> lir::FunctionType {
 
 fn lower_expression(expr: mir::Expression) -> lir::Expression {
   match expr {
-    mir::Expression::IntLiteral(i) => lir::Expression::IntLiteral(i),
+    mir::Expression::Int32Literal(i) => lir::Expression::Int32Literal(i),
     mir::Expression::StringName(n) => lir::Expression::StringName(n),
     mir::Expression::Variable(mir::VariableName { name, type_ }) => {
       lir::Expression::Variable(name, lower_type(type_))
@@ -290,7 +290,7 @@ impl<'a> LoweringManager<'a> {
           }
           mir_expression_list.push(lowered);
         }
-        mir_expression_list.insert(0, lir::Expression::int(header));
+        mir_expression_list.insert(0, lir::Expression::int32(header));
         statements.push(lir::Statement::StructInit {
           struct_variable_name,
           type_,
@@ -340,7 +340,7 @@ impl<'a> LoweringManager<'a> {
         statements.push(lir::Statement::StructInit {
           struct_variable_name: closure_variable_name,
           type_: closure_type,
-          expression_list: vec![lir::Expression::int(header), fn_name_slot, cx_slot],
+          expression_list: vec![lir::Expression::int32(header), fn_name_slot, cx_slot],
         });
         statements
       }
@@ -396,7 +396,7 @@ fn generate_inc_ref_fn() -> lir::Function {
         tiny_int,
         hir::BinaryOperator::LT,
         lir::Expression::Variable(ptr, lir::ANY_TYPE),
-        lir::Expression::int(1024),
+        lir::Expression::int32(1024),
       ),
       lir::Statement::binary(
         is_odd,
@@ -424,7 +424,7 @@ fn generate_inc_ref_fn() -> lir::Function {
             old_ref_count,
             hir::BinaryOperator::LAND,
             lir::Expression::Variable(header, lir::INT_32_TYPE),
-            lir::Expression::int(65535),
+            lir::Expression::int32(65535),
           ),
           lir::Statement::binary(
             is_zero,
@@ -446,13 +446,13 @@ fn generate_inc_ref_fn() -> lir::Function {
                 lower,
                 hir::BinaryOperator::LAND,
                 lir::Expression::Variable(ref_count, lir::INT_32_TYPE),
-                lir::Expression::int(65535),
+                lir::Expression::int32(65535),
               ),
               lir::Statement::binary(
                 upper,
                 hir::BinaryOperator::LAND,
                 lir::Expression::Variable(header, lir::INT_32_TYPE),
-                lir::Expression::int(!65535),
+                lir::Expression::int32(!65535),
               ),
               lir::Statement::binary(
                 new_header,
@@ -502,7 +502,7 @@ fn generate_dec_ref_fn() -> lir::Function {
         tiny_int,
         hir::BinaryOperator::LT,
         lir::Expression::Variable(ptr, lir::ANY_TYPE),
-        lir::Expression::int(1024),
+        lir::Expression::int32(1024),
       ),
       lir::Statement::binary(
         is_odd,
@@ -530,7 +530,7 @@ fn generate_dec_ref_fn() -> lir::Function {
             ref_count,
             hir::BinaryOperator::LAND,
             lir::Expression::Variable(header, lir::INT_32_TYPE),
-            lir::Expression::int(65535),
+            lir::Expression::int32(65535),
           ),
           lir::Statement::binary(
             is_zero,
@@ -555,7 +555,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                     new_header,
                     hir::BinaryOperator::MINUS,
                     lir::Expression::Variable(header, lir::INT_32_TYPE),
-                    lir::Expression::int(1),
+                    lir::Expression::int32(1),
                   ),
                   lir::Statement::IndexedAssign {
                     assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
@@ -568,7 +568,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                     is_ref_bit_set,
                     hir::BinaryOperator::SHR,
                     lir::Expression::Variable(header, lir::INT_32_TYPE),
-                    lir::Expression::int(16),
+                    lir::Expression::int32(16),
                   ),
                   lir::Statement::While {
                     loop_variables: vec![
@@ -590,7 +590,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                         should_stop,
                         hir::BinaryOperator::GT,
                         lir::Expression::Variable(PStr::LOWER_I, lir::INT_32_TYPE),
-                        lir::Expression::int(16),
+                        lir::Expression::int32(16),
                       ),
                       lir::Statement::SingleIf {
                         condition: lir::Expression::Variable(should_stop, lir::INT_32_TYPE),
@@ -611,7 +611,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                             byte_offset,
                             hir::BinaryOperator::SHL,
                             lir::Expression::Variable(PStr::LOWER_I, lir::INT_32_TYPE),
-                            lir::Expression::int(2),
+                            lir::Expression::int32(2),
                           ),
                           lir::Statement::binary(
                             field_ptr,

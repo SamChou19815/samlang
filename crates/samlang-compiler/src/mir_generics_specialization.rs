@@ -124,7 +124,7 @@ impl Rewriter {
               comparison_temp,
               hir::BinaryOperator::EQ,
               mir::Expression::var_name(variable_for_tag, mir::INT_32_TYPE),
-              mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
+              mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
             let mut nested_stmts = vec![];
             // Once we pass the check, we can cast the general enum type to a
@@ -210,7 +210,7 @@ impl Rewriter {
               comparison_temp,
               hir::BinaryOperator::EQ,
               mir::Expression::var_name(casted_collector, mir::INT_32_TYPE),
-              mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
+              mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
             collector.push(mir::Statement::IfElse {
               condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
@@ -282,7 +282,7 @@ impl Rewriter {
             collector.push(mir::Statement::StructInit {
               struct_variable_name: temp,
               type_name: subtype_name,
-              expression_list: vec![mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap())]
+              expression_list: vec![mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap())]
                 .into_iter()
                 .chain(
                   associated_data_list
@@ -317,7 +317,7 @@ impl Rewriter {
             collector.push(mir::Statement::Cast {
               name: *enum_variable_name,
               type_: mir::Type::Id(enum_type),
-              assigned_expression: mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
+              assigned_expression: mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
             });
           }
         }
@@ -375,7 +375,7 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> mir::Expression {
     match expression {
-      hir::Expression::IntLiteral(i) => mir::Expression::IntLiteral(*i),
+      hir::Expression::IntLiteral(i) => mir::Expression::Int32Literal(*i),
       hir::Expression::StringName(s) => {
         self.used_string_names.insert(*s);
         mir::Expression::StringName(*s)

@@ -10,7 +10,7 @@ use std::collections::HashMap;
 enum ParamUsageAnalysisState {
   Unused,
   Referenced,
-  IntConstant(i32),
+  Int32Constant(i32),
   StrConstant(PStr),
   Unoptimizable,
 }
@@ -201,7 +201,7 @@ fn collect_global_usages_stmt(
           param_states[i] = meet_param_state(
             param_states[i],
             match arg {
-              Expression::IntLiteral(n) => ParamUsageAnalysisState::IntConstant(*n),
+              Expression::Int32Literal(n) => ParamUsageAnalysisState::Int32Constant(*n),
               Expression::StringName(p) => ParamUsageAnalysisState::StrConstant(*p),
               Expression::Variable(_) => ParamUsageAnalysisState::Unoptimizable,
             },
@@ -247,10 +247,10 @@ struct RewriteState<'a> {
 
 fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
   match &expr {
-    Expression::IntLiteral(_) | Expression::StringName(_) => {}
+    Expression::Int32Literal(_) | Expression::StringName(_) => {}
     Expression::Variable(v) => match state.local_rewrite.get(&v.name) {
       None => {}
-      Some(VariableRewriteInstruction::IntConstant(n)) => *expr = Expression::IntLiteral(*n),
+      Some(VariableRewriteInstruction::IntConstant(n)) => *expr = Expression::Int32Literal(*n),
       Some(VariableRewriteInstruction::StrConstant(s)) => *expr = Expression::StringName(*s),
     },
   }
@@ -372,7 +372,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
         let state = param_states[current_index];
         current_index += 1;
         match state {
-          ParamUsageAnalysisState::IntConstant(i) => {
+          ParamUsageAnalysisState::Int32Constant(i) => {
             local_rewrite.insert(*name, VariableRewriteInstruction::IntConstant(i));
             false
           }
@@ -416,9 +416,9 @@ mod tests {
   fn boilerplate() {
     format!("{:?}", super::ParamUsageAnalysisState::Unoptimizable.clone());
     assert_eq!(
-      super::ParamUsageAnalysisState::IntConstant(1),
+      super::ParamUsageAnalysisState::Int32Constant(1),
       super::meet_param_state(
-        super::ParamUsageAnalysisState::IntConstant(1),
+        super::ParamUsageAnalysisState::Int32Constant(1),
         super::ParamUsageAnalysisState::Referenced,
       ),
     );
@@ -529,8 +529,8 @@ mod tests {
               // e: recursive param used
               arguments: vec![
                 ZERO,
-                Expression::int(1),
-                Expression::int(2),
+                Expression::i32(1),
+                Expression::i32(2),
                 Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
                 Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
               ],
@@ -553,8 +553,8 @@ mod tests {
               }),
               arguments: vec![
                 ZERO,
-                Expression::int(3),
-                Expression::int(3),
+                Expression::i32(3),
+                Expression::i32(3),
                 Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
                 Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
               ],

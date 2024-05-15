@@ -25,7 +25,7 @@ fn collect_used_names_from_expression(
   expression: &Expression,
 ) {
   match expression {
-    Expression::IntLiteral(_) => {}
+    Expression::Int32Literal(_) => {}
     Expression::Variable(v) => {
       collect_for_type_set(&v.type_, type_set);
     }
