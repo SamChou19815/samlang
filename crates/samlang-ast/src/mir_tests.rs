@@ -15,7 +15,7 @@ mod tests {
     format!("{:?}", INT_32_TYPE.cmp(&INT_32_TYPE));
     assert!(INT_31_TYPE <= INT_31_TYPE);
     format!("{:?}", INT_31_TYPE.cmp(&INT_31_TYPE));
-    assert!(ZERO.as_int_literal().is_some());
+    assert!(ZERO.as_int32_literal().is_some());
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).as_id();
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int32();
     assert!(INT_32_TYPE.is_int32());
@@ -244,7 +244,7 @@ mod tests {
           heap.alloc_str_for_test("dd"),
           BinaryOperator::MINUS,
           ZERO,
-          Expression::int(-2147483648),
+          Expression::i32(-2147483648),
         ),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MUL, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::DIV, ZERO, ZERO),

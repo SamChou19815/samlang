@@ -63,7 +63,7 @@ pub(super) fn optimize(
 ) -> Option<Vec<Statement>> {
   let BasicInductionVariableWithLoopGuard {
     name: basic_induction_variable_with_loop_guard_name,
-    initial_value: Expression::IntLiteral(initial_guard_value),
+    initial_value: Expression::Int32Literal(initial_guard_value),
     increment_amount: PotentialLoopInvariantExpression::Int(guard_increment_amount),
     guard_operator,
     guard_expression: PotentialLoopInvariantExpression::Int(guarded_value),
@@ -92,7 +92,7 @@ pub(super) fn optimize(
         return Some(vec![Statement::Binary(Binary {
           name: *n,
           operator: BinaryOperator::PLUS,
-          e1: Expression::int(basic_induction_variable_with_loop_guard_final_value),
+          e1: Expression::i32(basic_induction_variable_with_loop_guard_final_value),
           e2: ZERO,
         })]);
       }
@@ -123,7 +123,7 @@ pub(super) fn optimize(
         increment_temporary,
         BinaryOperator::MUL,
         relevant_general_induction_variable.increment_amount.to_expression(),
-        Expression::int(num_of_loop_iterations),
+        Expression::i32(num_of_loop_iterations),
       )),
       Statement::Binary(Statement::binary_flexible_unwrapped(
         *break_collector.0,
@@ -334,7 +334,7 @@ mod tests {
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
-          initial_value: Expression::int(5),
+          initial_value: Expression::i32(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
@@ -343,7 +343,7 @@ mod tests {
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
         statements: vec![],
-        break_collector: Some((heap.alloc_str_for_test("bc"), INT_32_TYPE, Expression::int(3))),
+        break_collector: Some((heap.alloc_str_for_test("bc"), INT_32_TYPE, Expression::i32(3))),
       },
       heap,
       "let bc = 3 + 0;",
@@ -353,7 +353,7 @@ mod tests {
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
-          initial_value: Expression::int(5),
+          initial_value: Expression::i32(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
@@ -376,7 +376,7 @@ mod tests {
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
-          initial_value: Expression::int(5),
+          initial_value: Expression::i32(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
@@ -406,7 +406,7 @@ mod tests {
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
-          initial_value: Expression::int(5),
+          initial_value: Expression::i32(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),

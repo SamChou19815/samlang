@@ -17,7 +17,7 @@ pub(super) enum PotentialLoopInvariantExpression {
 impl PotentialLoopInvariantExpression {
   pub(super) fn to_expression(&self) -> Expression {
     match self {
-      PotentialLoopInvariantExpression::Int(i) => Expression::IntLiteral(*i),
+      PotentialLoopInvariantExpression::Int(i) => Expression::Int32Literal(*i),
       PotentialLoopInvariantExpression::Var(n) => Expression::Variable(*n),
     }
   }
@@ -322,7 +322,7 @@ fn get_loop_invariant_expression_opt(
   non_loop_invariant_variables: &HashSet<PStr>,
 ) -> Option<PotentialLoopInvariantExpression> {
   match expression {
-    Expression::IntLiteral(i) => Some(PotentialLoopInvariantExpression::Int(*i)),
+    Expression::Int32Literal(i) => Some(PotentialLoopInvariantExpression::Int(*i)),
     // We are doing algebraic operations here. Name is hopeless.
     Expression::StringName(_) => None,
     Expression::Variable(v) => {
@@ -899,7 +899,7 @@ mod tests {
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-          Expression::int(3),
+          Expression::i32(3),
         ),
       ],
       &HashSet::from([
@@ -962,19 +962,19 @@ mod tests {
             heap.alloc_str_for_test("tmp_j"),
             BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-            Expression::int(3),
+            Expression::i32(3),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_x"),
             BinaryOperator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-            Expression::int(5),
+            Expression::i32(5),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_y"),
             BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_32_TYPE),
-            Expression::int(6),
+            Expression::i32(6),
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
@@ -1241,7 +1241,7 @@ mod tests {
           heap.alloc_str_for_test("tmp_j"),
           BinaryOperator::MUL,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-          Expression::int(2)
+          Expression::i32(2)
         )
       ],
       &HashSet::from([
@@ -1305,7 +1305,7 @@ mod tests {
           heap.alloc_str_for_test("tmp_i"),
           BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          Expression::int(2)
+          Expression::i32(2)
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
@@ -1905,19 +1905,19 @@ mod tests {
             heap.alloc_str_for_test("tmp_j"),
             BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-            Expression::int(3),
+            Expression::i32(3),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_x"),
             BinaryOperator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-            Expression::int(5),
+            Expression::i32(5),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_y"),
             BinaryOperator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_32_TYPE),
-            Expression::int(6),
+            Expression::i32(6),
           ),
         ],
         Some(VariableName { name: heap.alloc_str_for_test("bc"), type_: INT_32_TYPE }),

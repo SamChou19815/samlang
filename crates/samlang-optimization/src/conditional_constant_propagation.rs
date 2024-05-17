@@ -114,7 +114,7 @@ fn optimize_variable_name(
 
 fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression) -> Expression {
   match e {
-    Expression::IntLiteral(_) | Expression::StringName(_) => *e,
+    Expression::Int32Literal(_) | Expression::StringName(_) => *e,
     Expression::Variable(v) => optimize_variable_name(value_cx, v),
   }
 }
@@ -164,8 +164,8 @@ fn optimize_stmt(
   match stmt {
     Statement::Unary { name, operator: UnaryOperator::Not, operand } => {
       let operand = optimize_expr(value_cx, operand);
-      if let Expression::IntLiteral(v) = operand {
-        value_cx.checked_bind(*name, Expression::IntLiteral(v ^ 1));
+      if let Expression::Int32Literal(v) = operand {
+        value_cx.checked_bind(*name, Expression::Int32Literal(v ^ 1));
       } else {
         collector.push(Statement::Unary { name: *name, operator: UnaryOperator::Not, operand });
       }
@@ -183,7 +183,7 @@ fn optimize_stmt(
       let e1 = optimize_expr(value_cx, e1);
       let e2 = optimize_expr(value_cx, e2);
       let operator = *operator;
-      if let Expression::IntLiteral(v2) = &e2 {
+      if let Expression::Int32Literal(v2) = &e2 {
         if *v2 == 0 {
           if operator == BinaryOperator::PLUS {
             value_cx.checked_bind(*name, e1);
@@ -204,9 +204,9 @@ fn optimize_stmt(
             return false;
           }
         }
-        if let Expression::IntLiteral(v1) = &e1 {
+        if let Expression::Int32Literal(v1) = &e1 {
           if let Some(value) = evaluate_bin_op(operator, *v1, *v2) {
-            value_cx.checked_bind(*name, Expression::IntLiteral(value));
+            value_cx.checked_bind(*name, Expression::Int32Literal(value));
             return false;
           }
         }
@@ -230,7 +230,7 @@ fn optimize_stmt(
         name,
         operator,
         e1: Expression::Variable(v1),
-        e2: Expression::IntLiteral(v2),
+        e2: Expression::Int32Literal(v2),
       } = &partially_optimized_binary
       {
         if let Some(existing_b1) = binary_expr_cx.get(&v1.name) {
@@ -241,7 +241,7 @@ fn optimize_stmt(
               name: *name,
               operator,
               e1: Expression::Variable(e1),
-              e2: Expression::IntLiteral(e2),
+              e2: Expression::Int32Literal(e2),
             }));
             return false;
           }
@@ -285,7 +285,7 @@ fn optimize_stmt(
 
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let condition = optimize_expr(value_cx, condition);
-      if let Expression::IntLiteral(v) = &condition {
+      if let Expression::Int32Literal(v) = &condition {
         let is_true = (*v) != 0;
         let ends_with_break = optimize_stmts(
           if is_true { s1 } else { s2 },
@@ -308,11 +308,11 @@ fn optimize_stmt(
       if s1.is_empty() && s2.is_empty() && final_assignments.len() == 1 {
         let (n, _, e1, e2) = &final_assignments[0];
         match (e1, e2) {
-          (Expression::IntLiteral(1), Expression::IntLiteral(0)) => {
+          (Expression::Int32Literal(1), Expression::Int32Literal(0)) => {
             value_cx.checked_bind(*n, condition);
             return false;
           }
-          (Expression::IntLiteral(0), Expression::IntLiteral(1)) => {
+          (Expression::Int32Literal(0), Expression::Int32Literal(1)) => {
             collector.push(Statement::binary(*n, BinaryOperator::XOR, condition, ONE));
             return false;
           }
@@ -351,7 +351,7 @@ fn optimize_stmt(
 
     Statement::SingleIf { condition, invert_condition, statements } => {
       let condition = optimize_expr(value_cx, condition);
-      if let Expression::IntLiteral(v) = &condition {
+      if let Expression::Int32Literal(v) = &condition {
         let is_true = (*v ^ (*invert_condition as i32)) != 0;
         if is_true {
           optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx, collector)

@@ -58,13 +58,13 @@ mod tests {
           heap.alloc_str_for_test("b0"),
           BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("i0"), INT_32_TYPE),
-          Expression::int(3),
+          Expression::i32(3),
         ),
         Statement::binary(
           heap.alloc_str_for_test("b1"),
           BinaryOperator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("i0"), INT_32_TYPE),
-          Expression::int(3),
+          Expression::i32(3),
         ),
         Statement::binary(
           heap.alloc_str_for_test("b3"),
@@ -274,7 +274,7 @@ return 0;"#,
         loop_variables: vec![GenenalLoopVariable {
           name: heap.alloc_str_for_test("n"),
           type_: INT_32_TYPE,
-          initial_value: Expression::int(10),
+          initial_value: Expression::i32(10),
           loop_value: Expression::var_name(heap.alloc_str_for_test("_tmp_n"), INT_32_TYPE),
         }],
         statements: vec![
@@ -341,7 +341,7 @@ return 0;"#,
         loop_variables: vec![GenenalLoopVariable {
           name: heap.alloc_str_for_test("n"),
           type_: INT_32_TYPE,
-          initial_value: Expression::int(10),
+          initial_value: Expression::i32(10),
           loop_value: Expression::var_name(heap.alloc_str_for_test("_tmp_n"), INT_32_TYPE),
         }],
         statements: vec![

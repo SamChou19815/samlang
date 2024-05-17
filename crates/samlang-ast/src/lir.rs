@@ -99,20 +99,20 @@ pub const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum Expression {
-  IntLiteral(i32),
+  Int32Literal(i32),
   StringName(PStr),
   Variable(PStr, Type),
   FnName(FunctionName, Type),
 }
 
 impl Expression {
-  pub fn int(value: i32) -> Expression {
-    Expression::IntLiteral(value)
+  pub fn int32(value: i32) -> Expression {
+    Expression::Int32Literal(value)
   }
 
   pub fn ref_countable(&self) -> bool {
     match self {
-      Expression::IntLiteral(_) | Expression::FnName(_, _) => false,
+      Expression::Int32Literal(_) | Expression::FnName(_, _) => false,
       Expression::StringName(_) => true,
       Expression::Variable(_, t) => t.as_id().is_some(),
     }
@@ -126,7 +126,7 @@ impl Expression {
     str_table: &HashMap<PStr, usize>,
   ) {
     match self {
-      Expression::IntLiteral(i) => collector.push_str(&i.to_string()),
+      Expression::Int32Literal(i) => collector.push_str(&i.to_string()),
       Expression::Variable(n, _) => collector.push_str(n.as_str(heap)),
       Expression::StringName(n) => {
         collector.push_str("GLOBAL_STRING_");
@@ -137,8 +137,8 @@ impl Expression {
   }
 }
 
-pub const ZERO: Expression = Expression::IntLiteral(0);
-pub const ONE: Expression = Expression::IntLiteral(1);
+pub const ZERO: Expression = Expression::Int32Literal(0);
+pub const ONE: Expression = Expression::Int32Literal(1);
 
 pub struct GenenalLoopVariable {
   pub name: PStr,
@@ -216,8 +216,8 @@ pub enum Statement {
 impl Statement {
   pub fn binary(name: PStr, operator: BinaryOperator, e1: Expression, e2: Expression) -> Statement {
     match (operator, &e2) {
-      (BinaryOperator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
-        Statement::Binary { name, operator: BinaryOperator::PLUS, e1, e2: Expression::int(-n) }
+      (BinaryOperator::MINUS, Expression::Int32Literal(n)) if *n != -2147483648 => {
+        Statement::Binary { name, operator: BinaryOperator::PLUS, e1, e2: Expression::int32(-n) }
       }
       _ => Statement::Binary { name, operator, e1, e2 },
     }
