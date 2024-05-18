@@ -28,6 +28,7 @@ fn unknown_member_destructor_type() -> lir::FunctionType {
 fn lower_expression(expr: mir::Expression) -> lir::Expression {
   match expr {
     mir::Expression::Int32Literal(i) => lir::Expression::Int32Literal(i),
+    mir::Expression::Int31Literal(i) => lir::Expression::Int31Literal(i),
     mir::Expression::StringName(n) => lir::Expression::StringName(n),
     mir::Expression::Variable(mir::VariableName { name, type_ }) => {
       lir::Expression::Variable(name, lower_type(type_))
@@ -430,7 +431,7 @@ fn generate_inc_ref_fn() -> lir::Function {
             is_zero,
             hir::BinaryOperator::EQ,
             lir::Expression::Variable(old_ref_count, lir::INT_32_TYPE),
-            lir::ZERO,
+            lir::Expression::Int31Literal(0),
           ),
           lir::Statement::SingleIf {
             condition: lir::Expression::Variable(is_zero, lir::INT_32_TYPE),
@@ -839,7 +840,7 @@ mod tests {
                 heap.alloc_str_for_test("cc"),
                 closure_type.clone(),
               )),
-              arguments: vec![ZERO],
+              arguments: vec![Expression::Int31Literal(0)],
               return_type: INT_32_TYPE,
               return_collector: None,
             },

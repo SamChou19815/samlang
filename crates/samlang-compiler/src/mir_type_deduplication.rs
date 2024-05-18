@@ -47,7 +47,7 @@ fn rewrite_fn_name(
 
 fn rewrite_expr(state: &State, expr: Expression) -> Expression {
   match expr {
-    Expression::Int32Literal(_) | Expression::StringName(_) => expr,
+    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => expr,
     Expression::Variable(n) => Expression::Variable(rewrite_var_name(state, n)),
   }
 }

@@ -353,6 +353,7 @@ pub struct FunctionNameExpression {
 #[derive(Debug, Clone, Copy, EnumAsInner)]
 pub enum Expression {
   Int32Literal(i32),
+  Int31Literal(i32),
   StringName(PStr),
   Variable(VariableName),
 }
@@ -364,8 +365,13 @@ impl Ord for Expression {
         Expression::Int32Literal(i2) => i1.cmp(i2),
         _ => Ordering::Less,
       },
-      Expression::StringName(n1) => match other {
+      Expression::Int31Literal(i1) => match other {
         Expression::Int32Literal(_) => Ordering::Greater,
+        Expression::Int31Literal(i2) => i1.cmp(i2),
+        _ => Ordering::Less,
+      },
+      Expression::StringName(n1) => match other {
+        Expression::Int32Literal(_) | Expression::Int31Literal(_) => Ordering::Greater,
         Expression::StringName(n2) => n1.cmp(n2),
         Expression::Variable(_) => Ordering::Less,
       },
@@ -395,7 +401,7 @@ impl Hash for Expression {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     core::mem::discriminant(self).hash(state);
     match self {
-      Expression::Int32Literal(i) => i.hash(state),
+      Expression::Int32Literal(i) | Expression::Int31Literal(i) => i.hash(state),
       Expression::StringName(n) => n.hash(state),
       Expression::Variable(v) => v.hash(state),
     }
@@ -413,7 +419,7 @@ impl Expression {
 
   pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Expression::Int32Literal(i) => i.to_string(),
+      Expression::Int32Literal(i) | Expression::Int31Literal(i) => i.to_string(),
       Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
       Expression::Variable(v) => v.debug_print(heap, table),
     }
@@ -421,7 +427,7 @@ impl Expression {
 
   pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
-      Expression::Int32Literal(_) | Expression::StringName(_) => None,
+      Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => None,
       Expression::Variable(v) => Some(Callee::Variable(v)),
     }
   }

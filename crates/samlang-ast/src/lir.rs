@@ -100,6 +100,7 @@ pub const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum Expression {
   Int32Literal(i32),
+  Int31Literal(i32),
   StringName(PStr),
   Variable(PStr, Type),
   FnName(FunctionName, Type),
@@ -112,7 +113,7 @@ impl Expression {
 
   pub fn ref_countable(&self) -> bool {
     match self {
-      Expression::Int32Literal(_) | Expression::FnName(_, _) => false,
+      Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::FnName(_, _) => false,
       Expression::StringName(_) => true,
       Expression::Variable(_, t) => t.as_id().is_some(),
     }
@@ -126,7 +127,9 @@ impl Expression {
     str_table: &HashMap<PStr, usize>,
   ) {
     match self {
-      Expression::Int32Literal(i) => collector.push_str(&i.to_string()),
+      Expression::Int32Literal(i) | Expression::Int31Literal(i) => {
+        collector.push_str(&i.to_string())
+      }
       Expression::Variable(n, _) => collector.push_str(n.as_str(heap)),
       Expression::StringName(n) => {
         collector.push_str("GLOBAL_STRING_");

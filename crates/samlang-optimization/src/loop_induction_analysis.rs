@@ -323,6 +323,9 @@ fn get_loop_invariant_expression_opt(
 ) -> Option<PotentialLoopInvariantExpression> {
   match expression {
     Expression::Int32Literal(i) => Some(PotentialLoopInvariantExpression::Int(*i)),
+    // i31 currently represents the optimized form of variants.
+    // We should just treat it as opaque, and shouldn't do anything funny with it.
+    Expression::Int31Literal(_) |
     // We are doing algebraic operations here. Name is hopeless.
     Expression::StringName(_) => None,
     Expression::Variable(v) => {
