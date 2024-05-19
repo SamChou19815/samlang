@@ -172,7 +172,7 @@ mod tests {
                 heap.alloc_str_for_test("dd"),
                 BinaryOperator::MINUS,
                 ZERO,
-                Expression::int32(-2147483648),
+                Expression::Int31Literal(-2147483648),
               ),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MUL, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::DIV, ZERO, ZERO),

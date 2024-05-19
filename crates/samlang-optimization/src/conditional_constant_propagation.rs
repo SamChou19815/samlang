@@ -114,7 +114,7 @@ fn optimize_variable_name(
 
 fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression) -> Expression {
   match e {
-    Expression::Int32Literal(_) | Expression::StringName(_) => *e,
+    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => *e,
     Expression::Variable(v) => optimize_variable_name(value_cx, v),
   }
 }

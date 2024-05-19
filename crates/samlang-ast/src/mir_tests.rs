@@ -15,9 +15,14 @@ mod tests {
     format!("{:?}", INT_32_TYPE.cmp(&INT_32_TYPE));
     assert!(INT_31_TYPE <= INT_31_TYPE);
     format!("{:?}", INT_31_TYPE.cmp(&INT_31_TYPE));
+    assert!(Expression::i32(100) <= Expression::Int31Literal(1));
+    assert!(Expression::Int31Literal(1) >= Expression::i32(100));
+    assert!(Expression::Int31Literal(1) <= Expression::Int31Literal(2));
+    assert!(Expression::Int31Literal(1) <= Expression::StringName(PStr::EMPTY));
     assert!(ZERO.as_int32_literal().is_some());
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).as_id();
     Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int32();
+    Type::Id(table.create_type_name_for_test(PStr::UPPER_A)).is_int31();
     assert!(INT_32_TYPE.is_int32());
     assert!(INT_32_TYPE.as_id().is_none());
     assert!(INT_31_TYPE.is_int31());
@@ -82,6 +87,7 @@ mod tests {
     );
     let mut hasher = DefaultHasher::new();
     ZERO.hash(&mut hasher);
+    Expression::Int31Literal(1).hash(&mut hasher);
     Expression::StringName(PStr::LOWER_A).hash(&mut hasher);
     Expression::var_name(PStr::LOWER_A, INT_32_TYPE).hash(&mut hasher);
     Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
@@ -244,7 +250,7 @@ mod tests {
           heap.alloc_str_for_test("dd"),
           BinaryOperator::MINUS,
           ZERO,
-          Expression::i32(-2147483648),
+          Expression::Int31Literal(-2147483648),
         ),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MUL, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::DIV, ZERO, ZERO),

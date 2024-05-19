@@ -158,7 +158,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
   function: Function,
 ) -> Result<Function, Function> {
   let expected_return_collector = match &function.return_value {
-    Expression::Int32Literal(_) => None,
+    Expression::Int32Literal(_) | Expression::Int31Literal(_) => None,
     Expression::Variable(v) => Some(v.name),
     Expression::StringName(_) => return Err(function),
   };

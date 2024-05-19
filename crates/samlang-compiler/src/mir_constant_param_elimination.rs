@@ -11,6 +11,7 @@ enum ParamUsageAnalysisState {
   Unused,
   Referenced,
   Int32Constant(i32),
+  Int31Constant(i32),
   StrConstant(PStr),
   Unoptimizable,
 }
@@ -202,6 +203,7 @@ fn collect_global_usages_stmt(
             param_states[i],
             match arg {
               Expression::Int32Literal(n) => ParamUsageAnalysisState::Int32Constant(*n),
+              Expression::Int31Literal(n) => ParamUsageAnalysisState::Int31Constant(*n),
               Expression::StringName(p) => ParamUsageAnalysisState::StrConstant(*p),
               Expression::Variable(_) => ParamUsageAnalysisState::Unoptimizable,
             },
@@ -236,7 +238,8 @@ fn collect_all_usages(sources: &Sources) -> HashMap<FunctionName, FunctionAnalys
 }
 
 enum VariableRewriteInstruction {
-  IntConstant(i32),
+  Int32(i32),
+  Int31(i32),
   StrConstant(PStr),
 }
 
@@ -247,10 +250,11 @@ struct RewriteState<'a> {
 
 fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
   match &expr {
-    Expression::Int32Literal(_) | Expression::StringName(_) => {}
+    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => {}
     Expression::Variable(v) => match state.local_rewrite.get(&v.name) {
       None => {}
-      Some(VariableRewriteInstruction::IntConstant(n)) => *expr = Expression::Int32Literal(*n),
+      Some(VariableRewriteInstruction::Int32(n)) => *expr = Expression::Int32Literal(*n),
+      Some(VariableRewriteInstruction::Int31(n)) => *expr = Expression::Int31Literal(*n),
       Some(VariableRewriteInstruction::StrConstant(s)) => *expr = Expression::StringName(*s),
     },
   }
@@ -373,7 +377,11 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
         current_index += 1;
         match state {
           ParamUsageAnalysisState::Int32Constant(i) => {
-            local_rewrite.insert(*name, VariableRewriteInstruction::IntConstant(i));
+            local_rewrite.insert(*name, VariableRewriteInstruction::Int32(i));
+            false
+          }
+          ParamUsageAnalysisState::Int31Constant(i) => {
+            local_rewrite.insert(*name, VariableRewriteInstruction::Int31(i));
             false
           }
           ParamUsageAnalysisState::StrConstant(s) => {
@@ -464,6 +472,7 @@ mod tests {
             PStr::LOWER_C,
             PStr::LOWER_D,
             PStr::LOWER_E,
+            PStr::LOWER_F,
           ],
           type_: FunctionType {
             argument_types: vec![
@@ -472,6 +481,7 @@ mod tests {
               Type::Id(table.create_type_name_for_test(PStr::UPPER_C)),
               Type::Id(table.create_type_name_for_test(PStr::UPPER_D)),
               Type::Id(table.create_type_name_for_test(PStr::UPPER_E)),
+              Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
             ],
             return_type: Box::new(INT_32_TYPE),
           },
@@ -481,6 +491,12 @@ mod tests {
               operator: UnaryOperator::Not,
               operand: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
             },
+            Statement::binary(
+              dummy_name,
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
+              Expression::var_name(PStr::LOWER_C, INT_32_TYPE),
+            ),
             Statement::binary(
               dummy_name,
               BinaryOperator::PLUS,
@@ -518,6 +534,7 @@ mod tests {
                     INT_32_TYPE,
                     INT_32_TYPE,
                     INT_32_TYPE,
+                    INT_32_TYPE,
                   ],
                   return_type: Box::new(INT_32_TYPE),
                 },
@@ -529,10 +546,11 @@ mod tests {
               // e: recursive param used
               arguments: vec![
                 ZERO,
+                Expression::Int31Literal(0),
                 Expression::i32(1),
                 Expression::i32(2),
-                Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
                 Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
+                Expression::var_name(PStr::LOWER_F, INT_32_TYPE),
               ],
               return_type: INT_32_TYPE,
               return_collector: None,
@@ -547,16 +565,18 @@ mod tests {
                     INT_32_TYPE,
                     INT_32_TYPE,
                     INT_32_TYPE,
+                    INT_32_TYPE,
                   ],
                   return_type: Box::new(INT_32_TYPE),
                 },
               }),
               arguments: vec![
                 ZERO,
+                Expression::Int31Literal(0),
                 Expression::i32(3),
                 Expression::i32(3),
-                Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
                 Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
+                Expression::var_name(PStr::LOWER_F, INT_32_TYPE),
               ],
               return_type: INT_32_TYPE,
               return_collector: None,
@@ -636,9 +656,10 @@ function __$str_const(): int {
   return 0;
 }
 
-function __$func_with_consts(b: _B, e: _E): int {
+function __$func_with_consts(c: _C, e: _E): int {
   let _ = !0;
-  let _ = 0 + (b: int);
+  let _ = 0 + (c: int);
+  let _ = 0 + 0;
   let _: int = 0[0];
   let _: __ = Closure { fun: (__$otherwise_optimizable: () -> int), context: 0 };
   (_: int)(0);
