@@ -27,7 +27,7 @@ export default function EditorCodeBlock({
       options={{
         ...monacoEditorOptions,
         readOnly: path == null,
-        renderFinalNewline: false,
+        renderFinalNewline: 'off',
         scrollbar: { vertical: 'hidden', verticalScrollbarSize: 0, handleMouseWheel: false },
         dimension: { width: 0, height },
       }}
