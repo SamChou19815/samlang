@@ -143,9 +143,9 @@ pub mod annotation {
     }
   }
 
-  impl ToString for PrimitiveTypeKind {
-    fn to_string(&self) -> String {
-      self.kind_str().to_string()
+  impl std::fmt::Display for PrimitiveTypeKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(f, "{}", self.kind_str())
     }
   }
 
@@ -446,9 +446,9 @@ pub mod expr {
     }
   }
 
-  impl ToString for UnaryOperator {
-    fn to_string(&self) -> String {
-      self.kind_str().to_string()
+  impl std::fmt::Display for UnaryOperator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(f, "{}", self.kind_str())
     }
   }
 
@@ -505,9 +505,9 @@ pub mod expr {
     }
   }
 
-  impl ToString for BinaryOperator {
-    fn to_string(&self) -> String {
-      self.kind_str().to_string()
+  impl std::fmt::Display for BinaryOperator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(f, "{}", self.kind_str())
     }
   }
 

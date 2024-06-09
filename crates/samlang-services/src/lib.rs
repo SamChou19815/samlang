@@ -122,9 +122,9 @@ pub mod query {
     pub value: String,
   }
 
-  impl ToString for TypeQueryContent {
-    fn to_string(&self) -> String {
-      format!("{} [lang={}]", self.value, self.language)
+  impl std::fmt::Display for TypeQueryContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(f, "{} [lang={}]", self.value, self.language)
     }
   }
 
@@ -139,9 +139,10 @@ pub mod query {
     pub active_parameter: usize,
   }
 
-  impl ToString for SignatureHelpResult {
-    fn to_string(&self) -> String {
-      format!(
+  impl std::fmt::Display for SignatureHelpResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(
+        f,
         "{} [params={}, active={}]",
         self.label,
         self.parameters.join(","),
@@ -598,9 +599,9 @@ pub mod completion {
     pub additional_edits: Vec<(Location, String)>,
   }
 
-  impl ToString for AutoCompletionItem {
-    fn to_string(&self) -> String {
-      format!("{} [kind={:?}, detail={}]", self.label, self.kind, self.detail)
+  impl std::fmt::Display for AutoCompletionItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(f, "{} [kind={:?}, detail={}]", self.label, self.kind, self.detail)
     }
   }
 

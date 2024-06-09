@@ -14,12 +14,12 @@ pub enum PrimitiveTypeKind {
   Int,
 }
 
-impl ToString for PrimitiveTypeKind {
-  fn to_string(&self) -> String {
+impl std::fmt::Display for PrimitiveTypeKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Self::Unit => "unit".to_string(),
-      Self::Bool => "bool".to_string(),
-      Self::Int => "int".to_string(),
+      Self::Unit => write!(f, "unit"),
+      Self::Bool => write!(f, "bool"),
+      Self::Int => write!(f, "int"),
     }
   }
 }
