@@ -39,7 +39,7 @@ fn collect_used_names_from_statement(
   statement: &Statement,
 ) {
   match statement {
-    Statement::Unary { name: _, operator: _, operand } => {
+    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, operand);
     }
     Statement::Binary { name: _, operator: _, e1, e2 } => {
@@ -305,11 +305,7 @@ mod tests {
               return_type: INT_32_TYPE,
               return_collector: None,
             },
-            Statement::Unary {
-              name: PStr::LOWER_A,
-              operator: hir::UnaryOperator::Not,
-              operand: ZERO,
-            },
+            Statement::Not { name: PStr::LOWER_A, operand: ZERO },
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(

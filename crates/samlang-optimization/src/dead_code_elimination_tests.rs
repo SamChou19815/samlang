@@ -4,7 +4,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, UnaryOperator},
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
@@ -14,12 +14,23 @@ mod tests {
   use std::collections::HashSet;
 
   #[test]
-  fn used_test() {
+  fn used_test_1() {
     let heap = &mut Heap::new();
     dead_code_elimination::collect_use_from_stmts(
-      &[Statement::Unary {
+      &[Statement::Not {
         name: heap.alloc_str_for_test("uu"),
-        operator: UnaryOperator::Not,
+        operand: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
+      }],
+      &mut HashSet::new(),
+    );
+  }
+
+  #[test]
+  fn used_test_2() {
+    let heap = &mut Heap::new();
+    dead_code_elimination::collect_use_from_stmts(
+      &[Statement::IsPointer {
+        name: heap.alloc_str_for_test("uu"),
         operand: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
       }],
       &mut HashSet::new(),
@@ -123,16 +134,8 @@ return (ii: int);"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::Unary {
-          name: heap.alloc_str_for_test("u0_unused"),
-          operator: UnaryOperator::Not,
-          operand: ONE,
-        },
-        Statement::Unary {
-          name: heap.alloc_str_for_test("u0"),
-          operator: UnaryOperator::Not,
-          operand: ONE,
-        },
+        Statement::Not { name: heap.alloc_str_for_test("u0_unused"), operand: ONE },
+        Statement::IsPointer { name: heap.alloc_str_for_test("u0"), operand: ONE },
         Statement::binary(
           heap.alloc_str_for_test("u1"),
           BinaryOperator::DIV,
@@ -210,7 +213,7 @@ return (ii: int);"#,
       ZERO,
       heap,
       table,
-      r#"let u0 = !1;
+      r#"let u0 = is_pointer(1);
 let u1 = (u0: int) / 1;
 let u2 = 0 % 1;
 let p = 0 + 1;

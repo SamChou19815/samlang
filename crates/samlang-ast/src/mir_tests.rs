@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-  use super::super::hir::{BinaryOperator, GlobalString, UnaryOperator};
+  use super::super::hir::{BinaryOperator, GlobalString};
   use super::super::mir::*;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
@@ -234,16 +234,8 @@ mod tests {
         },
       ],
       s2: vec![
-        Statement::Unary {
-          name: heap.alloc_str_for_test("dd"),
-          operator: UnaryOperator::Not,
-          operand: ZERO,
-        },
-        Statement::Unary {
-          name: heap.alloc_str_for_test("dd"),
-          operator: UnaryOperator::IsPointer,
-          operand: ZERO,
-        },
+        Statement::Not { name: heap.alloc_str_for_test("dd"), operand: ZERO },
+        Statement::IsPointer { name: heap.alloc_str_for_test("dd"), operand: ZERO },
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::PLUS, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
         Statement::binary(

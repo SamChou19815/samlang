@@ -317,11 +317,9 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.lower(&expression.argument);
     let value_name = self.allocate_temp_variable();
     statements.push(match expression.operator {
-      source::expr::UnaryOperator::NOT => hir::Statement::Unary {
-        name: value_name,
-        operator: hir::UnaryOperator::Not,
-        operand: result_expr,
-      },
+      source::expr::UnaryOperator::NOT => {
+        hir::Statement::Not { name: value_name, operand: result_expr }
+      }
       source::expr::UnaryOperator::NEG => hir::Statement::Binary {
         name: value_name,
         operator: hir::BinaryOperator::MINUS,

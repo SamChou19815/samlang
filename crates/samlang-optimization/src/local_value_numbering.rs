@@ -1,6 +1,4 @@
-use super::optimization_common::{
-  BinaryBindedValue, BindedValue, IndexAccessBindedValue, UnaryBindedValue,
-};
+use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use samlang_ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
@@ -38,9 +36,20 @@ fn optimize_stmt(
   binded_value_cx: &mut LocalBindedValueContext,
 ) -> bool {
   match stmt {
-    Statement::Unary { name, operator, operand } => {
+    Statement::IsPointer { name, operand } => {
       optimize_expr(operand, variable_cx);
-      let value = BindedValue::Unary(UnaryBindedValue { operator: *operator, operand: *operand });
+      let value = BindedValue::IsPointer(*operand);
+      if let Some(binded) = binded_value_cx.get(&value) {
+        lvn_bind_var(variable_cx, *name, *binded);
+        false
+      } else {
+        lvn_bind_value(binded_value_cx, &value, *name);
+        true
+      }
+    }
+    Statement::Not { name, operand } => {
+      optimize_expr(operand, variable_cx);
+      let value = BindedValue::Not(*operand);
       if let Some(binded) = binded_value_cx.get(&value) {
         lvn_bind_var(variable_cx, *name, *binded);
         false

@@ -55,10 +55,9 @@ impl Rewriter {
     collector: &mut Vec<mir::Statement>,
   ) {
     match stmt {
-      hir::Statement::Unary { name, operator, operand } => {
-        collector.push(mir::Statement::Unary {
+      hir::Statement::Not { name, operand } => {
+        collector.push(mir::Statement::Not {
           name: *name,
-          operator: *operator,
           operand: self.rewrite_expr(heap, operand, generics_replacement_map),
         });
       }
@@ -171,9 +170,8 @@ impl Rewriter {
               assigned_expression: test_expr,
             });
             // Here we test whether this is a pointer
-            collector.push(mir::Statement::Unary {
+            collector.push(mir::Statement::IsPointer {
               name: comparison_temp,
-              operator: hir::UnaryOperator::IsPointer,
               operand: mir::Expression::var_name(casted_int_collector, mir::INT_32_TYPE),
             });
             let mut nested_stmts = vec![];
@@ -713,7 +711,7 @@ pub(super) fn perform_generics_specialization(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::hir::{BinaryOperator, GlobalString, UnaryOperator};
+  use samlang_ast::hir::{BinaryOperator, GlobalString};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   fn assert_specialized(sources: hir::Sources, heap: &mut Heap, expected: &str) {
@@ -1139,11 +1137,7 @@ sources.mains = [_DUMMY_I$main]
                     return_type: hir::INT_TYPE,
                     return_collector: None,
                   },
-                  hir::Statement::Unary {
-                    name: heap.alloc_str_for_test("v1"),
-                    operator: UnaryOperator::Not,
-                    operand: hir::ZERO,
-                  },
+                  hir::Statement::Not { name: heap.alloc_str_for_test("v1"), operand: hir::ZERO },
                   hir::Statement::Binary {
                     name: heap.alloc_str_for_test("v1"),
                     operator: BinaryOperator::PLUS,

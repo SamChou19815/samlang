@@ -1,5 +1,5 @@
 use super::optimization_common::{
-  take_mut, BinaryBindedValue, BindedValue, IndexAccessBindedValue, UnaryBindedValue,
+  take_mut, BinaryBindedValue, BindedValue, IndexAccessBindedValue,
 };
 use samlang_ast::mir::{Binary, Function, Statement};
 use samlang_heap::Heap;
@@ -31,9 +31,13 @@ fn optimize_stmts(
       | Statement::StructInit { .. }
       | Statement::ClosureInit { .. } => collector.push(stmt),
 
-      Statement::Unary { name, operator, operand } => {
-        set.insert(BindedValue::Unary(UnaryBindedValue { operator, operand }));
-        collector.push(Statement::Unary { name, operator, operand });
+      Statement::IsPointer { name, operand } => {
+        set.insert(BindedValue::IsPointer(operand));
+        collector.push(Statement::IsPointer { name, operand });
+      }
+      Statement::Not { name, operand } => {
+        set.insert(BindedValue::Not(operand));
+        collector.push(Statement::Not { name, operand });
       }
       Statement::Binary(Binary { name, operator, e1, e2 }) => {
         set.insert(BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }));
@@ -69,9 +73,10 @@ fn optimize_stmts(
             BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }) => Statement::Binary(
               Statement::binary_unwrapped(heap.alloc_temp_str(), operator, e1, e2),
             ),
-            BindedValue::Unary(UnaryBindedValue { operator, operand }) => {
-              Statement::Unary { name: heap.alloc_temp_str(), operator, operand }
+            BindedValue::IsPointer(operand) => {
+              Statement::IsPointer { name: heap.alloc_temp_str(), operand }
             }
+            BindedValue::Not(operand) => Statement::Not { name: heap.alloc_temp_str(), operand },
           })
         }
       }
@@ -90,7 +95,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, UnaryOperator},
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
       Type, VariableName, INT_32_TYPE, ONE, ZERO,
@@ -124,11 +129,8 @@ mod tests {
         condition: Expression::var_name(PStr::LOWER_B, INT_32_TYPE),
         s1: vec![
           Statement::binary(heap.alloc_str_for_test("ddddd"), BinaryOperator::PLUS, ONE, ONE),
-          Statement::Unary {
-            name: heap.alloc_str_for_test("ud1"),
-            operator: UnaryOperator::Not,
-            operand: ZERO,
-          },
+          Statement::Not { name: heap.alloc_str_for_test("ud1"), operand: ZERO },
+          Statement::IsPointer { name: heap.alloc_str_for_test("ud3"), operand: ZERO },
           Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("ddd"),
@@ -150,11 +152,8 @@ mod tests {
           },
         ],
         s2: vec![
-          Statement::Unary {
-            name: heap.alloc_str_for_test("ud2"),
-            operator: UnaryOperator::Not,
-            operand: ZERO,
-          },
+          Statement::Not { name: heap.alloc_str_for_test("ud2"), operand: ZERO },
+          Statement::IsPointer { name: heap.alloc_str_for_test("ud4"), operand: ZERO },
           Statement::binary(heap.alloc_str_for_test("fd"), BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("eee"),
@@ -178,14 +177,15 @@ mod tests {
         final_assignments: vec![],
       }],
       heap,
-      r#"let _t2: int = 0[3];
-let _t1 = 1 + 0;
+      r#"let _t3: int = 0[3];
+let _t2 = 1 + 0;
+let _t1 = is_pointer(0);
 let _t0 = !0;
 if (b: int) {
   let ddddd = 1 + 1;
-  __$fff((_t1: int), (_t2: int));
+  __$fff((_t2: int), (_t3: int));
 } else {
-  (eeee: int)((_t1: int), (_t2: int));
+  (eeee: int)((_t2: int), (_t3: int));
 }"#,
     );
   }

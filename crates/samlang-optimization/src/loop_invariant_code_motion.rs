@@ -30,7 +30,7 @@ pub(super) fn optimize(
   let mut inner_stmts = vec![];
   for stmt in stmts {
     match &stmt {
-      Statement::Unary { name, operator: _, operand } => {
+      Statement::IsPointer { name, operand } | Statement::Not { name, operand } => {
         if expression_is_loop_invariant(operand, &non_loop_invariant_variables) {
           hoisted_stmts.push(stmt);
         } else {
@@ -129,7 +129,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, UnaryOperator},
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
       SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
@@ -191,16 +191,16 @@ mod tests {
           invert_condition: false,
           statements: vec![Statement::Break(ZERO)],
         },
-        Statement::Unary { name: PStr::UNDERSCORE, operator: UnaryOperator::Not, operand: ZERO },
+        Statement::Not { name: PStr::UNDERSCORE, operand: ZERO },
+        Statement::IsPointer { name: PStr::UNDERSCORE, operand: ZERO },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           BinaryOperator::PLUS,
           Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           ONE,
         ),
-        Statement::Unary {
+        Statement::Not {
           name: heap.alloc_str_for_test("non_lv_unary"),
-          operator: UnaryOperator::Not,
           operand: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
         },
         Statement::binary(
@@ -335,6 +335,7 @@ mod tests {
       .join("\n");
     assert_eq!(
       r#"let _ = !0;
+let _ = is_pointer(0);
 let c = (a: int) - (b: int);
 let d: int = (c: int)[0];
 let h: _I = Closure { fun: (__$f: () -> int), context: (d: int) };

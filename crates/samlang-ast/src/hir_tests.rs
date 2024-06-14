@@ -314,16 +314,7 @@ mod tests {
         },
       ],
       s2: vec![
-        Statement::Unary {
-          name: heap.alloc_str_for_test("dd"),
-          operator: UnaryOperator::Not,
-          operand: ZERO,
-        },
-        Statement::Unary {
-          name: heap.alloc_str_for_test("dd"),
-          operator: UnaryOperator::IsPointer,
-          operand: ZERO,
-        },
+        Statement::Not { name: heap.alloc_str_for_test("dd"), operand: ZERO },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
           operator: BinaryOperator::PLUS,
@@ -440,7 +431,6 @@ if 0 {
   bar = (b1: int);
 } else {
   let dd = !0;
-  let dd = is_pointer(0);
   let dd = 0 + 0;
   let dd = 0 - 0;
   let dd = 0 - -2147483648;
