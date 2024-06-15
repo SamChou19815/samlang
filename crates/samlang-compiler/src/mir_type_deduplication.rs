@@ -58,8 +58,11 @@ fn rewrite_expressions(state: &State, expressions: Vec<Expression>) -> Vec<Expre
 
 fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
   match stmt {
-    Statement::Unary { name, operator, operand } => {
-      Statement::Unary { name, operator, operand: rewrite_expr(state, operand) }
+    Statement::IsPointer { name, operand } => {
+      Statement::IsPointer { name, operand: rewrite_expr(state, operand) }
+    }
+    Statement::Not { name, operand } => {
+      Statement::Not { name, operand: rewrite_expr(state, operand) }
     }
     Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
       name,
@@ -342,11 +345,7 @@ mod tests {
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
-            Statement::Unary {
-              name: PStr::UNDERSCORE,
-              operator: samlang_ast::hir::UnaryOperator::Not,
-              operand: ZERO,
-            },
+            Statement::Not { name: PStr::UNDERSCORE, operand: ZERO },
             Statement::binary(PStr::UNDERSCORE, samlang_ast::hir::BinaryOperator::PLUS, ZERO, ZERO),
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {

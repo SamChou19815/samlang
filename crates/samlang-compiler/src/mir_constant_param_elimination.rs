@@ -77,7 +77,7 @@ fn collect_def_function_usages_stmt(
   stmt: &Statement,
 ) {
   match stmt {
-    Statement::Unary { name: _, operator: _, operand, .. } => {
+    Statement::IsPointer { name: _, operand, .. } | Statement::Not { name: _, operand } => {
       collect_def_function_usages_expr(state, operand);
     }
     Statement::Binary(b) => {
@@ -161,7 +161,8 @@ fn collect_global_usages_stmt(
   stmt: &Statement,
 ) {
   match stmt {
-    Statement::Unary { .. }
+    Statement::IsPointer { .. }
+    | Statement::Not { .. }
     | Statement::Binary(_)
     | Statement::IndexedAccess { .. }
     | Statement::Break(_)
@@ -262,7 +263,7 @@ fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
 
 fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
   match stmt {
-    Statement::Unary { name: _, operator: _, operand } => {
+    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
       rewrite_expr(state, operand);
     }
     Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
@@ -411,7 +412,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, UnaryOperator},
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
       GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_31_TYPE,
@@ -486,9 +487,8 @@ mod tests {
             return_type: Box::new(INT_32_TYPE),
           },
           body: vec![
-            Statement::Unary {
+            Statement::Not {
               name: dummy_name,
-              operator: UnaryOperator::Not,
               operand: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
             },
             Statement::binary(

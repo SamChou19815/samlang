@@ -60,6 +60,10 @@ mod tests {
           Expression::var_name(heap.alloc_str_for_test("i0"), INT_32_TYPE),
           Expression::i32(3),
         ),
+        Statement::IsPointer {
+          name: heap.alloc_str_for_test("u0"),
+          operand: Expression::var_name(heap.alloc_str_for_test("i0"), INT_32_TYPE),
+        },
         Statement::binary(
           heap.alloc_str_for_test("b1"),
           BinaryOperator::PLUS,
@@ -125,6 +129,7 @@ mod tests {
       table,
       r#"let i0: int = (a: int)[2];
 let b0 = (i0: int) + 3;
+let u0 = is_pointer((i0: int));
 let b3 = (i0: int) + (b0: int);
 let c1 = 0 as int;
 let c2: int;

@@ -2,10 +2,7 @@ use super::optimization_common::{
   if_else_or_null, single_if_or_null, IndexAccessBindedValue, LocalValueContextForOptimization,
 };
 use itertools::Itertools;
-use samlang_ast::{
-  hir::{BinaryOperator, UnaryOperator},
-  mir::*,
-};
+use samlang_ast::{hir::BinaryOperator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, PStr};
 
@@ -162,21 +159,18 @@ fn optimize_stmt(
   collector: &mut Vec<Statement>,
 ) -> bool {
   match stmt {
-    Statement::Unary { name, operator: UnaryOperator::Not, operand } => {
+    Statement::Not { name, operand } => {
       let operand = optimize_expr(value_cx, operand);
       if let Expression::Int32Literal(v) = operand {
         value_cx.checked_bind(*name, Expression::Int32Literal(v ^ 1));
       } else {
-        collector.push(Statement::Unary { name: *name, operator: UnaryOperator::Not, operand });
+        collector.push(Statement::Not { name: *name, operand });
       }
       false
     }
-    Statement::Unary { name, operator: UnaryOperator::IsPointer, operand } => {
-      collector.push(Statement::Unary {
-        name: *name,
-        operator: UnaryOperator::IsPointer,
-        operand: optimize_expr(value_cx, operand),
-      });
+    Statement::IsPointer { name, operand } => {
+      collector
+        .push(Statement::IsPointer { name: *name, operand: optimize_expr(value_cx, operand) });
       false
     }
     Statement::Binary(Binary { name, operator, e1, e2 }) => {

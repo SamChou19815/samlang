@@ -46,18 +46,7 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, s: &lir::Statement) -> Vec<wasm::Instruction> {
     match s {
-      lir::Statement::Unary { name, operator: hir::UnaryOperator::Not, operand } => {
-        let operand = Box::new(self.lower_expr(operand));
-        vec![wasm::Instruction::Inline(self.set(
-          name,
-          wasm::InlineInstruction::Binary(
-            operand,
-            hir::BinaryOperator::XOR,
-            Box::new(wasm::InlineInstruction::Const(1)),
-          ),
-        ))]
-      }
-      lir::Statement::Unary { name, operator: hir::UnaryOperator::IsPointer, operand } => {
+      lir::Statement::IsPointer { name, operand } => {
         let operand1 = Box::new(self.lower_expr(operand));
         let operand2 = Box::new(self.lower_expr(operand));
         vec![wasm::Instruction::Inline(self.set(
@@ -80,6 +69,17 @@ impl<'a> LoweringManager<'a> {
                 Box::new(wasm::InlineInstruction::Const(1)),
               )),
             )),
+            hir::BinaryOperator::XOR,
+            Box::new(wasm::InlineInstruction::Const(1)),
+          ),
+        ))]
+      }
+      lir::Statement::Not { name, operand } => {
+        let operand = Box::new(self.lower_expr(operand));
+        vec![wasm::Instruction::Inline(self.set(
+          name,
+          wasm::InlineInstruction::Binary(
+            operand,
             hir::BinaryOperator::XOR,
             Box::new(wasm::InlineInstruction::Const(1)),
           ),
@@ -321,7 +321,7 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, GlobalString, UnaryOperator},
+    hir::{BinaryOperator, GlobalString},
     lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_32_TYPE, ZERO},
     mir, wasm,
   };
@@ -413,16 +413,8 @@ mod tests {
               ),
             )],
           },
-          Statement::Unary {
-            name: heap.alloc_str_for_test("un1"),
-            operator: UnaryOperator::Not,
-            operand: ZERO,
-          },
-          Statement::Unary {
-            name: heap.alloc_str_for_test("un2"),
-            operator: UnaryOperator::IsPointer,
-            operand: ZERO,
-          },
+          Statement::Not { name: heap.alloc_str_for_test("un1"), operand: ZERO },
+          Statement::IsPointer { name: heap.alloc_str_for_test("un2"), operand: ZERO },
           Statement::binary(
             heap.alloc_str_for_test("bin"),
             BinaryOperator::PLUS,

@@ -480,9 +480,12 @@ impl GenenalLoopVariable {
 
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum Statement {
-  Unary {
+  IsPointer {
     name: PStr,
-    operator: hir::UnaryOperator,
+    operand: Expression,
+  },
+  Not {
+    name: PStr,
     operand: Expression,
   },
   Binary(Binary),
@@ -641,17 +644,17 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::Unary { name, operator: hir::UnaryOperator::Not, operand } => {
+      Statement::IsPointer { name, operand } => {
         collector.push(format!(
-          "{}let {} = !{};\n",
+          "{}let {} = is_pointer({});\n",
           "  ".repeat(level),
           name.as_str(heap),
           operand.debug_print(heap, table),
         ));
       }
-      Statement::Unary { name, operator: hir::UnaryOperator::IsPointer, operand } => {
+      Statement::Not { name, operand } => {
         collector.push(format!(
-          "{}let {} = is_pointer({});\n",
+          "{}let {} = !{};\n",
           "  ".repeat(level),
           name.as_str(heap),
           operand.debug_print(heap, table),

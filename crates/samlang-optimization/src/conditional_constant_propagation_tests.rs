@@ -3,7 +3,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{BinaryOperator, UnaryOperator},
+    hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
       Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
@@ -41,11 +41,7 @@ mod tests {
 
     assert_correctly_optimized(
       vec![
-        Statement::Unary {
-          name: heap.alloc_str_for_test("c00"),
-          operator: UnaryOperator::Not,
-          operand: Expression::i32(0),
-        },
+        Statement::Not { name: heap.alloc_str_for_test("c00"), operand: Expression::i32(0) },
         Statement::binary(
           heap.alloc_str_for_test("c0"),
           BinaryOperator::SHL,
@@ -183,14 +179,12 @@ mod tests {
           Expression::var_name(heap.alloc_str_for_test("i1"), INT_32_TYPE),
           Expression::var_name(heap.alloc_str_for_test("a5"), INT_32_TYPE),
         ),
-        Statement::Unary {
+        Statement::Not {
           name: heap.alloc_str_for_test("a7"),
-          operator: UnaryOperator::Not,
           operand: Expression::var_name(heap.alloc_str_for_test("a6"), INT_32_TYPE),
         },
-        Statement::Unary {
+        Statement::IsPointer {
           name: heap.alloc_str_for_test("a8"),
-          operator: UnaryOperator::IsPointer,
           operand: Expression::var_name(heap.alloc_str_for_test("a6"), INT_32_TYPE),
         },
         Statement::StructInit {

@@ -181,7 +181,6 @@ impl TypeDefinition {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum UnaryOperator {
-  Not,
   IsPointer,
 }
 
@@ -350,9 +349,8 @@ impl Callee {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-  Unary {
+  Not {
     name: PStr,
-    operator: UnaryOperator,
     operand: Expression,
   },
   Binary {
@@ -422,17 +420,9 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::Unary { name, operator: UnaryOperator::Not, operand } => {
+      Statement::Not { name, operand } => {
         collector.push(format!(
           "{}let {} = !{};\n",
-          "  ".repeat(level),
-          name.as_str(heap),
-          operand.debug_print(heap),
-        ));
-      }
-      Statement::Unary { name, operator: UnaryOperator::IsPointer, operand } => {
-        collector.push(format!(
-          "{}let {} = is_pointer({});\n",
           "  ".repeat(level),
           name.as_str(heap),
           operand.debug_print(heap),
