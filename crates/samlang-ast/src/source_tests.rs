@@ -15,8 +15,8 @@ mod tests {
   fn boilterplate() {
     let comment = Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str_for_test("d") };
 
-    assert!(CommentKind::DOC == CommentKind::DOC.clone());
-    format!("{:?}", comment.clone().text);
+    assert!(CommentKind::DOC == CommentKind::DOC);
+    format!("{:?}", comment.text);
     format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone());
     format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![comment]).clone());
     CommentStore::new().all_comments();

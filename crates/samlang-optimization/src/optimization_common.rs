@@ -126,18 +126,15 @@ mod tests {
     assert_eq!(true, single_if_or_null(ZERO, false, vec![]).is_empty());
     assert_eq!(false, single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
-    let bv1 = BindedValue::IndexedAccess(
-      IndexAccessBindedValue { type_: INT_32_TYPE, pointer_expression: ZERO, index: 0 }.clone(),
-    );
-    let bv2 = BindedValue::Binary(
-      BinaryBindedValue { operator: BinaryOperator::PLUS, e1: ZERO, e2: ZERO }.clone(),
-    );
+    let bv1 = BindedValue::IndexedAccess(IndexAccessBindedValue {
+      type_: INT_32_TYPE,
+      pointer_expression: ZERO,
+      index: 0,
+    });
+    let bv2 =
+      BindedValue::Binary(BinaryBindedValue { operator: BinaryOperator::PLUS, e1: ZERO, e2: ZERO });
     let bv3 = BindedValue::Not(ZERO);
     let bv4 = BindedValue::IsPointer(ZERO);
-    let _ = bv1.clone();
-    let _ = bv2.clone();
-    let _ = bv3.clone();
-    let _ = bv4.clone();
     assert_eq!(Some(std::cmp::Ordering::Equal), bv1.partial_cmp(&bv1));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv2.partial_cmp(&bv2));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv3.partial_cmp(&bv3));

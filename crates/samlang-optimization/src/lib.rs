@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(clippy::clone_on_copy))]
-
 mod common_subexpression_elimination;
 mod conditional_constant_propagation;
 mod conditional_constant_propagation_tests;

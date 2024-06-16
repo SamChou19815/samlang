@@ -125,12 +125,7 @@ mod tests {
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::GE, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::EQ, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::NE, ZERO, ZERO),
-              Statement::binary(
-                heap.alloc_str_for_test("dd"),
-                BinaryOperator::XOR.clone(),
-                ZERO,
-                ZERO,
-              ),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR, ZERO, ZERO),
               Statement::While {
                 loop_variables: vec![],
                 statements: vec![Statement::SingleIf {

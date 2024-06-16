@@ -9,14 +9,12 @@ mod tests {
   #[test]
   fn boilterplate() {
     let heap = Heap::new();
-    assert_eq!("EOF", TokenContent::EOF.pretty_print(&heap));
-    assert!(Keyword::MATCH == Keyword::MATCH.clone());
-    assert!(TokenOp::EQ == TokenOp::EQ.clone());
+    assert_eq!("EOF", TokenContent::EndOfFile.pretty_print(&heap));
+    assert!(Keyword::Match == Keyword::Match);
+    assert!(TokenOp::Equal == TokenOp::Equal);
     assert_eq!(
       "DUMMY.sam:0:0-0:0: as",
-      Token(Location::dummy(), TokenContent::Keyword(Keyword::AS).clone())
-        .clone()
-        .pretty_print(&heap)
+      Token(Location::dummy(), TokenContent::Keyword(Keyword::As)).clone().pretty_print(&heap)
     );
   }
 

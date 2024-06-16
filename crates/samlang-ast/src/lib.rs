@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
-
 mod loc;
 pub use loc::{Location, Position};
 mod reason;

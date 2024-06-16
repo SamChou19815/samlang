@@ -58,7 +58,7 @@ impl<'a> SourceParser<'a> {
     if let Some(peeked) = self.tokens.get(self.position) {
       *peeked
     } else {
-      Token(self.last_location(), TokenContent::EOF)
+      Token(self.last_location(), TokenContent::EndOfFile)
     }
   }
 
@@ -218,7 +218,7 @@ impl<'a> SourceParser<'a> {
   ) -> Vec<T> {
     let mut collector = vec![parser(self, vec![])];
     while let Token(_, TokenContent::Operator(op)) = self.peek() {
-      if op != TokenOp::COMMA {
+      if op != TokenOp::Comma {
         break;
       }
       let additional_comments = self.collect_preceding_comments();
@@ -285,24 +285,24 @@ impl<'a> SourceParser<'a> {
 
 pub fn parse_module(mut parser: SourceParser) -> Module<()> {
   let mut imports = vec![];
-  while let Token(import_start, TokenContent::Keyword(Keyword::IMPORT)) = parser.peek() {
+  while let Token(import_start, TokenContent::Keyword(Keyword::Import)) = parser.peek() {
     let mut associated_comments = parser.collect_preceding_comments();
     parser.consume();
     associated_comments.append(&mut parser.collect_preceding_comments());
-    parser.assert_and_consume_operator(TokenOp::LBRACE);
+    parser.assert_and_consume_operator(TokenOp::LeftBrace);
     let imported_members = parser.parse_comma_separated_list_with_end_token(
-      TokenOp::RBRACE,
+      TokenOp::RightBrace,
       &mut SourceParser::parse_upper_id_with_comments,
     );
     associated_comments.append(&mut parser.collect_preceding_comments());
-    parser.assert_and_consume_operator(TokenOp::RBRACE);
+    parser.assert_and_consume_operator(TokenOp::RightBrace);
     associated_comments.append(&mut parser.collect_preceding_comments());
-    parser.assert_and_consume_keyword(Keyword::FROM);
+    parser.assert_and_consume_keyword(Keyword::From);
     let import_loc_start = parser.peek().0;
     let imported_module_parts = {
       associated_comments.append(&mut parser.collect_preceding_comments());
       let mut collector = vec![parser.assert_and_consume_identifier().1];
-      while let Token(_, TokenContent::Operator(TokenOp::DOT)) = parser.peek() {
+      while let Token(_, TokenContent::Operator(TokenOp::Dot)) = parser.peek() {
         associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
         associated_comments.append(&mut parser.collect_preceding_comments());
@@ -316,7 +316,7 @@ pub fn parse_module(mut parser: SourceParser) -> Module<()> {
       parser.class_source_map.insert(variable.name, imported_module);
     }
     let loc =
-      if let Token(semicolon_loc, TokenContent::Operator(TokenOp::SEMICOLON)) = parser.peek() {
+      if let Token(semicolon_loc, TokenContent::Operator(TokenOp::Semicolon)) = parser.peek() {
         associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
         import_start.union(&semicolon_loc)
@@ -334,15 +334,15 @@ pub fn parse_module(mut parser: SourceParser) -> Module<()> {
 
   let mut toplevels = vec![];
   'outer: loop {
-    if let TokenContent::EOF = parser.peek().1 {
+    if let TokenContent::EndOfFile = parser.peek().1 {
       break;
     }
     loop {
       match parser.peek() {
-        Token(_, TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE | Keyword::PRIVATE)) => {
+        Token(_, TokenContent::Keyword(Keyword::Class | Keyword::Interface | Keyword::Private)) => {
           break
         }
-        Token(_, TokenContent::EOF) => break 'outer,
+        Token(_, TokenContent::EndOfFile) => break 'outer,
         Token(loc, content) => {
           parser.consume();
           parser.report(
@@ -382,13 +382,13 @@ mod toplevel_parser {
 
   pub(super) fn parse_toplevel(parser: &mut super::SourceParser) -> Toplevel<()> {
     parser.unconsume_comments();
-    let is_private = if let TokenContent::Keyword(Keyword::PRIVATE) = parser.peek().1 {
+    let is_private = if let TokenContent::Keyword(Keyword::Private) = parser.peek().1 {
       parser.consume();
       true
     } else {
       false
     };
-    let is_class = matches!(parser.peek().1, TokenContent::Keyword(Keyword::CLASS));
+    let is_class = matches!(parser.peek().1, TokenContent::Keyword(Keyword::Class));
     if is_private {
       parser.unconsume();
     }
@@ -402,22 +402,22 @@ mod toplevel_parser {
   pub(super) fn parse_class(parser: &mut super::SourceParser) -> ClassDefinition<()> {
     let mut associated_comments = vec![];
     let (mut loc, private) =
-      if let Token(loc, TokenContent::Keyword(Keyword::PRIVATE)) = parser.peek() {
+      if let Token(loc, TokenContent::Keyword(Keyword::Private)) = parser.peek() {
         associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
         associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.assert_and_consume_keyword(Keyword::CLASS);
+        parser.assert_and_consume_keyword(Keyword::Class);
         (loc, true)
       } else {
         associated_comments.append(&mut parser.collect_preceding_comments());
-        (parser.assert_and_consume_keyword(Keyword::CLASS), false)
+        (parser.assert_and_consume_keyword(Keyword::Class), false)
       };
     let name = parser.parse_upper_id();
     loc = loc.union(&name.loc);
     parser.available_tparams = HashSet::new();
     let type_parameters = super::type_parser::parse_type_parameters(parser);
     let (type_definition, extends_or_implements_nodes) = match parser.peek().1 {
-      TokenContent::Operator(TokenOp::LBRACE | TokenOp::COLON) => {
+      TokenContent::Operator(TokenOp::LeftBrace | TokenOp::Colon) => {
         loc = if let Some(tparams_node) = &type_parameters {
           loc.union(&tparams_node.location)
         } else {
@@ -446,8 +446,8 @@ mod toplevel_parser {
       }
     };
     let mut members = vec![];
-    let members_start_loc = parser.assert_and_consume_operator(TokenOp::LBRACE);
-    while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
+    let members_start_loc = parser.assert_and_consume_operator(TokenOp::LeftBrace);
+    while let TokenContent::Keyword(Keyword::Function | Keyword::Method | Keyword::Private) =
       parser.peek().1
     {
       let saved_upper_type_parameters = parser.available_tparams.clone();
@@ -458,7 +458,7 @@ mod toplevel_parser {
       let comments = parser.collect_preceding_comments();
       parser.comments_store.create_comment_reference(comments)
     };
-    let end_loc = parser.assert_and_consume_operator(TokenOp::RBRACE);
+    let end_loc = parser.assert_and_consume_operator(TokenOp::RightBrace);
     loc = loc.union(&end_loc);
     InterfaceDeclarationCommon {
       loc,
@@ -479,23 +479,23 @@ mod toplevel_parser {
   pub(super) fn parse_interface(parser: &mut super::SourceParser) -> InterfaceDeclaration {
     let mut associated_comments = vec![];
     let (mut loc, private) =
-      if let Token(loc, TokenContent::Keyword(Keyword::PRIVATE)) = parser.peek() {
+      if let Token(loc, TokenContent::Keyword(Keyword::Private)) = parser.peek() {
         associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
         associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.assert_and_consume_keyword(Keyword::INTERFACE);
+        parser.assert_and_consume_keyword(Keyword::Interface);
         (loc, true)
       } else {
         associated_comments.append(&mut parser.collect_preceding_comments());
-        (parser.assert_and_consume_keyword(Keyword::INTERFACE), false)
+        (parser.assert_and_consume_keyword(Keyword::Interface), false)
       };
     let name = parser.parse_upper_id();
     parser.available_tparams = HashSet::new();
     let type_parameters = super::type_parser::parse_type_parameters(parser);
     let extends_or_implements_nodes = parse_extends_or_implements_nodes(parser);
     let mut members = vec![];
-    let members_start_loc = parser.assert_and_consume_operator(TokenOp::LBRACE);
-    while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
+    let members_start_loc = parser.assert_and_consume_operator(TokenOp::LeftBrace);
+    while let TokenContent::Keyword(Keyword::Function | Keyword::Method | Keyword::Private) =
       parser.peek().1
     {
       let saved_upper_type_parameters = parser.available_tparams.clone();
@@ -506,7 +506,7 @@ mod toplevel_parser {
       let comments = parser.collect_preceding_comments();
       parser.comments_store.create_comment_reference(comments)
     };
-    let end_loc = parser.assert_and_consume_operator(TokenOp::RBRACE);
+    let end_loc = parser.assert_and_consume_operator(TokenOp::RightBrace);
     loc = loc.union(&end_loc);
     InterfaceDeclarationCommon {
       loc,
@@ -527,12 +527,12 @@ mod toplevel_parser {
   fn parse_extends_or_implements_nodes(
     parser: &mut super::SourceParser,
   ) -> Option<ExtendsOrImplementsNodes> {
-    if let TokenContent::Operator(TokenOp::COLON) = parser.peek().1 {
+    if let TokenContent::Operator(TokenOp::Colon) = parser.peek().1 {
       let comments = parser.collect_preceding_comments();
-      let mut location = parser.assert_and_consume_operator(TokenOp::COLON);
+      let mut location = parser.assert_and_consume_operator(TokenOp::Colon);
       let id = parser.parse_upper_id();
       let mut nodes = vec![super::type_parser::parse_identifier_annot(parser, id)];
-      while let Token(_, TokenContent::Operator(TokenOp::COMMA)) = parser.peek() {
+      while let Token(_, TokenContent::Operator(TokenOp::Comma)) = parser.peek() {
         let comments = parser.collect_preceding_comments();
         parser.consume();
         let id = parser.parse_upper_id_with_comments(comments);
@@ -551,13 +551,15 @@ mod toplevel_parser {
 
   fn parse_type_definition_inner(parser: &mut super::SourceParser) -> TypeDefinition {
     let start_comments = parser.collect_preceding_comments();
-    let loc_start = parser.assert_and_consume_operator(TokenOp::LPAREN);
+    let loc_start = parser.assert_and_consume_operator(TokenOp::LeftParenthesis);
     let end_comments = parser.collect_preceding_comments();
     if let Token(_, TokenContent::UpperId(_)) = parser.peek() {
-      let mut variants = parser
-        .parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut parse_variant_definition);
+      let mut variants = parser.parse_comma_separated_list_with_end_token(
+        TokenOp::RightParenthesis,
+        &mut parse_variant_definition,
+      );
       variants.truncate(MAX_VARIANT_SIZE);
-      let loc_end = parser.assert_and_consume_operator(TokenOp::RPAREN);
+      let loc_end = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
       TypeDefinition::Enum {
         loc: loc_start.union(&loc_end),
         start_associated_comments: parser.comments_store.create_comment_reference(start_comments),
@@ -565,8 +567,10 @@ mod toplevel_parser {
         variants,
       }
     } else {
-      let mut fields = parser
-        .parse_comma_separated_list_with_end_token(TokenOp::RPAREN, &mut parse_field_definition);
+      let mut fields = parser.parse_comma_separated_list_with_end_token(
+        TokenOp::RightParenthesis,
+        &mut parse_field_definition,
+      );
       if let Some(node) = fields.get(MAX_STRUCT_SIZE) {
         parser.error_set.report_invalid_syntax_error(
           node.name.loc,
@@ -574,7 +578,7 @@ mod toplevel_parser {
         );
       }
       fields.truncate(MAX_STRUCT_SIZE);
-      let loc_end = parser.assert_and_consume_operator(TokenOp::RPAREN);
+      let loc_end = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
       TypeDefinition::Struct {
         loc: loc_start.union(&loc_end),
         start_associated_comments: parser.comments_store.create_comment_reference(start_comments),
@@ -589,13 +593,13 @@ mod toplevel_parser {
     mut comments: Vec<Comment>,
   ) -> FieldDefinition {
     let mut is_public = true;
-    if let TokenContent::Keyword(Keyword::PRIVATE) = parser.peek().1 {
+    if let TokenContent::Keyword(Keyword::Private) = parser.peek().1 {
       is_public = false;
       comments.append(&mut parser.collect_preceding_comments());
       parser.consume();
     }
     comments.append(&mut parser.collect_preceding_comments());
-    parser.assert_and_consume_keyword(Keyword::VAL);
+    parser.assert_and_consume_keyword(Keyword::Val);
     let name = parser.parse_lower_id_with_comments(comments);
     let annotation = super::type_parser::parse_annotation_with_colon(parser);
     FieldDefinition { name, annotation, is_public }
@@ -606,11 +610,11 @@ mod toplevel_parser {
     addtional_preceding_comments: Vec<Comment>,
   ) -> VariantDefinition {
     let name = parser.parse_upper_id_with_comments(addtional_preceding_comments);
-    if let Token(left_paren_loc, TokenContent::Operator(TokenOp::LPAREN)) = parser.peek() {
+    if let Token(left_paren_loc, TokenContent::Operator(TokenOp::LeftParenthesis)) = parser.peek() {
       let start_comments = parser.collect_preceding_comments();
       parser.consume();
       let annotations = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::RPAREN,
+        TokenOp::RightParenthesis,
         &mut super::type_parser::parse_annotation_with_additional_comments,
       );
 
@@ -621,7 +625,7 @@ mod toplevel_parser {
         );
       }
       let end_comments = parser.collect_preceding_comments();
-      let right_paren_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+      let right_paren_loc = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
       VariantDefinition {
         name,
         associated_data_types: Some(annotation::ParenthesizedAnnotationList {
@@ -641,7 +645,7 @@ mod toplevel_parser {
   ) -> ClassMemberDefinition<()> {
     let mut decl = parse_class_member_declaration_common(parser, true);
     let additional_comments = parser.collect_preceding_comments();
-    parser.assert_and_consume_operator(TokenOp::ASSIGN);
+    parser.assert_and_consume_operator(TokenOp::Assign);
     let body = super::expression_parser::parse_expression_with_additional_preceding_comments(
       parser,
       additional_comments,
@@ -664,7 +668,7 @@ mod toplevel_parser {
     let mut is_public = true;
     let mut is_method = true;
     let mut peeked = parser.peek();
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::PRIVATE)) = peeked {
+    if let Token(peeked_loc, TokenContent::Keyword(Keyword::Private)) = peeked {
       if allow_private {
         is_public = false;
       } else {
@@ -675,13 +679,13 @@ mod toplevel_parser {
       peeked = parser.peek();
     }
     let start_loc = &peeked.0;
-    if let Token(_, TokenContent::Keyword(Keyword::FUNCTION)) = &peeked {
+    if let Token(_, TokenContent::Keyword(Keyword::Function)) = &peeked {
       is_method = false;
       associated_comments.append(&mut parser.collect_preceding_comments());
       parser.consume();
     } else {
       associated_comments.append(&mut parser.collect_preceding_comments());
-      parser.assert_and_consume_keyword(Keyword::METHOD);
+      parser.assert_and_consume_keyword(Keyword::Method);
     }
     if !is_method {
       parser.available_tparams = HashSet::new();
@@ -692,17 +696,17 @@ mod toplevel_parser {
       .extend(type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name));
     let name = parser.parse_lower_id();
     let parameters_start_comments = parser.collect_preceding_comments();
-    let fun_type_loc_start = parser.assert_and_consume_operator(TokenOp::LPAREN);
-    let parameters = if let TokenContent::Operator(TokenOp::RPAREN) = parser.peek().1 {
+    let fun_type_loc_start = parser.assert_and_consume_operator(TokenOp::LeftParenthesis);
+    let parameters = if let TokenContent::Operator(TokenOp::RightParenthesis) = parser.peek().1 {
       vec![]
     } else {
       parser.parse_comma_separated_list_with_end_token(
-        TokenOp::RPAREN,
+        TokenOp::RightParenthesis,
         &mut super::type_parser::parse_annotated_id,
       )
     };
     let parameters_end_comments = parser.collect_preceding_comments();
-    let parameters_end_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+    let parameters_end_loc = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
     let return_type = super::type_parser::parse_annotation_with_colon(parser);
     let fun_type_loc = fun_type_loc_start.union(&return_type.location());
     ClassMemberDeclaration {
@@ -758,22 +762,22 @@ mod expression_parser {
 
   fn parse_match(parser: &mut super::SourceParser) -> expr::E<()> {
     let mut associated_comments = parser.collect_preceding_comments();
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::MATCH)) = parser.peek() {
+    if let Token(peeked_loc, TokenContent::Keyword(Keyword::Match)) = parser.peek() {
       parser.consume();
       let match_expression = parse_expression(parser);
       associated_comments.append(&mut parser.collect_preceding_comments());
-      parser.assert_and_consume_operator(TokenOp::LBRACE);
+      parser.assert_and_consume_operator(TokenOp::LeftBrace);
       let mut matching_list = vec![parse_pattern_to_expression(parser)];
       while matches!(
         parser.peek().1,
-        TokenContent::Operator(TokenOp::LBRACE | TokenOp::LPAREN | TokenOp::UNDERSCORE)
+        TokenContent::Operator(TokenOp::LeftBrace | TokenOp::LeftParenthesis | TokenOp::Underscore)
           | TokenContent::LowerId(_)
           | TokenContent::UpperId(_)
       ) {
         matching_list.push(parse_pattern_to_expression(parser));
       }
       associated_comments.append(&mut parser.collect_preceding_comments());
-      let loc = peeked_loc.union(&parser.assert_and_consume_operator(TokenOp::RBRACE));
+      let loc = peeked_loc.union(&parser.assert_and_consume_operator(TokenOp::RightBrace));
       expr::E::Match(expr::Match {
         common: expr::ExpressionCommon {
           loc,
@@ -793,16 +797,16 @@ mod expression_parser {
   ) -> expr::VariantPatternToExpression<()> {
     let pattern = super::pattern_parser::parse_matching_pattern(parser, vec![]);
     let additional_comments = parser.collect_preceding_comments();
-    parser.assert_and_consume_operator(TokenOp::ARROW);
+    parser.assert_and_consume_operator(TokenOp::Arrow);
     let expression =
       parse_expression_with_additional_preceding_comments(parser, additional_comments);
     let (loc, ending_associated_comments) =
-      if matches!(parser.peek().1, TokenContent::Operator(TokenOp::RBRACE)) {
+      if matches!(parser.peek().1, TokenContent::Operator(TokenOp::RightBrace)) {
         (pattern.loc().union(&expression.loc()), NO_COMMENT_REFERENCE)
       } else {
         let comments = parser.collect_preceding_comments();
         (
-          pattern.loc().union(&parser.assert_and_consume_operator(TokenOp::COMMA)),
+          pattern.loc().union(&parser.assert_and_consume_operator(TokenOp::Comma)),
           parser.comments_store.create_comment_reference(comments),
         )
       };
@@ -815,7 +819,7 @@ mod expression_parser {
   }
 
   fn parse_if_else_or_higher_precedence(parser: &mut super::SourceParser) -> expr::E<()> {
-    if let Token(_, TokenContent::Keyword(Keyword::IF)) = parser.peek() {
+    if let Token(_, TokenContent::Keyword(Keyword::If)) = parser.peek() {
       return expr::E::IfElse(parse_if_else(parser, vec![]));
     }
     parse_disjunction(parser)
@@ -826,14 +830,14 @@ mod expression_parser {
     mut associated_comments: Vec<Comment>,
   ) -> expr::IfElse<()> {
     associated_comments.append(&mut parser.collect_preceding_comments());
-    let peeked_loc = parser.assert_and_consume_keyword(Keyword::IF);
+    let peeked_loc = parser.assert_and_consume_keyword(Keyword::If);
     let condition =
-      if let Token(_peeked_let_loc, TokenContent::Keyword(Keyword::LET)) = parser.peek() {
+      if let Token(_peeked_let_loc, TokenContent::Keyword(Keyword::Let)) = parser.peek() {
         associated_comments.append(&mut parser.collect_preceding_comments());
         parser.consume();
         let pattern = super::pattern_parser::parse_matching_pattern(parser, vec![]);
         associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.assert_and_consume_operator(TokenOp::ASSIGN);
+        parser.assert_and_consume_operator(TokenOp::Assign);
         let expr = parse_expression(parser);
         expr::IfElseCondition::Guard(pattern, expr)
       } else {
@@ -841,8 +845,8 @@ mod expression_parser {
       };
     let e1 = parse_block(parser, vec![]);
     let e2_preceding_comments = parser.collect_preceding_comments();
-    parser.assert_and_consume_keyword(Keyword::ELSE);
-    let (e2_loc, e2) = if let Token(_, TokenContent::Keyword(Keyword::IF)) = parser.peek() {
+    parser.assert_and_consume_keyword(Keyword::Else);
+    let (e2_loc, e2) = if let Token(_, TokenContent::Keyword(Keyword::If)) = parser.peek() {
       let e = parse_if_else(parser, e2_preceding_comments);
       (e.common.loc, expr::IfElseOrBlock::IfElse(e))
     } else {
@@ -864,7 +868,7 @@ mod expression_parser {
 
   fn parse_disjunction(parser: &mut super::SourceParser) -> expr::E<()> {
     let mut e = parse_conjunction(parser);
-    while let TokenContent::Operator(TokenOp::OR) = parser.peek().1 {
+    while let TokenContent::Operator(TokenOp::Or) = parser.peek().1 {
       let concrete_comments = parser.collect_preceding_comments();
       let operator_preceding_comments =
         parser.comments_store.create_comment_reference(concrete_comments);
@@ -888,7 +892,7 @@ mod expression_parser {
 
   fn parse_conjunction(parser: &mut super::SourceParser) -> expr::E<()> {
     let mut e = parse_comparison(parser);
-    while let TokenContent::Operator(TokenOp::AND) = parser.peek().1 {
+    while let TokenContent::Operator(TokenOp::And) = parser.peek().1 {
       let concrete_comments = parser.collect_preceding_comments();
       let operator_preceding_comments =
         parser.comments_store.create_comment_reference(concrete_comments);
@@ -917,12 +921,12 @@ mod expression_parser {
       let operator_preceding_comments =
         parser.comments_store.create_comment_reference(concrete_comments);
       let operator = match parser.peek().1 {
-        TokenContent::Operator(TokenOp::LT) => expr::BinaryOperator::LT,
-        TokenContent::Operator(TokenOp::LE) => expr::BinaryOperator::LE,
-        TokenContent::Operator(TokenOp::GT) => expr::BinaryOperator::GT,
-        TokenContent::Operator(TokenOp::GE) => expr::BinaryOperator::GE,
-        TokenContent::Operator(TokenOp::EQ) => expr::BinaryOperator::EQ,
-        TokenContent::Operator(TokenOp::NE) => expr::BinaryOperator::NE,
+        TokenContent::Operator(TokenOp::LessThan) => expr::BinaryOperator::LT,
+        TokenContent::Operator(TokenOp::LessThanOrEqual) => expr::BinaryOperator::LE,
+        TokenContent::Operator(TokenOp::GreaterThan) => expr::BinaryOperator::GT,
+        TokenContent::Operator(TokenOp::GreaterThanOrEqual) => expr::BinaryOperator::GE,
+        TokenContent::Operator(TokenOp::Equal) => expr::BinaryOperator::EQ,
+        TokenContent::Operator(TokenOp::NotEqual) => expr::BinaryOperator::NE,
         _ => break,
       };
       parser.consume();
@@ -950,8 +954,8 @@ mod expression_parser {
       let operator_preceding_comments =
         parser.comments_store.create_comment_reference(concrete_comments);
       let operator = match parser.peek().1 {
-        TokenContent::Operator(TokenOp::PLUS) => expr::BinaryOperator::PLUS,
-        TokenContent::Operator(TokenOp::MINUS) => expr::BinaryOperator::MINUS,
+        TokenContent::Operator(TokenOp::Plus) => expr::BinaryOperator::PLUS,
+        TokenContent::Operator(TokenOp::Minus) => expr::BinaryOperator::MINUS,
         _ => break,
       };
       parser.consume();
@@ -979,9 +983,9 @@ mod expression_parser {
       let operator_preceding_comments =
         parser.comments_store.create_comment_reference(concrete_comments);
       let operator = match parser.peek().1 {
-        TokenContent::Operator(TokenOp::MUL) => expr::BinaryOperator::MUL,
-        TokenContent::Operator(TokenOp::DIV) => expr::BinaryOperator::DIV,
-        TokenContent::Operator(TokenOp::MOD) => expr::BinaryOperator::MOD,
+        TokenContent::Operator(TokenOp::Multiply) => expr::BinaryOperator::MUL,
+        TokenContent::Operator(TokenOp::Divide) => expr::BinaryOperator::DIV,
+        TokenContent::Operator(TokenOp::Mod) => expr::BinaryOperator::MOD,
         _ => break,
       };
       parser.consume();
@@ -1004,7 +1008,7 @@ mod expression_parser {
 
   fn parse_concat(parser: &mut super::SourceParser) -> expr::E<()> {
     let mut e = parse_unary_expression(parser);
-    while let TokenContent::Operator(TokenOp::COLONCOLON) = parser.peek().1 {
+    while let TokenContent::Operator(TokenOp::ColonColon) = parser.peek().1 {
       let concrete_comments = parser.collect_preceding_comments();
       let operator_preceding_comments =
         parser.comments_store.create_comment_reference(concrete_comments);
@@ -1030,7 +1034,7 @@ mod expression_parser {
     let associated_comments = parser.collect_preceding_comments();
     let Token(peeked_loc, content) = parser.peek();
     match content {
-      TokenContent::Operator(TokenOp::NOT) => {
+      TokenContent::Operator(TokenOp::Not) => {
         parser.consume();
         let argument = parse_function_call_or_field_access(parser);
         let loc = peeked_loc.union(&argument.loc());
@@ -1046,7 +1050,7 @@ mod expression_parser {
           argument: Box::new(argument),
         })
       }
-      TokenContent::Operator(TokenOp::MINUS) => {
+      TokenContent::Operator(TokenOp::Minus) => {
         parser.consume();
         let argument = parse_function_call_or_field_access(parser);
         let loc = peeked_loc.union(&argument.loc());
@@ -1072,7 +1076,7 @@ mod expression_parser {
     let mut function_expression = parse_base_expression(parser);
     loop {
       match parser.peek() {
-        Token(dot_loc, TokenContent::Operator(TokenOp::DOT)) => {
+        Token(dot_loc, TokenContent::Operator(TokenOp::Dot)) => {
           let mut field_preceding_comments = parser.collect_preceding_comments();
           parser.consume();
           field_preceding_comments.append(&mut parser.collect_preceding_comments());
@@ -1112,7 +1116,7 @@ mod expression_parser {
             field_order: -1,
           });
         }
-        Token(_, TokenContent::Operator(TokenOp::LPAREN)) => {
+        Token(_, TokenContent::Operator(TokenOp::LeftParenthesis)) => {
           let function_arguments = parse_parenthesized_expression_list(parser, usize::MAX);
           let loc = function_expression.loc().union(&function_arguments.loc);
           function_expression = expr::E::Call(expr::Call {
@@ -1136,15 +1140,17 @@ mod expression_parser {
     }
 
     // Lambda or tuple or nested expression
-    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LPAREN)) = parser.peek() {
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LeftParenthesis)) = parser.peek() {
       let associated_comments = parser.collect_preceding_comments();
       parser.consume();
       // () -> ...
-      if let Token(right_parenthesis_loc, TokenContent::Operator(TokenOp::RPAREN)) = parser.peek() {
+      if let Token(right_parenthesis_loc, TokenContent::Operator(TokenOp::RightParenthesis)) =
+        parser.peek()
+      {
         let mut ending_comments = parser.collect_preceding_comments();
         parser.consume();
         ending_comments.append(&mut parser.collect_preceding_comments());
-        parser.assert_and_consume_operator(TokenOp::ARROW);
+        parser.assert_and_consume_operator(TokenOp::Arrow);
         let body = parse_expression(parser);
         let loc = peeked_loc.union(&body.loc());
         return expr::E::Lambda(expr::Lambda {
@@ -1173,14 +1179,15 @@ mod expression_parser {
         let next = parser.peek();
         match next.1 {
           // (id: ... definitely a lambda
-          TokenContent::Operator(TokenOp::COLON) => {
+          TokenContent::Operator(TokenOp::Colon) => {
             parser.unconsume();
             let parameters = parser.parse_comma_separated_list_with_end_token(
-              TokenOp::RPAREN,
+              TokenOp::RightParenthesis,
               &mut super::type_parser::parse_optionally_annotated_id,
             );
             let mut ending_comments = parser.collect_preceding_comments();
-            let right_parenthesis_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+            let right_parenthesis_loc =
+              parser.assert_and_consume_operator(TokenOp::RightParenthesis);
             ending_comments.append(&mut parser.collect_preceding_comments());
             let parameters = expr::LambdaParameters {
               loc: peeked_loc.union(&right_parenthesis_loc),
@@ -1189,7 +1196,7 @@ mod expression_parser {
                 .comments_store
                 .create_comment_reference(ending_comments),
             };
-            parser.assert_and_consume_operator(TokenOp::ARROW);
+            parser.assert_and_consume_operator(TokenOp::Arrow);
             let body = parse_expression(parser);
             let loc = peeked_loc.union(&body.loc());
             return expr::E::Lambda(expr::Lambda {
@@ -1206,18 +1213,18 @@ mod expression_parser {
             });
           }
           // (id, ..., might be lambda, might be tuple
-          TokenContent::Operator(TokenOp::COMMA) => {
+          TokenContent::Operator(TokenOp::Comma) => {
             parser.unconsume();
             // Advance as far as possible for a comma separated lower id.
             // This is common for both arrow function and tuple.
             let mut parameters_or_tuple_elements_cover = vec![parser.parse_lower_id()];
-            while let Token(_, TokenContent::Operator(TokenOp::COMMA)) = parser.peek() {
+            while let Token(_, TokenContent::Operator(TokenOp::Comma)) = parser.peek() {
               parser.consume();
               if let Token(_, TokenContent::LowerId(_)) = parser.peek() {
                 parser.consume();
                 match parser.peek() {
-                  Token(_, TokenContent::Operator(TokenOp::COMMA))
-                  | Token(_, TokenContent::Operator(TokenOp::RPAREN)) => {
+                  Token(_, TokenContent::Operator(TokenOp::Comma))
+                  | Token(_, TokenContent::Operator(TokenOp::RightParenthesis)) => {
                     parser.unconsume(); // unconsume lower id
                     parameters_or_tuple_elements_cover.push(parser.parse_lower_id());
                   }
@@ -1231,12 +1238,12 @@ mod expression_parser {
               }
             }
             // If we see ), it means that the cover is complete and still ambiguous.
-            if let Token(right_parenthesis_loc, TokenContent::Operator(TokenOp::RPAREN)) =
+            if let Token(right_parenthesis_loc, TokenContent::Operator(TokenOp::RightParenthesis)) =
               parser.peek()
             {
               let mut comments_before_rparen = parser.collect_preceding_comments();
               parser.consume();
-              if let Token(_, TokenContent::Operator(TokenOp::ARROW)) = parser.peek() {
+              if let Token(_, TokenContent::Operator(TokenOp::Arrow)) = parser.peek() {
                 comments_before_rparen.append(&mut parser.collect_preceding_comments());
                 parser.consume();
                 let body = parse_expression(parser);
@@ -1298,10 +1305,10 @@ mod expression_parser {
             }
             if let Token(_, TokenContent::LowerId(_)) = parser.peek() {
               parser.consume();
-              if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
+              if let Token(_, TokenContent::Operator(TokenOp::Colon)) = parser.peek() {
                 parser.unconsume();
                 let rest_parameters = parser.parse_comma_separated_list_with_end_token(
-                  TokenOp::RPAREN,
+                  TokenOp::RightParenthesis,
                   &mut super::type_parser::parse_optionally_annotated_id,
                 );
                 let parameters = parameters_or_tuple_elements_cover
@@ -1310,9 +1317,10 @@ mod expression_parser {
                   .chain(rest_parameters)
                   .collect_vec();
                 let mut ending_comments = parser.collect_preceding_comments();
-                let right_parenthesis_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+                let right_parenthesis_loc =
+                  parser.assert_and_consume_operator(TokenOp::RightParenthesis);
                 ending_comments.append(&mut parser.collect_preceding_comments());
-                parser.assert_and_consume_operator(TokenOp::ARROW);
+                parser.assert_and_consume_operator(TokenOp::Arrow);
                 let parameters = expr::LambdaParameters {
                   loc: peeked_loc.union(&right_parenthesis_loc),
                   parameters,
@@ -1338,7 +1346,7 @@ mod expression_parser {
               parser.unconsume();
             }
             let rest_tuple_elements = parser.parse_comma_separated_list_with_end_token(
-              TokenOp::RPAREN,
+              TokenOp::RightParenthesis,
               &mut parse_expression_with_additional_preceding_comments,
             );
             let mut tuple_elements = parameters_or_tuple_elements_cover
@@ -1363,7 +1371,7 @@ mod expression_parser {
             }
             tuple_elements.truncate(MAX_STRUCT_SIZE);
             let end_comments = parser.collect_preceding_comments();
-            let end_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+            let end_loc = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
             let loc = peeked_loc.union(&end_loc);
             let common =
               expr::ExpressionCommon { loc, associated_comments: NO_COMMENT_REFERENCE, type_: () };
@@ -1383,10 +1391,11 @@ mod expression_parser {
             );
           }
           // (id) -> ... OR (id)
-          TokenContent::Operator(TokenOp::RPAREN) => {
+          TokenContent::Operator(TokenOp::RightParenthesis) => {
             let mut ending_comments = parser.collect_preceding_comments();
-            let right_parenthesis_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
-            if let Token(_, TokenContent::Operator(TokenOp::ARROW)) = parser.peek() {
+            let right_parenthesis_loc =
+              parser.assert_and_consume_operator(TokenOp::RightParenthesis);
+            if let Token(_, TokenContent::Operator(TokenOp::Arrow)) = parser.peek() {
               ending_comments.append(&mut parser.collect_preceding_comments());
               parser.consume();
               let body = parse_expression(parser);
@@ -1442,7 +1451,7 @@ mod expression_parser {
     }
 
     // Statement Block: { ... }
-    if let Token(_, TokenContent::Operator(TokenOp::LBRACE)) = parser.peek() {
+    if let Token(_, TokenContent::Operator(TokenOp::LeftBrace)) = parser.peek() {
       return expr::E::Block(parse_block(parser, vec![]));
     }
 
@@ -1465,7 +1474,7 @@ mod expression_parser {
 
   fn parse_base_expression_single_token(parser: &mut super::SourceParser) -> Option<expr::E<()>> {
     match parser.peek() {
-      Token(peeked_loc, TokenContent::Keyword(Keyword::TRUE)) => {
+      Token(peeked_loc, TokenContent::Keyword(Keyword::True)) => {
         let associated_comments = parser.collect_preceding_comments();
         parser.consume();
         Some(expr::E::Literal(
@@ -1479,7 +1488,7 @@ mod expression_parser {
           Literal::Bool(true),
         ))
       }
-      Token(peeked_loc, TokenContent::Keyword(Keyword::FALSE)) => {
+      Token(peeked_loc, TokenContent::Keyword(Keyword::False)) => {
         let associated_comments = parser.collect_preceding_comments();
         parser.consume();
         Some(expr::E::Literal(
@@ -1524,7 +1533,7 @@ mod expression_parser {
           Literal::String(parser.heap.alloc_string(str_lit)),
         ))
       }
-      Token(peeked_loc, TokenContent::Keyword(Keyword::THIS)) => {
+      Token(peeked_loc, TokenContent::Keyword(Keyword::This)) => {
         let associated_comments = parser.collect_preceding_comments();
         parser.consume();
         Some(expr::E::LocalId(
@@ -1576,26 +1585,26 @@ mod expression_parser {
     max_size: usize,
   ) -> expr::ParenthesizedExpressionList<()> {
     let starting_comments = parser.collect_preceding_comments();
-    let start_loc = parser.assert_and_consume_operator(TokenOp::LPAREN);
-    let expressions = if matches!(parser.peek(), Token(_, TokenContent::Operator(TokenOp::RPAREN)))
-    {
-      vec![]
-    } else {
-      let mut expressions = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::RPAREN,
-        &mut parse_expression_with_additional_preceding_comments,
-      );
-      if let Some(node) = expressions.get(max_size) {
-        parser.error_set.report_invalid_syntax_error(
-          node.loc(),
-          format!("Maximum allowed tuple size is {max_size}"),
+    let start_loc = parser.assert_and_consume_operator(TokenOp::LeftParenthesis);
+    let expressions =
+      if matches!(parser.peek(), Token(_, TokenContent::Operator(TokenOp::RightParenthesis))) {
+        vec![]
+      } else {
+        let mut expressions = parser.parse_comma_separated_list_with_end_token(
+          TokenOp::RightParenthesis,
+          &mut parse_expression_with_additional_preceding_comments,
         );
-      }
-      expressions.truncate(max_size);
-      expressions
-    };
+        if let Some(node) = expressions.get(max_size) {
+          parser.error_set.report_invalid_syntax_error(
+            node.loc(),
+            format!("Maximum allowed tuple size is {max_size}"),
+          );
+        }
+        expressions.truncate(max_size);
+        expressions
+      };
     let ending_comments = parser.collect_preceding_comments();
-    let end_loc = parser.assert_and_consume_operator(TokenOp::RPAREN);
+    let end_loc = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
     let loc = start_loc.union(&end_loc);
     expr::ParenthesizedExpressionList {
       loc,
@@ -1610,14 +1619,14 @@ mod expression_parser {
     mut associated_comments: Vec<Comment>,
   ) -> expr::Block<()> {
     associated_comments.append(&mut parser.collect_preceding_comments());
-    let start_loc = parser.assert_and_consume_operator(TokenOp::LBRACE);
+    let start_loc = parser.assert_and_consume_operator(TokenOp::LeftBrace);
 
     let mut statements = vec![];
-    while let Token(_, TokenContent::Keyword(Keyword::LET)) = parser.peek() {
+    while let Token(_, TokenContent::Keyword(Keyword::Let)) = parser.peek() {
       statements.push(parse_statement(parser));
     }
 
-    if let Token(end_loc, TokenContent::Operator(TokenOp::RBRACE)) = parser.peek() {
+    if let Token(end_loc, TokenContent::Operator(TokenOp::RightBrace)) = parser.peek() {
       let ending_comments = parser.collect_preceding_comments();
       // No final expression
       parser.consume();
@@ -1636,7 +1645,7 @@ mod expression_parser {
       // Has final expression
       let expression = parse_expression(parser);
       let ending_comments = parser.collect_preceding_comments();
-      let loc = start_loc.union(&parser.assert_and_consume_operator(TokenOp::RBRACE));
+      let loc = start_loc.union(&parser.assert_and_consume_operator(TokenOp::RightBrace));
       expr::Block {
         common: expr::ExpressionCommon {
           loc,
@@ -1654,18 +1663,18 @@ mod expression_parser {
     parser: &mut super::SourceParser,
   ) -> expr::DeclarationStatement<()> {
     let mut concrete_comments = parser.collect_preceding_comments();
-    let start_loc = parser.assert_and_consume_keyword(Keyword::LET);
+    let start_loc = parser.assert_and_consume_keyword(Keyword::Let);
     let pattern = super::pattern_parser::parse_matching_pattern(parser, vec![]);
-    let annotation = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
+    let annotation = if let Token(_, TokenContent::Operator(TokenOp::Colon)) = parser.peek() {
       Some(super::type_parser::parse_annotation_with_colon(parser))
     } else {
       None
     };
     concrete_comments.append(&mut parser.collect_preceding_comments());
-    parser.assert_and_consume_operator(TokenOp::ASSIGN);
+    parser.assert_and_consume_operator(TokenOp::Assign);
     let assigned_expression = Box::new(parse_expression(parser));
     concrete_comments.append(&mut parser.collect_preceding_comments());
-    let loc = start_loc.union(&parser.assert_and_consume_operator(TokenOp::SEMICOLON));
+    let loc = start_loc.union(&parser.assert_and_consume_operator(TokenOp::Semicolon));
     let associated_comments = parser.comments_store.create_comment_reference(concrete_comments);
     expr::DeclarationStatement {
       loc,
@@ -1686,7 +1695,7 @@ mod pattern_parser {
     mut starting_comments: Vec<Comment>,
   ) -> pattern::MatchingPattern<()> {
     let peeked = parser.peek();
-    if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = peeked {
+    if let Token(_, TokenContent::Operator(TokenOp::LeftParenthesis)) = peeked {
       let mut p = parse_tuple_pattern(parser);
       p.start_associated_comments =
         super::utils::mod_associated_comments_with_additional_preceding_comments(
@@ -1696,15 +1705,15 @@ mod pattern_parser {
         );
       return pattern::MatchingPattern::Tuple(p);
     }
-    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LeftBrace)) = peeked {
       starting_comments.append(&mut parser.collect_preceding_comments());
       parser.consume();
       let destructured_names = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::RBRACE,
+        TokenOp::RightBrace,
         &mut |s: &mut super::SourceParser, id_comments| {
           let field_name = s.parse_lower_id_with_comments(id_comments);
           let (pattern, loc, shorthand) =
-            if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
+            if let Token(_, TokenContent::Keyword(Keyword::As)) = s.peek() {
               let comments_before_as = s.collect_preceding_comments();
               s.consume();
               let nested = parse_matching_pattern(s, comments_before_as);
@@ -1724,7 +1733,7 @@ mod pattern_parser {
         },
       );
       let ending_comments = parser.collect_preceding_comments();
-      let end_location = parser.assert_and_consume_operator(TokenOp::RBRACE);
+      let end_location = parser.assert_and_consume_operator(TokenOp::RightBrace);
       return pattern::MatchingPattern::Object {
         location: peeked_loc.union(&end_location),
         start_associated_comments: parser
@@ -1743,7 +1752,7 @@ mod pattern_parser {
         name: id,
       };
       let (data_variables, loc) =
-        if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = parser.peek() {
+        if let Token(_, TokenContent::Operator(TokenOp::LeftParenthesis)) = parser.peek() {
           let tuple_patterns = parse_tuple_pattern(parser);
           let loc = peeked_loc.union(&tuple_patterns.location);
           (Some(tuple_patterns), loc)
@@ -1758,7 +1767,7 @@ mod pattern_parser {
         type_: (),
       });
     }
-    if let Token(location, TokenContent::Operator(TokenOp::UNDERSCORE)) = peeked {
+    if let Token(location, TokenContent::Operator(TokenOp::Underscore)) = peeked {
       starting_comments.append(&mut parser.collect_preceding_comments());
       parser.consume();
       return pattern::MatchingPattern::Wildcard {
@@ -1771,16 +1780,16 @@ mod pattern_parser {
 
   fn parse_tuple_pattern(parser: &mut super::SourceParser) -> pattern::TuplePattern<()> {
     let starting_comments = parser.collect_preceding_comments();
-    let start_loc = parser.assert_and_consume_operator(TokenOp::LPAREN);
+    let start_loc = parser.assert_and_consume_operator(TokenOp::LeftParenthesis);
     let destructured_names = parser.parse_comma_separated_list_with_end_token(
-      TokenOp::RPAREN,
+      TokenOp::RightParenthesis,
       &mut |s: &mut super::SourceParser, comments| pattern::TuplePatternElement {
         pattern: Box::new(parse_matching_pattern(s, comments)),
         type_: (),
       },
     );
     let ending_comments = parser.collect_preceding_comments();
-    let end_location = parser.assert_and_consume_operator(TokenOp::RPAREN);
+    let end_location = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
     pattern::TuplePattern {
       location: start_loc.union(&end_location),
       start_associated_comments: parser.comments_store.create_comment_reference(starting_comments),
@@ -1797,15 +1806,15 @@ mod type_parser {
   pub(super) fn parse_type_parameters(
     parser: &mut super::SourceParser,
   ) -> Option<annotation::TypeParameters> {
-    if let Token(start_loc, TokenContent::Operator(TokenOp::LT)) = parser.peek() {
+    if let Token(start_loc, TokenContent::Operator(TokenOp::LessThan)) = parser.peek() {
       let start_comments = parser.collect_preceding_comments();
       parser.consume();
       let mut parameters = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::GT,
+        TokenOp::GreaterThan,
         &mut super::type_parser::parse_type_parameter,
       );
       let end_comments = parser.collect_preceding_comments();
-      let location = start_loc.union(&parser.assert_and_consume_operator(TokenOp::GT));
+      let location = start_loc.union(&parser.assert_and_consume_operator(TokenOp::GreaterThan));
       parser.available_tparams.extend(parameters.iter().map(|it| it.name.name));
       fix_tparams_with_generic_annot(parser, &mut parameters);
       Some(annotation::TypeParameters {
@@ -1824,7 +1833,7 @@ mod type_parser {
     associated_comments: Vec<Comment>,
   ) -> annotation::TypeParameter {
     let name = parser.parse_upper_id_with_comments(associated_comments);
-    let (bound, loc) = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
+    let (bound, loc) = if let Token(_, TokenContent::Operator(TokenOp::Colon)) = parser.peek() {
       let id_comments = parser.collect_preceding_comments();
       parser.consume();
       let id = parser.parse_upper_id_with_comments(id_comments);
@@ -1856,7 +1865,7 @@ mod type_parser {
   }
 
   fn parse_optional_annotation(parser: &mut super::SourceParser) -> Option<annotation::T> {
-    if let Token(_, TokenContent::Operator(TokenOp::COLON)) = parser.peek() {
+    if let Token(_, TokenContent::Operator(TokenOp::Colon)) = parser.peek() {
       Some(parse_annotation_with_colon(parser))
     } else {
       None
@@ -1869,7 +1878,7 @@ mod type_parser {
 
   pub(super) fn parse_annotation_with_colon(parser: &mut super::SourceParser) -> annotation::T {
     let annotation_comments = parser.collect_preceding_comments();
-    parser.assert_and_consume_operator(TokenOp::COLON);
+    parser.assert_and_consume_operator(TokenOp::Colon);
     parse_annotation_with_additional_comments(parser, annotation_comments)
   }
 
@@ -1880,7 +1889,7 @@ mod type_parser {
     associated_comments.append(&mut parser.collect_preceding_comments());
     let peeked = parser.peek();
     match peeked.1 {
-      TokenContent::Keyword(Keyword::UNIT) => {
+      TokenContent::Keyword(Keyword::Unit) => {
         parser.consume();
         annotation::T::Primitive(
           peeked.0,
@@ -1888,7 +1897,7 @@ mod type_parser {
           annotation::PrimitiveTypeKind::Unit,
         )
       }
-      TokenContent::Keyword(Keyword::BOOL) => {
+      TokenContent::Keyword(Keyword::Bool) => {
         parser.consume();
         annotation::T::Primitive(
           peeked.0,
@@ -1896,7 +1905,7 @@ mod type_parser {
           annotation::PrimitiveTypeKind::Bool,
         )
       }
-      TokenContent::Keyword(Keyword::INT) => {
+      TokenContent::Keyword(Keyword::Int) => {
         parser.consume();
         annotation::T::Primitive(
           peeked.0,
@@ -1916,35 +1925,38 @@ mod type_parser {
           annotation::T::Id(id_annot)
         }
       }
-      TokenContent::Operator(TokenOp::LPAREN) => {
+      TokenContent::Operator(TokenOp::LeftParenthesis) => {
         parser.consume();
-        let parameters = if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = parser.peek() {
-          let mut comments = parser.collect_preceding_comments();
-          let location = peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RPAREN));
-          comments.append(&mut parser.collect_preceding_comments());
-          parser.assert_and_consume_operator(TokenOp::ARROW);
-          annotation::ParenthesizedAnnotationList {
-            location,
-            start_associated_comments: NO_COMMENT_REFERENCE,
-            ending_associated_comments: parser.comments_store.create_comment_reference(comments),
-            annotations: Vec::with_capacity(0),
-          }
-        } else {
-          let parameters = parser.parse_comma_separated_list_with_end_token(
-            TokenOp::RPAREN,
-            &mut parse_annotation_with_additional_comments,
-          );
-          let mut comments = parser.collect_preceding_comments();
-          let location = peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RPAREN));
-          comments.append(&mut parser.collect_preceding_comments());
-          parser.assert_and_consume_operator(TokenOp::ARROW);
-          annotation::ParenthesizedAnnotationList {
-            location,
-            start_associated_comments: NO_COMMENT_REFERENCE,
-            ending_associated_comments: parser.comments_store.create_comment_reference(comments),
-            annotations: parameters,
-          }
-        };
+        let parameters =
+          if let Token(_, TokenContent::Operator(TokenOp::RightParenthesis)) = parser.peek() {
+            let mut comments = parser.collect_preceding_comments();
+            let location =
+              peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RightParenthesis));
+            comments.append(&mut parser.collect_preceding_comments());
+            parser.assert_and_consume_operator(TokenOp::Arrow);
+            annotation::ParenthesizedAnnotationList {
+              location,
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: parser.comments_store.create_comment_reference(comments),
+              annotations: Vec::with_capacity(0),
+            }
+          } else {
+            let parameters = parser.parse_comma_separated_list_with_end_token(
+              TokenOp::RightParenthesis,
+              &mut parse_annotation_with_additional_comments,
+            );
+            let mut comments = parser.collect_preceding_comments();
+            let location =
+              peeked.0.union(&parser.assert_and_consume_operator(TokenOp::RightParenthesis));
+            comments.append(&mut parser.collect_preceding_comments());
+            parser.assert_and_consume_operator(TokenOp::Arrow);
+            annotation::ParenthesizedAnnotationList {
+              location,
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: parser.comments_store.create_comment_reference(comments),
+              annotations: parameters,
+            }
+          };
         let return_type = parse_annotation(parser);
         let location = peeked.0.union(&return_type.location());
         annotation::T::Fn(annotation::Function {
@@ -2025,21 +2037,21 @@ mod type_parser {
   pub(super) fn parse_optional_type_arguments(
     parser: &mut super::SourceParser,
   ) -> Option<TypeArguments> {
-    if let Token(start_loc, TokenContent::Operator(TokenOp::LT)) = parser.peek() {
+    if let Token(start_loc, TokenContent::Operator(TokenOp::LessThan)) = parser.peek() {
       let start_associated_comments = {
         let comments = parser.collect_preceding_comments();
         parser.comments_store.create_comment_reference(comments)
       };
-      parser.assert_and_consume_operator(TokenOp::LT);
+      parser.assert_and_consume_operator(TokenOp::LessThan);
       let arguments = parser.parse_comma_separated_list_with_end_token(
-        TokenOp::GT,
+        TokenOp::GreaterThan,
         &mut parse_annotation_with_additional_comments,
       );
       let ending_associated_comments = {
         let comments = parser.collect_preceding_comments();
         parser.comments_store.create_comment_reference(comments)
       };
-      let location = start_loc.union(&parser.assert_and_consume_operator(TokenOp::GT));
+      let location = start_loc.union(&parser.assert_and_consume_operator(TokenOp::GreaterThan));
       Some(annotation::TypeArguments {
         location,
         start_associated_comments,

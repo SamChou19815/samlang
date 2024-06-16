@@ -1,4 +1,3 @@
-#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
 use itertools::Itertools;
 use samlang_ast::{Description, Location, Reason};
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -1098,7 +1097,7 @@ mod tests {
         reference_locs: vec![]
       }
     );
-    assert!(ErrorPrinterStyle::Terminal.clone() != ErrorPrinterStyle::Text);
+    assert!(ErrorPrinterStyle::Terminal != ErrorPrinterStyle::Text);
     format!(
       "{:?}",
       CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }

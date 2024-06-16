@@ -1,6 +1,3 @@
-#![allow(clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
-#![cfg_attr(coverage_nightly, feature(no_coverage))]
-
 use std::{
   fs,
   path::{Path, PathBuf},

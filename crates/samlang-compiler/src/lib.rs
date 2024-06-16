@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(clippy::clone_on_copy))]
-
 mod hir_lowering;
 mod hir_string_manager;
 mod hir_type_conversion;

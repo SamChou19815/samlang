@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
-
 use samlang_ast::source::Module;
 use samlang_errors::ErrorSet;
 use samlang_heap::ModuleReference;
