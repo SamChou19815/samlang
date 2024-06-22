@@ -7,7 +7,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -62,6 +62,7 @@ mod tests {
         ),
         Statement::IsPointer {
           name: heap.alloc_str_for_test("u0"),
+          pointer_type: TypeNameId::STR,
           operand: Expression::var_name(heap.alloc_str_for_test("i0"), INT_32_TYPE),
         },
         Statement::binary(
@@ -129,7 +130,7 @@ mod tests {
       table,
       r#"let i0: int = (a: int)[2];
 let b0 = (i0: int) + 3;
-let u0 = is_pointer((i0: int));
+let u0 = (i0: int) is _Str;
 let b3 = (i0: int) + (b0: int);
 let c1 = 0 as int;
 let c2: int;

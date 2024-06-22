@@ -263,7 +263,8 @@ fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
 
 fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
   match stmt {
-    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
+    Statement::IsPointer { name: _, pointer_type: _, operand }
+    | Statement::Not { name: _, operand } => {
       rewrite_expr(state, operand);
     }
     Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {

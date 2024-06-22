@@ -39,7 +39,11 @@ fn collect_used_names_from_statement(
   statement: &Statement,
 ) {
   match statement {
-    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
+    Statement::IsPointer { name: _, pointer_type, operand } => {
+      type_set.insert(*pointer_type);
+      collect_used_names_from_expression(str_name_set, fn_name_set, type_set, operand);
+    }
+    Statement::Not { name: _, operand } => {
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, operand);
     }
     Statement::Binary { name: _, operator: _, e1, e2 } => {

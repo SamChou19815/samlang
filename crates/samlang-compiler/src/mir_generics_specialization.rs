@@ -172,6 +172,7 @@ impl Rewriter {
             // Here we test whether this is a pointer
             collector.push(mir::Statement::IsPointer {
               name: comparison_temp,
+              pointer_type: *unboxed_t,
               operand: mir::Expression::var_name(casted_int_collector, mir::INT_32_TYPE),
             });
             let mut nested_stmts = vec![];
@@ -179,7 +180,7 @@ impl Rewriter {
             // unboxed pointer type.
             nested_stmts.push(mir::Statement::Cast {
               name: binded_name,
-              type_: *unboxed_t,
+              type_: mir::Type::Id(*unboxed_t),
               assigned_expression: test_expr,
             });
             nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
@@ -543,13 +544,13 @@ impl Rewriter {
                   mapping_types.push(self.rewrite_type(heap, t, &solved_targs_replacement_map));
                 }
                 if permit_unboxed_optimization
+                  && already_unused_boxed_optimization.is_none()
                   && mapping_types.len() == 2
                   && self.type_permit_enum_boxed_optimization(&mapping_types[1])
-                  && already_unused_boxed_optimization.is_none()
                 {
-                  let t = mapping_types[1];
+                  let t = mapping_types[1].into_id().unwrap();
                   mir_variants.push(mir::EnumTypeDefinition::Unboxed(t));
-                  already_unused_boxed_optimization = Some((tag, t));
+                  already_unused_boxed_optimization = Some((tag, mir::Type::Id(t)));
                 } else {
                   mir_variants.push(mir::EnumTypeDefinition::Boxed(mapping_types));
                 }
@@ -1322,7 +1323,7 @@ function _DUMMY_I$main(): int {
   }
   let b = 0 as DUMMY_Enum;
   let _t1 = (b: DUMMY_Enum) as int;
-  let _t2 = is_pointer((_t1: int));
+  let _t2 = (_t1: int) is DUMMY_J;
   if (_t2: int) {
     let a = (b: DUMMY_Enum) as DUMMY_J;
   } else {

@@ -235,7 +235,7 @@ impl ClosureTypeDefinition {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EnumTypeDefinition {
   Boxed(Vec<Type>),
-  Unboxed(Type),
+  Unboxed(TypeNameId),
   Int,
 }
 
@@ -245,7 +245,7 @@ impl EnumTypeDefinition {
       EnumTypeDefinition::Boxed(types) => {
         format!("Boxed({})", types.iter().map(|it| it.pretty_print(heap, table)).join(", "))
       }
-      EnumTypeDefinition::Unboxed(t) => format!("Unboxed({})", t.pretty_print(heap, table)),
+      EnumTypeDefinition::Unboxed(t) => format!("Unboxed({})", t.encoded_for_test(heap, table)),
       EnumTypeDefinition::Int => "int".to_string(),
     }
   }
@@ -482,6 +482,7 @@ impl GenenalLoopVariable {
 pub enum Statement {
   IsPointer {
     name: PStr,
+    pointer_type: TypeNameId,
     operand: Expression,
   },
   Not {
@@ -644,12 +645,13 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::IsPointer { name, operand } => {
+      Statement::IsPointer { name, pointer_type, operand } => {
         collector.push(format!(
-          "{}let {} = is_pointer({});\n",
+          "{}let {} = {} is {};\n",
           "  ".repeat(level),
           name.as_str(heap),
           operand.debug_print(heap, table),
+          pointer_type.encoded_for_test(heap, table)
         ));
       }
       Statement::Not { name, operand } => {

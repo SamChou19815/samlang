@@ -36,9 +36,9 @@ fn optimize_stmt(
   binded_value_cx: &mut LocalBindedValueContext,
 ) -> bool {
   match stmt {
-    Statement::IsPointer { name, operand } => {
+    Statement::IsPointer { name, pointer_type, operand } => {
       optimize_expr(operand, variable_cx);
-      let value = BindedValue::IsPointer(*operand);
+      let value = BindedValue::IsPointer(*pointer_type, *operand);
       if let Some(binded) = binded_value_cx.get(&value) {
         lvn_bind_var(variable_cx, *name, *binded);
         false

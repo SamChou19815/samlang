@@ -221,8 +221,9 @@ fn inline_rewrite_stmt(
   stmt: &Statement,
 ) -> Statement {
   match stmt {
-    Statement::IsPointer { name, operand } => Statement::IsPointer {
+    Statement::IsPointer { name, pointer_type, operand } => Statement::IsPointer {
       name: bind_with_mangled_name(cx, heap, prefix, name, &INT_32_TYPE),
+      pointer_type: *pointer_type,
       operand: inline_rewrite_expr(operand, cx),
     },
     Statement::Not { name, operand } => Statement::Not {

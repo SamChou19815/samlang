@@ -145,7 +145,7 @@ mod tests {
       name: table.create_type_name_for_test(PStr::UPPER_A),
       mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE, INT_32_TYPE]),
     };
-    let ed1 = EnumTypeDefinition::Unboxed(Type::Id(table.create_type_name_for_test(PStr::UPPER_D)));
+    let ed1 = EnumTypeDefinition::Unboxed(table.create_type_name_for_test(PStr::UPPER_D));
     let ed2 = EnumTypeDefinition::Boxed(vec![INT_32_TYPE, INT_32_TYPE]);
     let ed3 = EnumTypeDefinition::Int;
     assert!(ed1.eq(&ed1));
@@ -235,7 +235,11 @@ mod tests {
       ],
       s2: vec![
         Statement::Not { name: heap.alloc_str_for_test("dd"), operand: ZERO },
-        Statement::IsPointer { name: heap.alloc_str_for_test("dd"), operand: ZERO },
+        Statement::IsPointer {
+          name: heap.alloc_str_for_test("dd"),
+          pointer_type: TypeNameId::STR,
+          operand: ZERO,
+        },
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::PLUS, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
         Statement::binary(
@@ -327,7 +331,7 @@ if 0 {
   bar = (b1: int);
 } else {
   let dd = !0;
-  let dd = is_pointer(0);
+  let dd = 0 is _Str;
   let dd = 0 + 0;
   let dd = 0 + 0;
   let dd = 0 - -2147483648;

@@ -6,7 +6,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -185,6 +185,7 @@ mod tests {
         },
         Statement::IsPointer {
           name: heap.alloc_str_for_test("a8"),
+          pointer_type: TypeNameId::STR,
           operand: Expression::var_name(heap.alloc_str_for_test("a6"), INT_32_TYPE),
         },
         Statement::StructInit {
@@ -315,7 +316,7 @@ let i0: int = 6[2];
 let b8 = (i0: int) * (i0: int);
 let a6 = (i1: int) / 30;
 let a7 = !(a6: int);
-let a8 = is_pointer((a6: int));
+let a8 = (a6: int) is _Str;
 let s: _Id = [0, (a6: int), 30, (a7: int), (a8: int)];
 let s: _Id = Closure { fun: (__$closure: () -> int), context: 0 };
 __$fff(1, 0, 0, 0, 0, 0, 1);

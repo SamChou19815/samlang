@@ -46,7 +46,7 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, s: &lir::Statement) -> Vec<wasm::Instruction> {
     match s {
-      lir::Statement::IsPointer { name, operand } => {
+      lir::Statement::IsPointer { name, pointer_type: _, operand } => {
         let operand1 = Box::new(self.lower_expr(operand));
         let operand2 = Box::new(self.lower_expr(operand));
         vec![wasm::Instruction::Inline(self.set(
@@ -323,7 +323,8 @@ mod tests {
   use samlang_ast::{
     hir::{BinaryOperator, GlobalString},
     lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_32_TYPE, ZERO},
-    mir, wasm,
+    mir::{self, TypeNameId},
+    wasm,
   };
   use samlang_heap::{Heap, PStr};
 
@@ -414,7 +415,11 @@ mod tests {
             )],
           },
           Statement::Not { name: heap.alloc_str_for_test("un1"), operand: ZERO },
-          Statement::IsPointer { name: heap.alloc_str_for_test("un2"), operand: ZERO },
+          Statement::IsPointer {
+            name: heap.alloc_str_for_test("un2"),
+            pointer_type: TypeNameId::STR,
+            operand: ZERO,
+          },
           Statement::binary(
             heap.alloc_str_for_test("bin"),
             BinaryOperator::PLUS,
