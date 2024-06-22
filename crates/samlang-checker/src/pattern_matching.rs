@@ -500,7 +500,7 @@ mod tests {
   #[test]
   fn boilterplate() {
     format!("{:?} {:?} {:?}", OPTION_NONE, P::wildcard(), PatternVector(super::one(P::wildcard())));
-    assert_eq!(LETTERS, LETTERS_A.clone().class_name);
+    assert_eq!(LETTERS, LETTERS_A.class_name);
     assert_eq!(
       2,
       MockingPatternMatchingContext

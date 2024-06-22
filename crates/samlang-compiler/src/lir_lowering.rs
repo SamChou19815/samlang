@@ -790,10 +790,10 @@ mod tests {
     let heap = &mut Heap::new();
     let mut table = SymbolTable::new();
 
-    let closure_type = &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("CC")));
-    let obj_type = &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Object")));
+    let closure_type = Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("CC")));
+    let obj_type = Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Object")));
     let variant_type =
-      &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Variant")));
+      Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Variant")));
     let sources = Sources {
       global_variables: vec![hir::GlobalString(heap.alloc_str_for_test("G1"))],
       closure_types: vec![ClosureTypeDefinition {
@@ -841,7 +841,7 @@ mod tests {
             Statement::Call {
               callee: Callee::Variable(VariableName::new(
                 heap.alloc_str_for_test("cc"),
-                closure_type.clone(),
+                closure_type,
               )),
               arguments: vec![Expression::Int31Literal(0)],
               return_type: INT_32_TYPE,
@@ -850,25 +850,25 @@ mod tests {
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v1"),
               type_: INT_32_TYPE,
-              pointer_expression: Expression::var_name(PStr::LOWER_A, obj_type.clone()),
+              pointer_expression: Expression::var_name(PStr::LOWER_A, obj_type),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v2"),
               type_: INT_32_TYPE,
-              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
+              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v3"),
               type_: INT_32_TYPE,
-              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
+              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type),
               index: 1,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v4"),
               type_: Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
-              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
+              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type),
               index: 1,
             },
             Statement::While {
@@ -909,7 +909,7 @@ mod tests {
             Statement::binary(heap.alloc_str_for_test("v1"), BinaryOperator::PLUS, ZERO, ZERO),
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("O"),
-              type_name: obj_type.as_id().unwrap().clone(),
+              type_name: obj_type.into_id().unwrap(),
               expression_list: vec![
                 ZERO,
                 Expression::var_name(
@@ -920,17 +920,17 @@ mod tests {
             },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v1"),
-              type_name: variant_type.as_id().unwrap().clone(),
+              type_name: variant_type.into_id().unwrap(),
               expression_list: vec![ZERO, ZERO],
             },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v2"),
-              type_name: variant_type.as_id().unwrap().clone(),
+              type_name: variant_type.into_id().unwrap(),
               expression_list: vec![ZERO, Expression::StringName(heap.alloc_str_for_test("G1"))],
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("c1"),
-              closure_type_name: closure_type.as_id().unwrap().clone(),
+              closure_type_name: closure_type.into_id().unwrap(),
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
                 type_: Type::new_fn_unwrapped(
@@ -983,7 +983,7 @@ mod tests {
                 Statement::Call {
                   callee: Callee::Variable(VariableName::new(
                     heap.alloc_str_for_test("cc"),
-                    closure_type.clone(),
+                    closure_type,
                   )),
                   arguments: vec![ZERO],
                   return_type: Type::Id(
@@ -993,7 +993,7 @@ mod tests {
                 },
                 Statement::ClosureInit {
                   closure_variable_name: heap.alloc_str_for_test("v2"),
-                  closure_type_name: closure_type.as_id().unwrap().clone(),
+                  closure_type_name: closure_type.into_id().unwrap(),
                   function_name: FunctionNameExpression {
                     name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
                     type_: Type::new_fn_unwrapped(
@@ -1009,9 +1009,9 @@ mod tests {
               ],
               final_assignments: vec![(
                 heap.alloc_str_for_test("finalV"),
-                closure_type.clone(),
-                Expression::var_name(heap.alloc_str_for_test("v1"), closure_type.clone()),
-                Expression::var_name(heap.alloc_str_for_test("v2"), closure_type.clone()),
+                closure_type,
+                Expression::var_name(heap.alloc_str_for_test("v1"), closure_type),
+                Expression::var_name(heap.alloc_str_for_test("v2"), closure_type),
               )],
             },
             Statement::IfElse {

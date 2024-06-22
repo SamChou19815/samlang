@@ -285,7 +285,7 @@ mod tests {
         },
         Statement::Binary {
           name: heap.alloc_str_for_test("dd"),
-          operator: BinaryOperator::XOR.clone(),
+          operator: BinaryOperator::XOR,
           e1: ZERO,
           e2: ZERO,
         },
@@ -300,13 +300,13 @@ mod tests {
           bindings: vec![None, Some((PStr::UNDERSCORE, INT_TYPE))],
           s1: vec![Statement::Binary {
             name: heap.alloc_str_for_test("dd"),
-            operator: BinaryOperator::XOR.clone(),
+            operator: BinaryOperator::XOR,
             e1: ZERO,
             e2: ZERO,
           }],
           s2: vec![Statement::Binary {
             name: heap.alloc_str_for_test("dd"),
-            operator: BinaryOperator::XOR.clone(),
+            operator: BinaryOperator::XOR,
             e1: ZERO,
             e2: ZERO,
           }],
@@ -451,7 +451,7 @@ if 0 {
     let heap = &mut Heap::new();
 
     let sources1 = Sources {
-      global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez")).clone()],
+      global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez"))],
       closure_types: vec![ClosureTypeDefinition {
         name: TypeName { module_reference: None, type_name: PStr::UPPER_C },
         type_parameters: vec![],

@@ -1,6 +1,3 @@
-#![allow(clippy::upper_case_acronyms)]
-#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
-
 use samlang_ast::source;
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};

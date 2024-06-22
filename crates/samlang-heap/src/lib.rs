@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
-
 use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet},
@@ -637,7 +635,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.clone().storage.contains(&0));
+    assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.storage.contains(&0));
     format!(
       "{:?}",
       PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } }).clone()

@@ -195,7 +195,7 @@ mod tests {
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::LOR, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::SHL, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::SHR, ZERO, ZERO),
-        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR.clone(), ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR, ZERO, ZERO),
         Statement::Cast {
           name: heap.alloc_str_for_test("cast"),
           type_: INT_32_TYPE,
@@ -351,7 +351,7 @@ if 0 {
     let mut table = SymbolTable::new();
 
     let sources1 = Sources {
-      global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez")).clone()],
+      global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez"))],
       closure_types: vec![ClosureTypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_A),
         function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
