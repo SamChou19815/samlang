@@ -148,7 +148,7 @@ mod tests {
     };
     let ed1 = EnumTypeDefinition::Unboxed(table.create_type_name_for_test(PStr::UPPER_D));
     let ed2 = EnumTypeDefinition::Boxed(vec![INT_32_TYPE, INT_32_TYPE]);
-    let ed3 = EnumTypeDefinition::Int;
+    let ed3 = EnumTypeDefinition::Int31;
     assert!(ed1.eq(&ed1));
     assert!(ed2.eq(&ed2));
     assert!(ed3.eq(&ed3));
@@ -158,7 +158,7 @@ mod tests {
     };
     assert_eq!("object type _A = [int, int]", d1.pretty_print(heap, table));
     assert_eq!(
-      "variant type _B = [Unboxed(_D), Boxed(int, int), int]",
+      "variant type _B = [Unboxed(_D), Boxed(int, int), i31]",
       d2.pretty_print(heap, table)
     );
     format!("{d1:?} {d2:?}");
@@ -335,7 +335,7 @@ if 0 {
   let dd = 0 is _Str;
   let dd = 0 + 0;
   let dd = 0 + 0;
-  let dd = 0 - -2147483648;
+  let dd = 0 - -2147483648 as i31;
   let dd = 0 * 0;
   let dd = 0 / 0;
   let dd = 0 % 0;

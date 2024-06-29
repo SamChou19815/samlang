@@ -186,7 +186,7 @@ fn analyze_all_used_names(
             EnumTypeDefinition::Unboxed(t) => {
               type_set.insert(*t);
             }
-            EnumTypeDefinition::Int => {}
+            EnumTypeDefinition::Int31 => {}
           }
         }
       }
@@ -308,7 +308,7 @@ mod tests {
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
           mappings: TypeDefinitionMappings::Enum(vec![
-            EnumTypeDefinition::Int,
+            EnumTypeDefinition::Int31,
             EnumTypeDefinition::Unboxed(TypeNameId::STR),
             EnumTypeDefinition::Boxed(vec![INT_32_TYPE]),
           ]),

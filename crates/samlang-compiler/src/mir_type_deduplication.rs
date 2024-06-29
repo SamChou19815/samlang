@@ -229,7 +229,7 @@ pub(super) fn deduplicate(
                 EnumTypeDefinition::Unboxed(t) => {
                   EnumTypeDefinition::Unboxed(rewrite_id_type_name(&state, t))
                 }
-                EnumTypeDefinition::Int => EnumTypeDefinition::Int,
+                EnumTypeDefinition::Int31 => EnumTypeDefinition::Int31,
               })
               .collect(),
           ),
@@ -344,7 +344,7 @@ mod tests {
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Boxed(vec![INT_32_TYPE]),
             EnumTypeDefinition::Unboxed(TypeNameId::STR),
-            EnumTypeDefinition::Int,
+            EnumTypeDefinition::Int31,
           ]),
         },
       ],
@@ -417,7 +417,7 @@ mod tests {
       r#"closure type _A = () -> int
 closure type _C = () -> _C
 object type _C = [int, _Str]
-variant type _E = [Boxed(int), Unboxed(_Str), int]
+variant type _E = [Boxed(int), Unboxed(_Str), i31]
 function __$main(): int {
   let _: int;
   if 1 {

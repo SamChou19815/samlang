@@ -113,8 +113,10 @@ impl Expression {
     str_table: &HashMap<PStr, usize>,
   ) {
     match self {
-      Expression::Int32Literal(i) | Expression::Int31Literal(i) => {
-        collector.push_str(&i.to_string())
+      Expression::Int32Literal(i) => collector.push_str(&i.to_string()),
+      Expression::Int31Literal(i) => {
+        let i32_form = i * 2 + 1;
+        collector.push_str(&i32_form.to_string())
       }
       Expression::Variable(n, _) => collector.push_str(n.as_str(heap)),
       Expression::StringName(n) => {
@@ -574,6 +576,7 @@ pub fn ts_prolog() -> String {
   let table = &SymbolTable::new();
   let mut collector = String::new();
 
+  collector.push_str("type i31 = number;\n");
   collector.push_str("const ");
   FunctionName::STR_CONCAT.write_encoded(&mut collector, heap, table);
   collector.push_str(" = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];\n");

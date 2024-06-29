@@ -660,7 +660,7 @@ function __$str_const(): int {
 function __$func_with_consts(c: _C, e: _E): int {
   let _ = !0;
   let _ = 0 + (c: int);
-  let _ = 0 + 0;
+  let _ = 0 + 0 as i31;
   let _: int = 0[0];
   let _: __ = Closure { fun: (__$otherwise_optimizable: () -> int), context: 0 };
   (_: int)(0);

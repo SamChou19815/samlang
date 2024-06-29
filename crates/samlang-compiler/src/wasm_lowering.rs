@@ -243,9 +243,8 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_expr(&mut self, e: &lir::Expression) -> wasm::InlineInstruction {
     match e {
-      lir::Expression::Int32Literal(v) | lir::Expression::Int31Literal(v) => {
-        wasm::InlineInstruction::Const(*v)
-      }
+      lir::Expression::Int32Literal(v) => wasm::InlineInstruction::Const(*v),
+      lir::Expression::Int31Literal(v) => wasm::InlineInstruction::Const(*v * 2 + 1),
       lir::Expression::Variable(n, _) => self.get(n),
       lir::Expression::StringName(n) => {
         let index = self.global_variables_to_pointer_mapping.get(n).unwrap();
