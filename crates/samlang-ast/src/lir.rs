@@ -6,23 +6,6 @@ use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrimitiveType {
-  Int32,
-  Int31,
-  Any,
-}
-
-impl PrimitiveType {
-  fn as_str(&self) -> &'static str {
-    match self {
-      PrimitiveType::Int32 => "number",
-      PrimitiveType::Int31 => "i31",
-      PrimitiveType::Any => "any",
-    }
-  }
-}
-
 #[derive(Debug, Clone)]
 pub struct FunctionType {
   pub argument_types: Vec<Type>,
@@ -50,7 +33,9 @@ impl FunctionType {
 
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum Type {
-  Primitive(PrimitiveType),
+  Int32,
+  Int31,
+  AnyPointer,
   Id(TypeNameId),
   Fn(FunctionType),
 }
@@ -66,7 +51,9 @@ impl Type {
 
   fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     match self {
-      Type::Primitive(t) => collector.push_str(t.as_str()),
+      Type::Int32 => collector.push_str("number"),
+      Type::Int31 => collector.push_str("i31"),
+      Type::AnyPointer => collector.push_str("any"),
       Type::Id(id) => id.write_encoded(collector, heap, table),
       Type::Fn(function) => function.pretty_print(collector, heap, table),
     }
@@ -74,7 +61,9 @@ impl Type {
 
   pub fn is_the_same_type(&self, other: &Type) -> bool {
     match (self, other) {
-      (Type::Primitive(k1), Type::Primitive(k2)) => k1 == k2,
+      (Type::Int32, Type::Int32)
+      | (Type::Int31, Type::Int31)
+      | (Type::AnyPointer, Type::AnyPointer) => true,
       (Type::Id(n1), Type::Id(n2)) => n1 == n2,
       (Type::Fn(f1), Type::Fn(f2)) => {
         f1.return_type.is_the_same_type(&f2.return_type)
@@ -90,9 +79,9 @@ impl Type {
   }
 }
 
-pub const INT_32_TYPE: Type = Type::Primitive(PrimitiveType::Int32);
-pub const INT_31_TYPE: Type = Type::Primitive(PrimitiveType::Int31);
-pub const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
+pub const INT_32_TYPE: Type = Type::Int32;
+pub const INT_31_TYPE: Type = Type::Int31;
+pub const ANY_POINTER_TYPE: Type = Type::AnyPointer;
 
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum Expression {

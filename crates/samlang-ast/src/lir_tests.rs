@@ -10,8 +10,6 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(PrimitiveType::Int32.eq(&PrimitiveType::Int32));
-    assert!(PrimitiveType::Int31.eq(&PrimitiveType::Int31));
     assert!(INT_32_TYPE.as_fn().is_none());
     assert!(ZERO.as_fn_name().is_none());
 

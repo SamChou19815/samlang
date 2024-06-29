@@ -63,6 +63,7 @@ impl TypeName {
         Type::Int32 => collector.push_str("int"),
         Type::Int31 => collector.push_str("i31"),
         Type::Id(id) => id.write_encoded(collector, heap, table),
+        Type::AnyPointer => collector.push_str("any"),
       }
     }
     if let Some(t) = self.sub_type_tag {
@@ -197,6 +198,7 @@ pub enum Type {
   Int32,
   Int31,
   Id(TypeNameId),
+  AnyPointer,
 }
 
 impl Type {
@@ -209,12 +211,14 @@ impl Type {
       Type::Int32 => "int".to_string(),
       Type::Int31 => "i31".to_string(),
       Type::Id(id) => id.encoded_for_test(heap, table),
+      Type::AnyPointer => "any".to_string(),
     }
   }
 }
 
 pub const INT_32_TYPE: Type = Type::Int32;
 pub const INT_31_TYPE: Type = Type::Int31;
+pub const ANY_POINTER_TYPE: Type = Type::AnyPointer;
 
 #[derive(Debug, Clone)]
 pub struct ClosureTypeDefinition {
