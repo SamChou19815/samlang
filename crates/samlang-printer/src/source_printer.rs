@@ -1,4 +1,4 @@
-use super::prettier::{rc_string, Document};
+use super::prettier::Document;
 use itertools::Itertools;
 use samlang_ast::source::{
   annotation, expr, pattern, ClassDefinition, ClassMemberDeclaration, CommentKind,
@@ -9,7 +9,7 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
 fn text_pstr(heap: &Heap, s: PStr) -> Document {
-  Document::NonStaticText(rc_string(String::from(s.as_str(heap))))
+  Document::non_static_str(String::from(s.as_str(heap)))
 }
 
 fn parenthesis_surrounded_doc(doc: Document) -> Document {
@@ -577,7 +577,7 @@ fn create_doc_without_preceding_comment(
   match expression {
     expr::E::Literal(_, Literal::Bool(false)) => Document::Text("false"),
     expr::E::Literal(_, Literal::Bool(true)) => Document::Text("true"),
-    expr::E::Literal(_, Literal::Int(i)) => Document::NonStaticText(rc_string(i.to_string())),
+    expr::E::Literal(_, Literal::Int(i)) => Document::non_static_str(i.to_string()),
     expr::E::Literal(_, Literal::String(s)) => {
       Document::concat(vec![Document::Text("\""), text_pstr(heap, *s), Document::Text("\"")])
     }
@@ -1219,7 +1219,7 @@ pub(super) fn import_to_document(
     |m| text_pstr(heap, m.name),
   )));
   documents.push(Document::Text(" from "));
-  documents.push(Document::NonStaticText(rc_string(imported_module.pretty_print(heap))));
+  documents.push(Document::non_static_str(imported_module.pretty_print(heap)));
   documents.push(Document::Text(";"));
   documents.push(Document::LineHard);
   Document::concat(documents)
