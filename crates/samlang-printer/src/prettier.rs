@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::{ops::Deref, rc::Rc};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Str(Rc<str>);
 
 impl Deref for Str {
@@ -12,29 +12,20 @@ impl Deref for Str {
   }
 }
 
-pub(super) fn rc_string(s: String) -> Str {
-  Str(Rc::from(s))
-}
-
 #[cfg(test)]
 mod rc_string_tests {
-  use std::collections::HashSet;
-
   fn rcs(s: &'static str) -> super::Str {
     super::Str(super::Rc::from(s))
   }
 
   #[test]
   fn tests() {
-    assert!(rcs("foo") < rcs("zuck"));
     assert!(rcs("foo").cmp(&rcs("zuck")).is_lt());
     assert!(rcs("foo").partial_cmp(&rcs("zuck")).is_some());
     assert!(rcs("foo") == rcs("foo"));
     format!("{:?}", rcs("debug"));
     assert_eq!(rcs("zuck"), rcs("zuck"));
     assert_eq!(Some('h'), rcs("hiya").chars().next());
-    let mut set = HashSet::new();
-    set.insert(rcs("sam"));
   }
 }
 
@@ -65,6 +56,10 @@ pub(super) enum Document {
 }
 
 impl Document {
+  pub(super) fn non_static_str(s: String) -> Document {
+    Document::NonStaticText(Str(Rc::from(s)))
+  }
+
   /// Replace all LINE with TEXT(' '). Correspond to the `flatten` function in the prettier paper.
   pub(super) fn flatten(&self) -> Option<Document> {
     match self {
@@ -139,11 +134,11 @@ impl Document {
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
         Rc::new(Self::Concat(
-          Rc::new(Self::NonStaticText(rc_string(word.to_string()))),
+          Rc::new(Self::non_static_str(word.to_string())),
           Rc::new(Self::Text(" ")),
         )),
         Rc::new(Self::concat(vec![
-          Self::NonStaticText(rc_string(word.to_string())),
+          Self::non_static_str(word.to_string()),
           Self::LineHard,
           Self::Text("// "),
         ])),
@@ -152,7 +147,7 @@ impl Document {
     Self::Union(
       Rc::new(Self::Concat(
         Rc::new(Self::Text("// ")),
-        Rc::new(Self::NonStaticText(rc_string(text.to_string()))),
+        Rc::new(Self::non_static_str(text.to_string())),
       )),
       Rc::new(Self::concat(multiline_docs)),
     )
@@ -163,11 +158,11 @@ impl Document {
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
         Rc::new(Self::Concat(
-          Rc::new(Self::NonStaticText(rc_string(word.to_string()))),
+          Rc::new(Self::non_static_str(word.to_string())),
           Rc::new(Self::Text(" ")),
         )),
         Rc::new(Self::concat(vec![
-          Self::NonStaticText(rc_string(word.to_string())),
+          Self::non_static_str(word.to_string()),
           Self::LineHard,
           Self::Text(" * "),
         ])),
@@ -179,7 +174,7 @@ impl Document {
       Rc::new(Self::concat(vec![
         Self::Text(starter),
         Self::Text(" "),
-        Self::NonStaticText(rc_string(text.to_string())),
+        Self::non_static_str(text.to_string()),
         Self::Text(" */"),
       ])),
       Rc::new(Self::concat(multiline_docs)),
