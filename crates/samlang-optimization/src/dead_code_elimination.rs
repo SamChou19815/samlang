@@ -25,7 +25,8 @@ fn collect_use_from_while_parts(
 
 fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
   match stmt {
-    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
+    Statement::IsPointer { name: _, pointer_type: _, operand }
+    | Statement::Not { name: _, operand } => {
       collect_use_from_expression(operand, set);
     }
     Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
@@ -89,7 +90,7 @@ pub(super) fn collect_use_from_stmts(stmts: &[Statement], set: &mut HashSet<PStr
 
 fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
   match stmt {
-    Statement::IsPointer { name, operand } | Statement::Not { name, operand } => {
+    Statement::IsPointer { name, pointer_type: _, operand } | Statement::Not { name, operand } => {
       if !set.contains(name) {
         false
       } else {

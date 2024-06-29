@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
-use crate::hir;
-
 use super::{
   hir::{BinaryOperator, GlobalString},
   mir::{FunctionName, SymbolTable, TypeNameId},
 };
 use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PrimitiveType {
@@ -153,6 +150,7 @@ pub struct GenenalLoopVariable {
 pub enum Statement {
   IsPointer {
     name: PStr,
+    pointer_type: TypeNameId,
     operand: Expression,
   },
   Not {
@@ -262,7 +260,7 @@ impl Statement {
     collector: &mut String,
   ) {
     match self {
-      Statement::IsPointer { name, operand } => {
+      Statement::IsPointer { name, pointer_type: _, operand } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -621,7 +619,7 @@ impl Sources {
     let mut collector = ts_prolog();
 
     let mut str_lookup_table = HashMap::new();
-    for (i, hir::GlobalString(s)) in self.global_variables.iter().enumerate() {
+    for (i, GlobalString(s)) in self.global_variables.iter().enumerate() {
       collector.push_str("const GLOBAL_STRING_");
       collector.push_str(&i.to_string());
       collector.push_str(": _Str = [0, `");

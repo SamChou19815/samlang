@@ -3,7 +3,7 @@ mod tests {
   use super::super::lir::*;
   use crate::{
     hir::{BinaryOperator, GlobalString},
-    mir::{FunctionName, SymbolTable},
+    mir::{FunctionName, SymbolTable, TypeNameId},
   };
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
@@ -152,7 +152,11 @@ mod tests {
             ],
             s2: vec![
               Statement::Not { name: heap.alloc_str_for_test("dd"), operand: ZERO },
-              Statement::IsPointer { name: heap.alloc_str_for_test("dd"), operand: ZERO },
+              Statement::IsPointer {
+                name: heap.alloc_str_for_test("dd"),
+                pointer_type: TypeNameId::STR,
+                operand: ZERO,
+              },
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::PLUS, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
               Statement::binary(

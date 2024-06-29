@@ -7,7 +7,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -31,6 +31,7 @@ mod tests {
     dead_code_elimination::collect_use_from_stmts(
       &[Statement::IsPointer {
         name: heap.alloc_str_for_test("uu"),
+        pointer_type: TypeNameId::STR,
         operand: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
       }],
       &mut HashSet::new(),
@@ -135,7 +136,11 @@ return (ii: int);"#,
     assert_correctly_optimized(
       vec![
         Statement::Not { name: heap.alloc_str_for_test("u0_unused"), operand: ONE },
-        Statement::IsPointer { name: heap.alloc_str_for_test("u0"), operand: ONE },
+        Statement::IsPointer {
+          name: heap.alloc_str_for_test("u0"),
+          pointer_type: TypeNameId::STR,
+          operand: ONE,
+        },
         Statement::binary(
           heap.alloc_str_for_test("u1"),
           BinaryOperator::DIV,
@@ -213,7 +218,7 @@ return (ii: int);"#,
       ZERO,
       heap,
       table,
-      r#"let u0 = is_pointer(1);
+      r#"let u0 = 1 is _Str;
 let u1 = (u0: int) / 1;
 let u2 = 0 % 1;
 let p = 0 + 1;

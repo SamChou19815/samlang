@@ -168,9 +168,12 @@ fn optimize_stmt(
       }
       false
     }
-    Statement::IsPointer { name, operand } => {
-      collector
-        .push(Statement::IsPointer { name: *name, operand: optimize_expr(value_cx, operand) });
+    Statement::IsPointer { name, pointer_type, operand } => {
+      collector.push(Statement::IsPointer {
+        name: *name,
+        pointer_type: *pointer_type,
+        operand: optimize_expr(value_cx, operand),
+      });
       false
     }
     Statement::Binary(Binary { name, operator, e1, e2 }) => {

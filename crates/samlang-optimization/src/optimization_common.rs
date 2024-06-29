@@ -31,7 +31,7 @@ pub(super) struct BinaryBindedValue {
 pub(super) enum BindedValue {
   IndexedAccess(IndexAccessBindedValue),
   Binary(BinaryBindedValue),
-  IsPointer(Expression),
+  IsPointer(TypeNameId, Expression),
   Not(Expression),
 }
 
@@ -134,7 +134,7 @@ mod tests {
     let bv2 =
       BindedValue::Binary(BinaryBindedValue { operator: BinaryOperator::PLUS, e1: ZERO, e2: ZERO });
     let bv3 = BindedValue::Not(ZERO);
-    let bv4 = BindedValue::IsPointer(ZERO);
+    let bv4 = BindedValue::IsPointer(TypeNameId::STR, ZERO);
     assert_eq!(Some(std::cmp::Ordering::Equal), bv1.partial_cmp(&bv1));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv2.partial_cmp(&bv2));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv3.partial_cmp(&bv3));

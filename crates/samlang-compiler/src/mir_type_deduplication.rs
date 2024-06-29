@@ -58,8 +58,8 @@ fn rewrite_expressions(state: &State, expressions: Vec<Expression>) -> Vec<Expre
 
 fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
   match stmt {
-    Statement::IsPointer { name, operand } => {
-      Statement::IsPointer { name, operand: rewrite_expr(state, operand) }
+    Statement::IsPointer { name, pointer_type, operand } => {
+      Statement::IsPointer { name, pointer_type, operand: rewrite_expr(state, operand) }
     }
     Statement::Not { name, operand } => {
       Statement::Not { name, operand: rewrite_expr(state, operand) }
@@ -226,7 +226,7 @@ pub(super) fn deduplicate(
                   types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
                 ),
                 EnumTypeDefinition::Unboxed(t) => {
-                  EnumTypeDefinition::Unboxed(rewrite_type(&state, t))
+                  EnumTypeDefinition::Unboxed(rewrite_id_type_name(&state, t))
                 }
                 EnumTypeDefinition::Int => EnumTypeDefinition::Int,
               })
@@ -332,7 +332,7 @@ mod tests {
           name: table.create_type_name_for_test(PStr::UPPER_E),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Boxed(vec![INT_32_TYPE]),
-            EnumTypeDefinition::Unboxed(INT_32_TYPE),
+            EnumTypeDefinition::Unboxed(TypeNameId::STR),
             EnumTypeDefinition::Int,
           ]),
         },
@@ -406,7 +406,7 @@ mod tests {
       r#"closure type _A = () -> int
 closure type _C = () -> _C
 object type _C = [int, _Str]
-variant type _E = [Boxed(int), Unboxed(int), int]
+variant type _E = [Boxed(int), Unboxed(_Str), int]
 function __$main(): int {
   let _: int;
   if 1 {

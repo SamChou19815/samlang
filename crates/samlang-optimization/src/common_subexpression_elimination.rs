@@ -31,9 +31,9 @@ fn optimize_stmts(
       | Statement::StructInit { .. }
       | Statement::ClosureInit { .. } => collector.push(stmt),
 
-      Statement::IsPointer { name, operand } => {
-        set.insert(BindedValue::IsPointer(operand));
-        collector.push(Statement::IsPointer { name, operand });
+      Statement::IsPointer { name, pointer_type, operand } => {
+        set.insert(BindedValue::IsPointer(pointer_type, operand));
+        collector.push(Statement::IsPointer { name, pointer_type, operand });
       }
       Statement::Not { name, operand } => {
         set.insert(BindedValue::Not(operand));
@@ -73,8 +73,8 @@ fn optimize_stmts(
             BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }) => Statement::Binary(
               Statement::binary_unwrapped(heap.alloc_temp_str(), operator, e1, e2),
             ),
-            BindedValue::IsPointer(operand) => {
-              Statement::IsPointer { name: heap.alloc_temp_str(), operand }
+            BindedValue::IsPointer(pointer_type, operand) => {
+              Statement::IsPointer { name: heap.alloc_temp_str(), pointer_type, operand }
             }
             BindedValue::Not(operand) => Statement::Not { name: heap.alloc_temp_str(), operand },
           })
@@ -98,7 +98,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
-      Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -130,7 +130,11 @@ mod tests {
         s1: vec![
           Statement::binary(heap.alloc_str_for_test("ddddd"), BinaryOperator::PLUS, ONE, ONE),
           Statement::Not { name: heap.alloc_str_for_test("ud1"), operand: ZERO },
-          Statement::IsPointer { name: heap.alloc_str_for_test("ud3"), operand: ZERO },
+          Statement::IsPointer {
+            name: heap.alloc_str_for_test("ud3"),
+            pointer_type: TypeNameId::STR,
+            operand: ZERO,
+          },
           Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("ddd"),
@@ -153,7 +157,11 @@ mod tests {
         ],
         s2: vec![
           Statement::Not { name: heap.alloc_str_for_test("ud2"), operand: ZERO },
-          Statement::IsPointer { name: heap.alloc_str_for_test("ud4"), operand: ZERO },
+          Statement::IsPointer {
+            name: heap.alloc_str_for_test("ud4"),
+            pointer_type: TypeNameId::STR,
+            operand: ZERO,
+          },
           Statement::binary(heap.alloc_str_for_test("fd"), BinaryOperator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("eee"),
@@ -179,7 +187,7 @@ mod tests {
       heap,
       r#"let _t3: int = 0[3];
 let _t2 = 1 + 0;
-let _t1 = is_pointer(0);
+let _t1 = 0 is _Str;
 let _t0 = !0;
 if (b: int) {
   let ddddd = 1 + 1;

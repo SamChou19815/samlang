@@ -42,7 +42,11 @@ fn collect_used_names_from_statement(
   statement: &Statement,
 ) {
   match statement {
-    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
+    Statement::IsPointer { name: _, pointer_type, operand } => {
+      type_set.insert(*pointer_type);
+      collect_used_names_from_expression(str_name_set, type_set, operand);
+    }
+    Statement::Not { name: _, operand } => {
       collect_used_names_from_expression(str_name_set, type_set, operand);
     }
     Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
@@ -179,7 +183,9 @@ fn analyze_all_used_names(
             EnumTypeDefinition::Boxed(ts) => {
               collect_types_for_type_set(ts, &mut type_set);
             }
-            EnumTypeDefinition::Unboxed(t) => collect_for_type_set(t, &mut type_set),
+            EnumTypeDefinition::Unboxed(t) => {
+              type_set.insert(*t);
+            }
             EnumTypeDefinition::Int => {}
           }
         }
@@ -251,7 +257,7 @@ mod tests {
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
       FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
-      TypeDefinition, TypeDefinitionMappings, VariableName, INT_32_TYPE, ZERO,
+      TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_32_TYPE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -303,7 +309,7 @@ mod tests {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Int,
-            EnumTypeDefinition::Unboxed(INT_32_TYPE),
+            EnumTypeDefinition::Unboxed(TypeNameId::STR),
             EnumTypeDefinition::Boxed(vec![INT_32_TYPE]),
           ]),
         },
@@ -398,7 +404,11 @@ mod tests {
               return_collector: None,
             },
             Statement::Not { name: PStr::LOWER_A, operand: ZERO },
-            Statement::IsPointer { name: PStr::LOWER_A, operand: ZERO },
+            Statement::IsPointer {
+              name: PStr::LOWER_A,
+              pointer_type: TypeNameId::STR,
+              operand: ZERO,
+            },
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(

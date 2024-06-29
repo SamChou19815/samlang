@@ -128,8 +128,8 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, stmt: mir::Statement) -> Vec<lir::Statement> {
     match stmt {
-      mir::Statement::IsPointer { name, operand } => {
-        vec![lir::Statement::IsPointer { name, operand: lower_expression(operand) }]
+      mir::Statement::IsPointer { name, pointer_type, operand } => {
+        vec![lir::Statement::IsPointer { name, pointer_type, operand: lower_expression(operand) }]
       }
       mir::Statement::Not { name, operand } => {
         vec![lir::Statement::Not { name, operand: lower_expression(operand) }]
@@ -809,7 +809,7 @@ mod tests {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant")),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Int,
-            EnumTypeDefinition::Unboxed(INT_32_TYPE),
+            EnumTypeDefinition::Unboxed(TypeNameId::STR),
             EnumTypeDefinition::Boxed(vec![INT_32_TYPE, INT_31_TYPE]),
           ]),
         },

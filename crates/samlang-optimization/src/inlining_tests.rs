@@ -6,7 +6,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -302,6 +302,7 @@ mod tests {
             },
             Statement::IsPointer {
               name: heap.alloc_str_for_test("u1"),
+              pointer_type: TypeNameId::STR,
               operand: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
             },
             Statement::Cast {
@@ -388,7 +389,7 @@ function __$loop(): int {
 
 function __$moveMove(a: int): int {
   let u0 = !(a: int);
-  let u1 = is_pointer((a: int));
+  let u1 = (a: int) is _Str;
   let _ = 0 as int;
   let b: int;
   b = 0;
@@ -400,7 +401,7 @@ function __$insanelyBigFunction(a: int): int {
   let _t2c: int = (a: int)[0];
   (a: int)();
   let _t4u0 = !(a: int);
-  let _t4u1 = is_pointer((a: int));
+  let _t4u1 = (a: int) is _Str;
   let _t4_ = 0 as int;
   let _t4b: int;
   _t4b = 0;

@@ -25,9 +25,8 @@ fn stmt_uses_basic_induction_var(
   v: &BasicInductionVariableWithLoopGuard,
 ) -> bool {
   match stmt {
-    Statement::IsPointer { name: _, operand } | Statement::Not { name: _, operand } => {
-      expr_uses_basic_induction_var(operand, v)
-    }
+    Statement::IsPointer { name: _, pointer_type: _, operand }
+    | Statement::Not { name: _, operand } => expr_uses_basic_induction_var(operand, v),
     Statement::Binary(b) => {
       expr_uses_basic_induction_var(&b.e1, v) || expr_uses_basic_induction_var(&b.e2, v)
     }
@@ -204,7 +203,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-      SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -281,7 +280,11 @@ mod tests {
             index: 3
           },
           Statement::Not { name: PStr::LOWER_A, operand: ZERO },
-          Statement::IsPointer { name: PStr::LOWER_A, operand: ZERO },
+          Statement::IsPointer {
+            name: PStr::LOWER_A,
+            pointer_type: TypeNameId::STR,
+            operand: ZERO
+          },
           Statement::binary(PStr::LOWER_A, BinaryOperator::NE, ZERO, ZERO),
           Statement::IfElse {
             condition: ZERO,
