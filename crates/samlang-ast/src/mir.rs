@@ -240,7 +240,7 @@ impl ClosureTypeDefinition {
 pub enum EnumTypeDefinition {
   Boxed(Vec<Type>),
   Unboxed(TypeNameId),
-  Int,
+  Int31,
 }
 
 impl EnumTypeDefinition {
@@ -250,7 +250,7 @@ impl EnumTypeDefinition {
         format!("Boxed({})", types.iter().map(|it| it.pretty_print(heap, table)).join(", "))
       }
       EnumTypeDefinition::Unboxed(t) => format!("Unboxed({})", t.encoded_for_test(heap, table)),
-      EnumTypeDefinition::Int => "int".to_string(),
+      EnumTypeDefinition::Int31 => "i31".to_string(),
     }
   }
 }
@@ -423,7 +423,8 @@ impl Expression {
 
   pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Expression::Int32Literal(i) | Expression::Int31Literal(i) => i.to_string(),
+      Expression::Int32Literal(i) => i.to_string(),
+      Expression::Int31Literal(i) => format!("{} as i31", i),
       Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
       Expression::Variable(v) => v.debug_print(heap, table),
     }

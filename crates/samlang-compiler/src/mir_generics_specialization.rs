@@ -195,21 +195,21 @@ impl Rewriter {
               ),
             });
           }
-          mir::EnumTypeDefinition::Int => {
+          mir::EnumTypeDefinition::Int31 => {
             let casted_collector = heap.alloc_temp_str();
             let comparison_temp = heap.alloc_temp_str();
             // We cast the test expression to int to perform the test.
             // Once we have i31 type, the test should be performed on i31.
             collector.push(mir::Statement::Cast {
               name: casted_collector,
-              type_: mir::INT_32_TYPE,
+              type_: mir::INT_31_TYPE,
               assigned_expression: test_expr,
             });
             collector.push(mir::Statement::binary(
               comparison_temp,
               hir::BinaryOperator::EQ,
               mir::Expression::var_name(casted_collector, mir::INT_32_TYPE),
-              mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
+              mir::Expression::Int31Literal(i32::try_from(*tag).unwrap()),
             ));
             collector.push(mir::Statement::IfElse {
               condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
@@ -310,13 +310,13 @@ impl Rewriter {
               ),
             });
           }
-          mir::EnumTypeDefinition::Int => {
+          mir::EnumTypeDefinition::Int31 => {
             debug_assert!(associated_data_list.is_empty());
             // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
               name: *enum_variable_name,
               type_: mir::Type::Id(enum_type),
-              assigned_expression: mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
+              assigned_expression: mir::Expression::Int31Literal(i32::try_from(*tag).unwrap()),
             });
           }
         }
@@ -532,7 +532,7 @@ impl Rewriter {
             let mut already_unused_boxed_optimization = None;
             for (tag, (_, types)) in hir_variants.iter().enumerate() {
               if types.is_empty() {
-                mir_variants.push(mir::EnumTypeDefinition::Int);
+                mir_variants.push(mir::EnumTypeDefinition::Int31);
               } else {
                 if let Some((i, t)) = already_unused_boxed_optimization {
                   mir_variants[i] = mir::EnumTypeDefinition::Boxed(vec![mir::INT_32_TYPE, t]);
@@ -595,7 +595,9 @@ impl Rewriter {
                 mir::EnumTypeDefinition::Boxed(_) => {}
                 // Deopt if enum can be int or unboxed.
                 // This is essential to correctly pattern match on Some(Some(Some(_)))
-                mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int => return false,
+                mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int31 => {
+                  return false
+                }
               }
             }
             true
@@ -1294,11 +1296,11 @@ closure type DUMMY_CC___Str__Str = (_Str) -> _Str
 closure type DUMMY_CC__int__Str = (int) -> _Str
 variant type _Str = []
 object type DUMMY_J = [int]
-variant type DUMMY_I__int__Str = [int, int]
-variant type DUMMY_I___Str__Str = [int, int]
-variant type DUMMY_Enum = [Unboxed(DUMMY_J), int]
-variant type DUMMY_Enum3 = [Boxed(int, DUMMY_J), Boxed(int, DUMMY_J), int]
-variant type DUMMY_Enum2 = [Boxed(int, int), int]
+variant type DUMMY_I__int__Str = [i31, i31]
+variant type DUMMY_I___Str__Str = [i31, i31]
+variant type DUMMY_Enum = [Unboxed(DUMMY_J), i31]
+variant type DUMMY_Enum3 = [Boxed(int, DUMMY_J), Boxed(int, DUMMY_J), i31]
+variant type DUMMY_Enum2 = [Boxed(int, int), i31]
 function _DUMMY_I$main(): int {
   let finalV: int;
   if 1 {
@@ -1328,8 +1330,8 @@ function _DUMMY_I$main(): int {
     let a = (b: DUMMY_Enum) as DUMMY_J;
   } else {
   }
-  let _t3 = (b: DUMMY_Enum) as int;
-  let _t4 = (_t3: int) == 3;
+  let _t3 = (b: DUMMY_Enum) as i31;
+  let _t4 = (_t3: int) == 1 as i31;
   if (_t4: int) {
   } else {
   }
@@ -1350,12 +1352,12 @@ function _DUMMY_I$main(): int {
     let _t12 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
   } else {
   }
-  let _t13 = (b: DUMMY_Enum2) as int;
-  let _t14 = (_t13: int) == 3;
+  let _t13 = (b: DUMMY_Enum2) as i31;
+  let _t14 = (_t13: int) == 1 as i31;
   if (_t14: int) {
   } else {
   }
-  let b = 3 as DUMMY_Enum2;
+  let b = 1 as i31 as DUMMY_Enum2;
   return 0;
 }
 
@@ -1512,8 +1514,8 @@ sources.mains = [_DUMMY_I$main]"#,
       heap,
       r#"
 object type DUMMY_J = [DUMMY_I__int_int]
-variant type DUMMY_I__int_int = [int, int]
-variant type DUMMY_StrOption = [Unboxed(DUMMY_K), int]
+variant type DUMMY_I__int_int = [i31, i31]
+variant type DUMMY_StrOption = [Unboxed(DUMMY_K), i31]
 variant type DUMMY_K = [Boxed(int, int), Boxed(int, int)]
 function _DUMMY_I$creatorJ(): DUMMY_J {
   let v1: DUMMY_I__int_int = [];

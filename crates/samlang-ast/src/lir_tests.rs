@@ -161,7 +161,7 @@ mod tests {
                 heap.alloc_str_for_test("dd"),
                 BinaryOperator::MINUS,
                 ZERO,
-                Expression::Int31Literal(-2147483648),
+                Expression::Int31Literal(-21478),
               ),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MUL, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::DIV, ZERO, ZERO),
@@ -291,7 +291,7 @@ function __$f(v1: (t0: number) => number): number {{
     let dd = typeof 0 === 'object';
     let dd = 0 + 0;
     let dd = 0 + 0;
-    let dd = 0 - -2147483648;
+    let dd = 0 - -42955;
     let dd = 0 * 0;
     let dd = Math.floor(0 / 0);
     let dd = 0 % 0;

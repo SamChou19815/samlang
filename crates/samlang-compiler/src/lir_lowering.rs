@@ -435,7 +435,7 @@ fn generate_inc_ref_fn() -> lir::Function {
             is_zero,
             hir::BinaryOperator::EQ,
             lir::Expression::Variable(old_ref_count, lir::INT_32_TYPE),
-            lir::Expression::Int31Literal(0),
+            lir::Expression::Int32Literal(0),
           ),
           lir::Statement::SingleIf {
             condition: lir::Expression::Variable(is_zero, lir::INT_32_TYPE),
@@ -711,7 +711,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
       mir::TypeDefinitionMappings::Enum(variants) => {
         for (i, variant) in variants.iter().enumerate() {
           match variant {
-            mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int => {}
+            mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int31 => {}
             mir::EnumTypeDefinition::Boxed(types) => {
               let name = symbol_table.derived_type_name_with_subtype_tag(type_def.name, i as u32);
               let mut mappings = Vec::with_capacity(types.len() + 1);
@@ -816,7 +816,7 @@ mod tests {
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant")),
           mappings: TypeDefinitionMappings::Enum(vec![
-            EnumTypeDefinition::Int,
+            EnumTypeDefinition::Int31,
             EnumTypeDefinition::Unboxed(TypeNameId::STR),
             EnumTypeDefinition::Boxed(vec![INT_32_TYPE, INT_31_TYPE]),
           ]),
@@ -1068,7 +1068,7 @@ type _Variant = [number, number];
 function __$cc(): i31 {{
   let _t1: (t0: any, t1: number) => number = cc[1];
   let _t2: any = cc[2];
-  _t1(_t2, 0);
+  _t1(_t2, 1);
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
