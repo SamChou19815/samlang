@@ -42,8 +42,8 @@ mod tests {
       VariableName::new(heap.alloc_str_for_test("s"), INT_32_TYPE).debug_print(heap, table)
     );
     assert_eq!(
-      "(s: i31)",
-      VariableName::new(heap.alloc_str_for_test("s"), INT_31_TYPE).debug_print(heap, table)
+      "(s: any)",
+      VariableName::new(heap.alloc_str_for_test("s"), ANY_POINTER_TYPE).debug_print(heap, table)
     );
     GenenalLoopVariable {
       name: PStr::LOWER_A,
@@ -107,7 +107,7 @@ mod tests {
     type_name_id = table.create_type_name_with_suffix(
       ModuleReference::ROOT,
       PStr::UPPER_A,
-      vec![INT_31_TYPE, INT_32_TYPE],
+      vec![INT_31_TYPE, INT_32_TYPE, ANY_POINTER_TYPE],
     );
     assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id = table.create_simple_type_name(ModuleReference::ROOT, PStr::UPPER_A);
@@ -123,6 +123,7 @@ mod tests {
 
     assert_eq!("int", INT_32_TYPE.pretty_print(heap, table));
     assert_eq!("i31", INT_31_TYPE.pretty_print(heap, table));
+    assert_eq!("any", ANY_POINTER_TYPE.pretty_print(heap, table));
     assert_eq!("0", ZERO.clone().debug_print(heap, table));
     assert_eq!(
       "(a: int)",

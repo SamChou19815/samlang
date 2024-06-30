@@ -6,9 +6,10 @@ use std::collections::{BTreeMap, HashSet};
 
 fn lower_type(type_: mir::Type) -> lir::Type {
   match type_ {
-    mir::Type::Int32 => lir::Type::Primitive(lir::PrimitiveType::Int32),
-    mir::Type::Int31 => lir::Type::Primitive(lir::PrimitiveType::Int31),
+    mir::Type::Int32 => lir::Type::Int32,
+    mir::Type::Int31 => lir::Type::Int31,
     mir::Type::Id(name) => lir::Type::Id(name),
+    mir::Type::AnyPointer => lir::Type::AnyPointer,
   }
 }
 
@@ -22,7 +23,7 @@ fn lower_fn_type(
 }
 
 fn unknown_member_destructor_type() -> lir::FunctionType {
-  lir::Type::new_fn_unwrapped(vec![lir::ANY_TYPE], lir::INT_32_TYPE)
+  lir::Type::new_fn_unwrapped(vec![lir::ANY_POINTER_TYPE], lir::INT_32_TYPE)
 }
 
 fn lower_expression(expr: mir::Expression) -> lir::Expression {
@@ -192,13 +193,13 @@ impl<'a> LoweringManager<'a> {
             });
             statements.push(lir::Statement::IndexedAccess {
               name: temp_cx,
-              type_: lir::ANY_TYPE,
+              type_: lir::ANY_POINTER_TYPE,
               pointer_expression: pointer_expr,
               index: 2,
             });
             statements.push(lir::Statement::Call {
               callee: lir::Expression::Variable(temp_fn, lir::Type::Fn(fn_type.clone())),
-              arguments: vec![lir::Expression::Variable(temp_cx, lir::ANY_TYPE)]
+              arguments: vec![lir::Expression::Variable(temp_cx, lir::ANY_POINTER_TYPE)]
                 .into_iter()
                 .chain(arguments.into_iter().map(lower_expression))
                 .collect(),
@@ -311,7 +312,7 @@ impl<'a> LoweringManager<'a> {
         let closure_type = lower_type(mir::Type::Id(closure_type_name));
         let original_fn_type = lower_fn_type(fn_type);
         let type_erased_closure_type = lir::FunctionType {
-          argument_types: vec![lir::ANY_TYPE]
+          argument_types: vec![lir::ANY_POINTER_TYPE]
             .into_iter()
             .chain(original_fn_type.argument_types.iter().skip(1).cloned())
             .collect(),
@@ -336,10 +337,10 @@ impl<'a> LoweringManager<'a> {
           let temp = self.heap.alloc_temp_str();
           statements.push(lir::Statement::Cast {
             name: temp,
-            type_: lir::ANY_TYPE,
+            type_: lir::ANY_POINTER_TYPE,
             assigned_expression: context.clone(),
           });
-          lir::Expression::Variable(temp, lir::ANY_TYPE)
+          lir::Expression::Variable(temp, lir::ANY_POINTER_TYPE)
         };
         statements.push(lir::Statement::StructInit {
           struct_variable_name: closure_variable_name,
@@ -362,7 +363,7 @@ impl<'a> LoweringManager<'a> {
     let casted = self.heap.alloc_temp_str();
     collector.push(lir::Statement::Cast {
       name: casted,
-      type_: lir::ANY_TYPE,
+      type_: lir::ANY_POINTER_TYPE,
       assigned_expression: expression.clone(),
     });
     collector.push(lir::Statement::Call {
@@ -370,7 +371,7 @@ impl<'a> LoweringManager<'a> {
         mir::FunctionName::BUILTIN_INC_REF,
         lir::Type::Fn(unknown_member_destructor_type()),
       ),
-      arguments: vec![lir::Expression::Variable(casted, lir::ANY_TYPE)],
+      arguments: vec![lir::Expression::Variable(casted, lir::ANY_POINTER_TYPE)],
       return_type: lir::INT_32_TYPE,
       return_collector: None,
     });
@@ -399,13 +400,13 @@ fn generate_inc_ref_fn() -> lir::Function {
       lir::Statement::binary(
         tiny_int,
         hir::BinaryOperator::LT,
-        lir::Expression::Variable(ptr, lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
         lir::Expression::int32(1024),
       ),
       lir::Statement::binary(
         is_odd,
         hir::BinaryOperator::LAND,
-        lir::Expression::Variable(ptr, lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
         lir::ONE,
       ),
       lir::Statement::binary(
@@ -421,7 +422,7 @@ fn generate_inc_ref_fn() -> lir::Function {
           lir::Statement::IndexedAccess {
             name: header,
             type_: lir::INT_32_TYPE,
-            pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
+            pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
             index: 0,
           },
           lir::Statement::binary(
@@ -466,7 +467,7 @@ fn generate_inc_ref_fn() -> lir::Function {
               ),
               lir::Statement::IndexedAssign {
                 assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
-                pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
+                pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
                 index: 0,
               },
             ],
@@ -505,13 +506,13 @@ fn generate_dec_ref_fn() -> lir::Function {
       lir::Statement::binary(
         tiny_int,
         hir::BinaryOperator::LT,
-        lir::Expression::Variable(ptr, lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
         lir::Expression::int32(1024),
       ),
       lir::Statement::binary(
         is_odd,
         hir::BinaryOperator::LAND,
-        lir::Expression::Variable(ptr, lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
         lir::ONE,
       ),
       lir::Statement::binary(
@@ -527,7 +528,7 @@ fn generate_dec_ref_fn() -> lir::Function {
           lir::Statement::IndexedAccess {
             name: header,
             type_: lir::INT_32_TYPE,
-            pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
+            pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
             index: 0,
           },
           lir::Statement::binary(
@@ -563,7 +564,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                   ),
                   lir::Statement::IndexedAssign {
                     assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
-                    pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
+                    pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
                     index: 0,
                   },
                 ],
@@ -628,7 +629,10 @@ fn generate_dec_ref_fn() -> lir::Function {
                               mir::FunctionName::BUILTIN_DEC_REF,
                               lir::Type::Fn(unknown_member_destructor_type()),
                             ),
-                            arguments: vec![lir::Expression::Variable(field_ptr, lir::ANY_TYPE)],
+                            arguments: vec![lir::Expression::Variable(
+                              field_ptr,
+                              lir::ANY_POINTER_TYPE,
+                            )],
                             return_type: lir::INT_32_TYPE,
                             return_collector: None,
                           },
@@ -654,7 +658,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                       mir::FunctionName::BUILTIN_FREE,
                       lir::Type::Fn(unknown_member_destructor_type()),
                     ),
-                    arguments: vec![lir::Expression::Variable(ptr, lir::ANY_TYPE)],
+                    arguments: vec![lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE)],
                     return_type: lir::INT_32_TYPE,
                     return_collector: None,
                   },
@@ -685,12 +689,12 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
   for mir::ClosureTypeDefinition { name, function_type } in closure_types {
     let lir::FunctionType { argument_types, return_type } = lower_fn_type(function_type);
     let fn_type = lir::FunctionType {
-      argument_types: vec![lir::ANY_TYPE].into_iter().chain(argument_types).collect_vec(),
+      argument_types: vec![lir::ANY_POINTER_TYPE].into_iter().chain(argument_types).collect_vec(),
       return_type,
     };
     type_defs.push(lir::TypeDefinition {
       name,
-      mappings: vec![lir::INT_32_TYPE, lir::Type::Fn(fn_type.clone()), lir::ANY_TYPE],
+      mappings: vec![lir::INT_32_TYPE, lir::Type::Fn(fn_type.clone()), lir::ANY_POINTER_TYPE],
     });
     closure_def_map.insert(name, fn_type);
   }
@@ -761,6 +765,10 @@ mod tests {
   fn boilterplate() {
     assert!(super::lower_type(Type::Id(TypeNameId::STR))
       .is_the_same_type(&lir::Type::Id(TypeNameId::STR)));
+
+    assert!(super::lower_type(Type::Int32).is_the_same_type(&lir::Type::Int32));
+    assert!(super::lower_type(Type::Int31).is_the_same_type(&lir::Type::Int31));
+    assert!(super::lower_type(Type::AnyPointer).is_the_same_type(&lir::Type::AnyPointer));
   }
 
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
