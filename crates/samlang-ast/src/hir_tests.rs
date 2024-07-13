@@ -11,8 +11,8 @@ mod tests {
 
     assert!(ZERO.as_int_literal().is_some());
     Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).as_id();
-    Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).is_int();
-    assert!(INT_TYPE.is_int());
+    Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).is_int32();
+    assert!(INT_TYPE.is_int32());
     assert!(INT_TYPE.as_id().is_none());
     format!(
       "{:?}",
@@ -25,7 +25,10 @@ mod tests {
       "{:?}",
       Expression::var_name(
         PStr::LOWER_A,
-        Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
+        Type::new_id(
+          PStr::UPPER_A,
+          vec![INT_TYPE, INT31_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]
+        )
       )
     );
     format!("{:?}", TypeName::new_for_test(PStr::UPPER_A));
@@ -63,6 +66,7 @@ mod tests {
     format!("{:?}", BinaryOperator::MINUS.partial_cmp(&BinaryOperator::GE));
     format!("{:?}", BinaryOperator::MINUS.cmp(&BinaryOperator::GE));
     format!("{:?}", ZERO.type_());
+    format!("{:?}", Expression::Int31Zero.type_());
     format!("{:?}", Expression::StringName(PStr::LOWER_A).type_().as_id());
     assert!(Expression::StringName(PStr::LOWER_A).type_().as_id().is_some());
     assert_eq!(
@@ -146,8 +150,10 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert_eq!("int", INT_TYPE.pretty_print(heap));
+    assert_eq!("i31", INT31_TYPE.pretty_print(heap));
     assert_eq!("_Str", STRING_TYPE.pretty_print(heap));
     assert_eq!("0", ZERO.clone().debug_print(heap));
+    assert_eq!("0 as i31", Expression::Int31Zero.debug_print(heap));
     assert_eq!("(a: int)", Expression::var_name(PStr::LOWER_A, INT_TYPE).debug_print(heap));
     assert_eq!(
       "(a: DUMMY_A<int, DUMMY_B>)",

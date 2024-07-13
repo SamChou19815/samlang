@@ -375,6 +375,7 @@ impl Rewriter {
   ) -> mir::Expression {
     match expression {
       hir::Expression::IntLiteral(i) => mir::Expression::Int32Literal(*i),
+      hir::Expression::Int31Zero => mir::Expression::Int31Literal(0),
       hir::Expression::StringName(s) => {
         self.used_string_names.insert(*s);
         mir::Expression::StringName(*s)
@@ -490,7 +491,8 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> mir::Type {
     match type_ {
-      hir::Type::Int => mir::Type::Int32,
+      hir::Type::Int32 => mir::Type::Int32,
+      hir::Type::Int31 => mir::Type::Int31,
       hir::Type::Id(id) => self.rewrite_id_type(heap, id, generics_replacement_map),
     }
   }
@@ -1497,12 +1499,15 @@ sources.mains = [_DUMMY_I$main]"#,
               hir::Statement::Call {
                 callee: hir::Callee::Variable(hir::VariableName {
                   name: heap.alloc_str_for_test("v"),
-                  type_: hir::INT_TYPE,
+                  type_: hir::INT31_TYPE,
                 }),
-                arguments: vec![hir::Expression::var_name(
-                  PStr::LOWER_B,
-                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("StrOption")),
-                )],
+                arguments: vec![
+                  hir::Expression::var_name(
+                    PStr::LOWER_B,
+                    hir::Type::new_id_no_targs(heap.alloc_str_for_test("StrOption")),
+                  ),
+                  hir::Expression::Int31Zero,
+                ],
                 return_type: hir::Type::new_id_no_targs(PStr::UPPER_J),
                 return_collector: None,
               },
@@ -1525,7 +1530,7 @@ function _DUMMY_I$creatorJ(): DUMMY_J {
 
 function _DUMMY_I$main(): int {
   _DUMMY_I$creatorJ();
-  (v: int)((b: DUMMY_StrOption));
+  (v: i31)((b: DUMMY_StrOption), 0 as i31);
   return "creatorJ";
 }
 

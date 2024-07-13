@@ -62,7 +62,8 @@ impl FunctionType {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
 pub enum Type {
-  Int,
+  Int32,
+  Int31,
   Id(IdType),
 }
 
@@ -99,13 +100,15 @@ impl Type {
 
   pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
-      Type::Int => "int".to_string(),
+      Type::Int32 => "int".to_string(),
+      Type::Int31 => "i31".to_string(),
       Type::Id(id) => id.pretty_print(heap),
     }
   }
 }
 
-pub const INT_TYPE: Type = Type::Int;
+pub const INT_TYPE: Type = Type::Int32;
+pub const INT31_TYPE: Type = Type::Int31;
 pub const STRING_TYPE: Type = Type::Id(IdType {
   name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
   type_arguments: vec![],
@@ -288,6 +291,7 @@ impl FunctionNameExpression {
 #[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub enum Expression {
   IntLiteral(i32),
+  Int31Zero,
   StringName(PStr),
   Variable(VariableName),
 }
@@ -304,6 +308,7 @@ impl Expression {
   pub fn type_(&self) -> &Type {
     match self {
       Expression::IntLiteral(_) => &INT_TYPE,
+      Expression::Int31Zero => &INT31_TYPE,
       Expression::StringName(_) => STRING_TYPE_REF,
       Expression::Variable(v) => &v.type_,
     }
@@ -312,6 +317,7 @@ impl Expression {
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
+      Expression::Int31Zero => "0 as i31".to_string(),
       Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
       Expression::Variable(v) => v.debug_print(heap),
     }
@@ -319,7 +325,7 @@ impl Expression {
 
   pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
-      Expression::IntLiteral(_) | Expression::StringName(_) => None,
+      Expression::IntLiteral(_) | Expression::Int31Zero | Expression::StringName(_) => None,
       Expression::Variable(v) => Some(Callee::Variable(v)),
     }
   }
