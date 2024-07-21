@@ -32,7 +32,7 @@ type LoweringContext = LocalStackedContext<PStr, hir::Expression>;
 
 fn bind_value(cx: &mut LoweringContext, name: PStr, value: hir::Expression) {
   match &value {
-    hir::Expression::IntLiteral(_) | hir::Expression::Variable(_) => {
+    hir::Expression::IntLiteral(_) | hir::Expression::Int31Zero | hir::Expression::Variable(_) => {
       cx.insert(name, value);
     }
     hir::Expression::StringName(n) => {

@@ -91,7 +91,7 @@ fn collect_used_generic_types_visitor(
   collector: &mut HashSet<PStr>,
 ) {
   match type_ {
-    Type::Int => {}
+    Type::Int32 | Type::Int31 => {}
     Type::Id(IdType { name, type_arguments }) => {
       if name.module_reference.is_none() && generic_types.contains(&name.type_name) {
         collector.insert(name.type_name);
@@ -117,7 +117,8 @@ pub(super) fn collect_used_generic_types(
 
 pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Type>) -> Type {
   match type_ {
-    Type::Int => Type::Int,
+    Type::Int32 => Type::Int32,
+    Type::Int31 => Type::Int31,
     Type::Id(id) => {
       if id.name.module_reference.is_none() {
         replacement_map.get(&id.name.type_name).cloned().unwrap()
@@ -161,7 +162,7 @@ impl TypeLoweringManager {
       type_::Type::Any(reason, placeholder) => {
         panic!("any(placeholder={}) at {:?}", placeholder, reason)
       }
-      type_::Type::Primitive(_, _) => Type::Int,
+      type_::Type::Primitive(_, _) => Type::Int32,
       type_::Type::Nominal(id) => {
         let id_string = id.id;
         Type::Id(IdType {
@@ -292,7 +293,7 @@ mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::INT_TYPE,
+    hir::{INT31_TYPE, INT_TYPE},
     source::{test_builder, NO_COMMENT_REFERENCE},
     Location, Reason,
   };
@@ -442,6 +443,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert_eq!("int", type_application(&INT_TYPE, &HashMap::new()).pretty_print(heap));
+    assert_eq!("i31", type_application(&INT31_TYPE, &HashMap::new()).pretty_print(heap));
 
     assert_eq!(
       "DUMMY_A<int>",
