@@ -220,7 +220,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         },
       },
       source::expr::E::ClassId(_, _, _) => {
-        LoweringResult { statements: vec![], expression: hir::ZERO }
+        LoweringResult { statements: vec![], expression: hir::Expression::Int31Zero }
       }
       source::expr::E::Tuple(common, es) => self.lower_tuple(common, &es.expressions),
       source::expr::E::FieldAccess(e) => self.lower_field_access(e),
@@ -3353,7 +3353,7 @@ return 0;"#,
         ending_associated_comments: NO_COMMENT_REFERENCE,
       }),
       heap,
-      r#"let _t1: int = ModuleModule_ImportedClass$bar(0, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+      r#"let _t1: int = ModuleModule_ImportedClass$bar(0 as i31, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
 let _t2: int;
 _t2 = (_t1: int);
 return (_t2: int);"#,
@@ -3880,12 +3880,12 @@ variant type DUMMY_Class2 = [(Tag: [int])]
 object type DUMMY_Class3<T> = [_$SyntheticIDType0<T>]
 variant type _Str = []
 function DUMMY_Main$main(_this: int): int {
-  DUMMY_Class1$infiniteLoop(0);
+  DUMMY_Class1$infiniteLoop(0 as i31);
   return 0;
 }
 
 function DUMMY_Main$loopy<T>(_this: int): int {
-  DUMMY_T$loopy(0);
+  DUMMY_T$loopy(0 as i31);
   return 0;
 }
 
@@ -3899,7 +3899,7 @@ function DUMMY_Class1$foo(_this: DUMMY_Class1, a: int): int {
 }
 
 function DUMMY_Class1$infiniteLoop(_this: int): int {
-  DUMMY_Class1$infiniteLoop(0);
+  DUMMY_Class1$infiniteLoop(0 as i31);
   return 0;
 }
 
@@ -3911,7 +3911,7 @@ function DUMMY_Class1$factorial(_this: int, n: int, acc: int): int {
   } else {
     let _t7 = (n: int) - 1;
     let _t8 = (n: int) * (acc: int);
-    let _t6: int = DUMMY_Class1$factorial(0, (_t7: int), (_t8: int));
+    let _t6: int = DUMMY_Class1$factorial(0 as i31, (_t7: int), (_t8: int));
     _t5 = (_t6: int);
   }
   return (_t5: int);

@@ -338,7 +338,7 @@ impl<'a> LoweringManager<'a> {
           statements.push(lir::Statement::Cast {
             name: temp,
             type_: lir::ANY_POINTER_TYPE,
-            assigned_expression: context.clone(),
+            assigned_expression: context,
           });
           lir::Expression::Variable(temp, lir::ANY_POINTER_TYPE)
         };
