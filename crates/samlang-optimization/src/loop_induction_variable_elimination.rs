@@ -34,7 +34,7 @@ fn stmt_uses_basic_induction_var(
       expr_uses_basic_induction_var(pointer_expression, v)
     }
     Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
-      let in_callee = if let Callee::Variable(var) = callee { var.name.eq(&v.name) } else { false };
+      let in_callee = matches!(callee, Callee::Variable(var) if var.name.eq(&v.name) );
       in_callee || arguments.iter().any(|e| expr_uses_basic_induction_var(e, v))
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {

@@ -34,7 +34,7 @@ mod rc_string_tests {
 ///
 /// Quote:
 /// > "... we introduce a new representation for documents, with one constructor corresponding to each
-/// operator that builds a document."
+/// > operator that builds a document."
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Document {
   Nil,

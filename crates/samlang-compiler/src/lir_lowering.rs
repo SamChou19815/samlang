@@ -9,7 +9,6 @@ fn lower_type(type_: mir::Type) -> lir::Type {
     mir::Type::Int32 => lir::Type::Int32,
     mir::Type::Int31 => lir::Type::Int31,
     mir::Type::Id(name) => lir::Type::Id(name),
-    mir::Type::AnyPointer => lir::Type::AnyPointer,
   }
 }
 
@@ -768,7 +767,6 @@ mod tests {
 
     assert!(super::lower_type(Type::Int32).is_the_same_type(&lir::Type::Int32));
     assert!(super::lower_type(Type::Int31).is_the_same_type(&lir::Type::Int31));
-    assert!(super::lower_type(Type::AnyPointer).is_the_same_type(&lir::Type::AnyPointer));
   }
 
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {

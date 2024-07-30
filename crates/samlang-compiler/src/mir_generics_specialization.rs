@@ -585,7 +585,7 @@ impl Rewriter {
   fn type_permit_enum_boxed_optimization(&self, type_: &mir::Type) -> bool {
     match type_ {
       // We cannot distinguish unboxed int from tags
-      mir::Type::Int32 | mir::Type::Int31 | mir::Type::AnyPointer => false,
+      mir::Type::Int32 | mir::Type::Int31 => false,
       mir::Type::Id(type_id) => {
         match &self.specialized_type_definitions.get(type_id).unwrap().mappings {
           // Structs are always pointers.
