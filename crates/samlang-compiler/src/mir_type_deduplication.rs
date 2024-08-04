@@ -21,7 +21,6 @@ fn rewrite_type(state: &State, type_: Type) -> Type {
     Type::Int32 => Type::Int32,
     Type::Int31 => Type::Int31,
     Type::Id(id) => Type::Id(rewrite_id_type_name(state, id)),
-    Type::AnyPointer => Type::AnyPointer,
   }
 }
 
@@ -246,9 +245,7 @@ pub(super) fn deduplicate(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{
-    FunctionName, SymbolTable, ANY_POINTER_TYPE, INT_31_TYPE, INT_32_TYPE, ONE, ZERO,
-  };
+  use samlang_ast::mir::{FunctionName, SymbolTable, INT_31_TYPE, INT_32_TYPE, ONE, ZERO};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   #[should_panic]
@@ -283,19 +280,18 @@ mod tests {
     let mir_type = Type::new_fn_unwrapped(
       vec![
         INT_31_TYPE,
-        ANY_POINTER_TYPE,
         Type::Id(table.create_type_name_with_suffix(
           ModuleReference::DUMMY,
           PStr::UPPER_A,
-          vec![INT_31_TYPE, ANY_POINTER_TYPE],
+          vec![INT_31_TYPE],
         )),
       ],
       INT_32_TYPE,
     );
-    assert_eq!("(i31, any, DUMMY_A__i31_any) -> int", mir_type.pretty_print(heap, table));
+    assert_eq!("(i31, DUMMY_A__i31) -> int", mir_type.pretty_print(heap, table));
 
     assert_eq!(
-      "(i31, any, DUMMY_A__i31_any) -> int",
+      "(i31, DUMMY_A__i31) -> int",
       rewrite_fn_type(&HashMap::new(), mir_type).pretty_print(heap, table)
     );
   }
