@@ -101,8 +101,8 @@ pub(super) fn optimize(
         inner_stmts.push(stmt);
       }
       Statement::IfElse { condition: _, s1: _, s2: _, final_assignments } => {
-        for (n, _, _, _) in final_assignments {
-          non_loop_invariant_variables.insert(*n);
+        for fa in final_assignments {
+          non_loop_invariant_variables.insert(fa.name);
         }
         inner_stmts.push(stmt);
       }
@@ -132,8 +132,9 @@ mod tests {
   use samlang_ast::{
     hir::BinaryOperator,
     mir::{
-      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-      SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable,
+      IfElseFinalAssignment, Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE,
+      ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -321,7 +322,12 @@ mod tests {
           condition: ZERO,
           s1: vec![],
           s2: vec![],
-          final_assignments: vec![(heap.alloc_str_for_test("bad"), INT_32_TYPE, ZERO, ZERO)],
+          final_assignments: vec![IfElseFinalAssignment {
+            name: heap.alloc_str_for_test("bad"),
+            type_: INT_32_TYPE,
+            e1: ZERO,
+            e2: ZERO,
+          }],
         },
         Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
         Statement::While {

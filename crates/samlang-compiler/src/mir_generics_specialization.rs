@@ -344,16 +344,14 @@ impl Rewriter {
     final_assignments: &[(PStr, hir::Type, hir::Expression, hir::Expression)],
     heap: &mut Heap,
     generics_replacement_map: &HashMap<PStr, mir::Type>,
-  ) -> Vec<(PStr, mir::Type, mir::Expression, mir::Expression)> {
+  ) -> Vec<mir::IfElseFinalAssignment> {
     final_assignments
       .iter()
-      .map(|(n, t, e1, e2)| {
-        (
-          *n,
-          self.rewrite_type(heap, t, generics_replacement_map),
-          self.rewrite_expr(heap, e1, generics_replacement_map),
-          self.rewrite_expr(heap, e2, generics_replacement_map),
-        )
+      .map(|(n, t, e1, e2)| mir::IfElseFinalAssignment {
+        name: *n,
+        type_: self.rewrite_type(heap, t, generics_replacement_map),
+        e1: self.rewrite_expr(heap, e1, generics_replacement_map),
+        e2: self.rewrite_expr(heap, e2, generics_replacement_map),
       })
       .collect_vec()
   }

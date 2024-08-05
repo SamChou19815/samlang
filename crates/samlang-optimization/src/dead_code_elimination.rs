@@ -1,6 +1,8 @@
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement},
+  mir::{
+    Binary, Callee, Expression, Function, GenenalLoopVariable, IfElseFinalAssignment, Statement,
+  },
 };
 use samlang_heap::PStr;
 use std::collections::HashSet;
@@ -48,7 +50,7 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
       collect_use_from_expression(condition, set);
       collect_use_from_stmts(s1, set);
       collect_use_from_stmts(s2, set);
-      for (_, _, e1, e2) in final_assignments {
+      for IfElseFinalAssignment { e1, e2, .. } in final_assignments {
         collect_use_from_expression(e1, set);
         collect_use_from_expression(e2, set);
       }
@@ -132,8 +134,8 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
       true
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
-      final_assignments.retain(|(n, _, e1, e2)| {
-        if set.contains(n) {
+      final_assignments.retain(|IfElseFinalAssignment { name, type_: _, e1, e2 }| {
+        if set.contains(name) {
           collect_use_from_expression(e1, set);
           collect_use_from_expression(e2, set);
           true

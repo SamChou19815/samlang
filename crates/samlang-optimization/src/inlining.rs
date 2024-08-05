@@ -4,7 +4,7 @@ use samlang_ast::{
   hir::BinaryOperator,
   mir::{
     Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression,
-    GenenalLoopVariable, Statement, Type, VariableName, INT_32_TYPE, ZERO,
+    GenenalLoopVariable, IfElseFinalAssignment, Statement, Type, VariableName, INT_32_TYPE, ZERO,
   },
 };
 use samlang_heap::{Heap, PStr};
@@ -86,8 +86,8 @@ mod estimator {
     use samlang_ast::{
       hir::BinaryOperator,
       mir::{
-        Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-        SymbolTable, Type, INT_32_TYPE, ZERO,
+        Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
+        IfElseFinalAssignment, Statement, SymbolTable, Type, INT_32_TYPE, ZERO,
       },
     };
     use samlang_heap::PStr;
@@ -135,7 +135,12 @@ mod estimator {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(PStr::EMPTY, INT_32_TYPE, ZERO, ZERO)],
+            final_assignments: vec![IfElseFinalAssignment {
+              name: PStr::EMPTY,
+              type_: INT_32_TYPE,
+              e1: ZERO,
+              e2: ZERO,
+            }],
           },
           Statement::IfElse {
             condition: ZERO,
@@ -256,19 +261,22 @@ fn inline_rewrite_stmt(
       cx.push_scope();
       let s1 = inline_rewrite_stmts(cx, heap, prefix, s1);
       let branch1_values =
-        final_assignments.iter().map(|(_, _, e, _)| inline_rewrite_expr(e, cx)).collect_vec();
+        final_assignments.iter().map(|fa| inline_rewrite_expr(&fa.e1, cx)).collect_vec();
       cx.pop_scope();
       cx.push_scope();
       let s2 = inline_rewrite_stmts(cx, heap, prefix, s2);
       let branch2_values =
-        final_assignments.iter().map(|(_, _, _, e)| inline_rewrite_expr(e, cx)).collect_vec();
+        final_assignments.iter().map(|fa| inline_rewrite_expr(&fa.e2, cx)).collect_vec();
       cx.pop_scope();
       let final_assignments = branch1_values
         .into_iter()
         .zip(branch2_values)
         .zip(final_assignments)
-        .map(|((e1, e2), (n, t, _, _))| {
-          (bind_with_mangled_name(cx, heap, prefix, n, t), *t, e1, e2)
+        .map(|((e1, e2), fa)| IfElseFinalAssignment {
+          name: bind_with_mangled_name(cx, heap, prefix, &fa.name, &fa.type_),
+          type_: fa.type_,
+          e1,
+          e2,
         })
         .collect_vec();
       Statement::IfElse { condition, s1, s2, final_assignments }

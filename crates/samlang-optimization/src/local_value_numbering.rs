@@ -101,14 +101,14 @@ fn optimize_stmt(
       variable_cx.push_scope();
       binded_value_cx.push_scope();
       optimize_stmts(s1, variable_cx, binded_value_cx);
-      final_assignments.iter_mut().for_each(|(_, _, e, _)| optimize_expr(e, variable_cx));
+      final_assignments.iter_mut().for_each(|fa| optimize_expr(&mut fa.e1, variable_cx));
       binded_value_cx.pop_scope();
       variable_cx.pop_scope();
 
       variable_cx.push_scope();
       binded_value_cx.push_scope();
       optimize_stmts(s2, variable_cx, binded_value_cx);
-      final_assignments.iter_mut().for_each(|(_, _, _, e)| optimize_expr(e, variable_cx));
+      final_assignments.iter_mut().for_each(|fa| optimize_expr(&mut fa.e2, variable_cx));
       binded_value_cx.pop_scope();
       variable_cx.pop_scope();
 

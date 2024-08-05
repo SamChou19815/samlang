@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use samlang_ast::mir::{
   Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function,
-  FunctionNameExpression, FunctionType, Sources, Statement, Type, TypeDefinition,
-  TypeDefinitionMappings, TypeNameId, VariableName,
+  FunctionNameExpression, FunctionType, IfElseFinalAssignment, Sources, Statement, Type,
+  TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName,
 };
 use std::collections::HashMap;
 
@@ -106,8 +106,11 @@ fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
       s2: rewrite_stmts(state, s2),
       final_assignments: final_assignments
         .into_iter()
-        .map(|(n, t, e1, e2)| {
-          (n, rewrite_type(state, t), rewrite_expr(state, e1), rewrite_expr(state, e2))
+        .map(|IfElseFinalAssignment { name, type_, e1, e2 }| IfElseFinalAssignment {
+          name,
+          type_: rewrite_type(state, type_),
+          e1: rewrite_expr(state, e1),
+          e2: rewrite_expr(state, e2),
         })
         .collect_vec(),
     },
@@ -402,7 +405,12 @@ mod tests {
               context: Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
             },
           ],
-          final_assignments: vec![(PStr::UNDERSCORE, INT_32_TYPE, ZERO, ZERO)],
+          final_assignments: vec![IfElseFinalAssignment {
+            name: PStr::UNDERSCORE,
+            type_: INT_32_TYPE,
+            e1: ZERO,
+            e2: ZERO,
+          }],
         }],
         return_value: ZERO,
       }],

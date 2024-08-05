@@ -6,7 +6,8 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
+      IfElseFinalAssignment, Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE,
+      ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -97,7 +98,12 @@ mod tests {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(PStr::LOWER_A, INT_32_TYPE, ZERO, ZERO)],
+            final_assignments: vec![IfElseFinalAssignment {
+              name: PStr::LOWER_A,
+              type_: INT_32_TYPE,
+              e1: ZERO,
+              e2: ZERO,
+            }],
           },
           Statement::SingleIf {
             condition: ZERO,
@@ -214,12 +220,12 @@ mod tests {
                   return_collector: Some(heap.alloc_str_for_test("v")),
                 },
               ],
-              final_assignments: vec![(
-                heap.alloc_str_for_test("fa"),
-                INT_32_TYPE,
-                Expression::var_name(heap.alloc_str_for_test("acc"), INT_32_TYPE),
-                Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
-              )],
+              final_assignments: vec![IfElseFinalAssignment {
+                name: heap.alloc_str_for_test("fa"),
+                type_: INT_32_TYPE,
+                e1: Expression::var_name(heap.alloc_str_for_test("acc"), INT_32_TYPE),
+                e2: Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
+              }],
             },
           ],
           return_value: Expression::var_name(heap.alloc_str_for_test("fa"), INT_32_TYPE),
@@ -597,12 +603,12 @@ function __$main(): int {
               return_collector: None,
             }],
             s2: vec![],
-            final_assignments: vec![(
-              PStr::LOWER_B,
-              INT_32_TYPE,
-              ZERO,
-              Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
-            )],
+            final_assignments: vec![IfElseFinalAssignment {
+              name: PStr::LOWER_B,
+              type_: INT_32_TYPE,
+              e1: ZERO,
+              e2: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
+            }],
           }],
           return_value: ZERO,
         },

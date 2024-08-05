@@ -67,7 +67,7 @@ pub(super) fn if_else_or_null(
   condition: Expression,
   s1: Vec<Statement>,
   s2: Vec<Statement>,
-  final_assignments: Vec<(PStr, Type, Expression, Expression)>,
+  final_assignments: Vec<IfElseFinalAssignment>,
 ) -> Option<Statement> {
   if s1.is_empty() && s2.is_empty() && final_assignments.is_empty() {
     None

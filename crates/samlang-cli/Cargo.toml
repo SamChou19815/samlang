@@ -17,3 +17,6 @@ samlang-services = { path = "../samlang-services" }
 serde_json = "1.0"
 tokio = { version = "1.28.2", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
 tower-lsp = "0.18.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(release)'] }

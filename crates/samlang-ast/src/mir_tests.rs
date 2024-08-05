@@ -285,12 +285,12 @@ mod tests {
         },
         Statement::Break(ZERO),
       ],
-      final_assignments: vec![(
-        heap.alloc_str_for_test("bar"),
-        INT_32_TYPE,
-        Expression::var_name(heap.alloc_str_for_test("b1"), INT_32_TYPE),
-        Expression::var_name(heap.alloc_str_for_test("b2"), INT_32_TYPE),
-      )],
+      final_assignments: vec![IfElseFinalAssignment {
+        name: heap.alloc_str_for_test("bar"),
+        type_: INT_32_TYPE,
+        e1: Expression::var_name(heap.alloc_str_for_test("b1"), INT_32_TYPE),
+        e2: Expression::var_name(heap.alloc_str_for_test("b2"), INT_32_TYPE),
+      }],
     };
     format!("{:?}", stmt.clone());
     let expected = r#"let bar: int;

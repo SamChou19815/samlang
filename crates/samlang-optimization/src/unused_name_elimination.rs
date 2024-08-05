@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use samlang_ast::mir::{
   Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-  GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
-  TypeNameId,
+  GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement, Type, TypeDefinition,
+  TypeDefinitionMappings, TypeNameId,
 };
 use samlang_heap::PStr;
 use std::collections::{HashMap, HashSet};
@@ -74,8 +74,8 @@ fn collect_used_names_from_statement(
       collect_used_names_from_expression(str_name_set, type_set, condition);
       collect_used_names_from_statements(str_name_set, fn_name_set, type_set, s1);
       collect_used_names_from_statements(str_name_set, fn_name_set, type_set, s2);
-      for (_, t, e1, e2) in final_assignments {
-        collect_for_type_set(t, type_set);
+      for IfElseFinalAssignment { name: _, type_, e1, e2 } in final_assignments {
+        collect_for_type_set(type_, type_set);
         collect_used_names_from_expression(str_name_set, type_set, e1);
         collect_used_names_from_expression(str_name_set, type_set, e2);
       }
@@ -256,8 +256,9 @@ mod tests {
     hir::GlobalString,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-      FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
-      TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_32_TYPE, ZERO,
+      FunctionNameExpression, GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement,
+      SymbolTable, Type, TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName,
+      INT_32_TYPE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -423,7 +424,12 @@ mod tests {
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
-              final_assignments: vec![(heap.alloc_str_for_test("fff"), INT_32_TYPE, ZERO, ZERO)],
+              final_assignments: vec![IfElseFinalAssignment {
+                name: heap.alloc_str_for_test("fff"),
+                type_: INT_32_TYPE,
+                e1: ZERO,
+                e2: ZERO,
+              }],
             },
             Statement::SingleIf {
               condition: ZERO,
