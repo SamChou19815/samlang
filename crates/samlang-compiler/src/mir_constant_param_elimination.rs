@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use samlang_ast::mir::{
   Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
-  Sources, Statement, VariableName,
+  IfElseFinalAssignment, Sources, Statement, VariableName,
 };
 use samlang_heap::PStr;
 use std::collections::HashMap;
@@ -111,7 +111,7 @@ fn collect_def_function_usages_stmt(
       collect_def_function_usages_expr(state, condition);
       collect_def_function_usages_stmts(state, f, s1);
       collect_def_function_usages_stmts(state, f, s2);
-      for (_, _, e1, e2) in final_assignments {
+      for IfElseFinalAssignment { name: _, type_: _, e1, e2 } in final_assignments {
         collect_def_function_usages_expr(state, e1);
         collect_def_function_usages_expr(state, e2);
       }
@@ -309,7 +309,7 @@ fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
       rewrite_expr(state, condition);
       rewrite_stmts(state, s1);
       rewrite_stmts(state, s2);
-      for (_, _, e1, e2) in final_assignments {
+      for IfElseFinalAssignment { name: _, type_: _, e1, e2 } in final_assignments {
         rewrite_expr(state, e1);
         rewrite_expr(state, e2);
       }
@@ -416,8 +416,8 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
-      GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_31_TYPE,
-      INT_32_TYPE, ZERO,
+      GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement, SymbolTable, Type,
+      VariableName, INT_31_TYPE, INT_32_TYPE, ZERO,
     },
   };
   use samlang_heap::{Heap, ModuleReference, PStr};
@@ -610,7 +610,12 @@ mod tests {
               condition: Expression::var_name(PStr::LOWER_E, INT_32_TYPE),
               s1: vec![Statement::Break(ZERO)],
               s2: vec![Statement::Break(ZERO)],
-              final_assignments: vec![(dummy_name, INT_32_TYPE, ZERO, ZERO)],
+              final_assignments: vec![IfElseFinalAssignment {
+                name: dummy_name,
+                type_: INT_32_TYPE,
+                e1: ZERO,
+                e2: ZERO,
+              }],
             },
             Statement::SingleIf {
               condition: ZERO,

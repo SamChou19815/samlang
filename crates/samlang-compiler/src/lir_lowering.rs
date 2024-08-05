@@ -1,6 +1,9 @@
 use super::lir_unused_name_elimination;
 use itertools::Itertools;
-use samlang_ast::{hir, lir, mir};
+use samlang_ast::{
+  hir, lir,
+  mir::{self, IfElseFinalAssignment},
+};
 use samlang_heap::{Heap, PStr};
 use std::collections::{BTreeMap, HashSet};
 
@@ -218,7 +221,9 @@ impl<'a> LoweringManager<'a> {
       mir::Statement::IfElse { condition, s1, s2, final_assignments } => {
         let final_assignments = final_assignments
           .into_iter()
-          .map(|(n, t, e1, e2)| (n, lower_type(t), lower_expression(e1), lower_expression(e2)))
+          .map(|IfElseFinalAssignment { name, type_, e1, e2 }| {
+            (name, lower_type(type_), lower_expression(e1), lower_expression(e2))
+          })
           .collect_vec();
         let variables_not_to_deref_in_s1: HashSet<_> =
           final_assignments.iter().filter_map(|fa| variable_of_mir_expr(&fa.2)).collect();
@@ -753,9 +758,9 @@ mod tests {
     lir,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-      FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
-      TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_31_TYPE, INT_32_TYPE,
-      ONE, ZERO,
+      FunctionNameExpression, GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement,
+      SymbolTable, Type, TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName,
+      INT_31_TYPE, INT_32_TYPE, ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -1013,12 +1018,12 @@ mod tests {
                   ),
                 },
               ],
-              final_assignments: vec![(
-                heap.alloc_str_for_test("finalV"),
-                closure_type,
-                Expression::var_name(heap.alloc_str_for_test("v1"), closure_type),
-                Expression::var_name(heap.alloc_str_for_test("v2"), closure_type),
-              )],
+              final_assignments: vec![IfElseFinalAssignment {
+                name: heap.alloc_str_for_test("finalV"),
+                type_: closure_type,
+                e1: Expression::var_name(heap.alloc_str_for_test("v1"), closure_type),
+                e2: Expression::var_name(heap.alloc_str_for_test("v2"), closure_type),
+              }],
             },
             Statement::IfElse {
               condition: ONE,
@@ -1037,12 +1042,12 @@ mod tests {
                   assigned_expression: ZERO,
                 },
               ],
-              final_assignments: vec![(
-                heap.alloc_str_for_test("finalV2"),
-                INT_32_TYPE,
-                ZERO,
-                ZERO,
-              )],
+              final_assignments: vec![IfElseFinalAssignment {
+                name: heap.alloc_str_for_test("finalV2"),
+                type_: INT_32_TYPE,
+                e1: ZERO,
+                e2: ZERO,
+              }],
             },
             Statement::While {
               loop_variables: vec![],

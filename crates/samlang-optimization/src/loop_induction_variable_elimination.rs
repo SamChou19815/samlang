@@ -5,7 +5,7 @@ use super::loop_induction_analysis::{
 use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Callee, Expression, Statement, VariableName, INT_32_TYPE},
+  mir::{Expression, IfElseFinalAssignment, Statement, VariableName, INT_32_TYPE},
 };
 
 pub(super) struct LoopInductionVariableEliminationResult {
@@ -20,6 +20,24 @@ fn expr_uses_basic_induction_var(
   expr.as_variable().map(|v| v.name.eq(&basic_induction_var.name)).unwrap_or(false)
 }
 
+fn expr2_uses_basic_induction_var(
+  e1: &Expression,
+  e2: &Expression,
+  basic_induction_var: &BasicInductionVariableWithLoopGuard,
+) -> bool {
+  expr_uses_basic_induction_var(e1, basic_induction_var)
+    || expr_uses_basic_induction_var(e2, basic_induction_var)
+}
+
+fn if_else_final_assignments_use_basic_induction_var(
+  final_assignments: &[IfElseFinalAssignment],
+  basic_induction_var: &BasicInductionVariableWithLoopGuard,
+) -> bool {
+  final_assignments
+    .iter()
+    .any(|fa| expr2_uses_basic_induction_var(&fa.e1, &fa.e2, basic_induction_var))
+}
+
 fn stmt_uses_basic_induction_var(
   stmt: &Statement,
   v: &BasicInductionVariableWithLoopGuard,
@@ -27,23 +45,19 @@ fn stmt_uses_basic_induction_var(
   match stmt {
     Statement::IsPointer { name: _, pointer_type: _, operand }
     | Statement::Not { name: _, operand } => expr_uses_basic_induction_var(operand, v),
-    Statement::Binary(b) => {
-      expr_uses_basic_induction_var(&b.e1, v) || expr_uses_basic_induction_var(&b.e2, v)
-    }
+    Statement::Binary(b) => expr2_uses_basic_induction_var(&b.e1, &b.e2, v),
     Statement::IndexedAccess { name: _, type_: _, pointer_expression, index: _ } => {
       expr_uses_basic_induction_var(pointer_expression, v)
     }
     Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
-      let in_callee = matches!(callee, Callee::Variable(var) if var.name.eq(&v.name) );
+      let in_callee = callee.as_variable().map_or(false, |var| var.name.eq(&v.name));
       in_callee || arguments.iter().any(|e| expr_uses_basic_induction_var(e, v))
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       expr_uses_basic_induction_var(condition, v)
         || stmts_uses_basic_induction_var(s1, v)
         || stmts_uses_basic_induction_var(s2, v)
-        || final_assignments.iter().any(|(_, _, e1, e2)| {
-          expr_uses_basic_induction_var(e1, v) || expr_uses_basic_induction_var(e2, v)
-        })
+        || if_else_final_assignments_use_basic_induction_var(final_assignments, v)
     }
     Statement::SingleIf { condition, invert_condition: _, statements } => {
       expr_uses_basic_induction_var(condition, v) || stmts_uses_basic_induction_var(statements, v)
@@ -84,10 +98,9 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
     || l.loop_variables_that_are_not_basic_induction_variables.iter().any(|v| {
       expr_uses_basic_induction_var(&v.loop_value, &l.basic_induction_variable_with_loop_guard)
     })
-    || l
-      .break_collector
-      .map(|v| expr_uses_basic_induction_var(&v.2, &l.basic_induction_variable_with_loop_guard))
-      .unwrap_or(false)
+    || l.break_collector.map_or(false, |v| {
+      expr_uses_basic_induction_var(&v.2, &l.basic_induction_variable_with_loop_guard)
+    })
 }
 
 pub(super) fn optimize(
@@ -202,8 +215,9 @@ mod tests {
   use samlang_ast::{
     hir::BinaryOperator,
     mir::{
-      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
-      SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable,
+      IfElseFinalAssignment, Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE,
+      ONE, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -272,6 +286,59 @@ mod tests {
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
+        statements: vec![Statement::IfElse {
+          condition: ZERO,
+          s1: vec![],
+          s2: vec![],
+          final_assignments: vec![IfElseFinalAssignment {
+            name: PStr::LOWER_A,
+            type_: INT_32_TYPE,
+            e1: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            e2: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+          }]
+        }],
+        break_collector: None
+      },
+      heap,
+    )
+    .is_err());
+
+    assert!(super::optimize(
+      OptimizableWhileLoop {
+        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+          name: PStr::LOWER_I,
+          initial_value: ONE,
+          increment_amount: PotentialLoopInvariantExpression::Int(2),
+          guard_operator: GuardOperator::LT,
+          guard_expression: PotentialLoopInvariantExpression::Int(10),
+        },
+        general_induction_variables: vec![],
+        loop_variables_that_are_not_basic_induction_variables: vec![],
+        derived_induction_variables: vec![],
+        statements: vec![Statement::IfElse {
+          condition: ZERO,
+          s1: vec![],
+          s2: vec![],
+          final_assignments: vec![]
+        }],
+        break_collector: None
+      },
+      heap,
+    )
+    .is_err());
+
+    assert!(super::optimize(
+      OptimizableWhileLoop {
+        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+          name: PStr::LOWER_I,
+          initial_value: ONE,
+          increment_amount: PotentialLoopInvariantExpression::Int(2),
+          guard_operator: GuardOperator::LT,
+          guard_expression: PotentialLoopInvariantExpression::Int(10),
+        },
+        general_induction_variables: vec![],
+        loop_variables_that_are_not_basic_induction_variables: vec![],
+        derived_induction_variables: vec![],
         statements: vec![
           Statement::IndexedAccess {
             name: PStr::LOWER_A,
@@ -302,7 +369,12 @@ mod tests {
               },
               context: ZERO
             }],
-            final_assignments: vec![(PStr::LOWER_A, INT_32_TYPE, ZERO, ZERO)]
+            final_assignments: vec![IfElseFinalAssignment {
+              name: PStr::LOWER_A,
+              type_: INT_32_TYPE,
+              e1: ZERO,
+              e2: ZERO
+            }]
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
@@ -323,7 +395,7 @@ mod tests {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
                 expression_list: vec![ZERO]
-              }
+              },
             ],
             break_collector: None
           },
@@ -339,6 +411,12 @@ mod tests {
           Statement::Call {
             callee: Callee::Variable(VariableName::new(PStr::LOWER_A, INT_32_TYPE)),
             arguments: vec![ZERO],
+            return_type: INT_32_TYPE,
+            return_collector: None
+          },
+          Statement::Call {
+            callee: Callee::Variable(VariableName::new(PStr::LOWER_I, INT_32_TYPE)),
+            arguments: vec![Expression::var_name(PStr::LOWER_A, INT_32_TYPE)],
             return_type: INT_32_TYPE,
             return_collector: None
           },

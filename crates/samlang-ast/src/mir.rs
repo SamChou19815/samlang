@@ -461,6 +461,14 @@ impl Callee {
 }
 
 #[derive(Debug, Clone)]
+pub struct IfElseFinalAssignment {
+  pub name: PStr,
+  pub type_: Type,
+  pub e1: Expression,
+  pub e2: Expression,
+}
+
+#[derive(Debug, Clone)]
 pub struct GenenalLoopVariable {
   pub name: PStr,
   pub type_: Type,
@@ -507,7 +515,7 @@ pub enum Statement {
     condition: Expression,
     s1: Vec<Statement>,
     s2: Vec<Statement>,
-    final_assignments: Vec<(PStr, Type, Expression, Expression)>,
+    final_assignments: Vec<IfElseFinalAssignment>,
   },
   SingleIf {
     condition: Expression,
@@ -704,12 +712,12 @@ impl Statement {
         ));
       }
       Statement::IfElse { condition, s1, s2, final_assignments } => {
-        for (n, t, _, _) in final_assignments {
+        for IfElseFinalAssignment { name, type_, .. } in final_assignments {
           collector.push(format!(
             "{}let {}: {};\n",
             "  ".repeat(level),
-            n.as_str(heap),
-            t.pretty_print(heap, table)
+            name.as_str(heap),
+            type_.pretty_print(heap, table)
           ));
         }
         collector.push(format!(
@@ -720,11 +728,11 @@ impl Statement {
         for s in s1 {
           s.debug_print_internal(heap, table, level + 1, break_collector, collector);
         }
-        for (n, _, v1, _) in final_assignments {
+        for IfElseFinalAssignment { name, e1: v1, .. } in final_assignments {
           collector.push(format!(
             "{}{} = {};\n",
             "  ".repeat(level + 1),
-            n.as_str(heap),
+            name.as_str(heap),
             v1.debug_print(heap, table)
           ));
         }
@@ -732,11 +740,11 @@ impl Statement {
         for s in s2 {
           s.debug_print_internal(heap, table, level + 1, break_collector, collector);
         }
-        for (n, _, _, v2) in final_assignments {
+        for IfElseFinalAssignment { name, e2: v2, .. } in final_assignments {
           collector.push(format!(
             "{}{} = {};\n",
             "  ".repeat(level + 1),
-            n.as_str(heap),
+            name.as_str(heap),
             v2.debug_print(heap, table)
           ));
         }

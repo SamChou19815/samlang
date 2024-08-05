@@ -295,22 +295,22 @@ fn optimize_stmt(
         if ends_with_break {
           return true;
         }
-        for (n, _, e1, e2) in final_assignments {
+        for IfElseFinalAssignment { name, type_: _, e1, e2 } in final_assignments {
           let optimized =
             if is_true { optimize_expr(value_cx, e1) } else { optimize_expr(value_cx, e2) };
-          value_cx.checked_bind(*n, optimized);
+          value_cx.checked_bind(*name, optimized);
         }
         return false;
       }
       if s1.is_empty() && s2.is_empty() && final_assignments.len() == 1 {
-        let (n, _, e1, e2) = &final_assignments[0];
+        let IfElseFinalAssignment { name, type_: _, e1, e2 } = &final_assignments[0];
         match (e1, e2) {
           (Expression::Int32Literal(1), Expression::Int32Literal(0)) => {
-            value_cx.checked_bind(*n, condition);
+            value_cx.checked_bind(*name, condition);
             return false;
           }
           (Expression::Int32Literal(0), Expression::Int32Literal(1)) => {
-            collector.push(Statement::binary(*n, BinaryOperator::XOR, condition, ONE));
+            collector.push(Statement::binary(*name, BinaryOperator::XOR, condition, ONE));
             return false;
           }
           _ => {}
@@ -320,22 +320,25 @@ fn optimize_stmt(
       let mut s1_collector = vec![];
       optimize_stmts(s1, heap, value_cx, index_access_cx, binary_expr_cx, &mut s1_collector);
       let branch1_values =
-        final_assignments.iter().map(|(_, _, e, _)| optimize_expr(value_cx, e)).collect_vec();
+        final_assignments.iter().map(|fa| optimize_expr(value_cx, &fa.e1)).collect_vec();
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
       push_scope(value_cx, index_access_cx, binary_expr_cx);
       let mut s2_collector = vec![];
       optimize_stmts(s2, heap, value_cx, index_access_cx, binary_expr_cx, &mut s2_collector);
       let branch2_values =
-        final_assignments.iter().map(|(_, _, _, e)| optimize_expr(value_cx, e)).collect_vec();
+        final_assignments.iter().map(|fa| optimize_expr(value_cx, &fa.e2)).collect_vec();
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
       let mut optimized_final_assignments = vec![];
-      for ((e1, e2), (n, t, _, _)) in
-        branch1_values.into_iter().zip(branch2_values).zip(final_assignments)
-      {
+      for ((e1, e2), fa) in branch1_values.into_iter().zip(branch2_values).zip(final_assignments) {
         if e1 == e2 {
-          value_cx.checked_bind(*n, e1);
+          value_cx.checked_bind(fa.name, e1);
         } else {
-          optimized_final_assignments.push((*n, *t, e1, e2));
+          optimized_final_assignments.push(IfElseFinalAssignment {
+            name: fa.name,
+            type_: fa.type_,
+            e1,
+            e2,
+          });
         }
       }
       if let Some(stmt) =

@@ -2,8 +2,8 @@ use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
   mir::{
-    Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
-    ZERO,
+    Callee, Expression, Function, FunctionName, GenenalLoopVariable, IfElseFinalAssignment,
+    Statement, Type, VariableName, ZERO,
   },
 };
 use samlang_heap::{Heap, PStr};
@@ -51,9 +51,9 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let relevant_final_assignment =
-        final_assignments.iter().find(|it| expected_return_collector.eq(&Some(it.0)));
+        final_assignments.iter().find(|it| expected_return_collector.eq(&Some(it.name)));
       let new_expected_ret_collectors = if expected_return_collector.is_some() {
-        if let Some((_, _, e1, e2)) = relevant_final_assignment {
+        if let Some(IfElseFinalAssignment { e1, e2, .. }) = relevant_final_assignment {
           (e1.as_variable().cloned().map(|it| it.name), e2.as_variable().cloned().map(|it| it.name))
         } else {
           return Err(
@@ -93,7 +93,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
               statements: s1
                 .into_iter()
                 .chain(vec![Statement::Break(
-                  relevant_final_assignment.map(|(_, _, e, _)| e).cloned().unwrap_or(ZERO),
+                  relevant_final_assignment.map(|fa| fa.e1).unwrap_or(ZERO),
                 )])
                 .collect_vec(),
             }])
@@ -109,7 +109,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
               statements: s2
                 .into_iter()
                 .chain(vec![Statement::Break(
-                  relevant_final_assignment.map(|(_, _, _, e)| e).cloned().unwrap_or(ZERO),
+                  relevant_final_assignment.map(|fa| fa.e2).unwrap_or(ZERO),
                 )])
                 .collect_vec(),
             }])
@@ -123,13 +123,13 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
         ) => {
           let mut new_final_assignments = final_assignments
             .into_iter()
-            .filter(|it| expected_return_collector.ne(&Some(it.0)))
+            .filter(|it| expected_return_collector.ne(&Some(it.name)))
             .collect_vec();
           let mut args = vec![];
           for ((e1, e2), t) in a1.into_iter().zip(a2).zip(function_parameter_types) {
             let name = heap.alloc_temp_str();
             args.push(Expression::var_name(name, *t));
-            new_final_assignments.push((name, *t, e1, e2));
+            new_final_assignments.push(IfElseFinalAssignment { name, type_: *t, e1, e2 });
           }
           Ok(RewriteResult {
             stmts: rest_stmts_iterator
@@ -213,7 +213,7 @@ pub(super) fn optimize_function_by_tailrec_rewrite(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{FunctionNameExpression, SymbolTable, INT_32_TYPE};
+  use samlang_ast::mir::{FunctionNameExpression, IfElseFinalAssignment, SymbolTable, INT_32_TYPE};
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {
     assert!(optimize_function_by_tailrec_rewrite_aux(heap, f).is_err())
@@ -471,12 +471,12 @@ mod tests {
               return_type: INT_32_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r2")),
             }],
-            final_assignments: vec![(
-              heap.alloc_str_for_test("r"),
-              INT_32_TYPE,
-              Expression::var_name(heap.alloc_str_for_test("r1"), INT_32_TYPE),
-              Expression::var_name(heap.alloc_str_for_test("r2"), INT_32_TYPE),
-            )],
+            final_assignments: vec![IfElseFinalAssignment {
+              name: heap.alloc_str_for_test("r"),
+              type_: INT_32_TYPE,
+              e1: Expression::var_name(heap.alloc_str_for_test("r1"), INT_32_TYPE),
+              e2: Expression::var_name(heap.alloc_str_for_test("r2"), INT_32_TYPE),
+            }],
           },
         ],
         return_value: Expression::var_name(heap.alloc_str_for_test("r"), INT_32_TYPE),
@@ -529,12 +529,12 @@ mod tests {
               return_collector: Some(heap.alloc_str_for_test("r1")),
             }],
             s2: vec![],
-            final_assignments: vec![(
-              heap.alloc_str_for_test("r"),
-              INT_32_TYPE,
-              Expression::var_name(heap.alloc_str_for_test("r1"), INT_32_TYPE),
-              ZERO,
-            )],
+            final_assignments: vec![IfElseFinalAssignment {
+              name: heap.alloc_str_for_test("r"),
+              type_: INT_32_TYPE,
+              e1: Expression::var_name(heap.alloc_str_for_test("r1"), INT_32_TYPE),
+              e2: ZERO,
+            }],
           },
         ],
         return_value: Expression::var_name(heap.alloc_str_for_test("r"), INT_32_TYPE),
@@ -640,19 +640,19 @@ mod tests {
                 return_collector: Some(heap.alloc_str_for_test("r")),
               },
             ],
-            final_assignments: vec![(
-              heap.alloc_str_for_test("nested_return"),
-              INT_32_TYPE,
-              Expression::i32(1),
-              Expression::var_name(heap.alloc_str_for_test("r"), INT_32_TYPE),
-            )],
+            final_assignments: vec![IfElseFinalAssignment {
+              name: heap.alloc_str_for_test("nested_return"),
+              type_: INT_32_TYPE,
+              e1: Expression::i32(1),
+              e2: Expression::var_name(heap.alloc_str_for_test("r"), INT_32_TYPE),
+            }],
           }],
-          final_assignments: vec![(
-            heap.alloc_str_for_test("v"),
-            INT_32_TYPE,
-            ZERO,
-            Expression::var_name(heap.alloc_str_for_test("nested_return"), INT_32_TYPE),
-          )],
+          final_assignments: vec![IfElseFinalAssignment {
+            name: heap.alloc_str_for_test("v"),
+            type_: INT_32_TYPE,
+            e1: ZERO,
+            e2: Expression::var_name(heap.alloc_str_for_test("nested_return"), INT_32_TYPE),
+          }],
         }],
         return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
       },
