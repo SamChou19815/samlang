@@ -67,25 +67,25 @@ export default function Home(): JSX.Element {
           </p>
           <h2 id="example-programs">Notable Examples</h2>
           <section className="flex flex-wrap items-center">
-            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+            <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
               <h3>Hello World</h3>
               <div className="pr-2">
                 <StaticSamlangCodeBlock>{HELLO_WORLD_STRING}</StaticSamlangCodeBlock>
               </div>
             </div>
-            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+            <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
               <h3>42</h3>
               <div className="pr-2">
                 <StaticSamlangCodeBlock>{FOURTY_TWO}</StaticSamlangCodeBlock>
               </div>
             </div>
-            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+            <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
               <h3>Pattern Matching</h3>
               <div className="pr-2">
                 <StaticSamlangCodeBlock>{PATTERN_MATCHING}</StaticSamlangCodeBlock>
               </div>
             </div>
-            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+            <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
               <h3>Type Inference</h3>
               <div className="pr-2">
                 <StaticSamlangCodeBlock>{TYPE_INFERENCE}</StaticSamlangCodeBlock>
