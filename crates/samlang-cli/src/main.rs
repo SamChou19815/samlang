@@ -815,8 +815,8 @@ mod runners {
     pretty_assertions::assert_eq!(
       expected,
       String::from_utf8(
-        std::process::Command::new("bun")
-          .args(["out/tests.AllTests.ts"])
+        std::process::Command::new("node")
+          .args(["--experimental-strip-types", "out/tests.AllTests.ts"])
           .output()
           .expect("JS execution failure")
           .stdout,
