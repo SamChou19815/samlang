@@ -14,24 +14,22 @@ mod tests {
     Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).is_int32();
     assert!(INT_TYPE.is_int32());
     assert!(INT_TYPE.as_id().is_none());
-    format!(
-      "{:?}",
+    assert!(!format!(
+      "{:?}{:?}{:?}",
       Expression::var_name(
         PStr::LOWER_A,
         Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
-      )
-    );
-    format!(
-      "{:?}",
+      ),
       Expression::var_name(
         PStr::LOWER_A,
         Type::new_id(
           PStr::UPPER_A,
           vec![INT_TYPE, INT31_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]
         )
-      )
-    );
-    format!("{:?}", TypeName::new_for_test(PStr::UPPER_A));
+      ),
+      TypeName::new_for_test(PStr::UPPER_A)
+    )
+    .is_empty());
     assert!(TypeName::new_for_test(PStr::UPPER_A) <= TypeName::new_for_test(PStr::UPPER_A));
     assert_eq!(
       TypeName::new_for_test(PStr::UPPER_A).cmp(&TypeName::new_for_test(PStr::UPPER_A)),
@@ -60,20 +58,24 @@ mod tests {
         }),
       std::cmp::Ordering::Equal
     );
-    format!("{:?}", Expression::StringName(PStr::LOWER_A));
-    format!("{:?}", BinaryOperator::GE);
     assert!(BinaryOperator::MINUS <= BinaryOperator::GE);
-    format!("{:?}", BinaryOperator::MINUS.partial_cmp(&BinaryOperator::GE));
-    format!("{:?}", BinaryOperator::MINUS.cmp(&BinaryOperator::GE));
-    format!("{:?}", ZERO.type_());
-    format!("{:?}", Expression::Int31Zero.type_());
-    format!("{:?}", Expression::StringName(PStr::LOWER_A).type_().as_id());
+    assert!(!format!(
+      "{:?}{:?}{:?}{:?}{:?}{:?}{:?}{:?}",
+      Expression::StringName(PStr::LOWER_A),
+      BinaryOperator::GE,
+      BinaryOperator::MINUS.partial_cmp(&BinaryOperator::GE),
+      BinaryOperator::MINUS.cmp(&BinaryOperator::GE),
+      ZERO.type_(),
+      Expression::Int31Zero.type_(),
+      Expression::StringName(PStr::LOWER_A).type_().as_id(),
+      Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+    )
+    .is_empty());
     assert!(Expression::StringName(PStr::LOWER_A).type_().as_id().is_some());
     assert_eq!(
       "(s: int)",
       VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap)
     );
-    format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE));
     Expression::var_name(PStr::LOWER_A, INT_TYPE).type_();
     Expression::var_name(PStr::LOWER_A, INT_TYPE).convert_to_callee();
     Expression::StringName(PStr::LOWER_A).convert_to_callee();
@@ -91,7 +93,7 @@ mod tests {
       return_type: INT_TYPE,
       return_collector: None,
     };
-    format!("{:?}", call);
+    assert!(!format!("{:?}", call).is_empty());
 
     assert!(
       Expression::var_name(
@@ -408,7 +410,7 @@ mod tests {
         Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
       )],
     };
-    format!("{:?}", stmt.clone());
+    assert!(!format!("{:?}", stmt.clone()).is_empty());
     let expected = r#"let bar: int;
 if 0 {
   let baz: DUMMY_FooBar = ["meggo"];
@@ -495,7 +497,7 @@ if 0 {
       }
       .clone()],
     };
-    format!("{sources1:?}");
+    assert!(!format!("{sources1:?}").is_empty());
     let expected1 = r#"const GLOBAL_STRING_0 = 'dev_meggo_vibez';
 
 closure type C = () -> int

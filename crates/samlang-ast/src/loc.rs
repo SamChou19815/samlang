@@ -69,7 +69,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    format!("{:?} {:?}", DUMMY_POSITION.clone(), Location::dummy().clone());
+    assert!(!format!("{:?} {:?}", DUMMY_POSITION.clone(), Location::dummy().clone()).is_empty());
     HashSet::new().insert(DUMMY_POSITION);
     HashSet::new().insert(ModuleReference::DUMMY);
     HashSet::new().insert(Location::dummy());

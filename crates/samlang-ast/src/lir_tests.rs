@@ -14,13 +14,14 @@ mod tests {
     assert!(ZERO.as_fn_name().is_none());
 
     let table = &mut SymbolTable::new();
-    format!(
-      "{:?}",
+    assert!(!format!(
+      "{:?}{:?}{:?}",
       Expression::Variable(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
-        .clone()
-    );
-    format!("{:?}", Expression::StringName(PStr::LOWER_A).clone());
-    format!("{:?}", Type::new_fn(vec![INT_32_TYPE, INT_31_TYPE], INT_32_TYPE).clone());
+        .clone(),
+      Expression::StringName(PStr::LOWER_A).clone(),
+      Type::new_fn(vec![INT_32_TYPE, INT_31_TYPE], INT_32_TYPE).clone()
+    )
+    .is_empty());
   }
 
   #[test]
