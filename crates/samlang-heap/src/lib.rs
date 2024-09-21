@@ -636,11 +636,12 @@ mod tests {
   #[test]
   fn boilterplate() {
     assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.storage.contains(&0));
-    format!(
-      "{:?}",
-      PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } }).clone()
-    );
-    format!("{:?}", PStr::INVALID_PSTR);
+    assert!(!format!(
+      "{:?} {:?}",
+      PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } }).clone(),
+      PStr::INVALID_PSTR
+    )
+    .is_empty());
 
     StringStoredInHeap::deallocated(true, "");
     StringStoredInHeap::deallocated(false, "");
@@ -682,7 +683,7 @@ mod tests {
         .get_allocated_module_reference_opt(vec!["ddasdasdassdfasdfasdfasdfasdf".to_string()])
         .is_none()
     );
-    format!("{mb:?}");
+    assert!(!format!("{mb:?}").is_empty());
     assert_eq!(ma1.clone(), ma2.clone());
     assert_ne!(ma1, mb);
     assert_ne!(ma2, mb);

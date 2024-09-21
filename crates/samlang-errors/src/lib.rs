@@ -563,7 +563,7 @@ mod stackable_error_tests {
       Description::AnyType,
     );
 
-    format!("{:?}", stacked);
+    assert!(!format!("{:?}", stacked).is_empty());
     assert!(stacked <= stacked);
     assert!(stacked == stacked);
     assert_eq!(stacked.cmp(&stacked), std::cmp::Ordering::Equal);
@@ -1087,21 +1087,19 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    format!("{:?}", ErrorPrinterStyle::IDE);
-    format!(
-      "{:?}",
+    assert!(!format!(
+      "{:?}{:?}{:?}",
+      ErrorPrinterStyle::IDE,
       ErrorInIDEFormat {
         location: Location::dummy(),
         ide_error: "ide".to_string(),
         full_error: "full".to_string(),
         reference_locs: vec![]
-      }
-    );
-    assert!(ErrorPrinterStyle::Terminal != ErrorPrinterStyle::Text);
-    format!(
-      "{:?}",
+      },
       CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
-    );
+    )
+    .is_empty());
+    assert!(ErrorPrinterStyle::Terminal != ErrorPrinterStyle::Text);
     assert_eq!(
       Some(std::cmp::Ordering::Equal),
       CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }

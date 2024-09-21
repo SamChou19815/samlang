@@ -23,7 +23,6 @@ mod rc_string_tests {
     assert!(rcs("foo").cmp(&rcs("zuck")).is_lt());
     assert!(rcs("foo").partial_cmp(&rcs("zuck")).is_some());
     assert!(rcs("foo") == rcs("foo"));
-    format!("{:?}", rcs("debug"));
     assert_eq!(rcs("zuck"), rcs("zuck"));
     assert_eq!(Some('h'), rcs("hiya").chars().next());
   }

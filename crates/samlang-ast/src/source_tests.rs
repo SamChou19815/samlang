@@ -16,9 +16,13 @@ mod tests {
     let comment = Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str_for_test("d") };
 
     assert!(CommentKind::DOC == CommentKind::DOC);
-    format!("{:?}", comment.text);
-    format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone());
-    format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![comment]).clone());
+    assert!(!format!(
+      "{:?}{:?}{:?}",
+      comment.text,
+      CommentStore::new().clone().create_comment_reference(vec![]).clone(),
+      CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
+    )
+    .is_empty());
     CommentStore::new().all_comments();
     assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).iter().collect_vec().is_empty());
     assert!(CommentStore::new()

@@ -118,7 +118,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    format!("{:?} {:?}", Description::UnitType, Reason::dummy());
+    assert!(!format!("{:?} {:?}", Description::UnitType, Reason::dummy()).is_empty());
     assert!(Description::UnitType <= Description::UnitType);
     assert_eq!(Description::UnitType.cmp(&Description::UnitType), std::cmp::Ordering::Equal);
     assert!(Reason::dummy() <= Reason::dummy());

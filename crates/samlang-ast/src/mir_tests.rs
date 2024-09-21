@@ -12,9 +12,10 @@ mod tests {
     let table = &mut SymbolTable::new();
 
     assert!(INT_32_TYPE <= INT_32_TYPE);
-    format!("{:?}", INT_32_TYPE.cmp(&INT_32_TYPE));
     assert!(INT_31_TYPE <= INT_31_TYPE);
-    format!("{:?}", INT_31_TYPE.cmp(&INT_31_TYPE));
+    assert!(
+      !format!("{:?}{:?}", INT_32_TYPE.cmp(&INT_32_TYPE), INT_31_TYPE.cmp(&INT_31_TYPE)).is_empty()
+    );
     assert!(Expression::i32(100) <= Expression::Int31Literal(1));
     assert!(Expression::Int31Literal(1) >= Expression::i32(100));
     assert!(Expression::Int31Literal(1) <= Expression::Int31Literal(2));
@@ -27,16 +28,14 @@ mod tests {
     assert!(INT_32_TYPE.as_id().is_none());
     assert!(INT_31_TYPE.is_int31());
     assert!(INT_31_TYPE.as_id().is_none());
-    format!(
-      "{:?}",
-      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
-    );
-    format!(
-      "{:?}",
-      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
-    );
-    format!("{:?}", Expression::StringName(PStr::LOWER_A));
-    format!("{:?}", INT_32_TYPE);
+    assert!(!format!(
+      "{:?}{:?}{:?}{:?}",
+      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A))),
+      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A))),
+      Expression::StringName(PStr::LOWER_A),
+      INT_32_TYPE
+    )
+    .is_empty());
     assert_eq!(
       "(s: int)",
       VariableName::new(heap.alloc_str_for_test("s"), INT_32_TYPE).debug_print(heap, table)
@@ -48,7 +47,7 @@ mod tests {
       loop_value: ZERO,
     }
     .pretty_print(heap, table);
-    format!("{:?}", Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE));
+    assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE)).is_empty());
     Expression::var_name(PStr::LOWER_A, INT_32_TYPE).convert_to_callee();
     Expression::StringName(PStr::LOWER_A).convert_to_callee();
     ZERO.convert_to_callee();
@@ -66,7 +65,7 @@ mod tests {
       return_type: INT_32_TYPE,
       return_collector: None,
     };
-    format!("{:?}", call);
+    assert!(!format!("{:?}", call).is_empty());
     assert!(call.as_call().is_some());
     assert!(call.into_break().is_err());
 
@@ -98,7 +97,7 @@ mod tests {
 
     let mut table = SymbolTable::new();
     let mut type_name_id = table.create_type_name_for_test(PStr::UPPER_A);
-    format!("{:?}", type_name_id);
+    assert!(!format!("{:?}", type_name_id).is_empty());
     assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id = table.create_type_name_with_suffix(
       ModuleReference::ROOT,
@@ -156,7 +155,7 @@ mod tests {
       "variant type _B = [Unboxed(_D), Boxed(int, int), i31]",
       d2.pretty_print(heap, table)
     );
-    format!("{d1:?} {d2:?}");
+    assert!(!format!("{d1:?} {d2:?}").is_empty());
   }
 
   #[test]
@@ -292,7 +291,7 @@ mod tests {
         e2: Expression::var_name(heap.alloc_str_for_test("b2"), INT_32_TYPE),
       }],
     };
-    format!("{:?}", stmt.clone());
+    assert!(!format!("{:?}", stmt.clone()).is_empty());
     let expected = r#"let bar: int;
 if 0 {
   let baz: _FooBar = ["meggo"];
@@ -381,7 +380,7 @@ if 0 {
       .clone()],
       symbol_table: table,
     };
-    format!("{sources1:?}");
+    assert!(!format!("{sources1:?}").is_empty());
     let expected1 = r#"const GLOBAL_STRING_0 = 'dev_meggo_vibez';
 
 closure type _A = () -> int
