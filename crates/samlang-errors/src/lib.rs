@@ -863,7 +863,7 @@ impl ErrorSet {
   }
 
   pub fn group_errors(self) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
-    let grouped = self.errors.into_iter().group_by(|e| e.location.module_reference);
+    let grouped = self.errors.into_iter().chunk_by(|e| e.location.module_reference);
     grouped.into_iter().map(|(k, v)| (k, v.collect_vec())).collect::<HashMap<_, _>>()
   }
 
