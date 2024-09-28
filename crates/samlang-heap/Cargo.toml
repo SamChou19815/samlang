@@ -4,7 +4,7 @@ version = "0.9.1"
 edition = "2021"
 
 [dependencies]
-itertools = "0.12.1"
+itertools = "0.13.0"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"

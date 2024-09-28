@@ -302,7 +302,7 @@ fn signature_incomplete_names<CX: PatternMatchingContext>(
   }
   let mut variants_grouped = vec![];
   for (key, group) in
-    &root_constructors.keys().filter_map(|c| *c).group_by(|c| (c.module_reference, c.class_name))
+    &root_constructors.keys().filter_map(|c| *c).chunk_by(|c| (c.module_reference, c.class_name))
   {
     variants_grouped.push((key, group.map(|g| g.variant_name).collect_vec()));
   }
