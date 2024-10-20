@@ -1,6 +1,6 @@
 [package]
 name = "samlang-parser"
-version = "0.9.1"
+version = "0.10.1"
 edition = "2021"
 
 [dependencies]
@@ -12,4 +12,4 @@ samlang-errors = { path = "../samlang-errors" }
 samlang-heap = { path = "../samlang-heap" }
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"
