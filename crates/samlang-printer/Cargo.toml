@@ -1,6 +1,6 @@
 [package]
 name = "samlang-printer"
-version = "0.9.1"
+version = "0.10.1"
 edition = "2021"
 
 [dependencies]
@@ -12,4 +12,4 @@ samlang-heap = { path = "../samlang-heap" }
 samlang-parser = { path = "../samlang-parser" }
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"

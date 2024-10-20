@@ -1,6 +1,6 @@
 [package]
 name = "samlang-ast"
-version = "0.9.1"
+version = "0.10.1"
 edition = "2021"
 
 [dependencies]
@@ -10,4 +10,4 @@ itertools = "0.13.0"
 samlang-heap = { path = "../samlang-heap" }
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"

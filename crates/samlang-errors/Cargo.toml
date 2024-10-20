@@ -1,6 +1,6 @@
 [package]
 name = "samlang-errors"
-version = "0.9.1"
+version = "0.10.1"
 edition = "2021"
 
 [dependencies]
@@ -9,4 +9,4 @@ samlang-ast = { path = "../samlang-ast" }
 samlang-heap = { path = "../samlang-heap" }
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"
