@@ -1,6 +1,6 @@
 [package]
 name = "samlang-optimization"
-version = "0.9.1"
+version = "0.10.1"
 edition = "2021"
 
 [dependencies]
@@ -14,4 +14,4 @@ samlang-printer = { path = "../samlang-printer" }
 wat = "1.0.66"
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"
