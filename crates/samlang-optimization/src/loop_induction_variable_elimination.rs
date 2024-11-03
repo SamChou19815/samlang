@@ -1,3 +1,5 @@
+use crate::loop_induction_analysis::DerivedInductionVariableWithName;
+
 use super::loop_induction_analysis::{
   merge_invariant_multiplication_for_loop_optimization, BasicInductionVariableWithLoopGuard,
   GuardOperator, OptimizableWhileLoop, PotentialLoopInvariantExpression,
@@ -10,7 +12,8 @@ use samlang_ast::{
 
 pub(super) struct LoopInductionVariableEliminationResult {
   pub(super) prefix_statements: Vec<Statement>,
-  pub(super) optimizable_while_loop: OptimizableWhileLoop,
+  pub(super) new_basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard,
+  pub(super) new_derived_induction_variables: Vec<DerivedInductionVariableWithName>,
 }
 
 fn expr_uses_basic_induction_var(
@@ -104,11 +107,11 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
 }
 
 pub(super) fn optimize(
-  optimizable_while_loop: OptimizableWhileLoop,
+  optimizable_while_loop: &OptimizableWhileLoop,
   heap: &mut samlang_heap::Heap,
-) -> Result<LoopInductionVariableEliminationResult, OptimizableWhileLoop> {
-  if optimizable_while_loop_uses_induction_var(&optimizable_while_loop) {
-    return Result::Err(optimizable_while_loop);
+) -> Option<LoopInductionVariableEliminationResult> {
+  if optimizable_while_loop_uses_induction_var(optimizable_while_loop) {
+    return None;
   }
 
   let relevant_derived_induction_variables = optimizable_while_loop
@@ -119,17 +122,13 @@ pub(super) fn optimize(
     })
     .collect_vec();
   if relevant_derived_induction_variables.len() != 1 {
-    return Result::Err(optimizable_while_loop);
+    return None;
   }
   let only_relevant_induction_loop_variables = relevant_derived_induction_variables[0];
-  let Some(added_invariant_expression_in_loop) =
-    merge_invariant_multiplication_for_loop_optimization(
-      &optimizable_while_loop.basic_induction_variable_with_loop_guard.increment_amount,
-      &only_relevant_induction_loop_variables.multiplier,
-    )
-  else {
-    return Result::Err(optimizable_while_loop);
-  };
+  let added_invariant_expression_in_loop = merge_invariant_multiplication_for_loop_optimization(
+    &optimizable_while_loop.basic_induction_variable_with_loop_guard.increment_amount,
+    &only_relevant_induction_loop_variables.multiplier,
+  )?;
 
   let new_initial_value_temp_temporary = heap.alloc_temp_str();
   let new_initial_value_name = heap.alloc_temp_str();
@@ -165,7 +164,7 @@ pub(super) fn optimize(
     )),
   ];
 
-  let basic_induction_variable_with_loop_guard = BasicInductionVariableWithLoopGuard {
+  let new_basic_induction_variable_with_loop_guard = BasicInductionVariableWithLoopGuard {
     name: only_relevant_induction_loop_variables.name,
     initial_value: Expression::var_name(new_initial_value_name, INT_32_TYPE),
     increment_amount: added_invariant_expression_in_loop,
@@ -175,32 +174,17 @@ pub(super) fn optimize(
       type_: INT_32_TYPE,
     }),
   };
-  let derived_induction_variables = optimizable_while_loop
+  let new_derived_induction_variables = optimizable_while_loop
     .derived_induction_variables
     .iter()
     .filter(|v| v.name.ne(&only_relevant_induction_loop_variables.name))
     .cloned()
     .collect_vec();
 
-  let OptimizableWhileLoop {
-    basic_induction_variable_with_loop_guard: _,
-    general_induction_variables,
-    loop_variables_that_are_not_basic_induction_variables,
-    derived_induction_variables: _,
-    statements,
-    break_collector,
-  } = optimizable_while_loop;
-
-  Result::Ok(LoopInductionVariableEliminationResult {
+  Some(LoopInductionVariableEliminationResult {
     prefix_statements,
-    optimizable_while_loop: OptimizableWhileLoop {
-      basic_induction_variable_with_loop_guard,
-      general_induction_variables,
-      loop_variables_that_are_not_basic_induction_variables,
-      derived_induction_variables,
-      statements,
-      break_collector,
-    },
+    new_basic_induction_variable_with_loop_guard,
+    new_derived_induction_variables,
   })
 }
 
@@ -228,7 +212,7 @@ mod tests {
     let table = &mut SymbolTable::new();
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -249,10 +233,10 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -272,10 +256,10 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -301,10 +285,10 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -325,10 +309,10 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -425,10 +409,10 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -462,10 +446,10 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
 
     assert!(super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -497,7 +481,7 @@ mod tests {
       },
       heap,
     )
-    .is_err());
+    .is_none());
   }
 
   #[test]
@@ -506,7 +490,7 @@ mod tests {
     let table = &SymbolTable::new();
 
     let optimized = super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -532,7 +516,6 @@ mod tests {
       },
       heap,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(
@@ -548,12 +531,11 @@ mod tests {
         .iter()
         .map(|s| s.debug_print(heap,table))
         .chain(vec![optimized
-          .optimizable_while_loop
-          .basic_induction_variable_with_loop_guard
+          .new_basic_induction_variable_with_loop_guard
           .debug_print(heap,table)])
         .collect_vec()
     );
-    assert!(optimized.optimizable_while_loop.derived_induction_variables.is_empty());
+    assert!(optimized.new_derived_induction_variables.is_empty());
   }
 
   #[test]
@@ -562,7 +544,7 @@ mod tests {
     let table = &SymbolTable::new();
 
     let optimized = super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -591,7 +573,6 @@ mod tests {
       },
       heap,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(
@@ -606,11 +587,11 @@ mod tests {
         .iter()
         .map(|s| s.debug_print(heap,table))
         .chain(vec![
-          optimized.optimizable_while_loop.basic_induction_variable_with_loop_guard.debug_print(heap, table)
+          optimized.new_basic_induction_variable_with_loop_guard.debug_print(heap, table)
         ])
         .collect_vec()
     );
-    assert!(optimized.optimizable_while_loop.derived_induction_variables.is_empty());
+    assert!(optimized.new_derived_induction_variables.is_empty());
   }
 
   #[test]
@@ -619,7 +600,7 @@ mod tests {
     let table = &SymbolTable::new();
 
     let optimized = super::optimize(
-      OptimizableWhileLoop {
+      &OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
           name: PStr::LOWER_I,
           initial_value: ONE,
@@ -648,7 +629,6 @@ mod tests {
       },
       heap,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(
@@ -663,10 +643,10 @@ mod tests {
         .iter()
         .map(|s| s.debug_print(heap, table))
         .chain(vec![
-          optimized.optimizable_while_loop.basic_induction_variable_with_loop_guard.debug_print(heap, table)
+          optimized.new_basic_induction_variable_with_loop_guard.debug_print(heap, table)
         ])
         .collect_vec()
     );
-    assert!(optimized.optimizable_while_loop.derived_induction_variables.is_empty());
+    assert!(optimized.new_derived_induction_variables.is_empty());
   }
 }

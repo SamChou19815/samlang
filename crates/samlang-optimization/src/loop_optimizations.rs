@@ -131,24 +131,24 @@ fn optimize_while_statement_with_all_loop_optimizations(
     optimized_while_statement,
     &non_loop_invariant_variables,
   ) {
-    Ok(optimizable_while_loop) => {
+    Ok(mut optimizable_while_loop) => {
       if let Some(mut stmts) = loop_algebraic_optimization::optimize(&optimizable_while_loop, heap)
       {
         final_stmts.append(&mut stmts);
         return final_stmts;
       }
 
-      let optimizable_while_loop =
-        match loop_induction_variable_elimination::optimize(optimizable_while_loop, heap) {
-          Ok(loop_induction_variable_elimination::LoopInductionVariableEliminationResult {
-            mut prefix_statements,
-            optimizable_while_loop: l,
-          }) => {
-            final_stmts.append(&mut prefix_statements);
-            l
-          }
-          Err(l) => l,
-        };
+      if let Some(loop_induction_variable_elimination::LoopInductionVariableEliminationResult {
+        mut prefix_statements,
+        new_basic_induction_variable_with_loop_guard,
+        new_derived_induction_variables,
+      }) = loop_induction_variable_elimination::optimize(&optimizable_while_loop, heap)
+      {
+        final_stmts.append(&mut prefix_statements);
+        optimizable_while_loop.basic_induction_variable_with_loop_guard =
+          new_basic_induction_variable_with_loop_guard;
+        optimizable_while_loop.derived_induction_variables = new_derived_induction_variables;
+      };
 
       let loop_strength_reduction::LoopStrengthReductionOptimizationResult {
         mut prefix_statements,
