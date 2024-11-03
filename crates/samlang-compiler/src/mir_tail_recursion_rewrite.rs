@@ -156,11 +156,11 @@ fn tail_rec_param_name(name: &str) -> String {
 fn optimize_function_by_tailrec_rewrite_aux(
   heap: &mut Heap,
   function: Function,
-) -> Result<Function, Function> {
+) -> (Function, bool) {
   let expected_return_collector = match &function.return_value {
     Expression::Int32Literal(_) | Expression::Int31Literal(_) => None,
     Expression::Variable(v) => Some(v.name),
-    Expression::StringName(_) => return Err(function),
+    Expression::StringName(_) => return (function, false),
   };
   let Function { name, parameters, type_, body, return_value } = function;
   let RewriteResult { stmts, args } = match try_rewrite_stmts_for_tailrec_without_using_return_value(
@@ -171,7 +171,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
     heap,
   ) {
     Ok(result) => result,
-    Err(body) => return Err(Function { name, parameters, type_, body, return_value }),
+    Err(body) => return (Function { name, parameters, type_, body, return_value }, false),
   };
   let while_loop = Statement::While {
     loop_variables: parameters
@@ -197,16 +197,15 @@ fn optimize_function_by_tailrec_rewrite_aux(
   };
   let parameters =
     parameters.iter().map(|n| heap.alloc_string(tail_rec_param_name(n.as_str(heap)))).collect_vec();
-  Ok(Function { name, parameters, type_, body: vec![while_loop], return_value })
+  (Function { name, parameters, type_, body: vec![while_loop], return_value }, true)
 }
 
 pub(super) fn optimize_function_by_tailrec_rewrite(
   heap: &mut Heap,
   function: Function,
 ) -> Function {
-  match optimize_function_by_tailrec_rewrite_aux(heap, function) {
-    Ok(f) | Err(f) => f,
-  }
+  let (f, _) = optimize_function_by_tailrec_rewrite_aux(heap, function);
+  f
 }
 
 #[cfg(test)]
@@ -216,7 +215,7 @@ mod tests {
   use samlang_ast::mir::{FunctionNameExpression, IfElseFinalAssignment, SymbolTable, INT_32_TYPE};
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {
-    assert!(optimize_function_by_tailrec_rewrite_aux(heap, f).is_err())
+    assert!(!optimize_function_by_tailrec_rewrite_aux(heap, f).1)
   }
 
   fn assert_optimization_succeed(
