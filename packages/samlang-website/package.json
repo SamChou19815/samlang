@@ -8,20 +8,20 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
-    "@types/node": "20.11.5",
-    "@types/react": "18.2.48",
-    "@types/react-dom": "18.2.18",
-    "autoprefixer": "10.4.17",
+    "@types/node": "22.10.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "autoprefixer": "10.4.20",
     "dev-sam-theme": "^0.0.1",
-    "monaco-editor": "^0.45.0",
-    "next": "14.2.10",
-    "postcss": "8.4.33",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "shiki": "^1.1.1",
-    "tailwindcss": "3.4.1",
-    "typescript": "5.3.3",
+    "monaco-editor": "^0.52.0",
+    "next": "15.0.3",
+    "postcss": "8.4.49",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "shiki": "^1.23.1",
+    "tailwindcss": "3.4.15",
+    "typescript": "5.7.2",
     "vscode-oniguruma": "^2.0.1",
-    "wasm-feature-detect": "^1.6.1"
+    "wasm-feature-detect": "^1.8.0"
   }
 }
