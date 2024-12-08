@@ -6,6 +6,10 @@ pub enum InlineInstruction {
   Drop(Box<InlineInstruction>),
   LocalGet(PStr),
   LocalSet(PStr, Box<InlineInstruction>),
+  IsPointer {
+    pointer_type: String,
+    value: Box<InlineInstruction>,
+  },
   Binary(Box<InlineInstruction>, hir::BinaryOperator, Box<InlineInstruction>),
   Load {
     index: usize,
@@ -47,6 +51,13 @@ impl InlineInstruction {
         collector.push_str(name.as_str(heap));
         collector.push(' ');
         assigned.pretty_print(collector, heap, table);
+        collector.push(')');
+      }
+      InlineInstruction::IsPointer { pointer_type, value } => {
+        collector.push_str("(ref.test $");
+        collector.push_str(pointer_type);
+        collector.push(' ');
+        value.pretty_print(collector, heap, table);
         collector.push(')');
       }
       InlineInstruction::Binary(v1, op, v2) => {
@@ -362,6 +373,10 @@ mod tests {
                 PStr::LOWER_B,
                 Box::new(InlineInstruction::Const(0)),
               )),
+              Instruction::Inline(InlineInstruction::IsPointer {
+                pointer_type: "Foo".to_string(),
+                value: Box::new(InlineInstruction::Const(0)),
+              }),
             ],
             s2: vec![
               Instruction::Inline(InlineInstruction::Binary(
@@ -504,6 +519,7 @@ mod tests {
     (drop (i32.const 0))
     (local.get $a)
     (local.set $b (i32.const 0))
+    (ref.test $Foo (i32.const 0))
   ) (else
     (i32.add (i32.const 0) (i32.const 0))
     (i32.sub (i32.const 0) (i32.const 0))
