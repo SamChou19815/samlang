@@ -16,6 +16,18 @@ class List<T>(Nil, Cons(T, List<T>)) {
       Cons(_, _) -> false,
     }
 
+  method first(): Option<T> =
+    match this {
+      Nil -> Option.None(),
+      Cons(v, _) -> Option.Some(v),
+    }
+
+  method rest(): Option<List<T>> =
+    match this {
+      Nil -> Option.None(),
+      Cons(_, rest) -> Option.Some(rest),
+    }
+
   method filter(f: (T) -> bool): List<T> =
     match this {
       Nil -> this,

@@ -1,6 +1,6 @@
-import { Option } from std.option;
+import { Option, TryUnwrap } from std.option;
 
-class Result<T, E>(Ok(T), Error(E)) {
+class Result<T, E>(Ok(T), Error(E)) : TryUnwrap<T> {
   method ignore(): Result<unit, E> =
     match this {
       Ok(_) -> Result.Ok({  }),
@@ -54,4 +54,14 @@ class Result<T, E>(Ok(T), Error(E)) {
       Ok(v) -> Result.Ok(v),
       Error(e) -> Result.Error(f(e)),
     }
+
+  method expect(msg: Str): T =
+    match this {
+      Ok(v) -> v,
+      Error(_) -> Process.panic(msg),
+    }
+
+  method unwrap(msg: Str): T = this.expect("Unwrapping Result.Error")
+
+  method tryUnwrap(): Option<T> = this.ok()
 }
