@@ -364,7 +364,41 @@ static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
   "assert" => Keyword::Assert,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, enum_iterator::Sequence)]
+static TOKEN_OPS: [TokenOp; 31] = [
+  TokenOp::Underscore,
+  TokenOp::LeftParenthesis,
+  TokenOp::RightParenthesis,
+  TokenOp::LeftBrace,
+  TokenOp::RightBrace,
+  TokenOp::LeftBracket,
+  TokenOp::RightBracket,
+  TokenOp::Question,
+  TokenOp::Semicolon,
+  TokenOp::Colon,
+  TokenOp::ColonColon,
+  TokenOp::Comma,
+  TokenOp::Dot,
+  TokenOp::Bar,
+  TokenOp::Arrow,
+  TokenOp::Assign,
+  TokenOp::Not,
+  TokenOp::Multiply,
+  TokenOp::Divide,
+  TokenOp::Mod,
+  TokenOp::Plus,
+  TokenOp::Minus,
+  TokenOp::LessThan,
+  TokenOp::LessThanOrEqual,
+  TokenOp::GreaterThan,
+  TokenOp::GreaterThanOrEqual,
+  TokenOp::Equal,
+  TokenOp::NotEqual,
+  TokenOp::And,
+  TokenOp::Or,
+  TokenOp::DotDotDot,
+];
+
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub(super) enum TokenOp {
   Underscore,
   // Parentheses
@@ -572,7 +606,7 @@ pub(super) fn lex_source_program(
 ) -> Vec<Token> {
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
   let mut tokens = vec![];
-  let mut known_sorted_operators = enum_iterator::all::<TokenOp>().collect::<Vec<_>>();
+  let mut known_sorted_operators = TOKEN_OPS.to_vec();
   known_sorted_operators.sort_by_key(|op| -(op.as_str().len() as i64));
 
   loop {

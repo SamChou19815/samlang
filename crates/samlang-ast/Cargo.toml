@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 enum-as-inner = "0.5.1"
-enum-iterator = "2.1.0"
 itertools = "0.13.0"
 samlang-heap = { path = "../samlang-heap" }
 
