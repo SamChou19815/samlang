@@ -4,7 +4,6 @@ version = "0.10.1"
 edition = "2021"
 
 [dependencies]
-enum-iterator = "2.1.0"
 itertools = "0.13.0"
 phf = { version = "0.11", features = ["macros"] }
 samlang-ast = { path = "../samlang-ast" }
