@@ -10,6 +10,10 @@ pub enum InlineInstruction {
     pointer_type: String,
     value: Box<InlineInstruction>,
   },
+  Cast {
+    pointer_type: String,
+    value: Box<InlineInstruction>,
+  },
   Binary(Box<InlineInstruction>, hir::BinaryOperator, Box<InlineInstruction>),
   Load {
     index: usize,
@@ -55,6 +59,13 @@ impl InlineInstruction {
       }
       InlineInstruction::IsPointer { pointer_type, value } => {
         collector.push_str("(ref.test $");
+        collector.push_str(pointer_type);
+        collector.push(' ');
+        value.pretty_print(collector, heap, table);
+        collector.push(')');
+      }
+      InlineInstruction::Cast { pointer_type, value } => {
+        collector.push_str("(ref.cast $");
         collector.push_str(pointer_type);
         collector.push(' ');
         value.pretty_print(collector, heap, table);
@@ -377,6 +388,10 @@ mod tests {
                 pointer_type: "Foo".to_string(),
                 value: Box::new(InlineInstruction::Const(0)),
               }),
+              Instruction::Inline(InlineInstruction::Cast {
+                pointer_type: "Foo".to_string(),
+                value: Box::new(InlineInstruction::Const(0)),
+              }),
             ],
             s2: vec![
               Instruction::Inline(InlineInstruction::Binary(
@@ -520,6 +535,7 @@ mod tests {
     (local.get $a)
     (local.set $b (i32.const 0))
     (ref.test $Foo (i32.const 0))
+    (ref.cast $Foo (i32.const 0))
   ) (else
     (i32.add (i32.const 0) (i32.const 0))
     (i32.sub (i32.const 0) (i32.const 0))
