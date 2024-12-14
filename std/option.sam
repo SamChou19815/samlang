@@ -1,6 +1,10 @@
 import { Pair } from std.tuples;
 
-class Option<T>(None, Some(T)) {
+interface TryUnwrap<T> {
+  method tryUnwrap(): Option<T>
+}
+
+class Option<T>(None, Some(T)) : TryUnwrap<T> {
   function <A, B> both(optionA: Option<A>, optionB: Option<B>): Option<Pair<A, B>> =
     match optionA {
       None -> Option.None(),
@@ -52,9 +56,13 @@ class Option<T>(None, Some(T)) {
       Some(v) -> f(v),
     }
 
-  method unwrap(): T =
+  method expect(msg: Str): T =
     match this {
       Some(v) -> v,
-      None -> Process.panic("Unwrapping Option.None"),
+      None -> Process.panic(msg),
     }
+
+  method unwrap(): T = this.expect("Unwrapping Option.None")
+
+  method tryUnwrap(): Option<T> = this
 }
