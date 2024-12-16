@@ -19,10 +19,25 @@ pub enum InlineInstruction {
     index: usize,
     pointer: Box<InlineInstruction>,
   },
+  StructLoad {
+    index: usize,
+    struct_type: lir::Type,
+    struct_ref: Box<InlineInstruction>,
+  },
   Store {
     index: usize,
     pointer: Box<InlineInstruction>,
     assigned: Box<InlineInstruction>,
+  },
+  StructStore {
+    index: usize,
+    struct_type: lir::Type,
+    struct_ref: Box<InlineInstruction>,
+    assigned: Box<InlineInstruction>,
+  },
+  StructInit {
+    type_: lir::Type,
+    expression_list: Vec<InlineInstruction>,
   },
   DirectCall(mir::FunctionName, Vec<InlineInstruction>),
   IndirectCall {
@@ -111,6 +126,15 @@ impl InlineInstruction {
           collector.push(')');
         }
       }
+      InlineInstruction::StructLoad { index, struct_type, struct_ref } => {
+        collector.push_str("(struct.get $");
+        struct_type.pretty_print(collector, heap, table);
+        collector.push(' ');
+        collector.push_str(&index.to_string());
+        collector.push(' ');
+        struct_ref.pretty_print(collector, heap, table);
+        collector.push(')');
+      }
       InlineInstruction::Store { index, pointer, assigned } => {
         if *index == 0 {
           collector.push_str("(i32.store ");
@@ -127,6 +151,26 @@ impl InlineInstruction {
           assigned.pretty_print(collector, heap, table);
           collector.push(')');
         }
+      }
+      InlineInstruction::StructStore { index, struct_type, struct_ref, assigned } => {
+        collector.push_str("(struct.set $");
+        struct_type.pretty_print(collector, heap, table);
+        collector.push(' ');
+        collector.push_str(&index.to_string());
+        collector.push(' ');
+        struct_ref.pretty_print(collector, heap, table);
+        collector.push(' ');
+        assigned.pretty_print(collector, heap, table);
+        collector.push(')');
+      }
+      InlineInstruction::StructInit { type_, expression_list } => {
+        collector.push_str("(struct.new $");
+        type_.pretty_print(collector, heap, table);
+        for e in expression_list {
+          collector.push(' ');
+          e.pretty_print(collector, heap, table);
+        }
+        collector.push(')');
       }
       InlineInstruction::DirectCall(name, arguments) => {
         collector.push_str("(call $");
@@ -393,6 +437,21 @@ mod tests {
                 pointer_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
                 value: Box::new(InlineInstruction::Const(0)),
               }),
+              Instruction::Inline(InlineInstruction::StructInit {
+                type_: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+                expression_list: vec![InlineInstruction::Const(0)],
+              }),
+              Instruction::Inline(InlineInstruction::StructLoad {
+                index: 3,
+                struct_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+                struct_ref: Box::new(InlineInstruction::Const(0)),
+              }),
+              Instruction::Inline(InlineInstruction::StructStore {
+                index: 3,
+                struct_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+                struct_ref: Box::new(InlineInstruction::Const(0)),
+                assigned: Box::new(InlineInstruction::Const(1)),
+              }),
             ],
             s2: vec![
               Instruction::Inline(InlineInstruction::Binary(
@@ -537,6 +596,9 @@ mod tests {
     (local.set $b (i32.const 0))
     (ref.test $_F (i32.const 0))
     (ref.cast $_F (i32.const 0))
+    (struct.new $_F (i32.const 0))
+    (struct.get $_F 3 (i32.const 0))
+    (struct.set $_F 3 (i32.const 0) (i32.const 1))
   ) (else
     (i32.add (i32.const 0) (i32.const 0))
     (i32.sub (i32.const 0) (i32.const 0))
