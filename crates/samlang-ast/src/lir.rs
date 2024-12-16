@@ -49,7 +49,7 @@ impl Type {
     Type::Fn(Self::new_fn_unwrapped(argument_types, return_type))
   }
 
-  fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+  pub fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     match self {
       Type::Int32 => collector.push_str("number"),
       Type::Int31 => collector.push_str("i31"),

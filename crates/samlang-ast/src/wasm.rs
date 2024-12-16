@@ -1,4 +1,4 @@
-use super::{hir, mir};
+use super::{hir, lir, mir};
 use samlang_heap::{Heap, PStr};
 
 pub enum InlineInstruction {
@@ -7,11 +7,11 @@ pub enum InlineInstruction {
   LocalGet(PStr),
   LocalSet(PStr, Box<InlineInstruction>),
   IsPointer {
-    pointer_type: String,
+    pointer_type: lir::Type,
     value: Box<InlineInstruction>,
   },
   Cast {
-    pointer_type: String,
+    pointer_type: lir::Type,
     value: Box<InlineInstruction>,
   },
   Binary(Box<InlineInstruction>, hir::BinaryOperator, Box<InlineInstruction>),
@@ -59,14 +59,14 @@ impl InlineInstruction {
       }
       InlineInstruction::IsPointer { pointer_type, value } => {
         collector.push_str("(ref.test $");
-        collector.push_str(pointer_type);
+        pointer_type.pretty_print(collector, heap, table);
         collector.push(' ');
         value.pretty_print(collector, heap, table);
         collector.push(')');
       }
       InlineInstruction::Cast { pointer_type, value } => {
         collector.push_str("(ref.cast $");
-        collector.push_str(pointer_type);
+        pointer_type.pretty_print(collector, heap, table);
         collector.push(' ');
         value.pretty_print(collector, heap, table);
         collector.push(')');
@@ -361,6 +361,7 @@ mod tests {
   #[test]
   fn pretty_print_test() {
     let heap = &mut Heap::new();
+    let mut table = mir::SymbolTable::new();
 
     let module = Module {
       function_type_parameter_counts: vec![0, 1, 2, 3],
@@ -385,11 +386,11 @@ mod tests {
                 Box::new(InlineInstruction::Const(0)),
               )),
               Instruction::Inline(InlineInstruction::IsPointer {
-                pointer_type: "Foo".to_string(),
+                pointer_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
                 value: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::Cast {
-                pointer_type: "Foo".to_string(),
+                pointer_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
                 value: Box::new(InlineInstruction::Const(0)),
               }),
             ],
@@ -534,8 +535,8 @@ mod tests {
     (drop (i32.const 0))
     (local.get $a)
     (local.set $b (i32.const 0))
-    (ref.test $Foo (i32.const 0))
-    (ref.cast $Foo (i32.const 0))
+    (ref.test $_F (i32.const 0))
+    (ref.cast $_F (i32.const 0))
   ) (else
     (i32.add (i32.const 0) (i32.const 0))
     (i32.sub (i32.const 0) (i32.const 0))
@@ -571,6 +572,6 @@ mod tests {
 )
 (export "__$main" (func $__$main))
 "#;
-    assert_eq!(expected, module.pretty_print(heap, &mir::SymbolTable::new()));
+    assert_eq!(expected, module.pretty_print(heap, &table));
   }
 }
