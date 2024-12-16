@@ -324,6 +324,7 @@ impl GlobalData {
 
 pub struct Module {
   pub function_type_parameter_counts: Vec<usize>,
+  pub type_definition: Vec<lir::TypeDefinition>,
   pub global_variables: Vec<GlobalData>,
   pub exported_functions: Vec<mir::FunctionName>,
   pub functions: Vec<Function>,
@@ -344,6 +345,17 @@ impl Module {
         }
         collector.push_str(") (result i32)))\n");
       }
+    }
+    for type_def in &self.type_definition {
+      collector.push_str("(type $");
+      type_def.name.write_encoded(&mut collector, heap, table);
+      collector.push_str(" (struct");
+      for field in &type_def.mappings {
+        collector.push_str(" (field ");
+        field.pretty_print(&mut collector, heap, table);
+        collector.push(')');
+      }
+      collector.push_str("))\n");
     }
     for d in &self.global_variables {
       d.pretty_print(&mut collector);
@@ -409,6 +421,13 @@ mod tests {
 
     let module = Module {
       function_type_parameter_counts: vec![0, 1, 2, 3],
+      type_definition: vec![lir::TypeDefinition {
+        name: table.create_type_name_for_test(PStr::UPPER_F),
+        mappings: vec![
+          lir::Type::Int32,
+          lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+        ],
+      }],
       global_variables: vec![
         GlobalData { constant_pointer: 1024, bytes: vec![0, 0] },
         GlobalData { constant_pointer: 323, bytes: vec![3, 2] },
@@ -582,6 +601,7 @@ mod tests {
 (type $i32_=>_i32 (func (param i32) (result i32)))
 (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
 (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
+(type $_F (struct (field number) (field _F)))
 (data (i32.const 1024) "\00\00")
 (data (i32.const 323) "\03\02")
 (table $0 1 funcref)
