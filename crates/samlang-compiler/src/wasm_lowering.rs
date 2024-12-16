@@ -304,6 +304,7 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
       .collect::<BTreeSet<_>>()
       .into_iter()
       .collect_vec(),
+    type_definition: vec![],
     global_variables,
     exported_functions: sources.main_function_names.clone(),
     functions: sources
