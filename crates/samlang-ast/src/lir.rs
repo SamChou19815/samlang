@@ -89,7 +89,7 @@ pub enum Expression {
   Int31Literal(i32),
   StringName(PStr),
   Variable(PStr, Type),
-  FnName(FunctionName, Type),
+  FnName(FunctionName, FunctionType),
 }
 
 impl Expression {
