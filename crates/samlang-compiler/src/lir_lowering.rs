@@ -119,7 +119,7 @@ impl<'a> LoweringManager<'a> {
       lowered_statements.push(lir::Statement::Call {
         callee: lir::Expression::FnName(
           mir::FunctionName::BUILTIN_DEC_REF,
-          lir::Type::Fn(unknown_member_destructor_type()),
+          unknown_member_destructor_type(),
         ),
         arguments: vec![lir::Expression::Variable(variable_name, var_type)],
         return_type: lir::INT_32_TYPE,
@@ -168,10 +168,7 @@ impl<'a> LoweringManager<'a> {
         match callee {
           mir::Callee::FunctionName(fn_name) => {
             statements.push(lir::Statement::Call {
-              callee: lir::Expression::FnName(
-                fn_name.name,
-                lir::Type::Fn(lower_fn_type(fn_name.type_)),
-              ),
+              callee: lir::Expression::FnName(fn_name.name, lower_fn_type(fn_name.type_)),
               arguments: arguments.into_iter().map(lower_expression).collect(),
               return_type: lowered_return_type.clone(),
               return_collector,
@@ -333,7 +330,7 @@ impl<'a> LoweringManager<'a> {
           statements.push(lir::Statement::Cast {
             name: temp,
             type_: lir::Type::Fn(type_erased_closure_type.clone()),
-            assigned_expression: lir::Expression::FnName(fn_name, lir::Type::Fn(original_fn_type)),
+            assigned_expression: lir::Expression::FnName(fn_name, original_fn_type),
           });
           lir::Expression::Variable(temp, lir::Type::Fn(type_erased_closure_type))
         };
@@ -373,7 +370,7 @@ impl<'a> LoweringManager<'a> {
     collector.push(lir::Statement::Call {
       callee: lir::Expression::FnName(
         mir::FunctionName::BUILTIN_INC_REF,
-        lir::Type::Fn(unknown_member_destructor_type()),
+        unknown_member_destructor_type(),
       ),
       arguments: vec![lir::Expression::Variable(casted, lir::ANY_POINTER_TYPE)],
       return_type: lir::INT_32_TYPE,
@@ -631,7 +628,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                           lir::Statement::Call {
                             callee: lir::Expression::FnName(
                               mir::FunctionName::BUILTIN_DEC_REF,
-                              lir::Type::Fn(unknown_member_destructor_type()),
+                              unknown_member_destructor_type(),
                             ),
                             arguments: vec![lir::Expression::Variable(
                               field_ptr,
@@ -660,7 +657,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                   lir::Statement::Call {
                     callee: lir::Expression::FnName(
                       mir::FunctionName::BUILTIN_FREE,
-                      lir::Type::Fn(unknown_member_destructor_type()),
+                      unknown_member_destructor_type(),
                     ),
                     arguments: vec![lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE)],
                     return_type: lir::INT_32_TYPE,

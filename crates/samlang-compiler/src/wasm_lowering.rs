@@ -410,7 +410,7 @@ mod tests {
               Expression::StringName(heap.alloc_str_for_test("FOO")),
               Expression::FnName(
                 mir::FunctionName::new_for_test(PStr::MAIN_FN),
-                Type::new_fn(vec![], INT_32_TYPE),
+                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
               ),
             )],
           },
@@ -429,7 +429,7 @@ mod tests {
           Statement::Call {
             callee: Expression::FnName(
               mir::FunctionName::new_for_test(PStr::MAIN_FN),
-              Type::new_fn(vec![], INT_32_TYPE),
+              Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             ),
             arguments: vec![ZERO],
             return_type: INT_32_TYPE,

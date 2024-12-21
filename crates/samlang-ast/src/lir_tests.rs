@@ -170,7 +170,7 @@ mod tests {
               Statement::Call {
                 callee: Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("h")),
-                  Type::new_fn(vec![], INT_32_TYPE),
+                  Type::new_fn_unwrapped(vec![], INT_32_TYPE),
                 ),
                 arguments: vec![Expression::Variable(
                   heap.alloc_str_for_test("big"),
@@ -182,7 +182,7 @@ mod tests {
               Statement::Call {
                 callee: Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
-                  Type::new_fn(vec![], INT_32_TYPE),
+                  Type::new_fn_unwrapped(vec![], INT_32_TYPE),
                 ),
                 arguments: vec![Expression::Variable(PStr::LOWER_D, INT_32_TYPE)],
                 return_type: INT_32_TYPE,
