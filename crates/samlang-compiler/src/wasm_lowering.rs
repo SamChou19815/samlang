@@ -274,7 +274,7 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::Module {
+pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: lir::Sources) -> wasm::Module {
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
@@ -297,6 +297,7 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
     function_index_mapping.insert(f.name, i);
   }
   wasm::Module {
+    symbol_table: sources.symbol_table,
     function_type_parameter_counts: sources
       .functions
       .iter()
@@ -464,8 +465,7 @@ mod tests {
         return_value: ZERO,
       }],
     };
-    let actual =
-      super::compile_lir_to_wasm(heap, &sources).pretty_print(heap, &sources.symbol_table);
+    let actual = super::compile_lir_to_wasm(heap, sources).pretty_print(heap);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
 (data (i32.const 4096) "\00\00\00\00\03\00\00\00FOO")
 (data (i32.const 4112) "\00\00\00\00\03\00\00\00BAR")
