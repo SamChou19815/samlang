@@ -323,6 +323,7 @@ impl GlobalData {
 }
 
 pub struct Module {
+  pub symbol_table: mir::SymbolTable,
   pub function_type_parameter_counts: Vec<usize>,
   pub type_definition: Vec<lir::TypeDefinition>,
   pub global_variables: Vec<GlobalData>,
@@ -331,7 +332,7 @@ pub struct Module {
 }
 
 impl Module {
-  pub fn pretty_print(&self, heap: &Heap, table: &mir::SymbolTable) -> String {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = String::new();
     for count in &self.function_type_parameter_counts {
       collector.push_str("(type $");
@@ -348,11 +349,11 @@ impl Module {
     }
     for type_def in &self.type_definition {
       collector.push_str("(type $");
-      type_def.name.write_encoded(&mut collector, heap, table);
+      type_def.name.write_encoded(&mut collector, heap, &self.symbol_table);
       collector.push_str(" (struct");
       for field in &type_def.mappings {
         collector.push_str(" (field ");
-        field.pretty_print(&mut collector, heap, table);
+        field.pretty_print(&mut collector, heap, &self.symbol_table);
         collector.push(')');
       }
       collector.push_str("))\n");
@@ -365,12 +366,12 @@ impl Module {
     collector.push_str(" funcref)\n(elem $0 (i32.const 0)");
     for f in &self.functions {
       collector.push_str(" $");
-      f.name.write_encoded(&mut collector, heap, table);
+      f.name.write_encoded(&mut collector, heap, &self.symbol_table);
     }
     collector.push_str(")\n");
     for Function { name, parameters, local_variables, instructions } in &self.functions {
       collector.push_str("(func $");
-      name.write_encoded(&mut collector, heap, table);
+      name.write_encoded(&mut collector, heap, &self.symbol_table);
       for param in parameters {
         collector.push_str(" (param $");
         collector.push_str(param.as_str(heap));
@@ -383,15 +384,15 @@ impl Module {
         collector.push_str(" i32)\n");
       }
       for i in instructions {
-        i.print_to_collector(heap, table, &mut collector, 1);
+        i.print_to_collector(heap, &self.symbol_table, &mut collector, 1);
       }
       collector.push_str(")\n");
     }
     for f in &self.exported_functions {
       collector.push_str("(export \"");
-      f.write_encoded(&mut collector, heap, table);
+      f.write_encoded(&mut collector, heap, &self.symbol_table);
       collector.push_str("\" (func $");
-      f.write_encoded(&mut collector, heap, table);
+      f.write_encoded(&mut collector, heap, &self.symbol_table);
       collector.push_str("))\n");
     }
     collector
@@ -419,7 +420,8 @@ mod tests {
     let heap = &mut Heap::new();
     let mut table = mir::SymbolTable::new();
 
-    let module = Module {
+    let mut module = Module {
+      symbol_table: mir::SymbolTable::new(),
       function_type_parameter_counts: vec![0, 1, 2, 3],
       type_definition: vec![lir::TypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_F),
@@ -597,6 +599,7 @@ mod tests {
         ],
       }],
     };
+    module.symbol_table = table;
     let expected = r#"(type $none_=>_i32 (func (result i32)))
 (type $i32_=>_i32 (func (param i32) (result i32)))
 (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
@@ -654,6 +657,6 @@ mod tests {
 )
 (export "__$main" (func $__$main))
 "#;
-    assert_eq!(expected, module.pretty_print(heap, &table));
+    assert_eq!(expected, module.pretty_print(heap));
   }
 }

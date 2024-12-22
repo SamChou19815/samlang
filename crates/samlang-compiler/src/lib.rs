@@ -14,12 +14,12 @@ pub use lir_lowering::compile_mir_to_lir;
 
 pub fn compile_lir_to_wasm(
   heap: &mut samlang_heap::Heap,
-  sources: &samlang_ast::lir::Sources,
+  sources: samlang_ast::lir::Sources,
 ) -> (String, Vec<u8>) {
   let whole_module_string = format!(
     "(module\n{}\n{}\n)\n",
     include_str!("libsam.wat"),
-    wasm_lowering::compile_lir_to_wasm(heap, sources).pretty_print(heap, &sources.symbol_table)
+    wasm_lowering::compile_lir_to_wasm(heap, sources).pretty_print(heap)
   );
   let wat = wat::parse_str(&whole_module_string).unwrap();
   (whole_module_string, wat)
@@ -84,10 +84,6 @@ pub fn compile_sources(
     compile_mir_to_lir(heap, optimized_mir_sources)
   });
   let common_ts_code = lir_sources.pretty_print(heap);
-  let (wat_text, wasm_file) =
-    samlang_profiling::measure_time(enable_profiling, "Compile to WASM", || {
-      compile_lir_to_wasm(heap, &lir_sources)
-    });
 
   let mut text_code_results = std::collections::BTreeMap::new();
   for module_reference in &entry_module_references {
@@ -111,6 +107,11 @@ require('./__samlang_loader__.js')(binary).{}();
     text_code_results
       .insert(format!("{}.wasm.js", module_reference.pretty_print(heap)), wasm_js_code);
   }
+
+  let (wat_text, wasm_file) =
+    samlang_profiling::measure_time(enable_profiling, "Compile to WASM", || {
+      compile_lir_to_wasm(heap, lir_sources)
+    });
   text_code_results.insert(EMITTED_WAT_FILE.to_string(), wat_text);
 
   Ok(SourcesCompilationResult { text_code_results, wasm_file })
@@ -153,7 +154,7 @@ class HelloWorld {
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     let mir_sources = super::compile_sources_to_mir(&mut heap, &checked_sources);
     let lir_sources = super::compile_mir_to_lir(&mut heap, mir_sources);
-    super::compile_lir_to_wasm(&mut heap, &lir_sources);
+    super::compile_lir_to_wasm(&mut heap, lir_sources);
   }
 
   #[test]
