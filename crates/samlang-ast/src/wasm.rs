@@ -1,6 +1,54 @@
 use super::{hir, lir, mir};
 use samlang_heap::{Heap, PStr};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Type {
+  Int32,
+  Int31,
+  Eq,
+  Reference(mir::TypeNameId),
+}
+
+impl Type {
+  fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &mir::SymbolTable) {
+    match self {
+      Type::Int32 => collector.push_str("i32"),
+      Type::Int31 => collector.push_str("i31"),
+      Type::Eq => collector.push_str("eq"),
+      Type::Reference(id) => {
+        collector.push_str("(ref $");
+        id.write_encoded(collector, heap, table);
+        collector.push(')');
+      }
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FunctionType {
+  pub argument_types: Vec<Type>,
+  pub return_type: Box<Type>,
+}
+
+impl FunctionType {
+  fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &mir::SymbolTable) {
+    if self.argument_types.is_empty() {
+      collector.push_str("(func (result ");
+      self.return_type.pretty_print(collector, heap, table);
+      collector.push_str("))");
+    } else {
+      collector.push_str("(func (param");
+      for t in &self.argument_types {
+        collector.push(' ');
+        t.pretty_print(collector, heap, table);
+      }
+      collector.push_str(") (result ");
+      self.return_type.pretty_print(collector, heap, table);
+      collector.push_str("))");
+    }
+  }
+}
+
 pub enum InlineInstruction {
   Const(i32),
   Drop(Box<InlineInstruction>),
@@ -337,15 +385,13 @@ impl Module {
     for count in &self.function_type_parameter_counts {
       collector.push_str("(type $");
       print_function_type_string(&mut collector, *count);
-      if *count == 0 {
-        collector.push_str(" (func (result i32)))\n");
-      } else {
-        collector.push_str(" (func (param");
-        for _ in 0..*count {
-          collector.push_str(" i32");
-        }
-        collector.push_str(") (result i32)))\n");
+      collector.push(' ');
+      let mut f = FunctionType { argument_types: vec![], return_type: Box::new(Type::Int32) };
+      for _ in 0..*count {
+        f.argument_types.push(Type::Int32);
       }
+      f.pretty_print(&mut collector, heap, &self.symbol_table);
+      collector.push_str(")\n");
     }
     for type_def in &self.type_definition {
       collector.push_str("(type $");
@@ -404,6 +450,33 @@ mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_heap::PStr;
+  use std::hash::{DefaultHasher, Hash};
+
+  #[test]
+  fn type_tests() {
+    let table = &mut mir::SymbolTable::new();
+    let f = FunctionType {
+      argument_types: vec![
+        Type::Int32,
+        Type::Eq,
+        Type::Reference(table.create_type_name_for_test(PStr::UPPER_A)),
+      ],
+      return_type: Box::new(Type::Int31),
+    };
+    f.hash(&mut DefaultHasher::new());
+    assert!(f.eq(&f));
+    let heap = &mut Heap::new();
+    let mut collector = "".to_string();
+    f.pretty_print(&mut collector, heap, table);
+    assert_eq!("(func (param i32 eq (ref $_A)) (result i31))", collector);
+    collector.clear();
+    FunctionType { argument_types: vec![], return_type: Box::new(Type::Int31) }.pretty_print(
+      &mut collector,
+      heap,
+      table,
+    );
+    assert_eq!("(func (result i31))", collector);
+  }
 
   #[test]
   fn int_vec_to_data_string_tests() {
