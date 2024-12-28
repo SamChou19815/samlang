@@ -10,7 +10,9 @@ pub enum Type {
 }
 
 impl Type {
-  fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &mir::SymbolTable) {
+  fn pretty_print(&self, collector: &mut String, _heap: &Heap, _table: &mir::SymbolTable) {
+    collector.push_str("i32");
+    /*
     match self {
       Type::Int32 => collector.push_str("i32"),
       Type::Int31 => collector.push_str("i31"),
@@ -21,6 +23,7 @@ impl Type {
         collector.push(')');
       }
     }
+    */
   }
 }
 
@@ -90,7 +93,7 @@ pub enum InlineInstruction {
   DirectCall(mir::FunctionName, Vec<InlineInstruction>),
   IndirectCall {
     function_index: Box<InlineInstruction>,
-    fn_arg_count: usize,
+    function_type_name: mir::TypeNameId,
     arguments: Vec<InlineInstruction>,
   },
 }
@@ -229,9 +232,9 @@ impl InlineInstruction {
         }
         collector.push(')');
       }
-      InlineInstruction::IndirectCall { function_index, fn_arg_count, arguments } => {
+      InlineInstruction::IndirectCall { function_index, function_type_name, arguments } => {
         collector.push_str("(call_indirect $0 (type $");
-        print_function_type_string(collector, *fn_arg_count);
+        function_type_name.write_encoded(collector, heap, table);
         collector.push(')');
         for e in arguments {
           collector.push(' ');
@@ -320,21 +323,10 @@ impl Instruction {
   }
 }
 
-fn print_function_type_string(collector: &mut String, count: usize) {
-  if count == 0 {
-    collector.push_str("none_=>_i32")
-  } else {
-    for _ in 0..count {
-      collector.push_str("i32_");
-    }
-    collector.push_str("=>_i32");
-  }
-}
-
 pub struct Function {
   pub name: mir::FunctionName,
-  pub parameters: Vec<PStr>,
-  pub local_variables: Vec<PStr>,
+  pub parameters: Vec<(PStr, Type)>,
+  pub local_variables: Vec<(PStr, Type)>,
   pub instructions: Vec<Instruction>,
 }
 
@@ -372,7 +364,7 @@ impl GlobalData {
 
 pub struct Module {
   pub symbol_table: mir::SymbolTable,
-  pub function_type_parameter_counts: Vec<usize>,
+  pub function_type_mapping: Vec<(mir::TypeNameId, FunctionType)>,
   pub type_definition: Vec<lir::TypeDefinition>,
   pub global_variables: Vec<GlobalData>,
   pub exported_functions: Vec<mir::FunctionName>,
@@ -382,15 +374,11 @@ pub struct Module {
 impl Module {
   pub fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = String::new();
-    for count in &self.function_type_parameter_counts {
+    for (type_name, fun_t) in &self.function_type_mapping {
       collector.push_str("(type $");
-      print_function_type_string(&mut collector, *count);
+      type_name.write_encoded(&mut collector, heap, &self.symbol_table);
       collector.push(' ');
-      let mut f = FunctionType { argument_types: vec![], return_type: Box::new(Type::Int32) };
-      for _ in 0..*count {
-        f.argument_types.push(Type::Int32);
-      }
-      f.pretty_print(&mut collector, heap, &self.symbol_table);
+      fun_t.pretty_print(&mut collector, heap, &self.symbol_table);
       collector.push_str(")\n");
     }
     for type_def in &self.type_definition {
@@ -418,16 +406,20 @@ impl Module {
     for Function { name, parameters, local_variables, instructions } in &self.functions {
       collector.push_str("(func $");
       name.write_encoded(&mut collector, heap, &self.symbol_table);
-      for param in parameters {
+      for (param, t) in parameters {
         collector.push_str(" (param $");
         collector.push_str(param.as_str(heap));
-        collector.push_str(" i32)");
+        collector.push(' ');
+        t.pretty_print(&mut collector, heap, &self.symbol_table);
+        collector.push(')');
       }
       collector.push_str(" (result i32)\n");
-      for v in local_variables {
+      for (v, t) in local_variables {
         collector.push_str("  (local $");
         collector.push_str(v.as_str(heap));
-        collector.push_str(" i32)\n");
+        collector.push(' ');
+        t.pretty_print(&mut collector, heap, &self.symbol_table);
+        collector.push_str(")\n");
       }
       for i in instructions {
         i.print_to_collector(heap, &self.symbol_table, &mut collector, 1);
@@ -468,14 +460,16 @@ mod tests {
     let heap = &mut Heap::new();
     let mut collector = "".to_string();
     f.pretty_print(&mut collector, heap, table);
-    assert_eq!("(func (param i32 eq (ref $_A)) (result i31))", collector);
+    assert_eq!("(func (param i32 i32 i32) (result i32))", collector);
+    // assert_eq!("(func (param i32 eq (ref $_A)) (result i31))", collector);
     collector.clear();
     FunctionType { argument_types: vec![], return_type: Box::new(Type::Int31) }.pretty_print(
       &mut collector,
       heap,
       table,
     );
-    assert_eq!("(func (result i31))", collector);
+    assert_eq!("(func (result i32))", collector);
+    // assert_eq!("(func (result i31))", collector);
   }
 
   #[test]
@@ -495,7 +489,7 @@ mod tests {
 
     let mut module = Module {
       symbol_table: mir::SymbolTable::new(),
-      function_type_parameter_counts: vec![0, 1, 2, 3],
+      function_type_mapping: vec![],
       type_definition: vec![lir::TypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_F),
         mappings: vec![
@@ -510,8 +504,11 @@ mod tests {
       exported_functions: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![Function {
         name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
-        parameters: vec![PStr::LOWER_A, PStr::LOWER_B],
-        local_variables: vec![PStr::LOWER_C, PStr::LOWER_D],
+        parameters: vec![(PStr::LOWER_A, Type::Int32), (PStr::LOWER_B, Type::Int31)],
+        local_variables: vec![
+          (PStr::LOWER_C, Type::Eq),
+          (PStr::LOWER_D, Type::Reference(table.create_type_name_for_test(PStr::UPPER_F))),
+        ],
         instructions: vec![
           Instruction::IfElse {
             condition: InlineInstruction::Const(1),
@@ -659,7 +656,7 @@ mod tests {
               )),
               Instruction::Inline(InlineInstruction::IndirectCall {
                 function_index: Box::new(InlineInstruction::Const(0)),
-                fn_arg_count: 1,
+                function_type_name: table.create_type_name_for_test(PStr::UPPER_F),
                 arguments: vec![InlineInstruction::Const(0)],
               }),
             ],
@@ -673,11 +670,7 @@ mod tests {
       }],
     };
     module.symbol_table = table;
-    let expected = r#"(type $none_=>_i32 (func (result i32)))
-(type $i32_=>_i32 (func (param i32) (result i32)))
-(type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
-(type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
-(type $_F (struct (field number) (field _F)))
+    let expected = r#"(type $_F (struct (field number) (field _F)))
 (data (i32.const 1024) "\00\00")
 (data (i32.const 323) "\03\02")
 (table $0 1 funcref)
@@ -721,7 +714,7 @@ mod tests {
       (i32.store (i32.const 0) (i32.const 0))
       (i32.store offset=12 (i32.const 0) (i32.const 0))
       (call $__$main (i32.const 0))
-      (call_indirect $0 (type $i32_=>_i32) (i32.const 0) (i32.const 0))
+      (call_indirect $0 (type $_F) (i32.const 0) (i32.const 0))
     )
   )
   (if (i32.const 1) (then

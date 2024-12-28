@@ -1,7 +1,50 @@
 use itertools::Itertools;
 use samlang_ast::{hir, lir, mir, wasm};
-use samlang_heap::{Heap, PStr};
-use std::collections::{BTreeSet, HashMap};
+use samlang_heap::{Heap, ModuleReference, PStr};
+use std::collections::{BTreeMap, HashMap};
+
+struct TypeLoweringContext<'a> {
+  function_type_mapping: HashMap<wasm::FunctionType, mir::TypeNameId>,
+  heap: &'a mut Heap,
+  table: mir::SymbolTable,
+}
+
+impl<'a> TypeLoweringContext<'a> {
+  fn new(heap: &'a mut Heap, table: mir::SymbolTable) -> TypeLoweringContext<'a> {
+    TypeLoweringContext { function_type_mapping: HashMap::new(), heap, table }
+  }
+
+  fn name_function_type(&mut self, function_type: &wasm::FunctionType) -> mir::TypeNameId {
+    if let Some(existing) = self.function_type_mapping.get(function_type) {
+      *existing
+    } else {
+      let temp_type_name = self.heap.alloc_temp_str();
+      let type_id = self.table.create_simple_type_name(ModuleReference::ROOT, temp_type_name);
+      self.function_type_mapping.insert(function_type.clone(), type_id);
+      type_id
+    }
+  }
+
+  fn lower_function_type(&mut self, function_type: &lir::FunctionType) -> mir::TypeNameId {
+    let wasm_f = wasm::FunctionType {
+      argument_types: function_type.argument_types.iter().map(|t| self.lower(t)).collect(),
+      return_type: Box::new(self.lower(&function_type.return_type)),
+    };
+    self.name_function_type(&wasm_f)
+  }
+
+  fn lower(&mut self, t: &lir::Type) -> wasm::Type {
+    match t {
+      lir::Type::Int32 => wasm::Type::Int32,
+      lir::Type::Int31 => wasm::Type::Int31,
+      lir::Type::AnyPointer => wasm::Type::Eq,
+      lir::Type::Id(type_name_id) => wasm::Type::Reference(*type_name_id),
+      lir::Type::Fn(function_type) => {
+        wasm::Type::Reference(self.lower_function_type(function_type))
+      }
+    }
+  }
+}
 
 #[derive(Clone)]
 struct LoopContext {
@@ -11,37 +54,39 @@ struct LoopContext {
 
 struct LoweringManager<'a> {
   label_id: u32,
+  type_cx: TypeLoweringContext<'a>,
   loop_cx: Option<LoopContext>,
-  local_variables: BTreeSet<PStr>,
+  local_variables: BTreeMap<PStr, wasm::Type>,
   global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
   function_index_mapping: &'a HashMap<mir::FunctionName, usize>,
 }
 
 impl<'a> LoweringManager<'a> {
   fn lower_fn(
+    type_cx: TypeLoweringContext<'a>,
     global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
     function_index_mapping: &'a HashMap<mir::FunctionName, usize>,
     function: &lir::Function,
-  ) -> wasm::Function {
+  ) -> (wasm::Function, TypeLoweringContext<'a>) {
     let mut instance = LoweringManager {
       label_id: 0,
+      type_cx,
       loop_cx: None,
-      local_variables: BTreeSet::new(),
+      local_variables: BTreeMap::new(),
       global_variables_to_pointer_mapping,
       function_index_mapping,
     };
     let mut instructions =
       function.body.iter().flat_map(|it| instance.lower_stmt(it)).collect_vec();
     instructions.push(wasm::Instruction::Inline(instance.lower_expr(&function.return_value)));
-    for n in &function.parameters {
+    let mut parameters = vec![];
+    for (n, t) in function.parameters.iter().zip(&function.type_.argument_types) {
       instance.local_variables.remove(n);
+      parameters.push((*n, instance.type_cx.lower(t)));
     }
-    wasm::Function {
-      name: function.name,
-      parameters: function.parameters.clone(),
-      local_variables: instance.local_variables.into_iter().collect_vec(),
-      instructions,
-    }
+    let local_variables = instance.local_variables.into_iter().collect_vec();
+    let f = wasm::Function { name: function.name, parameters, local_variables, instructions };
+    (f, instance.type_cx)
   }
 
   fn lower_stmt(&mut self, s: &lir::Statement) -> Vec<wasm::Instruction> {
@@ -114,7 +159,9 @@ impl<'a> LoweringManager<'a> {
         } else {
           wasm::InlineInstruction::IndirectCall {
             function_index: Box::new(self.lower_expr(callee)),
-            fn_arg_count: argument_instructions.len(),
+            function_type_name: self
+              .type_cx
+              .lower_function_type(callee.as_variable().unwrap().1.as_fn().unwrap()),
             arguments: argument_instructions,
           }
         };
@@ -264,17 +311,17 @@ impl<'a> LoweringManager<'a> {
   }
 
   fn get(&mut self, n: &PStr) -> wasm::InlineInstruction {
-    self.local_variables.insert(*n);
+    self.local_variables.insert(*n, wasm::Type::Int32);
     wasm::InlineInstruction::LocalGet(*n)
   }
 
   fn set(&mut self, n: &PStr, v: wasm::InlineInstruction) -> wasm::InlineInstruction {
-    self.local_variables.insert(*n);
+    self.local_variables.insert(*n, wasm::Type::Int32);
     wasm::InlineInstruction::LocalSet(*n, Box::new(v))
   }
 }
 
-pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: lir::Sources) -> wasm::Module {
+pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> wasm::Module {
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
@@ -296,25 +343,28 @@ pub(super) fn compile_lir_to_wasm(heap: &Heap, sources: lir::Sources) -> wasm::M
   for (i, f) in sources.functions.iter().enumerate() {
     function_index_mapping.insert(f.name, i);
   }
+  let exported_functions = sources.main_function_names.clone();
+  let mut type_cx = TypeLoweringContext::new(heap, sources.symbol_table);
+  let mut functions = vec![];
+  for f in &sources.functions {
+    let (f, new_type_cx) = LoweringManager::lower_fn(
+      type_cx,
+      &global_variables_to_pointer_mapping,
+      &function_index_mapping,
+      f,
+    );
+    type_cx = new_type_cx;
+    functions.push(f);
+  }
+  let TypeLoweringContext { function_type_mapping, heap: _, table: symbol_table } = type_cx;
+  let function_type_mapping = function_type_mapping.into_iter().map(|(t, n)| (n, t)).collect_vec();
   wasm::Module {
-    symbol_table: sources.symbol_table,
-    function_type_parameter_counts: sources
-      .functions
-      .iter()
-      .map(|it| it.parameters.len())
-      .collect::<BTreeSet<_>>()
-      .into_iter()
-      .collect_vec(),
+    symbol_table,
+    function_type_mapping,
     type_definition: vec![],
     global_variables,
-    exported_functions: sources.main_function_names.clone(),
-    functions: sources
-      .functions
-      .iter()
-      .map(|f| {
-        LoweringManager::lower_fn(&global_variables_to_pointer_mapping, &function_index_mapping, f)
-      })
-      .collect_vec(),
+    exported_functions,
+    functions,
   }
 }
 
@@ -323,11 +373,16 @@ mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     hir::{BinaryOperator, GlobalString},
-    lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_32_TYPE, ZERO},
+    lir::{
+      self, Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_31_TYPE,
+      INT_32_TYPE, ZERO,
+    },
     mir::{self, TypeNameId},
     wasm,
   };
   use samlang_heap::{Heap, PStr};
+
+  use super::TypeLoweringContext;
 
   #[test]
   fn boilterplate() {
@@ -335,6 +390,59 @@ mod tests {
       .clone()
       .break_collector
       .is_none());
+
+    let mut symbol_table = mir::SymbolTable::new();
+    let mut m = wasm::Module {
+      symbol_table: mir::SymbolTable::new(),
+      function_type_mapping: vec![],
+      type_definition: vec![lir::TypeDefinition {
+        name: symbol_table.create_type_name_for_test(PStr::UPPER_F),
+        mappings: vec![
+          lir::Type::Int32,
+          lir::Type::Id(symbol_table.create_type_name_for_test(PStr::UPPER_F)),
+        ],
+      }],
+      global_variables: vec![],
+      exported_functions: vec![],
+      functions: vec![wasm::Function {
+        name: mir::FunctionName::PROCESS_PRINTLN,
+        parameters: vec![],
+        local_variables: vec![],
+        instructions: vec![wasm::Instruction::Inline(wasm::InlineInstruction::IsPointer {
+          pointer_type: lir::Type::Int32,
+          value: Box::new(wasm::InlineInstruction::StructInit {
+            type_: lir::Type::Int32,
+            expression_list: vec![
+              wasm::InlineInstruction::Cast {
+                pointer_type: lir::Type::Int32,
+                value: Box::new(wasm::InlineInstruction::Const(0)),
+              },
+              wasm::InlineInstruction::StructLoad {
+                index: 0,
+                struct_type: lir::Type::Int32,
+                struct_ref: Box::new(wasm::InlineInstruction::Const(0)),
+              },
+              wasm::InlineInstruction::StructStore {
+                index: 0,
+                struct_type: lir::Type::Int32,
+                struct_ref: Box::new(wasm::InlineInstruction::Const(0)),
+                assigned: Box::new(wasm::InlineInstruction::Const(0)),
+              },
+            ],
+          }),
+        })],
+      }],
+    };
+    m.symbol_table = symbol_table;
+    m.pretty_print(&Heap::new());
+  }
+
+  #[test]
+  fn type_lowering_test() {
+    let mut heap = Heap::new();
+    let mut type_cx = TypeLoweringContext::new(&mut heap, mir::SymbolTable::new());
+
+    type_cx.lower(&Type::new_fn(vec![INT_32_TYPE, INT_31_TYPE], INT_32_TYPE));
   }
 
   #[test]
@@ -352,7 +460,7 @@ mod tests {
       functions: vec![Function {
         name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![heap.alloc_str_for_test("bar")],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![
           Statement::IfElse { condition: ZERO, s1: vec![], s2: vec![], final_assignments: vec![] },
           Statement::IfElse {
@@ -427,6 +535,42 @@ mod tests {
             Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
             ZERO,
           ),
+          Statement::binary(
+            heap.alloc_str_for_test("bin1"),
+            BinaryOperator::MUL,
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            ZERO,
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("bin2"),
+            BinaryOperator::DIV,
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            ZERO,
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("bin3"),
+            BinaryOperator::LE,
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            ZERO,
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("bin4"),
+            BinaryOperator::GE,
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            ZERO,
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("bin5"),
+            BinaryOperator::NE,
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            ZERO,
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("bin6"),
+            BinaryOperator::MOD,
+            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            ZERO,
+          ),
           Statement::Call {
             callee: Expression::FnName(
               mir::FunctionName::new_for_test(PStr::MAIN_FN),
@@ -437,7 +581,7 @@ mod tests {
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+            callee: Expression::Variable(PStr::LOWER_F, Type::new_fn(vec![], INT_32_TYPE)),
             arguments: vec![ZERO],
             return_type: INT_32_TYPE,
             return_collector: Some(heap.alloc_str_for_test("rc")),
@@ -466,7 +610,7 @@ mod tests {
       }],
     };
     let actual = super::compile_lir_to_wasm(heap, sources).pretty_print(heap);
-    let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
+    let expected = r#"(type $__t0 (func (result i32)))
 (data (i32.const 4096) "\00\00\00\00\03\00\00\00FOO")
 (data (i32.const 4112) "\00\00\00\00\03\00\00\00BAR")
 (table $0 1 funcref)
@@ -474,6 +618,12 @@ mod tests {
 (func $__$main (param $bar i32) (result i32)
   (local $b i32)
   (local $bin i32)
+  (local $bin1 i32)
+  (local $bin2 i32)
+  (local $bin3 i32)
+  (local $bin4 i32)
+  (local $bin5 i32)
+  (local $bin6 i32)
   (local $c i32)
   (local $f i32)
   (local $i i32)
@@ -519,8 +669,14 @@ mod tests {
   (local.set $un1 (i32.xor (i32.const 0) (i32.const 1)))
   (local.set $un2 (i32.xor (i32.or (i32.lt_s (i32.const 0) (i32.const 1024)) (i32.and (i32.const 0) (i32.const 1))) (i32.const 1)))
   (local.set $bin (i32.add (local.get $f) (i32.const 0)))
+  (local.set $bin1 (i32.mul (local.get $f) (i32.const 0)))
+  (local.set $bin2 (i32.div_s (local.get $f) (i32.const 0)))
+  (local.set $bin3 (i32.le_s (local.get $f) (i32.const 0)))
+  (local.set $bin4 (i32.ge_s (local.get $f) (i32.const 0)))
+  (local.set $bin5 (i32.ne (local.get $f) (i32.const 0)))
+  (local.set $bin6 (i32.rem_s (local.get $f) (i32.const 0)))
   (drop (call $__$main (i32.const 0)))
-  (local.set $rc (call_indirect $0 (type $i32_=>_i32) (i32.const 0) (local.get $f)))
+  (local.set $rc (call_indirect $0 (type $__t0) (i32.const 0) (local.get $f)))
   (local.set $v (i32.load offset=12 (i32.const 0)))
   (i32.store offset=12 (i32.const 0) (local.get $v))
   (local.set $s (call $__$malloc (i32.const 8)))
