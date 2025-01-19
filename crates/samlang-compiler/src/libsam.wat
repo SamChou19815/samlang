@@ -638,7 +638,6 @@
     )
     (local.set $num (i32.const 0))
     (local.set $i (local.get $neg))
-    ;; TODO
     (block $B1
       (loop $L2
         (br_if $B1 (i32.ge_s (local.get $i) (local.get $len)))
