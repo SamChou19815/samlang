@@ -2,7 +2,6 @@ use samlang_ast::hir::GlobalString;
 use samlang_heap::PStr;
 use std::collections::BTreeSet;
 
-// TODO: move this to global variable since heap allows us to provide a better API
 pub(super) struct StringManager {
   global_variable_reference_map: BTreeSet<PStr>,
 }
