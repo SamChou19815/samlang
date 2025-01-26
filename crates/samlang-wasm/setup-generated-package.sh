@@ -54,7 +54,7 @@ export function autoComplete(
   kind: number;
 }>;" > samlang-demo/index.d.ts
 
-bun build --outfile samlang-demo/index.js --format esm lazy-index.js
+../../node_modules/.bin/esbuild ./lazy-index.js --bundle --outfile=samlang-demo/index.js --format=esm
 node samlang-wasm.test.mjs --experimental-wasm-modules
 
 # Cleanup outputs

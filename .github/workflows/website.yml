@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: 22.x
       - uses: oven-sh/setup-bun@v1
+      - name: Bun Install
+        run: bun install --frozen-lockfile
       - name: Cache Cargo
         uses: Swatinem/rust-cache@v2
         with:
