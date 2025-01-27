@@ -7,10 +7,8 @@
     "bw": "cd crates/samlang-wasm && ./setup-generated-package.sh",
     "rt": "rm -f target/llvm-cov-target/*.profraw && cargo th",
     "bench": "cargo b -p samlang-cli --release && time BENCHMARK_REPEAT=10000 ./target/release/samlang-cli",
-    "ssg": "bun run --cwd packages/samlang-website ssg",
-    "webdev": "bun run --cwd packages/samlang-website dev"
+    "ssg": "pnpm --filter samlang-website ssg",
+    "webdev": "pnpm --filter samlang-website dev"
   },
-  "devDependencies": {
-    "bun-types": "^1.1.2"
-  }
+  "packageManager": "pnpm@10.0.0"
 }
