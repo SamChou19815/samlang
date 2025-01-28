@@ -10,11 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: oven-sh/setup-bun@v1
-      - name: Bun Install
-        run: bun install --frozen-lockfile
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
       - name: Generate Static Site
-        run: bun ssg
+        run: pnpm ssg
 
   test:
     runs-on: ubuntu-latest
@@ -24,9 +27,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-      - uses: oven-sh/setup-bun@v1
-      - name: Bun Install
-        run: bun install --frozen-lockfile
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
       - name: Cache Cargo
         uses: Swatinem/rust-cache@v2
         with:
@@ -34,4 +40,4 @@ jobs:
       - name: Setup wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Build and Test WASM
-        run: bun bw
+        run: pnpm bw
