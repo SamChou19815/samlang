@@ -16,6 +16,10 @@ jobs:
       - uses: oven-sh/setup-bun@v1
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build
