@@ -71,7 +71,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/vscode": "1.75.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "vscode-languageclient": "^9.0.1"
   }
 }
