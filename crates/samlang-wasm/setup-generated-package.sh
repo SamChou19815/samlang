@@ -55,7 +55,7 @@ export function autoComplete(
 }>;" > samlang-demo/index.d.ts
 
 ../../packages/samlang-vscode/node_modules/.bin/esbuild ./lazy-index.js --bundle --outfile=samlang-demo/index.js --format=esm
-node samlang-wasm.test.mjs --experimental-wasm-modules
+# node samlang-wasm.test.mjs --experimental-wasm-modules
 
 # Cleanup outputs
 # rm samlang-demo/.gitignore samlang-demo/*.wasm samlang-demo/*.js
