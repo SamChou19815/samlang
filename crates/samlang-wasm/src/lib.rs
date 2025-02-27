@@ -98,88 +98,98 @@ impl Range {
   }
 }
 
-fn new_state(source: String) -> samlang_services::server_state::ServerState {
-  let mut heap = samlang_heap::Heap::new();
-  let sources = demo_sources(&mut heap, source);
-  samlang_services::server_state::ServerState::new(heap, false, sources)
-}
+#[wasm_bindgen]
+pub struct State(samlang_services::server_state::ServerState);
 
-#[wasm_bindgen(js_name=typeCheck)]
-pub fn type_check(source: String) -> JsValue {
-  let state = &mut new_state(source);
-  let mod_ref = demo_mod_ref(&mut state.heap);
-  serde_wasm_bindgen::to_value(
-    &state
-      .get_errors(&mod_ref)
-      .iter()
-      .map(|e| {
-        let ide_error = e.to_ide_format(&state.heap, &HashMap::new());
-        let loc = ide_error.location;
-        Diagnostic {
-          start_line: loc.start.0 + 1,
-          start_col: loc.start.1 + 1,
-          end_line: loc.end.0 + 1,
-          end_col: loc.end.1 + 1,
-          message: ide_error.ide_error,
-          severity: 8,
-        }
-      })
-      .collect::<Vec<_>>(),
-  )
-  .unwrap_or(JsValue::NULL)
-}
+#[wasm_bindgen]
+impl State {
+  #[wasm_bindgen(constructor)]
+  pub fn new() -> State {
+    let mut heap = samlang_heap::Heap::new();
+    let sources = samlang_parser::builtin_std_raw_sources(&mut heap);
+    State(samlang_services::server_state::ServerState::new(heap, false, sources))
+  }
 
-#[wasm_bindgen(js_name=queryType)]
-pub fn query_type(source: String, line: i32, column: i32) -> JsValue {
-  let state = &mut new_state(source);
-  let mod_ref = demo_mod_ref(&mut state.heap);
-  samlang_services::query::hover(state, &mod_ref, samlang_ast::Position(line - 1, column - 1))
-    .map(|result| {
-      serde_wasm_bindgen::to_value(&TypeQueryResult {
-        range: Range::from(&result.location),
-        contents: result
-          .contents
-          .into_iter()
-          .map(|c| TypeQueryContent { language: c.language.to_string(), value: c.value })
-          .collect(),
-      })
-      .unwrap()
-    })
+  #[wasm_bindgen(js_name=updateSource)]
+  pub fn update_source(&mut self, source: String) {
+    let mod_ref = demo_mod_ref(&mut self.0.heap);
+    self.0.update(vec![(mod_ref, source)]);
+  }
+
+  #[wasm_bindgen(js_name=getErrors)]
+  pub fn type_check(&mut self) -> JsValue {
+    let mod_ref = demo_mod_ref(&mut self.0.heap);
+    serde_wasm_bindgen::to_value(
+      &self
+        .0
+        .get_errors(&mod_ref)
+        .iter()
+        .map(|e| {
+          let ide_error = e.to_ide_format(&self.0.heap, &HashMap::new());
+          let loc = ide_error.location;
+          Diagnostic {
+            start_line: loc.start.0 + 1,
+            start_col: loc.start.1 + 1,
+            end_line: loc.end.0 + 1,
+            end_col: loc.end.1 + 1,
+            message: ide_error.ide_error,
+            severity: 8,
+          }
+        })
+        .collect::<Vec<_>>(),
+    )
     .unwrap_or(JsValue::NULL)
-}
+  }
 
-#[wasm_bindgen(js_name=queryDefinitionLocation)]
-pub fn query_definition_location(source: String, line: i32, column: i32) -> JsValue {
-  let state = &mut new_state(source);
-  let mod_ref = demo_mod_ref(&mut state.heap);
-  samlang_services::query::definition_location(
-    state,
-    &mod_ref,
-    samlang_ast::Position(line - 1, column - 1),
-  )
-  .map(|loc| serde_wasm_bindgen::to_value(&Range::from(&loc)).unwrap())
-  .unwrap_or(JsValue::NULL)
-}
+  #[wasm_bindgen(js_name=queryType)]
+  pub fn query_type(&mut self, line: i32, column: i32) -> JsValue {
+    let mod_ref = demo_mod_ref(&mut self.0.heap);
+    samlang_services::query::hover(&self.0, &mod_ref, samlang_ast::Position(line - 1, column - 1))
+      .map(|result| {
+        serde_wasm_bindgen::to_value(&TypeQueryResult {
+          range: Range::from(&result.location),
+          contents: result
+            .contents
+            .into_iter()
+            .map(|c| TypeQueryContent { language: c.language.to_string(), value: c.value })
+            .collect(),
+        })
+        .unwrap()
+      })
+      .unwrap_or(JsValue::NULL)
+  }
 
-#[wasm_bindgen(js_name=autoComplete)]
-pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
-  let state = &mut new_state(source);
-  let mod_ref = demo_mod_ref(&mut state.heap);
-  serde_wasm_bindgen::to_value(
-    &(samlang_services::completion::auto_complete(
-      state,
+  #[wasm_bindgen(js_name=queryDefinitionLocation)]
+  pub fn query_definition_location(&mut self, line: i32, column: i32) -> JsValue {
+    let mod_ref = demo_mod_ref(&mut self.0.heap);
+    samlang_services::query::definition_location(
+      &self.0,
       &mod_ref,
       samlang_ast::Position(line - 1, column - 1),
     )
-    .into_iter()
-    .map(|item| AutoCompletionItem {
-      range: Range { start_line: line, start_col: column, end_line: line, end_col: column },
-      label: item.label,
-      insert_text: item.insert_text,
-      kind: item.kind as i32,
-      detail: item.detail,
-    })
-    .collect::<Vec<_>>()),
-  )
-  .unwrap()
+    .map(|loc| serde_wasm_bindgen::to_value(&Range::from(&loc)).unwrap())
+    .unwrap_or(JsValue::NULL)
+  }
+
+  #[wasm_bindgen(js_name=autoComplete)]
+  pub fn autocomplete(&mut self, line: i32, column: i32) -> JsValue {
+    let mod_ref = demo_mod_ref(&mut self.0.heap);
+    serde_wasm_bindgen::to_value(
+      &(samlang_services::completion::auto_complete(
+        &self.0,
+        &mod_ref,
+        samlang_ast::Position(line - 1, column - 1),
+      )
+      .into_iter()
+      .map(|item| AutoCompletionItem {
+        range: Range { start_line: line, start_col: column, end_line: line, end_col: column },
+        label: item.label,
+        insert_text: item.insert_text,
+        kind: item.kind as i32,
+        detail: item.detail,
+      })
+      .collect::<Vec<_>>()),
+    )
+    .unwrap()
+  }
 }
