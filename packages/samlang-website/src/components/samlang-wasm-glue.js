@@ -450,31 +450,9 @@ async function compile2(source) {
     return e;
   }
 }
-function typeCheck(source) {
-  const state = new State();
-  state.updateSource(source);
-  return state.getErrors(source) || [];
-}
-function queryType(source, line, number) {
-  const state = new State();
-  state.updateSource(source);
-  return state.queryType(line, number);
-}
-function queryDefinitionLocation(source, line, number) {
-  const state = new State();
-  state.updateSource(source);
-  return state.queryDefinitionLocation(line, number);
-}
-function autoComplete(source, line, number) {
-  const state = new State();
-  state.updateSource(source);
-  return state.autoComplete(line, number);
-}
+var State2 = State;
 export {
-  autoComplete,
+  State2 as State,
   compile2 as compile,
-  init,
-  queryDefinitionLocation,
-  queryType,
-  typeCheck
+  init
 };

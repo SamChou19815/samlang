@@ -9,7 +9,7 @@ const samlangUninitializedPromise: Promise<typeof SamlangTypes> =
 
 const samlangPromise = samlangUninitializedPromise.then(async (mod) => {
   await mod.init();
-  return mod;
+  return { state: new mod.State(), compile: mod.compile };
 });
 
 export const monacoEditorOptions: editor.IEditorConstructionOptions = {
@@ -192,9 +192,9 @@ export function initializeMonacoEditor(monacoEditor: MonacoEditor, fullLSP: bool
     monacoLSPInitialized = true;
     monacoEditor.languages.registerHoverProvider('samlang', {
       async provideHover(model, position) {
-        const result = await (
-          await samlangPromise
-        ).queryType(model.getValue(), position.lineNumber, position.column);
+        const samlang = await samlangPromise;
+        samlang.state.updateSource(model.getValue());
+        const result = await samlang.state.queryType(position.lineNumber, position.column);
         if (result == null) return null;
         return {
           range: result.range,
@@ -213,10 +213,13 @@ export function initializeMonacoEditor(monacoEditor: MonacoEditor, fullLSP: bool
         if (source.charAt(offset) !== '.') {
           source = `${source.substring(0, offset)}.${source.substring(offset)}`;
         }
+        const samlang = await samlangPromise;
+        samlang.state.updateSource(model.getValue());
         try {
-          const suggestions = await (
-            await samlangPromise
-          ).autoComplete(source, position.lineNumber, position.column);
+          const suggestions = await samlang.state.autoComplete(
+            position.lineNumber,
+            position.column
+          );
           return { suggestions };
         } catch (e) {
           console.log(e);
@@ -227,9 +230,12 @@ export function initializeMonacoEditor(monacoEditor: MonacoEditor, fullLSP: bool
 
     monacoEditor.languages.registerDefinitionProvider('samlang', {
       async provideDefinition(model, position) {
-        const range = await (
-          await samlangPromise
-        ).queryDefinitionLocation(model.getValue(), position.lineNumber, position.column);
+        const samlang = await samlangPromise;
+        samlang.state.updateSource(model.getValue());
+        const range = await samlang.state.queryDefinitionLocation(
+          position.lineNumber,
+          position.column
+        );
         return range != null ? { uri: model.uri, range } : null;
       },
     });
@@ -260,7 +266,10 @@ export function onMonacoModelMount(
       getWasmResponse(value).then(onCompilationResponse);
     }
     samlangPromise
-      .then((s) => s.typeCheck(value))
+      .then((s) => {
+        s.state.updateSource(value);
+        return s.state.getErrors();
+      })
       .then((response) => {
         monaco.editor.setModelMarkers(model, 'samlang', response);
       });
