@@ -22,25 +22,23 @@ export type CompilationResult = string | { tsCode: string; interpreterResult: st
 
 export function compile(source: string): Promise<CompilationResult>;
 
-export function typeCheck(source: string): Diagnostic[];
-
-export function queryType(
-  source: string,
-  line: number,
-  column: number
-): { contents: Array<{ language: string; value: string }>; range: Range } | null;
-
-export function queryDefinitionLocation(source: string, line: number, column: number): Range | null;
-
-export function autoComplete(
-  source: string,
-  line: number,
-  column: number
-): Array<{
-  range: Range;
-  label: string;
-  insertText: string;
-  detail: string;
-  insertTextFormat: number;
-  kind: number;
-}>;
+export class State {
+  updateSource(source: string): void;
+  getErrors(): Diagnostic[];
+  queryType(
+    line: number,
+    column: number
+  ): { contents: Array<{ language: string; value: string }>; range: Range } | null;
+  queryDefinitionLocation(line: number, column: number): Range | null;
+  autoComplete(
+    line: number,
+    column: number
+  ): Array<{
+    range: Range;
+    label: string;
+    insertText: string;
+    detail: string;
+    insertTextFormat: number;
+    kind: number;
+  }>;
+}

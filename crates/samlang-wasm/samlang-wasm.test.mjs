@@ -46,7 +46,9 @@ async function simpleProgramsCanBeInterpreted() {
 
 async function goodProgramsHasNoTypeErrors() {
   await samlang.init();
-  assertEquals('[]', JSON.stringify(samlang.typeCheck('class Foo {}')));
+  const state = new samlang.State();
+  state.updateSource('class Foo {}');
+  assertEquals('[]', JSON.stringify(state.getErrors()));
 }
 
 function assertEquals(/** @type {string} */ expected, /** @type {string} */ actual) {

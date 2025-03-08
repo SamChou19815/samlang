@@ -34,6 +34,11 @@ export default function EditorCodeBlock({
       onMount={(editor, monaco) => {
         if (path != null) onMonacoModelMount(editor, monaco);
       }}
+      onChange={(newSource) => {
+        if (newSource) {
+          
+        }
+      }}
       beforeMount={(monaco) => {
         initializeMonacoEditor(monaco, path != null);
       }}

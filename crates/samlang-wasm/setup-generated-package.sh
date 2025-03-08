@@ -31,28 +31,26 @@ export type CompilationResult = string | { tsCode: string; interpreterResult: st
 
 export function compile(source: string): Promise<CompilationResult>;
 
-export function typeCheck(source: string): Diagnostic[];
-
-export function queryType(
-  source: string,
-  line: number,
-  column: number
-): { contents: Array<{ language: string; value: string }>; range: Range } | null;
-
-export function queryDefinitionLocation(source: string, line: number, column: number): Range | null;
-
-export function autoComplete(
-  source: string,
-  line: number,
-  column: number
-): Array<{
-  range: Range;
-  label: string;
-  insertText: string;
-  detail: string;
-  insertTextFormat: number;
-  kind: number;
-}>;" > samlang-demo/index.d.ts
+export class State {
+  updateSource(source: string): void;
+  getErrors(): Diagnostic[];
+  queryType(
+    line: number,
+    column: number
+  ): { contents: Array<{ language: string; value: string }>; range: Range } | null;
+  queryDefinitionLocation(line: number, column: number): Range | null;
+  autoComplete(
+    line: number,
+    column: number
+  ): Array<{
+    range: Range;
+    label: string;
+    insertText: string;
+    detail: string;
+    insertTextFormat: number;
+    kind: number;
+  }>;
+}" > samlang-demo/index.d.ts
 
 ../../packages/samlang-vscode/node_modules/.bin/esbuild ./lazy-index.js --bundle --outfile=samlang-demo/index.js --format=esm
 node samlang-wasm.test.mjs --experimental-wasm-modules
