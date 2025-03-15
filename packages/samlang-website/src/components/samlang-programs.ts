@@ -18,9 +18,9 @@ class Opt<T>(
 
   method either(other: Opt<T>): Opt<T> =
     match (this, other) {
+      (None, None) -> Opt.None(),
       (Some(v), _) -> Opt.Some(v),
       (_, Some(v)) -> Opt.Some(v),
-      (None, None) -> Opt.None(),
     }
 }`;
 
