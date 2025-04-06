@@ -101,13 +101,19 @@ impl Range {
 #[wasm_bindgen]
 pub struct State(samlang_services::server_state::ServerState);
 
+impl Default for State {
+  fn default() -> Self {
+    let mut heap = samlang_heap::Heap::new();
+    let sources = samlang_parser::builtin_std_raw_sources(&mut heap);
+    Self(samlang_services::server_state::ServerState::new(heap, false, sources))
+  }
+}
+
 #[wasm_bindgen]
 impl State {
   #[wasm_bindgen(constructor)]
   pub fn new() -> State {
-    let mut heap = samlang_heap::Heap::new();
-    let sources = samlang_parser::builtin_std_raw_sources(&mut heap);
-    State(samlang_services::server_state::ServerState::new(heap, false, sources))
+    Default::default()
   }
 
   #[wasm_bindgen(js_name=updateSource)]

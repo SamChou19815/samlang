@@ -370,6 +370,7 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
 
 #[cfg(test)]
 mod tests {
+  use super::TypeLoweringContext;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     hir::{BinaryOperator, GlobalString},
@@ -381,8 +382,6 @@ mod tests {
     wasm,
   };
   use samlang_heap::{Heap, PStr};
-
-  use super::TypeLoweringContext;
 
   #[test]
   fn boilterplate() {
