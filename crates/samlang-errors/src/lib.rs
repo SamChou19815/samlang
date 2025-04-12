@@ -20,7 +20,7 @@ enum PrintableError<'a> {
   ModuleReference(&'a ModuleReference),
 }
 
-impl<'a> PrintableError<'a> {
+impl PrintableError<'_> {
   fn get_loc_reference_opt(&self) -> Option<Location> {
     match self {
       PrintableError::LocationReference(l) => Some(**l),

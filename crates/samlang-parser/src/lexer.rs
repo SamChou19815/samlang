@@ -16,7 +16,7 @@ mod char_stream {
     source: &'a [u8],
   }
 
-  impl<'a> CharacterStream<'a> {
+  impl CharacterStream<'_> {
     pub(super) fn new(module_reference: ModuleReference, source: &str) -> CharacterStream {
       CharacterStream {
         line_num: 0,
