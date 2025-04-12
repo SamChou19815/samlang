@@ -53,7 +53,7 @@ fn stmt_uses_basic_induction_var(
       expr_uses_basic_induction_var(pointer_expression, v)
     }
     Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
-      let in_callee = callee.as_variable().map_or(false, |var| var.name.eq(&v.name));
+      let in_callee = callee.as_variable().is_some_and(|var| var.name.eq(&v.name));
       in_callee || arguments.iter().any(|e| expr_uses_basic_induction_var(e, v))
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
@@ -101,7 +101,7 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
     || l.loop_variables_that_are_not_basic_induction_variables.iter().any(|v| {
       expr_uses_basic_induction_var(&v.loop_value, &l.basic_induction_variable_with_loop_guard)
     })
-    || l.break_collector.map_or(false, |v| {
+    || l.break_collector.is_some_and(|v| {
       expr_uses_basic_induction_var(&v.2, &l.basic_induction_variable_with_loop_guard)
     })
 }

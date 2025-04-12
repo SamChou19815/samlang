@@ -109,11 +109,7 @@ fn search_annotation(
     annotation::T::Id(id_annot) => search_id_annotation(id_annot, position),
     annotation::T::Generic(loc, _) => {
       if loc.contains_position(position) {
-        return Some(LocationCoverSearchResult::TypedName(
-          *loc,
-          Type::from_annotation(annotation),
-          false,
-        ));
+        Some(LocationCoverSearchResult::TypedName(*loc, Type::from_annotation(annotation), false))
       } else {
         None
       }

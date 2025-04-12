@@ -380,7 +380,7 @@ impl<'a> TypingContext<'a> {
   }
 }
 
-impl<'a> super::pattern_matching::PatternMatchingContext for TypingContext<'a> {
+impl super::pattern_matching::PatternMatchingContext for TypingContext<'_> {
   fn variant_signature_incomplete_names(
     &self,
     module_reference: ModuleReference,
