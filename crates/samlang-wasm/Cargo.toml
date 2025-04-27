@@ -12,7 +12,7 @@ samlang-parser = { path = "../samlang-parser" }
 samlang-services = { path = "../samlang-services" }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.5"
-wasm-bindgen = "0.2.95"
+wasm-bindgen = "0.2.100"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
