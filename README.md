@@ -20,9 +20,3 @@ config to setup your dev environment.
 - First Class Functions
 - Pattern Matching
 - Produce Optimized WebAssembly Code
-
-## Planned Optimizations
-
-- Loop unrolling
-- Partial redundancy elimination
-- Interprocedural analysis
