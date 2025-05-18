@@ -15,8 +15,8 @@ impl Type {
     /*
     match self {
       Type::Int32 => collector.push_str("i32"),
-      Type::Int31 => collector.push_str("i31"),
-      Type::Eq => collector.push_str("eq"),
+      Type::Int31 => collector.push_str("(ref i31)"),
+      Type::Eq => collector.push_str("(ref eq)"),
       Type::Reference(id) => {
         collector.push_str("(ref $");
         id.write_encoded(collector, heap, table);
