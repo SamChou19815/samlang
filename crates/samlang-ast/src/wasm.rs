@@ -1,7 +1,8 @@
 use super::{hir, lir, mir};
+use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumAsInner)]
 pub enum Type {
   Int32,
   Int31,
@@ -52,6 +53,11 @@ impl FunctionType {
   }
 }
 
+pub struct TypeDefinition {
+  pub name: mir::TypeNameId,
+  pub mappings: Vec<Type>,
+}
+
 pub enum InlineInstruction {
   Const(i32),
   Drop(Box<InlineInstruction>),
@@ -72,7 +78,7 @@ pub enum InlineInstruction {
   },
   StructLoad {
     index: usize,
-    struct_type: lir::Type,
+    struct_type: mir::TypeNameId,
     struct_ref: Box<InlineInstruction>,
   },
   Store {
@@ -82,12 +88,12 @@ pub enum InlineInstruction {
   },
   StructStore {
     index: usize,
-    struct_type: lir::Type,
+    struct_type: mir::TypeNameId,
     struct_ref: Box<InlineInstruction>,
     assigned: Box<InlineInstruction>,
   },
   StructInit {
-    type_: lir::Type,
+    type_: mir::TypeNameId,
     expression_list: Vec<InlineInstruction>,
   },
   DirectCall(mir::FunctionName, Vec<InlineInstruction>),
@@ -179,7 +185,7 @@ impl InlineInstruction {
       }
       InlineInstruction::StructLoad { index, struct_type, struct_ref } => {
         collector.push_str("(struct.get $");
-        struct_type.pretty_print(collector, heap, table);
+        struct_type.write_encoded(collector, heap, table);
         collector.push(' ');
         collector.push_str(&index.to_string());
         collector.push(' ');
@@ -205,7 +211,7 @@ impl InlineInstruction {
       }
       InlineInstruction::StructStore { index, struct_type, struct_ref, assigned } => {
         collector.push_str("(struct.set $");
-        struct_type.pretty_print(collector, heap, table);
+        struct_type.write_encoded(collector, heap, table);
         collector.push(' ');
         collector.push_str(&index.to_string());
         collector.push(' ');
@@ -216,7 +222,7 @@ impl InlineInstruction {
       }
       InlineInstruction::StructInit { type_, expression_list } => {
         collector.push_str("(struct.new $");
-        type_.pretty_print(collector, heap, table);
+        type_.write_encoded(collector, heap, table);
         for e in expression_list {
           collector.push(' ');
           e.pretty_print(collector, heap, table);
@@ -365,7 +371,7 @@ impl GlobalData {
 pub struct Module {
   pub symbol_table: mir::SymbolTable,
   pub function_type_mapping: Vec<(mir::TypeNameId, FunctionType)>,
-  pub type_definition: Vec<lir::TypeDefinition>,
+  pub type_definitions: Vec<TypeDefinition>,
   pub global_variables: Vec<GlobalData>,
   pub exported_functions: Vec<mir::FunctionName>,
   pub functions: Vec<Function>,
@@ -381,7 +387,7 @@ impl Module {
       fun_t.pretty_print(&mut collector, heap, &self.symbol_table);
       collector.push_str(")\n");
     }
-    for type_def in &self.type_definition {
+    for type_def in &self.type_definitions {
       collector.push_str("(type $");
       type_def.name.write_encoded(&mut collector, heap, &self.symbol_table);
       collector.push_str(" (struct");
@@ -490,11 +496,11 @@ mod tests {
     let mut module = Module {
       symbol_table: mir::SymbolTable::new(),
       function_type_mapping: vec![],
-      type_definition: vec![lir::TypeDefinition {
+      type_definitions: vec![TypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_F),
         mappings: vec![
-          lir::Type::Int32,
-          lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+          Type::Int32,
+          Type::Reference(table.create_type_name_for_test(PStr::UPPER_F)),
         ],
       }],
       global_variables: vec![
@@ -529,17 +535,17 @@ mod tests {
                 value: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::StructInit {
-                type_: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+                type_: table.create_type_name_for_test(PStr::UPPER_F),
                 expression_list: vec![InlineInstruction::Const(0)],
               }),
               Instruction::Inline(InlineInstruction::StructLoad {
                 index: 3,
-                struct_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+                struct_type: table.create_type_name_for_test(PStr::UPPER_F),
                 struct_ref: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::StructStore {
                 index: 3,
-                struct_type: lir::Type::Id(table.create_type_name_for_test(PStr::UPPER_F)),
+                struct_type: table.create_type_name_for_test(PStr::UPPER_F),
                 struct_ref: Box::new(InlineInstruction::Const(0)),
                 assigned: Box::new(InlineInstruction::Const(1)),
               }),
@@ -670,7 +676,7 @@ mod tests {
       }],
     };
     module.symbol_table = table;
-    let expected = r#"(type $_F (struct (field number) (field _F)))
+    let expected = r#"(type $_F (struct (field i32) (field i32)))
 (data (i32.const 1024) "\00\00")
 (data (i32.const 323) "\03\02")
 (table $0 1 funcref)
