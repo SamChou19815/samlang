@@ -60,13 +60,14 @@ fn collect_used_names_from_statement(
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, e1);
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, e2);
     }
-    Statement::IndexedAccess { name: _, type_, pointer_expression, index: _ } => {
-      collect_used_names_from_expression(str_name_set, fn_name_set, type_set, pointer_expression);
-      collect_for_type_set(type_, type_set);
-    }
-    Statement::IndexedAssign { assigned_expression, pointer_expression, index: _ } => {
+    Statement::UntypedIndexedAssign { assigned_expression, pointer_expression, index: _ } => {
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, assigned_expression);
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, pointer_expression);
+    }
+    Statement::UntypedIndexedAccess { name: _, type_, pointer_expression, index: _ }
+    | Statement::IndexedAccess { name: _, type_, pointer_expression, index: _ } => {
+      collect_used_names_from_expression(str_name_set, fn_name_set, type_set, pointer_expression);
+      collect_for_type_set(type_, type_set);
     }
     Statement::Call { callee, arguments, return_type, return_collector: _ } => {
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, callee);
@@ -302,7 +303,7 @@ mod tests {
               ),
               index: 0,
             },
-            Statement::IndexedAssign {
+            Statement::UntypedIndexedAssign {
               assigned_expression: ZERO,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),

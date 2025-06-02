@@ -77,15 +77,26 @@ mod tests {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
           parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
           type_: Type::new_fn_unwrapped(vec![INT_32_TYPE, INT_32_TYPE], INT_32_TYPE),
-          body: vec![Statement::IndexedAccess {
-            name: PStr::LOWER_F,
-            type_: INT_32_TYPE,
-            pointer_expression: Expression::Variable(
-              heap.alloc_str_for_test("big"),
-              Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
-            ),
-            index: 0,
-          }],
+          body: vec![
+            Statement::UntypedIndexedAccess {
+              name: PStr::LOWER_F,
+              type_: INT_32_TYPE,
+              pointer_expression: Expression::Variable(
+                heap.alloc_str_for_test("big"),
+                Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
+              ),
+              index: 0,
+            },
+            Statement::IndexedAccess {
+              name: PStr::LOWER_F,
+              type_: INT_32_TYPE,
+              pointer_expression: Expression::Variable(
+                heap.alloc_str_for_test("big"),
+                Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
+              ),
+              index: 0,
+            },
+          ],
           return_value: ZERO,
         },
         Function {
@@ -215,7 +226,7 @@ mod tests {
                 ),
                 index: 0,
               },
-              Statement::IndexedAssign {
+              Statement::UntypedIndexedAssign {
                 assigned_expression: ZERO,
                 pointer_expression: ZERO,
                 index: 0,
@@ -256,6 +267,7 @@ function __$main(): number {{
   return 0;
 }}
 function __$Bar(f: number, g: number): number {{
+  let f: number = big[0];
   let f: number = big[0];
   return 0;
 }}

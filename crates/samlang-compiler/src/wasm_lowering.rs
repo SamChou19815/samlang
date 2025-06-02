@@ -137,13 +137,13 @@ impl<'a> LoweringManager<'a> {
           self.set(name, wasm::InlineInstruction::Binary(i1, *operator, i2)),
         )]
       }
-      lir::Statement::IndexedAccess { name, type_: _, pointer_expression, index } => {
+      lir::Statement::UntypedIndexedAccess { name, type_: _, pointer_expression, index } => {
         let pointer = Box::new(self.lower_expr(pointer_expression));
         vec![wasm::Instruction::Inline(
           self.set(name, wasm::InlineInstruction::Load { index: *index, pointer }),
         )]
       }
-      lir::Statement::IndexedAssign { assigned_expression, pointer_expression, index } => {
+      lir::Statement::UntypedIndexedAssign { assigned_expression, pointer_expression, index } => {
         let pointer = Box::new(self.lower_expr(pointer_expression));
         let assigned = Box::new(self.lower_expr(assigned_expression));
         vec![wasm::Instruction::Inline(wasm::InlineInstruction::Store {
@@ -151,6 +151,17 @@ impl<'a> LoweringManager<'a> {
           pointer,
           assigned,
         })]
+      }
+      lir::Statement::IndexedAccess { name, type_: _, pointer_expression, index } => {
+        let (struct_ref, struct_type) = self.lower_expr_with_reference_type(pointer_expression);
+        vec![wasm::Instruction::Inline(self.set(
+          name,
+          wasm::InlineInstruction::StructLoad {
+            index: *index,
+            struct_type,
+            struct_ref: Box::new(struct_ref),
+          },
+        ))]
       }
       lir::Statement::Call { callee, arguments, return_type: _, return_collector } => {
         let argument_instructions = arguments.iter().map(|it| self.lower_expr(it)).collect_vec();
@@ -284,6 +295,17 @@ impl<'a> LoweringManager<'a> {
           }));
         }
         instructions
+        /*
+        let type_ = self.type_cx.lower(type_).into_reference().unwrap();
+        let mut wasm_expression_list = Vec::with_capacity(expression_list.len());
+        for e in expression_list {
+          wasm_expression_list.push(self.lower_expr(e));
+        }
+        vec![wasm::Instruction::Inline(self.set(
+          struct_variable_name,
+          wasm::InlineInstruction::StructInit { type_, expression_list: wasm_expression_list },
+        ))]
+        */
       }
     }
   }
@@ -300,6 +322,35 @@ impl<'a> LoweringManager<'a> {
       lir::Expression::FnName(n, _) => {
         let index = self.function_index_mapping.get(n).unwrap();
         wasm::InlineInstruction::Const(i32::try_from(*index).unwrap())
+      }
+    }
+  }
+
+  fn lower_expr_with_reference_type(
+    &mut self,
+    e: &lir::Expression,
+  ) -> (wasm::InlineInstruction, mir::TypeNameId) {
+    match e {
+      lir::Expression::Int32Literal(_) => {
+        panic!("Int32Literal in place that expects struct typed values.")
+      }
+      lir::Expression::Int31Literal(_) => {
+        panic!("Int31Literal in place that expects struct typed values.")
+      }
+      lir::Expression::Variable(n, t) => (
+        self.get(n),
+        self
+          .type_cx
+          .lower(t)
+          .into_reference()
+          .expect("The given expression doesn't have reference type."),
+      ),
+      lir::Expression::StringName(n) => {
+        let index = self.global_variables_to_pointer_mapping.get(n).unwrap();
+        (wasm::InlineInstruction::Const(i32::try_from(*index).unwrap()), mir::TypeNameId::STR)
+      }
+      lir::Expression::FnName(_, _) => {
+        panic!("FnName in place that expects struct typed values.")
       }
     }
   }
@@ -345,6 +396,11 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
   }
   let exported_functions = sources.main_function_names.clone();
   let mut type_cx = TypeLoweringContext::new(heap, sources.symbol_table);
+  let mut type_definitions = Vec::with_capacity(sources.type_definitions.len());
+  for lir::TypeDefinition { name, mappings } in &sources.type_definitions {
+    let mappings = mappings.iter().map(|t| type_cx.lower(t)).collect_vec();
+    type_definitions.push(wasm::TypeDefinition { name: *name, mappings });
+  }
   let mut functions = vec![];
   for f in &sources.functions {
     let (f, new_type_cx) = LoweringManager::lower_fn(
@@ -361,7 +417,7 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
   wasm::Module {
     symbol_table,
     function_type_mapping,
-    type_definition: vec![],
+    type_definitions,
     global_variables,
     exported_functions,
     functions,
@@ -370,16 +426,17 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
 
 #[cfg(test)]
 mod tests {
-  use super::TypeLoweringContext;
+  use std::collections::{BTreeMap, HashMap};
+
+  use super::{LoweringManager, TypeLoweringContext};
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     hir::{BinaryOperator, GlobalString},
     lir::{
-      self, Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_31_TYPE,
-      INT_32_TYPE, ZERO,
+      self, Expression, Function, FunctionType, GenenalLoopVariable, Sources, Statement,
+      INT_31_TYPE, INT_32_TYPE, ZERO,
     },
-    mir::{self, TypeNameId},
-    wasm,
+    mir, wasm,
   };
   use samlang_heap::{Heap, PStr};
 
@@ -394,11 +451,11 @@ mod tests {
     let mut m = wasm::Module {
       symbol_table: mir::SymbolTable::new(),
       function_type_mapping: vec![],
-      type_definition: vec![lir::TypeDefinition {
+      type_definitions: vec![wasm::TypeDefinition {
         name: symbol_table.create_type_name_for_test(PStr::UPPER_F),
         mappings: vec![
-          lir::Type::Int32,
-          lir::Type::Id(symbol_table.create_type_name_for_test(PStr::UPPER_F)),
+          wasm::Type::Int32,
+          wasm::Type::Reference(symbol_table.create_type_name_for_test(PStr::UPPER_F)),
         ],
       }],
       global_variables: vec![],
@@ -410,7 +467,7 @@ mod tests {
         instructions: vec![wasm::Instruction::Inline(wasm::InlineInstruction::IsPointer {
           pointer_type: lir::Type::Int32,
           value: Box::new(wasm::InlineInstruction::StructInit {
-            type_: lir::Type::Int32,
+            type_: symbol_table.create_type_name_for_test(PStr::UPPER_F),
             expression_list: vec![
               wasm::InlineInstruction::Cast {
                 pointer_type: lir::Type::Int32,
@@ -418,12 +475,12 @@ mod tests {
               },
               wasm::InlineInstruction::StructLoad {
                 index: 0,
-                struct_type: lir::Type::Int32,
+                struct_type: symbol_table.create_type_name_for_test(PStr::UPPER_F),
                 struct_ref: Box::new(wasm::InlineInstruction::Const(0)),
               },
               wasm::InlineInstruction::StructStore {
                 index: 0,
-                struct_type: lir::Type::Int32,
+                struct_type: symbol_table.create_type_name_for_test(PStr::UPPER_F),
                 struct_ref: Box::new(wasm::InlineInstruction::Const(0)),
                 assigned: Box::new(wasm::InlineInstruction::Const(0)),
               },
@@ -436,12 +493,63 @@ mod tests {
     m.pretty_print(&Heap::new());
   }
 
+  #[should_panic]
+  #[test]
+  fn invalid_lower_expr_with_reference_type_test1() {
+    let mut heap = Heap::new();
+    let type_cx = TypeLoweringContext::new(&mut heap, mir::SymbolTable::new());
+    LoweringManager {
+      label_id: 1,
+      type_cx,
+      loop_cx: None,
+      local_variables: BTreeMap::new(),
+      global_variables_to_pointer_mapping: &HashMap::new(),
+      function_index_mapping: &HashMap::new(),
+    }
+    .lower_expr_with_reference_type(&Expression::Int32Literal(0));
+  }
+
+  #[should_panic]
+  #[test]
+  fn invalid_lower_expr_with_reference_type_test2() {
+    let mut heap = Heap::new();
+    let type_cx = TypeLoweringContext::new(&mut heap, mir::SymbolTable::new());
+    LoweringManager {
+      label_id: 1,
+      type_cx,
+      loop_cx: None,
+      local_variables: BTreeMap::new(),
+      global_variables_to_pointer_mapping: &HashMap::new(),
+      function_index_mapping: &HashMap::new(),
+    }
+    .lower_expr_with_reference_type(&Expression::Int31Literal(0));
+  }
+
+  #[should_panic]
+  #[test]
+  fn invalid_lower_expr_with_reference_type_test3() {
+    let mut heap = Heap::new();
+    let type_cx = TypeLoweringContext::new(&mut heap, mir::SymbolTable::new());
+    LoweringManager {
+      label_id: 1,
+      type_cx,
+      loop_cx: None,
+      local_variables: BTreeMap::new(),
+      global_variables_to_pointer_mapping: &HashMap::new(),
+      function_index_mapping: &HashMap::new(),
+    }
+    .lower_expr_with_reference_type(&Expression::FnName(
+      mir::FunctionName::new_for_test(PStr::LOWER_K),
+      FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_32_TYPE) },
+    ));
+  }
+
   #[test]
   fn type_lowering_test() {
     let mut heap = Heap::new();
     let mut type_cx = TypeLoweringContext::new(&mut heap, mir::SymbolTable::new());
 
-    type_cx.lower(&Type::new_fn(vec![INT_32_TYPE, INT_31_TYPE], INT_32_TYPE));
+    type_cx.lower(&lir::Type::new_fn(vec![INT_32_TYPE, INT_31_TYPE], INT_32_TYPE));
   }
 
   #[test]
@@ -459,7 +567,7 @@ mod tests {
       functions: vec![Function {
         name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![heap.alloc_str_for_test("bar")],
-        type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
+        type_: lir::Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![
           Statement::IfElse { condition: ZERO, s1: vec![], s2: vec![], final_assignments: vec![] },
           Statement::IfElse {
@@ -518,14 +626,14 @@ mod tests {
               Expression::StringName(heap.alloc_str_for_test("FOO")),
               Expression::FnName(
                 mir::FunctionName::new_for_test(PStr::MAIN_FN),
-                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                lir::Type::new_fn_unwrapped(vec![], INT_32_TYPE),
               ),
             )],
           },
           Statement::Not { name: heap.alloc_str_for_test("un1"), operand: ZERO },
           Statement::IsPointer {
             name: heap.alloc_str_for_test("un2"),
-            pointer_type: TypeNameId::STR,
+            pointer_type: mir::TypeNameId::STR,
             operand: ZERO,
           },
           Statement::binary(
@@ -573,14 +681,14 @@ mod tests {
           Statement::Call {
             callee: Expression::FnName(
               mir::FunctionName::new_for_test(PStr::MAIN_FN),
-              Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              lir::Type::new_fn_unwrapped(vec![], INT_32_TYPE),
             ),
             arguments: vec![ZERO],
             return_type: INT_32_TYPE,
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(PStr::LOWER_F, Type::new_fn(vec![], INT_32_TYPE)),
+            callee: Expression::Variable(PStr::LOWER_F, lir::Type::new_fn(vec![], INT_32_TYPE)),
             arguments: vec![ZERO],
             return_type: INT_32_TYPE,
             return_collector: Some(heap.alloc_str_for_test("rc")),
@@ -588,17 +696,32 @@ mod tests {
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("v"),
             type_: INT_32_TYPE,
+            pointer_expression: lir::Expression::StringName(heap.alloc_str_for_test("BAR")),
+            index: 3,
+          },
+          Statement::IndexedAccess {
+            name: heap.alloc_str_for_test("v"),
+            type_: INT_32_TYPE,
+            pointer_expression: lir::Expression::Variable(
+              PStr::LOWER_F,
+              lir::Type::Id(mir::TypeNameId::STR),
+            ),
+            index: 3,
+          },
+          Statement::UntypedIndexedAccess {
+            name: heap.alloc_str_for_test("v"),
+            type_: INT_32_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
-          Statement::IndexedAssign {
+          Statement::UntypedIndexedAssign {
             assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test("s"),
-            type_: INT_32_TYPE,
+            type_: lir::Type::Id(mir::TypeNameId::STR),
             expression_list: vec![
               ZERO,
               Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
@@ -676,6 +799,8 @@ mod tests {
   (local.set $bin6 (i32.rem_s (local.get $f) (i32.const 0)))
   (drop (call $__$main (i32.const 0)))
   (local.set $rc (call_indirect $0 (type $__t0) (i32.const 0) (local.get $f)))
+  (local.set $v (struct.get $_Str 3 (i32.const 4112)))
+  (local.set $v (struct.get $_Str 3 (local.get $f)))
   (local.set $v (i32.load offset=12 (i32.const 0)))
   (i32.store offset=12 (i32.const 0) (local.get $v))
   (local.set $s (call $__$malloc (i32.const 8)))

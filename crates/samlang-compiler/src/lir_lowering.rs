@@ -1,9 +1,6 @@
 use super::lir_unused_name_elimination;
 use itertools::Itertools;
-use samlang_ast::{
-  hir, lir,
-  mir::{self, IfElseFinalAssignment},
-};
+use samlang_ast::{hir, lir, mir};
 use samlang_heap::{Heap, PStr};
 use std::collections::{BTreeMap, HashSet};
 
@@ -148,7 +145,7 @@ impl<'a> LoweringManager<'a> {
       mir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         let pointer_expr = lower_expression(pointer_expression);
         let variable_type = lower_type(type_);
-        vec![lir::Statement::IndexedAccess {
+        vec![lir::Statement::UntypedIndexedAccess {
           name,
           type_: variable_type,
           pointer_expression: pointer_expr,
@@ -184,13 +181,13 @@ impl<'a> LoweringManager<'a> {
             let fn_type = self.closure_defs.get(closure_type_name).unwrap();
             let pointer_expr =
               lir::Expression::Variable(closure_var_name, lower_type(closure_hir_type));
-            statements.push(lir::Statement::IndexedAccess {
+            statements.push(lir::Statement::UntypedIndexedAccess {
               name: temp_fn,
               type_: lir::Type::Fn(fn_type.clone()),
               pointer_expression: pointer_expr.clone(),
               index: 1,
             });
-            statements.push(lir::Statement::IndexedAccess {
+            statements.push(lir::Statement::UntypedIndexedAccess {
               name: temp_cx,
               type_: lir::ANY_POINTER_TYPE,
               pointer_expression: pointer_expr,
@@ -218,7 +215,7 @@ impl<'a> LoweringManager<'a> {
       mir::Statement::IfElse { condition, s1, s2, final_assignments } => {
         let final_assignments = final_assignments
           .into_iter()
-          .map(|IfElseFinalAssignment { name, type_, e1, e2 }| {
+          .map(|mir::IfElseFinalAssignment { name, type_, e1, e2 }| {
             (name, lower_type(type_), lower_expression(e1), lower_expression(e2))
           })
           .collect_vec();
@@ -420,7 +417,7 @@ fn generate_inc_ref_fn() -> lir::Function {
         condition: lir::Expression::Variable(not_ptr, lir::INT_32_TYPE),
         invert_condition: true,
         statements: vec![
-          lir::Statement::IndexedAccess {
+          lir::Statement::UntypedIndexedAccess {
             name: header,
             type_: lir::INT_32_TYPE,
             pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
@@ -466,7 +463,7 @@ fn generate_inc_ref_fn() -> lir::Function {
                 lir::Expression::Variable(upper, lir::INT_32_TYPE),
                 lir::Expression::Variable(lower, lir::INT_32_TYPE),
               ),
-              lir::Statement::IndexedAssign {
+              lir::Statement::UntypedIndexedAssign {
                 assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
                 pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
                 index: 0,
@@ -526,7 +523,7 @@ fn generate_dec_ref_fn() -> lir::Function {
         condition: lir::Expression::Variable(not_ptr, lir::INT_32_TYPE),
         invert_condition: true,
         statements: vec![
-          lir::Statement::IndexedAccess {
+          lir::Statement::UntypedIndexedAccess {
             name: header,
             type_: lir::INT_32_TYPE,
             pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
@@ -563,7 +560,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                     lir::Expression::Variable(header, lir::INT_32_TYPE),
                     lir::Expression::int32(1),
                   ),
-                  lir::Statement::IndexedAssign {
+                  lir::Statement::UntypedIndexedAssign {
                     assigned_expression: lir::Expression::Variable(new_header, lir::INT_32_TYPE),
                     pointer_expression: lir::Expression::Variable(ptr, lir::ANY_POINTER_TYPE),
                     index: 0,
