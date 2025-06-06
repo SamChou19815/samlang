@@ -301,16 +301,12 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
 
   let concat = string_builder.split('\n').map(|line| line.trim_end()).join("\n");
   let post_processed = concat.trim_end();
-  if post_processed.is_empty() {
-    post_processed.to_string()
-  } else {
-    format!("{post_processed}\n")
-  }
+  if post_processed.is_empty() { post_processed.to_string() } else { format!("{post_processed}\n") }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::{pretty_print, Document};
+  use super::{Document, pretty_print};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use std::rc::Rc;

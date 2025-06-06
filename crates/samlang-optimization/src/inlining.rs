@@ -4,7 +4,7 @@ use samlang_ast::{
   hir::BinaryOperator,
   mir::{
     Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression,
-    GenenalLoopVariable, IfElseFinalAssignment, Statement, Type, VariableName, INT_32_TYPE, ZERO,
+    GenenalLoopVariable, INT_32_TYPE, IfElseFinalAssignment, Statement, Type, VariableName, ZERO,
   },
 };
 use samlang_heap::{Heap, PStr};
@@ -86,8 +86,8 @@ mod estimator {
     use samlang_ast::{
       hir::BinaryOperator,
       mir::{
-        Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-        IfElseFinalAssignment, Statement, SymbolTable, Type, INT_32_TYPE, ZERO,
+        Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, INT_32_TYPE,
+        IfElseFinalAssignment, Statement, SymbolTable, Type, ZERO,
       },
     };
     use samlang_heap::PStr;
@@ -186,11 +186,7 @@ fn inline_rewrite_variable(
 }
 
 fn inline_rewrite_expr(expr: &Expression, cx: &mut LocalValueContextForOptimization) -> Expression {
-  if let Expression::Variable(v) = expr {
-    inline_rewrite_variable(v, cx)
-  } else {
-    *expr
-  }
+  if let Expression::Variable(v) = expr { inline_rewrite_variable(v, cx) } else { *expr }
 }
 
 fn inline_rewrite_expressions(

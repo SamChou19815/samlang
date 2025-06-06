@@ -1,6 +1,6 @@
 use samlang_ast::{
-  source::{annotation, expr, pattern, Module, Toplevel},
   Location, Position, Reason,
+  source::{Module, Toplevel, annotation, expr, pattern},
 };
 use samlang_checker::type_::{FunctionType, NominalType, Type};
 use samlang_heap::{ModuleReference, PStr};
@@ -93,11 +93,7 @@ fn search_optional_id_annotation(
   id_annot_opt: Option<&annotation::Id>,
   position: Position,
 ) -> Option<LocationCoverSearchResult> {
-  if let Some(id_annot) = id_annot_opt {
-    search_id_annotation(id_annot, position)
-  } else {
-    None
-  }
+  if let Some(id_annot) = id_annot_opt { search_id_annotation(id_annot, position) } else { None }
 }
 
 fn search_annotation(
@@ -127,11 +123,7 @@ fn search_optional_annotation(
   annotation_opt: Option<&annotation::T>,
   position: Position,
 ) -> Option<LocationCoverSearchResult> {
-  if let Some(annot) = annotation_opt {
-    search_annotation(annot, position)
-  } else {
-    None
-  }
+  if let Some(annot) = annotation_opt { search_annotation(annot, position) } else { None }
 }
 
 fn search_if_else(
@@ -386,8 +378,8 @@ pub(super) fn search_module_locally(
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    source::{expr, Id, NO_COMMENT_REFERENCE},
     Location, Position, Reason,
+    source::{Id, NO_COMMENT_REFERENCE, expr},
   };
   use samlang_heap::{Heap, ModuleReference};
   use std::rc::Rc;
@@ -395,37 +387,39 @@ mod tests {
   #[test]
   fn method_search_coverage_test() {
     let heap = &mut Heap::new();
-    assert!(super::search_expression(
-      &expr::E::MethodAccess(expr::MethodAccess {
-        common: expr::ExpressionCommon {
-          loc: Location::dummy(),
-          associated_comments: NO_COMMENT_REFERENCE,
-          type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
-        },
-        explicit_type_arguments: None,
-        inferred_type_arguments: vec![],
-        object: Box::new(expr::E::LocalId(
-          expr::ExpressionCommon {
+    assert!(
+      super::search_expression(
+        &expr::E::MethodAccess(expr::MethodAccess {
+          common: expr::ExpressionCommon {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
             type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
           },
-          Id::from(heap.alloc_str_for_test("id")),
-        )),
-        method_name: Id {
-          loc: Location {
-            module_reference: ModuleReference::DUMMY,
-            start: Position(10, 10),
-            end: Position(10, 20),
+          explicit_type_arguments: None,
+          inferred_type_arguments: vec![],
+          object: Box::new(expr::E::LocalId(
+            expr::ExpressionCommon {
+              loc: Location::dummy(),
+              associated_comments: NO_COMMENT_REFERENCE,
+              type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
+            },
+            Id::from(heap.alloc_str_for_test("id")),
+          )),
+          method_name: Id {
+            loc: Location {
+              module_reference: ModuleReference::DUMMY,
+              start: Position(10, 10),
+              end: Position(10, 20),
+            },
+            associated_comments: NO_COMMENT_REFERENCE,
+            name: heap.alloc_str_for_test("meth")
           },
-          associated_comments: NO_COMMENT_REFERENCE,
-          name: heap.alloc_str_for_test("meth")
-        },
-      }),
-      Position(10, 15),
-      false,
-    )
-    .is_none());
+        }),
+        Position(10, 15),
+        false,
+      )
+      .is_none()
+    );
   }
 
   #[test]

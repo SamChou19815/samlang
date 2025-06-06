@@ -229,8 +229,8 @@ mod tests {
   use samlang_ast::{
     hir,
     lir::{
-      Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
-      INT_32_TYPE, ZERO,
+      Expression, Function, GenenalLoopVariable, INT_32_TYPE, Sources, Statement, Type,
+      TypeDefinition, ZERO,
     },
     mir::{FunctionName, SymbolTable},
   };

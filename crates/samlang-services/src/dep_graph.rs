@@ -128,7 +128,13 @@ mod tests {
     assert_eq!("ModuleReference(4)", format!("{mod_ref_b:?}"));
     assert_eq!("ModuleReference(5)", format!("{mod_ref_c:?}"));
     assert_eq!("ModuleReference(6)", format!("{mod_ref_d:?}"));
-    assert_eq!("{ModuleReference(3): {}, ModuleReference(4): {ModuleReference(3)}, ModuleReference(5): {ModuleReference(4)}, ModuleReference(6): {ModuleReference(3), ModuleReference(4), ModuleReference(5)}}", format!("{forward:?}"));
-    assert_eq!("{ModuleReference(3): {ModuleReference(4), ModuleReference(6)}, ModuleReference(4): {ModuleReference(5), ModuleReference(6)}, ModuleReference(5): {ModuleReference(6)}}", format!("{reverse:?}"));
+    assert_eq!(
+      "{ModuleReference(3): {}, ModuleReference(4): {ModuleReference(3)}, ModuleReference(5): {ModuleReference(4)}, ModuleReference(6): {ModuleReference(3), ModuleReference(4), ModuleReference(5)}}",
+      format!("{forward:?}")
+    );
+    assert_eq!(
+      "{ModuleReference(3): {ModuleReference(4), ModuleReference(6)}, ModuleReference(4): {ModuleReference(5), ModuleReference(6)}, ModuleReference(5): {ModuleReference(6)}}",
+      format!("{reverse:?}")
+    );
   }
 }

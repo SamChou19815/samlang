@@ -6,8 +6,8 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      IfElseFinalAssignment, Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE,
-      ONE, ZERO,
+      INT_32_TYPE, IfElseFinalAssignment, ONE, Statement, SymbolTable, Type, TypeNameId,
+      VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};

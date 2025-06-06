@@ -97,17 +97,19 @@ mod tests {
 
   #[test]
   fn parser_recognization_tests() {
-    assert!(!format!(
-      "{:?}",
-      ProjectConfiguration {
-        source_directory: "".to_string(),
-        output_directory: "out".to_string(),
-        entry_points: vec![],
-        ignores: vec![],
-        dangerously_allow_libdef_shadowing: false,
-      }
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?}",
+        ProjectConfiguration {
+          source_directory: "".to_string(),
+          output_directory: "out".to_string(),
+          entry_points: vec![],
+          ignores: vec![],
+          dangerously_allow_libdef_shadowing: false,
+        }
+      )
+      .is_empty()
+    );
     assert_eq!(
       ProjectConfiguration {
         source_directory: ".".to_string(),

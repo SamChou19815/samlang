@@ -1,9 +1,9 @@
 use super::prettier::Document;
 use itertools::Itertools;
 use samlang_ast::source::{
-  annotation, expr, pattern, ClassDefinition, ClassMemberDeclaration, CommentKind,
-  CommentReference, CommentStore, ExtendsOrImplementsNodes, Id, InterfaceDeclaration, Literal,
-  Module, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
+  ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore,
+  ExtendsOrImplementsNodes, Id, InterfaceDeclaration, Literal, Module, NO_COMMENT_REFERENCE,
+  Toplevel, TypeDefinition, annotation, expr, pattern,
 };
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
@@ -909,11 +909,7 @@ fn type_parameters_to_doc(
         )
       },
     ));
-    if extra_space {
-      Document::Concat(Rc::new(doc), Rc::new(Document::Text(" ")))
-    } else {
-      doc
-    }
+    if extra_space { Document::Concat(Rc::new(doc), Rc::new(Document::Text(" "))) } else { doc }
   } else {
     Document::Nil
   }
@@ -1308,8 +1304,8 @@ mod tests {
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    source::{expr, test_builder, CommentStore, Id},
     Location,
+    source::{CommentStore, Id, expr, test_builder},
   };
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference};
@@ -1687,7 +1683,8 @@ ClassName /* b */ /* c */.classMember<
       };
     };
   };
-}"#);
+}"#,
+    );
     assert_reprint_expr(
       "() -> () -> () -> { let a: unit = { let b: unit = { let c: unit = { let d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong; }; }; }; }",
       r#"() -> () -> () -> {
@@ -1698,7 +1695,8 @@ ClassName /* b */ /* c */.classMember<
       };
     };
   };
-}"#);
+}"#,
+    );
   }
 
   #[test]

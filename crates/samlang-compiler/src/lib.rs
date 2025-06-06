@@ -170,22 +170,25 @@ class HelloWorld {
         .unwrap()
     );
 
-    assert!(super::compile_sources(
-      heap,
-      std::collections::HashMap::from([(
-        mod_ref_demo,
-        "class Main { function main(): Str = 42 + \"\" }".to_string()
-      )]),
-      vec![mod_ref_demo],
-      false,
-    )
-    .is_err());
+    assert!(
+      super::compile_sources(
+        heap,
+        std::collections::HashMap::from([(
+          mod_ref_demo,
+          "class Main { function main(): Str = 42 + \"\" }".to_string()
+        )]),
+        vec![mod_ref_demo],
+        false,
+      )
+      .is_err()
+    );
 
-    assert!(super::compile_sources(
-      heap,
-      std::collections::HashMap::from([(
-        mod_ref_demo,
-        r#"
+    assert!(
+      super::compile_sources(
+        heap,
+        std::collections::HashMap::from([(
+          mod_ref_demo,
+          r#"
 class Foo(val a: int) {}
 
 class Option<T>(None, Some(T)) {}
@@ -250,11 +253,12 @@ class Main {
   }
 }
 "#
-        .to_string()
-      )]),
-      vec![mod_ref_demo],
-      false,
-    )
-    .is_ok());
+          .to_string()
+        )]),
+        vec![mod_ref_demo],
+        false,
+      )
+      .is_ok()
+    );
   }
 }

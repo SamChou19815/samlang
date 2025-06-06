@@ -1,11 +1,11 @@
 use samlang_ast::{
-  source::{
-    expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
-    InterfaceMembersCommon, Module, OptionallyAnnotatedId, Toplevel,
-  },
   Location,
+  source::{
+    AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
+    InterfaceMembersCommon, Module, OptionallyAnnotatedId, Toplevel, expr, pattern,
+  },
 };
-use samlang_checker::{perform_ssa_analysis_on_module, SsaAnalysisResult};
+use samlang_checker::{SsaAnalysisResult, perform_ssa_analysis_on_module};
 use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 
@@ -69,11 +69,7 @@ fn mod_id(id: &Id, new_name: PStr) -> Id {
 }
 
 fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) -> Id {
-  if id.loc.eq(&definition_and_uses.definition_location) {
-    mod_id(id, new_name)
-  } else {
-    *id
-  }
+  if id.loc.eq(&definition_and_uses.definition_location) { mod_id(id, new_name) } else { *id }
 }
 
 fn apply_tuple_pattern_renaming(
@@ -439,11 +435,11 @@ pub(super) fn apply_renaming(
 
 #[cfg(test)]
 mod tests {
-  use super::{apply_expr_renaming, apply_renaming, DefinitionAndUses, VariableDefinitionLookup};
+  use super::{DefinitionAndUses, VariableDefinitionLookup, apply_expr_renaming, apply_renaming};
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    source::{expr, Id, Literal, Module},
     Location, Position,
+    source::{Id, Literal, Module, expr},
   };
   use samlang_heap::{Heap, ModuleReference, PStr};
 
@@ -763,20 +759,24 @@ class Main {
 }"#;
     let (_, lookup) = prepare_lookup(source);
 
-    assert!(lookup
-      .find_all_definition_and_uses(&Location {
-        module_reference: ModuleReference::ROOT,
-        start: Position(0, 0),
-        end: Position(0, 0)
-      })
-      .is_none());
-    assert!(lookup
-      .find_all_definition_and_uses(&Location {
-        module_reference: ModuleReference::DUMMY,
-        start: Position(0, 0),
-        end: Position(0, 0)
-      })
-      .is_none());
+    assert!(
+      lookup
+        .find_all_definition_and_uses(&Location {
+          module_reference: ModuleReference::ROOT,
+          start: Position(0, 0),
+          end: Position(0, 0)
+        })
+        .is_none()
+    );
+    assert!(
+      lookup
+        .find_all_definition_and_uses(&Location {
+          module_reference: ModuleReference::DUMMY,
+          start: Position(0, 0),
+          end: Position(0, 0)
+        })
+        .is_none()
+    );
 
     assert_correctly_rewritten(
       source,

@@ -14,22 +14,24 @@ mod tests {
     Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]).is_int32();
     assert!(INT_TYPE.is_int32());
     assert!(INT_TYPE.as_id().is_none());
-    assert!(!format!(
-      "{:?}{:?}{:?}",
-      Expression::var_name(
-        PStr::LOWER_A,
-        Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
-      ),
-      Expression::var_name(
-        PStr::LOWER_A,
-        Type::new_id(
-          PStr::UPPER_A,
-          vec![INT_TYPE, INT31_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]
-        )
-      ),
-      TypeName::new_for_test(PStr::UPPER_A)
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?}{:?}{:?}",
+        Expression::var_name(
+          PStr::LOWER_A,
+          Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
+        ),
+        Expression::var_name(
+          PStr::LOWER_A,
+          Type::new_id(
+            PStr::UPPER_A,
+            vec![INT_TYPE, INT31_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]
+          )
+        ),
+        TypeName::new_for_test(PStr::UPPER_A)
+      )
+      .is_empty()
+    );
     assert!(TypeName::new_for_test(PStr::UPPER_A) <= TypeName::new_for_test(PStr::UPPER_A));
     assert_eq!(
       TypeName::new_for_test(PStr::UPPER_A).cmp(&TypeName::new_for_test(PStr::UPPER_A)),
@@ -59,18 +61,20 @@ mod tests {
       std::cmp::Ordering::Equal
     );
     assert!(BinaryOperator::MINUS <= BinaryOperator::GE);
-    assert!(!format!(
-      "{:?}{:?}{:?}{:?}{:?}{:?}{:?}{:?}",
-      Expression::StringName(PStr::LOWER_A),
-      BinaryOperator::GE,
-      BinaryOperator::MINUS.partial_cmp(&BinaryOperator::GE),
-      BinaryOperator::MINUS.cmp(&BinaryOperator::GE),
-      ZERO.type_(),
-      Expression::Int31Zero.type_(),
-      Expression::StringName(PStr::LOWER_A).type_().as_id(),
-      Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?}{:?}{:?}{:?}{:?}{:?}{:?}{:?}",
+        Expression::StringName(PStr::LOWER_A),
+        BinaryOperator::GE,
+        BinaryOperator::MINUS.partial_cmp(&BinaryOperator::GE),
+        BinaryOperator::MINUS.cmp(&BinaryOperator::GE),
+        ZERO.type_(),
+        Expression::Int31Zero.type_(),
+        Expression::StringName(PStr::LOWER_A).type_().as_id(),
+        Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+      )
+      .is_empty()
+    );
     assert!(Expression::StringName(PStr::LOWER_A).type_().as_id().is_some());
     assert_eq!(
       "(s: int)",
@@ -104,16 +108,18 @@ mod tests {
         Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
       )
     );
-    assert!(Type::new_id_no_targs_unwrapped(PStr::UPPER_B)
-      .cmp(&Type::new_id_no_targs_unwrapped(PStr::UPPER_B))
-      .is_eq());
+    assert!(
+      Type::new_id_no_targs_unwrapped(PStr::UPPER_B)
+        .cmp(&Type::new_id_no_targs_unwrapped(PStr::UPPER_B))
+        .is_eq()
+    );
     assert!(
       Type::new_id_no_targs_unwrapped(PStr::UPPER_B)
         <= Type::new_id_no_targs_unwrapped(PStr::UPPER_B)
     );
-    assert!(Type::new_id_no_targs(PStr::UPPER_B)
-      .cmp(&Type::new_id_no_targs(PStr::UPPER_B))
-      .is_eq());
+    assert!(
+      Type::new_id_no_targs(PStr::UPPER_B).cmp(&Type::new_id_no_targs(PStr::UPPER_B)).is_eq()
+    );
     assert!(
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
         == FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
@@ -122,21 +128,27 @@ mod tests {
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
         <= FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
     );
-    assert!(FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
-      .cmp(&FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) })
-      .is_eq());
+    assert!(
+      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+        .cmp(&FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) })
+        .is_eq()
+    );
     assert!(INT_TYPE <= INT_TYPE);
     assert!(INT_TYPE.cmp(&INT_TYPE).eq(&std::cmp::Ordering::Equal));
-    assert!(Expression::var_name(
-      PStr::LOWER_A,
+    assert!(
+      Expression::var_name(
+        PStr::LOWER_A,
+        Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
+      )
+      .eq(&Expression::var_name(
+        PStr::LOWER_A,
+        Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
+      ))
+    );
+    assert!(
       Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
-    )
-    .eq(&Expression::var_name(
-      PStr::LOWER_A,
-      Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
-    )));
-    assert!(Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])
-      .eq(&(Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)]))));
+        .eq(&(Type::new_id(PStr::UPPER_A, vec![INT_TYPE, Type::new_id_no_targs(PStr::UPPER_B)])))
+    );
     let mut hasher = DefaultHasher::new();
     BinaryOperator::DIV.hash(&mut hasher);
     Callee::FunctionName(FunctionNameExpression::new(
@@ -460,42 +472,51 @@ if 0 {
 
     let sources1 = Sources {
       global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez"))],
-      closure_types: vec![ClosureTypeDefinition {
-        name: TypeName { module_reference: None, type_name: PStr::UPPER_C },
-        type_parameters: vec![],
-        function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
-      }
-      .clone()],
-      type_definitions: vec![TypeDefinition {
-        name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
-        type_parameters: vec![],
-        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
-      }
-      .clone()],
+      closure_types: vec![
+        ClosureTypeDefinition {
+          name: TypeName { module_reference: None, type_name: PStr::UPPER_C },
+          type_parameters: vec![],
+          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        }
+        .clone(),
+      ],
+      type_definitions: vec![
+        TypeDefinition {
+          name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
+          type_parameters: vec![],
+          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
+        }
+        .clone(),
+      ],
       main_function_names: vec![FunctionName {
         type_name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
         fn_name: heap.alloc_str_for_test("ddd"),
       }],
-      functions: vec![Function {
-        name: FunctionName {
-          type_name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
-          fn_name: heap.alloc_str_for_test("Bar"),
-        },
-        parameters: vec![PStr::LOWER_F],
-        type_parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-        body: vec![Statement::IndexedAccess {
-          name: PStr::LOWER_F,
-          type_: INT_TYPE,
-          pointer_expression: Expression::var_name(
-            heap.alloc_str_for_test("big"),
-            Type::new_id_no_targs(heap.alloc_str_for_test("FooBar")),
-          ),
-          index: 0,
-        }],
-        return_value: ZERO,
-      }
-      .clone()],
+      functions: vec![
+        Function {
+          name: FunctionName {
+            type_name: TypeName {
+              module_reference: None,
+              type_name: heap.alloc_str_for_test("Foo"),
+            },
+            fn_name: heap.alloc_str_for_test("Bar"),
+          },
+          parameters: vec![PStr::LOWER_F],
+          type_parameters: vec![],
+          type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+          body: vec![Statement::IndexedAccess {
+            name: PStr::LOWER_F,
+            type_: INT_TYPE,
+            pointer_expression: Expression::var_name(
+              heap.alloc_str_for_test("big"),
+              Type::new_id_no_targs(heap.alloc_str_for_test("FooBar")),
+            ),
+            index: 0,
+          }],
+          return_value: ZERO,
+        }
+        .clone(),
+      ],
     };
     assert!(!format!("{sources1:?}").is_empty());
     let expected1 = r#"const GLOBAL_STRING_0 = 'dev_meggo_vibez';

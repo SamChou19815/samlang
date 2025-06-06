@@ -2,19 +2,20 @@
 mod tests {
   use super::super::{
     main_checker::type_check_expression_for_tests,
-    ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
+    ssa_analysis::{SsaAnalysisResult, perform_ssa_analysis_on_expression},
     type_::{
-      create_builtin_module_signature, test_type_builder, EnumVariantDefinitionSignature,
-      FunctionType, GlobalSignature, InterfaceSignature, MemberSignature, ModuleSignature,
-      StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
+      EnumVariantDefinitionSignature, FunctionType, GlobalSignature, InterfaceSignature,
+      MemberSignature, ModuleSignature, StructItemDefinitionSignature, Type,
+      TypeDefinitionSignature, TypeParameterSignature, create_builtin_module_signature,
+      test_type_builder,
     },
     type_check_sources, type_system,
     typing_context::{LocalTypingContext, TypingContext},
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    source::{expr, Id, Literal, NO_COMMENT_REFERENCE},
     Location, Reason,
+    source::{Id, Literal, NO_COMMENT_REFERENCE, expr},
   };
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference, PStr};

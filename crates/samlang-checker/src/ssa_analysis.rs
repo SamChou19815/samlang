@@ -1,9 +1,9 @@
 use samlang_ast::{
-  source::{
-    annotation, expr, pattern, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
-    TypeDefinition,
-  },
   Location,
+  source::{
+    ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition, annotation,
+    expr, pattern,
+  },
 };
 use samlang_errors::ErrorSet;
 use samlang_heap::{ModuleReference, PStr};
@@ -471,7 +471,7 @@ impl SsaAnalysisResult {
         .iter()
         .map(|(k, v)| {
           let names = v.keys().sorted().map(|s| s.as_str(heap)).join(", ");
-          format!("{}: [{}]", k.pretty_print_without_file(),names)
+          format!("{}: [{}]", k.pretty_print_without_file(), names)
         })
         .sorted()
         .join("\n"),

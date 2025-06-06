@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use samlang_ast::{
-  source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
   Location,
+  source::{CommentStore, Module, ModuleMembersImport, Toplevel, annotation, expr},
 };
 use samlang_heap::{Heap, ModuleReference};
 use std::{
@@ -431,7 +431,7 @@ mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_ast::source::{
-    test_builder, Id, InterfaceDeclarationCommon, InterfaceMembersCommon, NO_COMMENT_REFERENCE,
+    Id, InterfaceDeclarationCommon, InterfaceMembersCommon, NO_COMMENT_REFERENCE, test_builder,
   };
   use samlang_errors::ErrorSet;
   use samlang_heap::PStr;
@@ -589,11 +589,10 @@ mod tests {
       produce_module_diff("/* A */ class A {}", "/* B */ class A {}")
     );
 
-    assert!(produce_module_diff(
-      "import {Foo} from Bar\nclass A{}",
-      "import {Foo} from Bar\nclass A{}"
-    )
-    .is_empty());
+    assert!(
+      produce_module_diff("import {Foo} from Bar\nclass A{}", "import {Foo} from Bar\nclass A{}")
+        .is_empty()
+    );
     assert_eq!(
       vec![("1:1-1:1".to_string(), "import { Foo } from Bar;".to_string())],
       produce_module_diff("", "import {Foo} from Bar")

@@ -23,7 +23,7 @@ fn assignability_check_visit(lower: &Type, upper: &Type, error_stack: &mut Stack
   match (lower, upper) {
     (Type::Any(_, _), _) | (_, Type::Any(_, _)) => return true,
     (Type::Primitive(_, lower_p), Type::Primitive(_, upper_p)) if lower_p == upper_p => {
-      return true
+      return true;
     }
     (Type::Generic(_, lower_n), Type::Generic(_, upper_n)) if lower_n == upper_n => return true,
     (Type::Nominal(lower_n), Type::Nominal(upper_n))
@@ -93,7 +93,7 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
   match (lower, upper) {
     (specific, Type::Any(_, _)) => return Some(specific.clone()),
     (Type::Primitive(lower_r, lower_p), Type::Primitive(_, upper_p)) if lower_p == upper_p => {
-      return Some(Type::Primitive(*lower_r, *lower_p))
+      return Some(Type::Primitive(*lower_r, *lower_p));
     }
     (Type::Generic(lower_r, lower_n), Type::Generic(_, upper_n)) if lower_n == upper_n => {
       return Some(Type::Generic(*lower_r, *lower_n));
@@ -320,7 +320,7 @@ pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type
 #[cfg(test)]
 mod tests {
   use super::super::type_::ISourceType;
-  use super::super::type_::{test_type_builder, Type, TypeParameterSignature};
+  use super::super::type_::{Type, TypeParameterSignature, test_type_builder};
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Reason};
   use samlang_errors::ErrorSet;
@@ -404,17 +404,15 @@ mod tests {
     assert_successful_meet(&builder.int_type(), &builder.int_type(), heap, "int");
     assert_successful_meet(
       &builder.fun_type(
-        vec![builder.general_nominal_type(
-          PStr::UPPER_A,
-          vec![builder.generic_type(PStr::UPPER_B)],
-        )],
+        vec![
+          builder.general_nominal_type(PStr::UPPER_A, vec![builder.generic_type(PStr::UPPER_B)]),
+        ],
         builder.bool_type(),
       ),
       &builder.fun_type(
-        vec![builder.general_nominal_type(
-          PStr::UPPER_A,
-          vec![builder.generic_type(PStr::UPPER_B)],
-        )],
+        vec![
+          builder.general_nominal_type(PStr::UPPER_A, vec![builder.generic_type(PStr::UPPER_B)]),
+        ],
         builder.bool_type(),
       ),
       heap,
@@ -423,10 +421,9 @@ mod tests {
 
     assert_failed_meet(
       &builder.fun_type(
-        vec![builder.general_nominal_type(
-          PStr::UPPER_A,
-          vec![builder.generic_type(PStr::UPPER_B)],
-        )],
+        vec![
+          builder.general_nominal_type(PStr::UPPER_A, vec![builder.generic_type(PStr::UPPER_B)]),
+        ],
         builder.bool_type(),
       ),
       &builder.fun_type(

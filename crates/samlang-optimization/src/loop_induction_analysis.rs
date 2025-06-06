@@ -675,7 +675,7 @@ mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_ast::mir::{
-    Callee, FunctionName, FunctionNameExpression, SymbolTable, INT_32_TYPE, ONE, ZERO,
+    Callee, FunctionName, FunctionNameExpression, INT_32_TYPE, ONE, SymbolTable, ZERO,
   };
 
   #[test]
@@ -755,39 +755,43 @@ mod tests {
       .to_expression()
       .debug_print(heap, table)
     );
-    assert!(merge_invariant_multiplication_for_loop_optimization(
-      &PotentialLoopInvariantExpression::Var(VariableName::new(
-        heap.alloc_str_for_test("v"),
-        INT_32_TYPE
-      )),
-      &PotentialLoopInvariantExpression::Var(VariableName::new(
-        heap.alloc_str_for_test("v"),
-        INT_32_TYPE
-      )),
-    )
-    .is_none());
+    assert!(
+      merge_invariant_multiplication_for_loop_optimization(
+        &PotentialLoopInvariantExpression::Var(VariableName::new(
+          heap.alloc_str_for_test("v"),
+          INT_32_TYPE
+        )),
+        &PotentialLoopInvariantExpression::Var(VariableName::new(
+          heap.alloc_str_for_test("v"),
+          INT_32_TYPE
+        )),
+      )
+      .is_none()
+    );
   }
 
   #[test]
   fn merge_variable_addition_into_derived_induction_variable_test() {
     let heap = &mut samlang_heap::Heap::new();
 
-    assert!(merge_variable_addition_into_derived_induction_variable(
-      &DerivedInductionVariable {
-        base_name: PStr::LOWER_A,
-        multiplier: PotentialLoopInvariantExpression::Int(1),
-        immediate: PotentialLoopInvariantExpression::Int(1),
-      },
-      &DerivedInductionVariable {
-        base_name: PStr::LOWER_A,
-        multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-          heap.alloc_str_for_test("vv"),
-          INT_32_TYPE
-        )),
-        immediate: PotentialLoopInvariantExpression::Int(1),
-      }
-    )
-    .is_none());
+    assert!(
+      merge_variable_addition_into_derived_induction_variable(
+        &DerivedInductionVariable {
+          base_name: PStr::LOWER_A,
+          multiplier: PotentialLoopInvariantExpression::Int(1),
+          immediate: PotentialLoopInvariantExpression::Int(1),
+        },
+        &DerivedInductionVariable {
+          base_name: PStr::LOWER_A,
+          multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
+            heap.alloc_str_for_test("vv"),
+            INT_32_TYPE
+          )),
+          immediate: PotentialLoopInvariantExpression::Int(1),
+        }
+      )
+      .is_none()
+    );
 
     let successful = merge_variable_addition_into_derived_induction_variable(
       &DerivedInductionVariable {
@@ -811,66 +815,70 @@ mod tests {
     let heap = &mut samlang_heap::Heap::new();
     let table = &mut SymbolTable::new();
 
-    assert!(extract_basic_induction_variables(
-      &PStr::LOWER_I,
-      &vec![
-        GenenalLoopVariable {
-          name: PStr::LOWER_I,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: ZERO
-        },
-        GenenalLoopVariable {
-          name: PStr::LOWER_J,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: ZERO
-        },
-      ],
-      &[],
-      &HashSet::new()
-    )
-    .is_none());
+    assert!(
+      extract_basic_induction_variables(
+        &PStr::LOWER_I,
+        &vec![
+          GenenalLoopVariable {
+            name: PStr::LOWER_I,
+            type_: INT_32_TYPE,
+            initial_value: ZERO,
+            loop_value: ZERO
+          },
+          GenenalLoopVariable {
+            name: PStr::LOWER_J,
+            type_: INT_32_TYPE,
+            initial_value: ZERO,
+            loop_value: ZERO
+          },
+        ],
+        &[],
+        &HashSet::new()
+      )
+      .is_none()
+    );
 
-    assert!(extract_basic_induction_variables(
-      &PStr::LOWER_I,
-      &vec![
-        GenenalLoopVariable {
-          name: PStr::LOWER_I,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-        },
-        GenenalLoopVariable {
-          name: PStr::LOWER_J,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
-        },
-      ],
-      &[
-        Statement::binary(
+    assert!(
+      extract_basic_induction_variables(
+        &PStr::LOWER_I,
+        &vec![
+          GenenalLoopVariable {
+            name: PStr::LOWER_I,
+            type_: INT_32_TYPE,
+            initial_value: ZERO,
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
+          },
+          GenenalLoopVariable {
+            name: PStr::LOWER_J,
+            type_: INT_32_TYPE,
+            initial_value: ZERO,
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
+          },
+        ],
+        &[
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_i"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            Expression::StringName(PStr::LOWER_A)
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_j"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
+            Expression::StringName(PStr::LOWER_A),
+          )
+        ],
+        &HashSet::from([
+          PStr::LOWER_A,
+          PStr::LOWER_I,
+          PStr::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          Expression::StringName(PStr::LOWER_A)
-        ),
-        Statement::binary(
-          heap.alloc_str_for_test("tmp_j"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-          Expression::StringName(PStr::LOWER_A),
-        )
-      ],
-      &HashSet::from([
-        PStr::LOWER_A,
-        PStr::LOWER_I,
-        PStr::LOWER_J,
-        heap.alloc_str_for_test("tmp_i"),
-        heap.alloc_str_for_test("tmp_j")
-      ]),
-    )
-    .is_none());
+          heap.alloc_str_for_test("tmp_j")
+        ]),
+      )
+      .is_none()
+    );
 
     let ExtractedBasicInductionVariables {
       loop_variables_that_are_not_basic_induction_variables,
@@ -1051,67 +1059,71 @@ mod tests {
       .collect_vec()
     );
 
-    assert!(extract_derived_induction_variables(
-      &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: PStr::LOWER_I,
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Int(1),
-        loop_value_collector: heap.alloc_str_for_test("tmp_i"),
-      }],
-      &[
-        Statement::binary(
+    assert!(
+      extract_derived_induction_variables(
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
+          name: PStr::LOWER_I,
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Int(1),
+          loop_value_collector: heap.alloc_str_for_test("tmp_i"),
+        }],
+        &[
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_i"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            ONE
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_j"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("outside"), INT_32_TYPE),
+          )
+        ],
+        &HashSet::from([
+          PStr::LOWER_A,
+          PStr::LOWER_I,
+          PStr::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          ONE
-        ),
-        Statement::binary(
-          heap.alloc_str_for_test("tmp_j"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-          Expression::var_name(heap.alloc_str_for_test("outside"), INT_32_TYPE),
-        )
-      ],
-      &HashSet::from([
-        PStr::LOWER_A,
-        PStr::LOWER_I,
-        PStr::LOWER_J,
-        heap.alloc_str_for_test("tmp_i"),
-        heap.alloc_str_for_test("tmp_j")
-      ]),
-    )
-    .is_empty());
+          heap.alloc_str_for_test("tmp_j")
+        ]),
+      )
+      .is_empty()
+    );
 
-    assert!(extract_derived_induction_variables(
-      &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: PStr::LOWER_I,
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Int(1),
-        loop_value_collector: heap.alloc_str_for_test("tmp_i"),
-      }],
-      &[
-        Statement::binary(
+    assert!(
+      extract_derived_induction_variables(
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
+          name: PStr::LOWER_I,
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Int(1),
+          loop_value_collector: heap.alloc_str_for_test("tmp_i"),
+        }],
+        &[
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_i"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            ONE
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_j"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
+            Expression::StringName(heap.alloc_str_for_test("outside")),
+          )
+        ],
+        &HashSet::from([
+          PStr::LOWER_A,
+          PStr::LOWER_I,
+          PStr::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          ONE
-        ),
-        Statement::binary(
-          heap.alloc_str_for_test("tmp_j"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-          Expression::StringName(heap.alloc_str_for_test("outside")),
-        )
-      ],
-      &HashSet::from([
-        PStr::LOWER_A,
-        PStr::LOWER_I,
-        PStr::LOWER_J,
-        heap.alloc_str_for_test("tmp_i"),
-        heap.alloc_str_for_test("tmp_j")
-      ]),
-    )
-    .is_empty());
+          heap.alloc_str_for_test("tmp_j")
+        ]),
+      )
+      .is_empty()
+    );
 
     assert_eq!(
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
@@ -1224,39 +1236,41 @@ mod tests {
       .collect_vec()
     );
 
-    assert!(extract_derived_induction_variables(
-      &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: PStr::LOWER_I,
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-          heap.alloc_str_for_test("outside"),
-          INT_32_TYPE
-        )),
-        loop_value_collector: heap.alloc_str_for_test("tmp_i"),
-      }],
-      &[
-        Statement::binary(
+    assert!(
+      extract_derived_induction_variables(
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
+          name: PStr::LOWER_I,
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
+            heap.alloc_str_for_test("outside"),
+            INT_32_TYPE
+          )),
+          loop_value_collector: heap.alloc_str_for_test("tmp_i"),
+        }],
+        &[
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_i"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("outside"), INT_32_TYPE)
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_j"),
+            BinaryOperator::MUL,
+            Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
+            Expression::i32(2)
+          )
+        ],
+        &HashSet::from([
+          PStr::LOWER_A,
+          PStr::LOWER_I,
+          PStr::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          Expression::var_name(heap.alloc_str_for_test("outside"), INT_32_TYPE)
-        ),
-        Statement::binary(
-          heap.alloc_str_for_test("tmp_j"),
-          BinaryOperator::MUL,
-          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-          Expression::i32(2)
-        )
-      ],
-      &HashSet::from([
-        PStr::LOWER_A,
-        PStr::LOWER_I,
-        PStr::LOWER_J,
-        heap.alloc_str_for_test("tmp_i"),
-        heap.alloc_str_for_test("tmp_j")
-      ]),
-    )
-    .is_empty());
+          heap.alloc_str_for_test("tmp_j")
+        ]),
+      )
+      .is_empty()
+    );
 
     assert_eq!(
       vec!["{name: tmp_j, base_name: i, multiplier: (outside: int), immediate: (outside: int)}"],
@@ -1297,36 +1311,38 @@ mod tests {
       .collect_vec()
     );
 
-    assert!(extract_derived_induction_variables(
-      &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: PStr::LOWER_I,
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Int(2),
-        loop_value_collector: heap.alloc_str_for_test("tmp_i"),
-      }],
-      &[
-        Statement::binary(
+    assert!(
+      extract_derived_induction_variables(
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
+          name: PStr::LOWER_I,
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Int(2),
+          loop_value_collector: heap.alloc_str_for_test("tmp_i"),
+        }],
+        &[
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_i"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            Expression::i32(2)
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_j"),
+            BinaryOperator::MUL,
+            Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("outside"), INT_32_TYPE)
+          )
+        ],
+        &HashSet::from([
+          PStr::LOWER_A,
+          PStr::LOWER_I,
+          PStr::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          Expression::i32(2)
-        ),
-        Statement::binary(
-          heap.alloc_str_for_test("tmp_j"),
-          BinaryOperator::MUL,
-          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-          Expression::var_name(heap.alloc_str_for_test("outside"), INT_32_TYPE)
-        )
-      ],
-      &HashSet::from([
-        PStr::LOWER_A,
-        PStr::LOWER_I,
-        PStr::LOWER_J,
-        heap.alloc_str_for_test("tmp_i"),
-        heap.alloc_str_for_test("tmp_j")
-      ]),
-    )
-    .is_empty());
+          heap.alloc_str_for_test("tmp_j")
+        ]),
+      )
+      .is_empty()
+    );
 
     assert_eq!(
       vec!["{name: t1, base_name: i, multiplier: 1, immediate: 2}"],
@@ -1365,37 +1381,39 @@ mod tests {
       .collect_vec()
     );
 
-    assert!(extract_derived_induction_variables(
-      &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: PStr::LOWER_I,
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Int(1),
-        loop_value_collector: heap.alloc_str_for_test("tmp_i"),
-      }],
-      &[
-        Statement::binary(
+    assert!(
+      extract_derived_induction_variables(
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
+          name: PStr::LOWER_I,
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Int(1),
+          loop_value_collector: heap.alloc_str_for_test("tmp_i"),
+        }],
+        &[
+          Statement::binary(
+            heap.alloc_str_for_test("tmp_i"),
+            BinaryOperator::PLUS,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+            ONE
+          ),
+          Statement::binary(
+            heap.alloc_str_for_test("t1"),
+            BinaryOperator::DIV,
+            Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
+            ONE
+          )
+        ],
+        &HashSet::from([
+          PStr::LOWER_A,
+          PStr::LOWER_I,
+          PStr::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
-          BinaryOperator::PLUS,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          ONE
-        ),
-        Statement::binary(
-          heap.alloc_str_for_test("t1"),
-          BinaryOperator::DIV,
-          Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_32_TYPE),
-          ONE
-        )
-      ],
-      &HashSet::from([
-        PStr::LOWER_A,
-        PStr::LOWER_I,
-        PStr::LOWER_J,
-        heap.alloc_str_for_test("tmp_i"),
-        heap.alloc_str_for_test("tmp_j"),
-        heap.alloc_str_for_test("t1")
-      ]),
-    )
-    .is_empty());
+          heap.alloc_str_for_test("tmp_j"),
+          heap.alloc_str_for_test("t1")
+        ]),
+      )
+      .is_empty()
+    );
   }
 
   #[test]
@@ -1429,428 +1447,464 @@ mod tests {
     let non_loop_invariant_variables =
       HashSet::from([PStr::LOWER_A, PStr::LOWER_A, PStr::LOWER_B, heap.alloc_str_for_test("cc")]);
 
-    assert!(extract_loop_guard_structure((&vec![], &None), &non_loop_invariant_variables).is_none());
+    assert!(
+      extract_loop_guard_structure((&vec![], &None), &non_loop_invariant_variables).is_none()
+    );
 
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          },
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::StructInit {
+              struct_variable_name: PStr::LOWER_A,
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            },
+            Statement::StructInit {
+              struct_variable_name: PStr::LOWER_A,
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
 
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![Statement::binary(
-          heap.alloc_str_for_test("cc"),
-          BinaryOperator::LT,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          ZERO
-        ),],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          },
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO),
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          }
-        ],
-        &None
-      ),
-      &HashSet::new()
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::StructInit {
-            struct_variable_name: PStr::LOWER_A,
-            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-            expression_list: vec![],
-          },
-          Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: ZERO,
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![Statement::binary(
             heap.alloc_str_for_test("cc"),
             BinaryOperator::LT,
             Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             ZERO
-          ),
-          Statement::SingleIf {
-            condition: ZERO,
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          }
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
+          ),],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
 
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          },
-          Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
-          Statement::SingleIf {
-            condition: ZERO,
-            invert_condition: false,
-            statements: vec![Statement::StructInit {
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
-              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-              expression_list: vec![]
-            }]
-          },
-          Statement::IfElse {
-            condition: ZERO,
-            s1: vec![Statement::StructInit {
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            },
+            Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
-              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-              expression_list: vec![]
-            }],
-            s2: vec![Statement::StructInit {
-              struct_variable_name: PStr::LOWER_A,
-              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-              expression_list: vec![]
-            }],
-            final_assignments: vec![]
-          },
-          Statement::IndexedAccess {
-            name: PStr::LOWER_A,
-            type_: INT_32_TYPE,
-            pointer_expression: ZERO,
-            index: 0
-          },
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::Call {
-            callee: Callee::FunctionName(FunctionNameExpression {
-              name: FunctionName::new_for_test(PStr::LOWER_A),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
-            }),
-            arguments: vec![],
-            return_type: INT_32_TYPE,
-            return_collector: None
-          },
-          Statement::Break(ZERO)
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
 
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::EQ,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          },
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
-
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
-            invert_condition: false,
-            statements: vec![Statement::StructInit {
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO),
+            Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
-              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-              expression_list: vec![]
-            }]
-          },
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
 
-    assert!(extract_loop_guard_structure(
-      (
-        &vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::StringName(heap.alloc_str_for_test("cc")),
-            invert_condition: false,
-            statements: vec![Statement::StructInit {
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
-              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-              expression_list: vec![]
-            }]
-          },
-        ],
-        &None
-      ),
-      &non_loop_invariant_variables
-    )
-    .is_none());
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            }
+          ],
+          &None
+        ),
+        &HashSet::new()
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::StructInit {
+              struct_variable_name: PStr::LOWER_A,
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
+              expression_list: vec![],
+            },
+            Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: ZERO,
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: ZERO,
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            }
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            },
+            Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
+            Statement::SingleIf {
+              condition: ZERO,
+              invert_condition: false,
+              statements: vec![Statement::StructInit {
+                struct_variable_name: PStr::LOWER_A,
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                expression_list: vec![]
+              }]
+            },
+            Statement::IfElse {
+              condition: ZERO,
+              s1: vec![Statement::StructInit {
+                struct_variable_name: PStr::LOWER_A,
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                expression_list: vec![]
+              }],
+              s2: vec![Statement::StructInit {
+                struct_variable_name: PStr::LOWER_A,
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                expression_list: vec![]
+              }],
+              final_assignments: vec![]
+            },
+            Statement::IndexedAccess {
+              name: PStr::LOWER_A,
+              type_: INT_32_TYPE,
+              pointer_expression: ZERO,
+              index: 0
+            },
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::Call {
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(PStr::LOWER_A),
+                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
+              }),
+              arguments: vec![],
+              return_type: INT_32_TYPE,
+              return_collector: None
+            },
+            Statement::Break(ZERO)
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::EQ,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            },
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
+              invert_condition: false,
+              statements: vec![Statement::StructInit {
+                struct_variable_name: PStr::LOWER_A,
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                expression_list: vec![]
+              }]
+            },
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
+
+    assert!(
+      extract_loop_guard_structure(
+        (
+          &vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::StringName(heap.alloc_str_for_test("cc")),
+              invert_condition: false,
+              statements: vec![Statement::StructInit {
+                struct_variable_name: PStr::LOWER_A,
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                expression_list: vec![]
+              }]
+            },
+          ],
+          &None
+        ),
+        &non_loop_invariant_variables
+      )
+      .is_none()
+    );
   }
 
   #[test]
   fn extract_optimizable_while_loop_rejection_tests() {
     let heap = &mut samlang_heap::Heap::new();
 
-    assert!(extract_optimizable_while_loop(
-      (
-        vec![],
-        vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::StringName(heap.alloc_str_for_test("cc")),
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          },
-        ],
-        None
-      ),
-      &HashSet::new()
-    )
-    .is_err());
+    assert!(
+      extract_optimizable_while_loop(
+        (
+          vec![],
+          vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::StringName(heap.alloc_str_for_test("cc")),
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            },
+          ],
+          None
+        ),
+        &HashSet::new()
+      )
+      .is_err()
+    );
 
-    assert!(extract_optimizable_while_loop(
-      (
-        vec![],
-        vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::EQ,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::StringName(heap.alloc_str_for_test("cc")),
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          },
-          Statement::binary(
-            heap.alloc_str_for_test("tmp_i"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          )
-        ],
-        None
-      ),
-      &HashSet::new()
-    )
-    .is_err());
+    assert!(
+      extract_optimizable_while_loop(
+        (
+          vec![],
+          vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::EQ,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::StringName(heap.alloc_str_for_test("cc")),
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            },
+            Statement::binary(
+              heap.alloc_str_for_test("tmp_i"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            )
+          ],
+          None
+        ),
+        &HashSet::new()
+      )
+      .is_err()
+    );
 
-    assert!(extract_optimizable_while_loop(
-      (
-        vec![],
-        vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::LT,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::StringName(heap.alloc_str_for_test("cc")),
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)]
-          },
-          Statement::binary(
-            heap.alloc_str_for_test("tmp_i"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          )
-        ],
-        None
-      ),
-      &HashSet::new()
-    )
-    .is_err());
+    assert!(
+      extract_optimizable_while_loop(
+        (
+          vec![],
+          vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::LT,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::StringName(heap.alloc_str_for_test("cc")),
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)]
+            },
+            Statement::binary(
+              heap.alloc_str_for_test("tmp_i"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            )
+          ],
+          None
+        ),
+        &HashSet::new()
+      )
+      .is_err()
+    );
 
-    assert!(extract_optimizable_while_loop(
-      (
-        vec![],
-        vec![
-          Statement::binary(
-            heap.alloc_str_for_test("cc"),
-            BinaryOperator::GE,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ZERO
-          ),
-          Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
-            invert_condition: false,
-            statements: vec![Statement::Break(ZERO)],
-          },
-          Statement::binary(
-            heap.alloc_str_for_test("tmp_i"),
-            BinaryOperator::PLUS,
-            Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            ONE
-          ),
-        ],
-        None
-      ),
-      &HashSet::new()
-    )
-    .is_err());
+    assert!(
+      extract_optimizable_while_loop(
+        (
+          vec![],
+          vec![
+            Statement::binary(
+              heap.alloc_str_for_test("cc"),
+              BinaryOperator::GE,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ZERO
+            ),
+            Statement::SingleIf {
+              condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_32_TYPE),
+              invert_condition: false,
+              statements: vec![Statement::Break(ZERO)],
+            },
+            Statement::binary(
+              heap.alloc_str_for_test("tmp_i"),
+              BinaryOperator::PLUS,
+              Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              ONE
+            ),
+          ],
+          None
+        ),
+        &HashSet::new()
+      )
+      .is_err()
+    );
   }
 
   #[test]

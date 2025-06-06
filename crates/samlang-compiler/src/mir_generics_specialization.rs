@@ -596,7 +596,7 @@ impl Rewriter {
                 // Deopt if enum can be int or unboxed.
                 // This is essential to correctly pattern match on Some(Some(Some(_)))
                 mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int31 => {
-                  return false
+                  return false;
                 }
               }
             }

@@ -636,12 +636,15 @@ mod tests {
   #[test]
   fn boilterplate() {
     assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.storage.contains(&0));
-    assert!(!format!(
-      "{:?} {:?}",
-      PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } }).clone(),
-      PStr::INVALID_PSTR
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?} {:?}",
+        PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } })
+          .clone(),
+        PStr::INVALID_PSTR
+      )
+      .is_empty()
+    );
 
     StringStoredInHeap::deallocated(true, "");
     StringStoredInHeap::deallocated(false, "");

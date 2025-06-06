@@ -3,9 +3,9 @@ mod tests {
   use super::super::{
     ssa_analysis::SsaAnalysisResult,
     type_::{
-      test_type_builder, EnumVariantDefinitionSignature, ISourceType, InterfaceSignature,
-      MemberSignature, ModuleSignature, NominalType, Type, TypeDefinitionSignature,
-      TypeParameterSignature,
+      EnumVariantDefinitionSignature, ISourceType, InterfaceSignature, MemberSignature,
+      ModuleSignature, NominalType, Type, TypeDefinitionSignature, TypeParameterSignature,
+      test_type_builder,
     },
     typing_context::{LocalTypingContext, TypingContext},
   };
@@ -47,9 +47,9 @@ mod tests {
 
   #[test]
   fn possibly_in_scope_local_variables_test() {
-    assert!(empty_local_typing_context()
-      .possibly_in_scope_local_variables(Position(0, 0))
-      .is_empty());
+    assert!(
+      empty_local_typing_context().possibly_in_scope_local_variables(Position(0, 0)).is_empty()
+    );
 
     let heap = Heap::new();
     let builder = test_type_builder::create();
@@ -732,8 +732,8 @@ Found 3 errors.
       .to_string(&heap)
     );
 
-    assert!(cx
-      .get_method_type(
+    assert!(
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -744,9 +744,10 @@ Found 3 errors.
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
-      .is_none());
-    assert!(cx
-      .get_method_type(
+      .is_none()
+    );
+    assert!(
+      cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
@@ -757,7 +758,8 @@ Found 3 errors.
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
-      .is_none());
+      .is_none()
+    );
   }
 
   #[test]
@@ -851,30 +853,34 @@ Found 3 errors.
     );
 
     assert!(cx.resolve_struct_definitions(&builder.bool_type()).is_empty());
-    assert!(cx
-      .resolve_struct_definitions(
+    assert!(
+      cx.resolve_struct_definitions(
         &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()])
       )
-      .is_empty());
-    assert!(cx
-      .resolve_struct_definitions(
+      .is_empty()
+    );
+    assert!(
+      cx.resolve_struct_definitions(
         &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()])
       )
-      .is_empty());
-    assert!(cx
-      .resolve_struct_definitions(
+      .is_empty()
+    );
+    assert!(
+      cx.resolve_struct_definitions(
         &builder.general_nominal_type(PStr::UPPER_C, vec![builder.int_type(), builder.int_type()])
       )
-      .is_empty());
-    assert!(cx
-      .resolve_detailed_enum_definitions_opt(&Type::Nominal(NominalType {
+      .is_empty()
+    );
+    assert!(
+      cx.resolve_detailed_enum_definitions_opt(&Type::Nominal(NominalType {
         reason: Reason::dummy(),
         is_class_statics: false,
         module_reference: mod_ref_w,
         id: PStr::UPPER_A,
         type_arguments: vec![]
       }))
-      .is_none());
+      .is_none()
+    );
 
     let (_, _, resolved) = cx
       .resolve_detailed_enum_definitions_opt(

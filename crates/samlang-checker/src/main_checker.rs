@@ -11,12 +11,12 @@ use super::{
 };
 use itertools::Itertools;
 use samlang_ast::{
-  source::{
-    annotation, expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id,
-    InterfaceDeclarationCommon, InterfaceMembersCommon, Literal, Module, OptionallyAnnotatedId,
-    Toplevel, TypeDefinition,
-  },
   Description, Location, Reason,
+  source::{
+    ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon,
+    InterfaceMembersCommon, Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
+    annotation, expr, pattern,
+  },
 };
 use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};

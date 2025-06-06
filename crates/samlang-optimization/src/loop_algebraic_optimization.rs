@@ -4,7 +4,7 @@ use super::loop_induction_analysis::{
 };
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Binary, Expression, Statement, INT_32_TYPE, ZERO},
+  mir::{Binary, Expression, INT_32_TYPE, Statement, ZERO},
 };
 
 fn analyze_number_of_iterations_to_break_less_than_guard(
@@ -152,7 +152,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_32_TYPE, ZERO};
+  use samlang_ast::mir::{Expression, INT_32_TYPE, Statement, SymbolTable, VariableName, ZERO};
   use samlang_heap::{Heap, PStr};
 
   #[test]

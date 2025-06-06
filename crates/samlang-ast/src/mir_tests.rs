@@ -28,14 +28,22 @@ mod tests {
     assert!(INT_32_TYPE.as_id().is_none());
     assert!(INT_31_TYPE.is_int31());
     assert!(INT_31_TYPE.as_id().is_none());
-    assert!(!format!(
-      "{:?}{:?}{:?}{:?}",
-      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A))),
-      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A))),
-      Expression::StringName(PStr::LOWER_A),
-      INT_32_TYPE
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?}{:?}{:?}{:?}",
+        Expression::var_name(
+          PStr::LOWER_A,
+          Type::Id(table.create_type_name_for_test(PStr::UPPER_A))
+        ),
+        Expression::var_name(
+          PStr::LOWER_A,
+          Type::Id(table.create_type_name_for_test(PStr::UPPER_A))
+        ),
+        Expression::StringName(PStr::LOWER_A),
+        INT_32_TYPE
+      )
+      .is_empty()
+    );
     assert_eq!(
       "(s: int)",
       VariableName::new(heap.alloc_str_for_test("s"), INT_32_TYPE).debug_print(heap, table)
@@ -351,33 +359,39 @@ if 0 {
 
     let sources1 = Sources {
       global_variables: vec![GlobalString(heap.alloc_str_for_test("dev_meggo_vibez"))],
-      closure_types: vec![ClosureTypeDefinition {
-        name: table.create_type_name_for_test(PStr::UPPER_A),
-        function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
-      }
-      .clone()],
-      type_definitions: vec![TypeDefinition {
-        name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
-        mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE, INT_32_TYPE]),
-      }
-      .clone()],
+      closure_types: vec![
+        ClosureTypeDefinition {
+          name: table.create_type_name_for_test(PStr::UPPER_A),
+          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        }
+        .clone(),
+      ],
+      type_definitions: vec![
+        TypeDefinition {
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
+          mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE, INT_32_TYPE]),
+        }
+        .clone(),
+      ],
       main_function_names: vec![FunctionName::new_for_test(heap.alloc_str_for_test("ddd"))],
-      functions: vec![Function {
-        name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
-        parameters: vec![PStr::LOWER_F],
-        type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
-        body: vec![Statement::IndexedAccess {
-          name: PStr::LOWER_F,
-          type_: INT_32_TYPE,
-          pointer_expression: Expression::var_name(
-            heap.alloc_str_for_test("big"),
-            Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
-          ),
-          index: 0,
-        }],
-        return_value: ZERO,
-      }
-      .clone()],
+      functions: vec![
+        Function {
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
+          parameters: vec![PStr::LOWER_F],
+          type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
+          body: vec![Statement::IndexedAccess {
+            name: PStr::LOWER_F,
+            type_: INT_32_TYPE,
+            pointer_expression: Expression::var_name(
+              heap.alloc_str_for_test("big"),
+              Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
+            ),
+            index: 0,
+          }],
+          return_value: ZERO,
+        }
+        .clone(),
+      ],
       symbol_table: table,
     };
     assert!(!format!("{sources1:?}").is_empty());

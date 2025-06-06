@@ -8,8 +8,8 @@ use super::{
 };
 use itertools::Itertools;
 use samlang_ast::{
-  source::{Module, Toplevel, TypeDefinition},
   Reason,
+  source::{Module, Toplevel, TypeDefinition},
 };
 use samlang_heap::{ModuleReference, PStr};
 use std::{
@@ -414,7 +414,7 @@ pub(super) fn resolve_all_method_signatures(
 #[cfg(test)]
 mod tests {
   use super::super::type_::{
-    create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
+    GlobalSignature, NominalType, create_builtin_module_signature, test_type_builder,
   };
   use super::{
     resolve_all_member_names, resolve_all_method_signatures, resolve_all_transitive_super_types,
@@ -644,42 +644,52 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
     let heap = &mut Heap::new();
     let global_cx = build_global_cx_for_resolution_tests(heap);
 
-    assert!(resolve_function_signature(
-      &global_cx,
-      (heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]), PStr::UPPER_C),
-      PStr::LOWER_A,
-    )
-    .is_empty());
+    assert!(
+      resolve_function_signature(
+        &global_cx,
+        (heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]), PStr::UPPER_C),
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
     assert!(resolve_function_signature(
       &global_cx,
       (ModuleReference::ROOT, PStr::UPPER_C),
       PStr::LOWER_A,
     )
     .is_empty());
-    assert!(resolve_function_signature(
-      &global_cx,
-      (ModuleReference::DUMMY, PStr::UPPER_C),
-      PStr::LOWER_A,
-    )
-    .is_empty());
-    assert!(resolve_function_signature(
-      &global_cx,
-      (ModuleReference::DUMMY, heap.alloc_str_for_test("IUseNonExistent")),
-      PStr::LOWER_A,
-    )
-    .is_empty());
-    assert!(resolve_function_signature(
-      &global_cx,
-      (ModuleReference::DUMMY, heap.alloc_str_for_test("ICyclic1")),
-      PStr::LOWER_A,
-    )
-    .is_empty());
-    assert!(resolve_function_signature(
-      &global_cx,
-      (ModuleReference::DUMMY, heap.alloc_str_for_test("ICyclic2")),
-      PStr::LOWER_A,
-    )
-    .is_empty());
+    assert!(
+      resolve_function_signature(
+        &global_cx,
+        (ModuleReference::DUMMY, PStr::UPPER_C),
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
+    assert!(
+      resolve_function_signature(
+        &global_cx,
+        (ModuleReference::DUMMY, heap.alloc_str_for_test("IUseNonExistent")),
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
+    assert!(
+      resolve_function_signature(
+        &global_cx,
+        (ModuleReference::DUMMY, heap.alloc_str_for_test("ICyclic1")),
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
+    assert!(
+      resolve_function_signature(
+        &global_cx,
+        (ModuleReference::DUMMY, heap.alloc_str_for_test("ICyclic2")),
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
   }
 
   #[test]
@@ -688,30 +698,34 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
     let builder = test_type_builder::create();
     let global_cx = build_global_cx_for_resolution_tests(heap);
 
-    assert!(resolve_method_signature(
-      &global_cx,
-      &NominalType {
-        reason: Reason::dummy(),
-        is_class_statics: false,
-        module_reference: ModuleReference::DUMMY,
-        id: PStr::UPPER_C,
-        type_arguments: vec![]
-      },
-      PStr::LOWER_A,
-    )
-    .is_empty());
-    assert!(resolve_method_signature(
-      &global_cx,
-      &NominalType {
-        reason: Reason::dummy(),
-        is_class_statics: false,
-        module_reference: ModuleReference::DUMMY,
-        id: heap.alloc_str_for_test("IUseNonExistent"),
-        type_arguments: vec![]
-      },
-      PStr::LOWER_A,
-    )
-    .is_empty());
+    assert!(
+      resolve_method_signature(
+        &global_cx,
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: false,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_C,
+          type_arguments: vec![]
+        },
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
+    assert!(
+      resolve_method_signature(
+        &global_cx,
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: false,
+          module_reference: ModuleReference::DUMMY,
+          id: heap.alloc_str_for_test("IUseNonExistent"),
+          type_arguments: vec![]
+        },
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
     assert_eq!(
       r#"
 public <C : A>(A, int) -> C
@@ -750,30 +764,34 @@ public <C : A>(int, int) -> C
       .map(|it| it.to_string(heap))
       .join("\n")
     );
-    assert!(resolve_method_signature(
-      &global_cx,
-      &NominalType {
-        reason: Reason::dummy(),
-        is_class_statics: false,
-        module_reference: ModuleReference::DUMMY,
-        id: heap.alloc_str_for_test("ICyclic1"),
-        type_arguments: vec![]
-      },
-      PStr::LOWER_A,
-    )
-    .is_empty());
-    assert!(resolve_method_signature(
-      &global_cx,
-      &NominalType {
-        reason: Reason::dummy(),
-        is_class_statics: false,
-        module_reference: ModuleReference::DUMMY,
-        id: heap.alloc_str_for_test("ICyclic2"),
-        type_arguments: vec![]
-      },
-      PStr::LOWER_A,
-    )
-    .is_empty());
+    assert!(
+      resolve_method_signature(
+        &global_cx,
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: false,
+          module_reference: ModuleReference::DUMMY,
+          id: heap.alloc_str_for_test("ICyclic1"),
+          type_arguments: vec![]
+        },
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
+    assert!(
+      resolve_method_signature(
+        &global_cx,
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: false,
+          module_reference: ModuleReference::DUMMY,
+          id: heap.alloc_str_for_test("ICyclic2"),
+          type_arguments: vec![]
+        },
+        PStr::LOWER_A,
+      )
+      .is_empty()
+    );
     assert_eq!(
       r#"
 public () -> int

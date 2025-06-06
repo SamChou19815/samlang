@@ -293,9 +293,9 @@ mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{INT31_TYPE, INT_TYPE},
-    source::{test_builder, NO_COMMENT_REFERENCE},
     Location, Reason,
+    hir::{INT_TYPE, INT31_TYPE},
+    source::{NO_COMMENT_REFERENCE, test_builder},
   };
   use samlang_checker::type_::test_type_builder;
   use samlang_heap::PStr;
@@ -381,14 +381,16 @@ mod tests {
   fn collect_used_generic_types_works() {
     let generic_types: HashSet<PStr> = vec![PStr::UPPER_A, PStr::UPPER_B].into_iter().collect();
 
-    assert!(collect_used_generic_types(
-      &Type::new_fn_unwrapped(
-        vec![INT_TYPE, Type::new_id(PStr::UPPER_C, vec![INT_TYPE])],
-        Type::new_id_no_targs(PStr::UPPER_C),
-      ),
-      &generic_types,
-    )
-    .is_empty());
+    assert!(
+      collect_used_generic_types(
+        &Type::new_fn_unwrapped(
+          vec![INT_TYPE, Type::new_id(PStr::UPPER_C, vec![INT_TYPE])],
+          Type::new_id_no_targs(PStr::UPPER_C),
+        ),
+        &generic_types,
+      )
+      .is_empty()
+    );
 
     assert_eq!(
       vec![PStr::UPPER_A],

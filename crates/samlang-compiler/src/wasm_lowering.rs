@@ -433,8 +433,8 @@ mod tests {
   use samlang_ast::{
     hir::{BinaryOperator, GlobalString},
     lir::{
-      self, Expression, Function, FunctionType, GenenalLoopVariable, Sources, Statement,
-      INT_31_TYPE, INT_32_TYPE, ZERO,
+      self, Expression, Function, FunctionType, GenenalLoopVariable, INT_31_TYPE, INT_32_TYPE,
+      Sources, Statement, ZERO,
     },
     mir, wasm,
   };
@@ -442,10 +442,12 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(super::LoopContext { break_collector: None, exit_label: wasm::LabelId(1) }
-      .clone()
-      .break_collector
-      .is_none());
+    assert!(
+      super::LoopContext { break_collector: None, exit_label: wasm::LabelId(1) }
+        .clone()
+        .break_collector
+        .is_none()
+    );
 
     let mut symbol_table = mir::SymbolTable::new();
     let mut m = wasm::Module {

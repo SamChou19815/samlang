@@ -1,13 +1,13 @@
 use crate::loop_induction_analysis::DerivedInductionVariableWithName;
 
 use super::loop_induction_analysis::{
-  merge_invariant_multiplication_for_loop_optimization, BasicInductionVariableWithLoopGuard,
-  GuardOperator, OptimizableWhileLoop, PotentialLoopInvariantExpression,
+  BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
+  PotentialLoopInvariantExpression, merge_invariant_multiplication_for_loop_optimization,
 };
 use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Expression, IfElseFinalAssignment, Statement, VariableName, INT_32_TYPE},
+  mir::{Expression, INT_32_TYPE, IfElseFinalAssignment, Statement, VariableName},
 };
 
 pub(super) struct LoopInductionVariableEliminationResult {
@@ -199,9 +199,8 @@ mod tests {
   use samlang_ast::{
     hir::BinaryOperator,
     mir::{
-      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      IfElseFinalAssignment, Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE,
-      ONE, ZERO,
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, INT_32_TYPE,
+      IfElseFinalAssignment, ONE, Statement, SymbolTable, Type, TypeNameId, VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
@@ -211,277 +210,291 @@ mod tests {
     let heap = &mut Heap::new();
     let table = &mut SymbolTable::new();
 
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Int(2),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
-        },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: PStr::LOWER_A,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
-        }],
-        derived_induction_variables: vec![],
-        statements: vec![],
-        break_collector: None
-      },
-      heap,
-    )
-    .is_none());
-
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Int(2),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
-        },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![],
-        derived_induction_variables: vec![],
-        statements: vec![],
-        break_collector: Some((
-          PStr::LOWER_A,
-          INT_32_TYPE,
-          Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
-        ))
-      },
-      heap,
-    )
-    .is_none());
-
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Int(2),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
-        },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![],
-        derived_induction_variables: vec![],
-        statements: vec![Statement::IfElse {
-          condition: ZERO,
-          s1: vec![],
-          s2: vec![],
-          final_assignments: vec![IfElseFinalAssignment {
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Int(2),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
+          },
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
             name: PStr::LOWER_A,
             type_: INT_32_TYPE,
-            e1: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-            e2: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
-          }]
-        }],
-        break_collector: None
-      },
-      heap,
-    )
-    .is_none());
-
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Int(2),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
+            initial_value: ZERO,
+            loop_value: Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
+          }],
+          derived_induction_variables: vec![],
+          statements: vec![],
+          break_collector: None
         },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![],
-        derived_induction_variables: vec![],
-        statements: vec![Statement::IfElse {
-          condition: ZERO,
-          s1: vec![],
-          s2: vec![],
-          final_assignments: vec![]
-        }],
-        break_collector: None
-      },
-      heap,
-    )
-    .is_none());
+        heap,
+      )
+      .is_none()
+    );
 
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Int(2),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Int(2),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
+          },
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![],
+          derived_induction_variables: vec![],
+          statements: vec![],
+          break_collector: Some((
+            PStr::LOWER_A,
+            INT_32_TYPE,
+            Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
+          ))
         },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![],
-        derived_induction_variables: vec![],
-        statements: vec![
-          Statement::IndexedAccess {
-            name: PStr::LOWER_A,
-            type_: INT_32_TYPE,
-            pointer_expression: ZERO,
-            index: 3
+        heap,
+      )
+      .is_none()
+    );
+
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Int(2),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          Statement::Not { name: PStr::LOWER_A, operand: ZERO },
-          Statement::IsPointer {
-            name: PStr::LOWER_A,
-            pointer_type: TypeNameId::STR,
-            operand: ZERO
-          },
-          Statement::binary(PStr::LOWER_A, BinaryOperator::NE, ZERO, ZERO),
-          Statement::IfElse {
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![],
+          derived_induction_variables: vec![],
+          statements: vec![Statement::IfElse {
             condition: ZERO,
-            s1: vec![Statement::SingleIf {
-              condition: ZERO,
-              invert_condition: false,
-              statements: vec![Statement::Break(ZERO)]
-            }],
-            s2: vec![Statement::ClosureInit {
-              closure_variable_name: PStr::LOWER_A,
-              closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-              function_name: FunctionNameExpression {
-                name: FunctionName::new_for_test(PStr::LOWER_A),
-                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
-              },
-              context: ZERO
-            }],
+            s1: vec![],
+            s2: vec![],
             final_assignments: vec![IfElseFinalAssignment {
               name: PStr::LOWER_A,
               type_: INT_32_TYPE,
-              e1: ZERO,
-              e2: ZERO
+              e1: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
+              e2: Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             }]
+          }],
+          break_collector: None
+        },
+        heap,
+      )
+      .is_none()
+    );
+
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Int(2),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          Statement::While {
-            loop_variables: vec![GenenalLoopVariable {
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![],
+          derived_induction_variables: vec![],
+          statements: vec![Statement::IfElse {
+            condition: ZERO,
+            s1: vec![],
+            s2: vec![],
+            final_assignments: vec![]
+          }],
+          break_collector: None
+        },
+        heap,
+      )
+      .is_none()
+    );
+
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Int(2),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
+          },
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![],
+          derived_induction_variables: vec![],
+          statements: vec![
+            Statement::IndexedAccess {
               name: PStr::LOWER_A,
               type_: INT_32_TYPE,
-              initial_value: ZERO,
-              loop_value: ZERO
-            }],
-            statements: vec![
-              Statement::Cast {
+              pointer_expression: ZERO,
+              index: 3
+            },
+            Statement::Not { name: PStr::LOWER_A, operand: ZERO },
+            Statement::IsPointer {
+              name: PStr::LOWER_A,
+              pointer_type: TypeNameId::STR,
+              operand: ZERO
+            },
+            Statement::binary(PStr::LOWER_A, BinaryOperator::NE, ZERO, ZERO),
+            Statement::IfElse {
+              condition: ZERO,
+              s1: vec![Statement::SingleIf {
+                condition: ZERO,
+                invert_condition: false,
+                statements: vec![Statement::Break(ZERO)]
+              }],
+              s2: vec![Statement::ClosureInit {
+                closure_variable_name: PStr::LOWER_A,
+                closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                function_name: FunctionNameExpression {
+                  name: FunctionName::new_for_test(PStr::LOWER_A),
+                  type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
+                },
+                context: ZERO
+              }],
+              final_assignments: vec![IfElseFinalAssignment {
                 name: PStr::LOWER_A,
                 type_: INT_32_TYPE,
-                assigned_expression: ZERO
-              },
-              Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_32_TYPE },
-              Statement::LateInitAssignment { name: PStr::LOWER_A, assigned_expression: ZERO },
-              Statement::StructInit {
-                struct_variable_name: PStr::LOWER_A,
-                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-                expression_list: vec![ZERO]
-              },
-            ],
-            break_collector: None
-          },
-          Statement::Call {
-            callee: Callee::FunctionName(FunctionNameExpression {
-              name: FunctionName::new_for_test(PStr::LOWER_A),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
-            }),
-            arguments: vec![ZERO],
-            return_type: INT_32_TYPE,
-            return_collector: None
-          },
-          Statement::Call {
-            callee: Callee::Variable(VariableName::new(PStr::LOWER_A, INT_32_TYPE)),
-            arguments: vec![ZERO],
-            return_type: INT_32_TYPE,
-            return_collector: None
-          },
-          Statement::Call {
-            callee: Callee::Variable(VariableName::new(PStr::LOWER_I, INT_32_TYPE)),
-            arguments: vec![Expression::var_name(PStr::LOWER_A, INT_32_TYPE)],
-            return_type: INT_32_TYPE,
-            return_collector: None
-          },
-        ],
-        break_collector: None
-      },
-      heap,
-    )
-    .is_none());
-
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Int(2),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
+                e1: ZERO,
+                e2: ZERO
+              }]
+            },
+            Statement::While {
+              loop_variables: vec![GenenalLoopVariable {
+                name: PStr::LOWER_A,
+                type_: INT_32_TYPE,
+                initial_value: ZERO,
+                loop_value: ZERO
+              }],
+              statements: vec![
+                Statement::Cast {
+                  name: PStr::LOWER_A,
+                  type_: INT_32_TYPE,
+                  assigned_expression: ZERO
+                },
+                Statement::LateInitDeclaration { name: PStr::LOWER_A, type_: INT_32_TYPE },
+                Statement::LateInitAssignment { name: PStr::LOWER_A, assigned_expression: ZERO },
+                Statement::StructInit {
+                  struct_variable_name: PStr::LOWER_A,
+                  type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+                  expression_list: vec![ZERO]
+                },
+              ],
+              break_collector: None
+            },
+            Statement::Call {
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(PStr::LOWER_A),
+                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
+              }),
+              arguments: vec![ZERO],
+              return_type: INT_32_TYPE,
+              return_collector: None
+            },
+            Statement::Call {
+              callee: Callee::Variable(VariableName::new(PStr::LOWER_A, INT_32_TYPE)),
+              arguments: vec![ZERO],
+              return_type: INT_32_TYPE,
+              return_collector: None
+            },
+            Statement::Call {
+              callee: Callee::Variable(VariableName::new(PStr::LOWER_I, INT_32_TYPE)),
+              arguments: vec![Expression::var_name(PStr::LOWER_A, INT_32_TYPE)],
+              return_type: INT_32_TYPE,
+              return_collector: None
+            },
+          ],
+          break_collector: None
         },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: PStr::LOWER_J,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE)
-        }],
-        derived_induction_variables: vec![
-          DerivedInductionVariableWithName {
+        heap,
+      )
+      .is_none()
+    );
+
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Int(2),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
+          },
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
+            name: PStr::LOWER_J,
+            type_: INT_32_TYPE,
+            initial_value: ZERO,
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE)
+          }],
+          derived_induction_variables: vec![
+            DerivedInductionVariableWithName {
+              name: heap.alloc_str_for_test("tmp_j"),
+              base_name: PStr::LOWER_I,
+              multiplier: PotentialLoopInvariantExpression::Int(3),
+              immediate: PotentialLoopInvariantExpression::Int(5)
+            },
+            DerivedInductionVariableWithName {
+              name: heap.alloc_str_for_test("tmp_k"),
+              base_name: PStr::LOWER_I,
+              multiplier: PotentialLoopInvariantExpression::Int(3),
+              immediate: PotentialLoopInvariantExpression::Int(5)
+            }
+          ],
+          statements: vec![],
+          break_collector: None
+        },
+        heap,
+      )
+      .is_none()
+    );
+
+    assert!(
+      super::optimize(
+        &OptimizableWhileLoop {
+          basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+            name: PStr::LOWER_I,
+            initial_value: ONE,
+            increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
+              PStr::LOWER_A,
+              INT_32_TYPE
+            )),
+            guard_operator: GuardOperator::LT,
+            guard_expression: PotentialLoopInvariantExpression::Int(10),
+          },
+          general_induction_variables: vec![],
+          loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
+            name: PStr::LOWER_J,
+            type_: INT_32_TYPE,
+            initial_value: ZERO,
+            loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
+          }],
+          derived_induction_variables: vec![DerivedInductionVariableWithName {
             name: heap.alloc_str_for_test("tmp_j"),
             base_name: PStr::LOWER_I,
-            multiplier: PotentialLoopInvariantExpression::Int(3),
-            immediate: PotentialLoopInvariantExpression::Int(5)
-          },
-          DerivedInductionVariableWithName {
-            name: heap.alloc_str_for_test("tmp_k"),
-            base_name: PStr::LOWER_I,
-            multiplier: PotentialLoopInvariantExpression::Int(3),
-            immediate: PotentialLoopInvariantExpression::Int(5)
-          }
-        ],
-        statements: vec![],
-        break_collector: None
-      },
-      heap,
-    )
-    .is_none());
-
-    assert!(super::optimize(
-      &OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: PStr::LOWER_I,
-          initial_value: ONE,
-          increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            PStr::LOWER_A,
-            INT_32_TYPE
-          )),
-          guard_operator: GuardOperator::LT,
-          guard_expression: PotentialLoopInvariantExpression::Int(10),
+            multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
+              PStr::LOWER_A,
+              INT_32_TYPE
+            )),
+            immediate: PotentialLoopInvariantExpression::Int(5),
+          }],
+          statements: vec![],
+          break_collector: None,
         },
-        general_induction_variables: vec![],
-        loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: PStr::LOWER_J,
-          type_: INT_32_TYPE,
-          initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_32_TYPE),
-        }],
-        derived_induction_variables: vec![DerivedInductionVariableWithName {
-          name: heap.alloc_str_for_test("tmp_j"),
-          base_name: PStr::LOWER_I,
-          multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-            PStr::LOWER_A,
-            INT_32_TYPE
-          )),
-          immediate: PotentialLoopInvariantExpression::Int(5),
-        }],
-        statements: vec![],
-        break_collector: None,
-      },
-      heap,
-    )
-    .is_none());
+        heap,
+      )
+      .is_none()
+    );
   }
 
   #[test]
@@ -529,10 +542,10 @@ mod tests {
       optimized
         .prefix_statements
         .iter()
-        .map(|s| s.debug_print(heap,table))
-        .chain(vec![optimized
-          .new_basic_induction_variable_with_loop_guard
-          .debug_print(heap,table)])
+        .map(|s| s.debug_print(heap, table))
+        .chain(vec![
+          optimized.new_basic_induction_variable_with_loop_guard.debug_print(heap, table)
+        ])
         .collect_vec()
     );
     assert!(optimized.new_derived_induction_variables.is_empty());
@@ -583,9 +596,10 @@ mod tests {
         "let _t3 = (_t2: int) + 5;",
         "{name: tmp_j, initial_value: (_t1: int), increment_amount: (a: int), guard_operator: LT, guard_expression: (_t3: int)}",
       ],
-      optimized.prefix_statements
+      optimized
+        .prefix_statements
         .iter()
-        .map(|s| s.debug_print(heap,table))
+        .map(|s| s.debug_print(heap, table))
         .chain(vec![
           optimized.new_basic_induction_variable_with_loop_guard.debug_print(heap, table)
         ])
@@ -639,7 +653,8 @@ mod tests {
         "let _t3 = (_t2: int) + 5;",
         "{name: tmp_j, initial_value: (_t1: int), increment_amount: (a: int), guard_operator: LT, guard_expression: (_t3: int)}",
       ],
-      optimized.prefix_statements
+      optimized
+        .prefix_statements
         .iter()
         .map(|s| s.debug_print(heap, table))
         .chain(vec![

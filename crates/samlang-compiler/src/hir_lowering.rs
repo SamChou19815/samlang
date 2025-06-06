@@ -1,8 +1,8 @@
 use super::{
   hir_string_manager::StringManager,
   hir_type_conversion::{
-    collect_used_generic_types, type_application, SynthesizedTypes, TypeLoweringManager,
-    TypeSynthesizer,
+    SynthesizedTypes, TypeLoweringManager, TypeSynthesizer, collect_used_generic_types,
+    type_application,
   },
   mir_constant_param_elimination, mir_generics_specialization, mir_tail_recursion_rewrite,
   mir_type_deduplication,
@@ -1419,9 +1419,8 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir,
-    source::{self, test_builder, CommentStore, NO_COMMENT_REFERENCE},
-    Location, Reason,
+    Location, Reason, hir,
+    source::{self, CommentStore, NO_COMMENT_REFERENCE, test_builder},
   };
   use samlang_checker::type_::{self, test_type_builder};
   use samlang_heap::{Heap, ModuleReference, PStr};
