@@ -16,11 +16,11 @@ mod variable_definition;
 
 use itertools::Itertools;
 use samlang_ast::{
-  source::{
-    expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition, Id,
-    ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
-  },
   Location, Position,
+  source::{
+    ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition, Id,
+    ModuleMembersImport, NO_COMMENT_REFERENCE, Toplevel, TypeDefinition, expr,
+  },
 };
 use samlang_checker::{
   type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},

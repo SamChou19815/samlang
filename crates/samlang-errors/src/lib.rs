@@ -34,9 +34,11 @@ mod printable_error_test {
   #[test]
   fn boilterplate() {
     assert!(super::PrintableError::Size(0).get_loc_reference_opt().is_none());
-    assert!(super::PrintableError::LocationReference(&super::Location::dummy())
-      .get_loc_reference_opt()
-      .is_some());
+    assert!(
+      super::PrintableError::LocationReference(&super::Location::dummy())
+        .get_loc_reference_opt()
+        .is_some()
+    );
   }
 }
 
@@ -96,11 +98,7 @@ mod printer {
     let num_of_lines = (location.end.0 - location.start.0 + 1) as usize;
     let relevant_lines =
       relevant_code.split('\n').skip(location.start.0 as usize).take(num_of_lines).collect_vec();
-    if relevant_lines.len() == num_of_lines {
-      Some(relevant_lines)
-    } else {
-      None
-    }
+    if relevant_lines.len() == num_of_lines { Some(relevant_lines) } else { None }
   }
 
   /// Print reference lines if the reference can be found in the source
@@ -1087,18 +1085,20 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!format!(
-      "{:?}{:?}{:?}",
-      ErrorPrinterStyle::IDE,
-      ErrorInIDEFormat {
-        location: Location::dummy(),
-        ide_error: "ide".to_string(),
-        full_error: "full".to_string(),
-        reference_locs: vec![]
-      },
-      CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?}{:?}{:?}",
+        ErrorPrinterStyle::IDE,
+        ErrorInIDEFormat {
+          location: Location::dummy(),
+          ide_error: "ide".to_string(),
+          full_error: "full".to_string(),
+          reference_locs: vec![]
+        },
+        CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
+      )
+      .is_empty()
+    );
     assert!(ErrorPrinterStyle::Terminal != ErrorPrinterStyle::Text);
     assert_eq!(
       Some(std::cmp::Ordering::Equal),

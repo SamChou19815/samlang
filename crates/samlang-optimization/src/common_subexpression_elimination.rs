@@ -1,5 +1,5 @@
 use super::optimization_common::{
-  take_mut, BinaryBindedValue, BindedValue, IndexAccessBindedValue,
+  BinaryBindedValue, BindedValue, IndexAccessBindedValue, take_mut,
 };
 use samlang_ast::mir::{Binary, Function, Statement};
 use samlang_heap::Heap;
@@ -97,8 +97,8 @@ mod tests {
   use samlang_ast::{
     hir::BinaryOperator,
     mir::{
-      Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
-      Type, TypeNameId, VariableName, INT_32_TYPE, ONE, ZERO,
+      Callee, Expression, Function, FunctionName, FunctionNameExpression, INT_32_TYPE, ONE,
+      Statement, SymbolTable, Type, TypeNameId, VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};

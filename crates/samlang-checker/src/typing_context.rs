@@ -27,11 +27,7 @@ impl LocalTypingContext {
   }
 
   pub(super) fn read(&self, loc: &Location) -> Type {
-    if let Some(t) = self.read_opt(loc) {
-      t
-    } else {
-      Type::Any(Reason::new(*loc, None), false)
-    }
+    if let Some(t) = self.read_opt(loc) { t } else { Type::Any(Reason::new(*loc, None), false) }
   }
 
   pub fn possibly_in_scope_local_variables(&self, position: Position) -> Vec<(&PStr, &Type)> {

@@ -1,6 +1,6 @@
 use samlang_ast::{
-  source::{annotation, expr, pattern, Module, Toplevel, TypeDefinition},
   Location,
+  source::{Module, Toplevel, TypeDefinition, annotation, expr, pattern},
 };
 use samlang_checker::type_::Type;
 use samlang_heap::{ModuleReference, PStr};

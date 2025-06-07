@@ -1,7 +1,7 @@
 [package]
 name = "samlang-wasm"
 version = "0.10.1"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 js-sys = "0.3.64"

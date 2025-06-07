@@ -102,11 +102,7 @@ impl ServerState {
   }
 
   pub fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {
-    if let Some(errors) = self.errors.get(module_reference) {
-      errors.as_slice()
-    } else {
-      &[]
-    }
+    if let Some(errors) = self.errors.get(module_reference) { errors.as_slice() } else { &[] }
   }
 
   #[cfg(test)]

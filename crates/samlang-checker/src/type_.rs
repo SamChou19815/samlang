@@ -1,8 +1,8 @@
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_ast::{
-  source::{annotation, ClassMemberDeclaration},
   Description, Location, Reason,
+  source::{ClassMemberDeclaration, annotation},
 };
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
@@ -673,7 +673,7 @@ mod type_tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_ast::source::{
-    test_builder, AnnotatedId, FunctionParameters, Id, NO_COMMENT_REFERENCE,
+    AnnotatedId, FunctionParameters, Id, NO_COMMENT_REFERENCE, test_builder,
   };
 
   #[test]
@@ -1088,9 +1088,11 @@ m2: public () -> any
     assert_eq!(true, builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert_eq!(false, builder.unit_type().is_the_same_type(&builder.int_type()));
 
-    assert!(builder
-      .simple_nominal_type(PStr::UPPER_A)
-      .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A)));
+    assert!(
+      builder
+        .simple_nominal_type(PStr::UPPER_A)
+        .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A))
+    );
     assert_eq!(
       false,
       builder

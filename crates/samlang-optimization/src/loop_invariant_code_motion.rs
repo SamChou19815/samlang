@@ -132,9 +132,8 @@ mod tests {
   use samlang_ast::{
     hir::BinaryOperator,
     mir::{
-      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      IfElseFinalAssignment, Statement, SymbolTable, Type, TypeNameId, VariableName, INT_32_TYPE,
-      ONE, ZERO,
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, INT_32_TYPE,
+      IfElseFinalAssignment, ONE, Statement, SymbolTable, Type, TypeNameId, VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};

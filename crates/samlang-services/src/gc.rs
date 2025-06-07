@@ -1,5 +1,5 @@
 use samlang_ast::source::{
-  annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition,
+  Id, Literal, Module, Toplevel, TypeDefinition, annotation, expr, pattern,
 };
 use samlang_checker::type_::{FunctionType, NominalType, Type};
 use samlang_heap::{Heap, ModuleReference};

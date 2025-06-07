@@ -9,11 +9,7 @@ use std::collections::HashMap;
 type State = HashMap<TypeNameId, TypeNameId>;
 
 fn rewrite_id_type_name(state: &State, id: TypeNameId) -> TypeNameId {
-  if let Some(n) = state.get(&id) {
-    *n
-  } else {
-    id
-  }
+  if let Some(n) = state.get(&id) { *n } else { id }
 }
 
 fn rewrite_type(state: &State, type_: Type) -> Type {
@@ -248,7 +244,7 @@ pub(super) fn deduplicate(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{FunctionName, SymbolTable, INT_31_TYPE, INT_32_TYPE, ONE, ZERO};
+  use samlang_ast::mir::{FunctionName, INT_31_TYPE, INT_32_TYPE, ONE, SymbolTable, ZERO};
   use samlang_heap::{Heap, ModuleReference, PStr};
 
   #[should_panic]

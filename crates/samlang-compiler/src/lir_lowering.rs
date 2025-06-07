@@ -37,11 +37,7 @@ fn lower_expression(expr: mir::Expression) -> lir::Expression {
 }
 
 fn variable_of_mir_expr(expression: &lir::Expression) -> Option<PStr> {
-  if let lir::Expression::Variable(n, _) = expression {
-    Some(*n)
-  } else {
-    None
-  }
+  if let lir::Expression::Variable(n, _) = expression { Some(*n) } else { None }
 }
 
 struct LoweringManager<'a> {
@@ -752,17 +748,19 @@ mod tests {
     lir,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-      FunctionNameExpression, GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement,
-      SymbolTable, Type, TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName,
-      INT_31_TYPE, INT_32_TYPE, ONE, ZERO,
+      FunctionNameExpression, GenenalLoopVariable, INT_31_TYPE, INT_32_TYPE, IfElseFinalAssignment,
+      ONE, Sources, Statement, SymbolTable, Type, TypeDefinition, TypeDefinitionMappings,
+      TypeNameId, VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilterplate() {
-    assert!(super::lower_type(Type::Id(TypeNameId::STR))
-      .is_the_same_type(&lir::Type::Id(TypeNameId::STR)));
+    assert!(
+      super::lower_type(Type::Id(TypeNameId::STR))
+        .is_the_same_type(&lir::Type::Id(TypeNameId::STR))
+    );
 
     assert!(super::lower_type(Type::Int32).is_the_same_type(&lir::Type::Int32));
     assert!(super::lower_type(Type::Int31).is_the_same_type(&lir::Type::Int31));

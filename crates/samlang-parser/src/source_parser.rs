@@ -1,5 +1,5 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
-use samlang_ast::{source::*, Location, Position};
+use samlang_ast::{Location, Position, source::*};
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
@@ -340,7 +340,7 @@ pub fn parse_module(mut parser: SourceParser) -> Module<()> {
     loop {
       match parser.peek() {
         Token(_, TokenContent::Keyword(Keyword::Class | Keyword::Interface | Keyword::Private)) => {
-          break
+          break;
         }
         Token(_, TokenContent::EndOfFile) => break 'outer,
         Token(loc, content) => {
@@ -737,7 +737,7 @@ mod expression_parser {
     MAX_STRUCT_SIZE,
   };
   use itertools::Itertools;
-  use samlang_ast::{source::*, Location};
+  use samlang_ast::{Location, source::*};
   use samlang_heap::PStr;
   use std::collections::HashMap;
 

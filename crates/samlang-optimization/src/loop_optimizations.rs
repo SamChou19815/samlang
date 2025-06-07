@@ -7,7 +7,7 @@ use super::{
 use itertools::Itertools;
 use samlang_ast::hir::BinaryOperator;
 use samlang_ast::mir::{
-  Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_32_TYPE, ZERO,
+  Expression, Function, GenenalLoopVariable, INT_32_TYPE, Statement, VariableName, ZERO,
 };
 use samlang_heap::Heap;
 use std::collections::HashSet;
@@ -233,7 +233,7 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
-      Statement, SymbolTable, Type, VariableName, INT_32_TYPE, ONE, ZERO,
+      INT_32_TYPE, ONE, Statement, SymbolTable, Type, VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};

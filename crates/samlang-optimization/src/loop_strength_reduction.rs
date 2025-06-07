@@ -1,10 +1,10 @@
 use super::loop_induction_analysis::{
-  merge_invariant_multiplication_for_loop_optimization, GeneralBasicInductionVariable,
-  OptimizableWhileLoop,
+  GeneralBasicInductionVariable, OptimizableWhileLoop,
+  merge_invariant_multiplication_for_loop_optimization,
 };
 use samlang_ast::{
   hir::BinaryOperator,
-  mir::{Expression, Statement, INT_32_TYPE},
+  mir::{Expression, INT_32_TYPE, Statement},
 };
 use samlang_heap::Heap;
 use std::collections::HashMap;
@@ -93,7 +93,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{SymbolTable, VariableName, INT_32_TYPE, ONE};
+  use samlang_ast::mir::{INT_32_TYPE, ONE, SymbolTable, VariableName};
   use samlang_heap::{Heap, PStr};
 
   #[test]

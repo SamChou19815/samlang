@@ -1,5 +1,5 @@
 use super::optimization_common::{
-  if_else_or_null, single_if_or_null, IndexAccessBindedValue, LocalValueContextForOptimization,
+  IndexAccessBindedValue, LocalValueContextForOptimization, if_else_or_null, single_if_or_null,
 };
 use itertools::Itertools;
 use samlang_ast::{hir::BinaryOperator, mir::*};
@@ -599,7 +599,7 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 #[cfg(test)]
 mod boilterplate_tests {
   use super::super::optimization_common::LocalValueContextForOptimization;
-  use super::{optimize_callee, BinaryExpression};
+  use super::{BinaryExpression, optimize_callee};
   use samlang_ast::{hir::BinaryOperator, mir::*};
   use samlang_heap::{Heap, PStr};
 

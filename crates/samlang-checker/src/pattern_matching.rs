@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use samlang_ast::Description;
-use samlang_collections::list::{cons, list, one, PersistentList};
+use samlang_collections::list::{PersistentList, cons, list, one};
 use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{HashMap, VecDeque},
@@ -316,11 +316,7 @@ fn signature_incomplete_names<CX: PatternMatchingContext>(
       (VariantPatternConstructor { module_reference: mod_ref, class_name, variant_name: n }, size)
     })
     .collect_vec();
-  if result.is_empty() {
-    None
-  } else {
-    Some(result)
-  }
+  if result.is_empty() { None } else { Some(result) }
 }
 
 /// http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
@@ -499,13 +495,15 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!format!(
-      "{:?} {:?} {:?}",
-      OPTION_NONE,
-      P::wildcard(),
-      PatternVector(super::one(P::wildcard()))
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?} {:?} {:?}",
+        OPTION_NONE,
+        P::wildcard(),
+        PatternVector(super::one(P::wildcard()))
+      )
+      .is_empty()
+    );
     assert_eq!(LETTERS, LETTERS_A.class_name);
     assert_eq!(
       2,

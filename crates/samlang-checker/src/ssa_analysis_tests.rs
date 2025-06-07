@@ -2,13 +2,13 @@
 mod tests {
   use super::super::{
     ssa_analysis,
-    type_::{test_type_builder, ISourceType},
+    type_::{ISourceType, test_type_builder},
     typing_context::LocalTypingContext,
   };
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    source::{annotation, expr, test_builder, Id, Literal, NO_COMMENT_REFERENCE},
     Location,
+    source::{Id, Literal, NO_COMMENT_REFERENCE, annotation, expr, test_builder},
   };
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference};

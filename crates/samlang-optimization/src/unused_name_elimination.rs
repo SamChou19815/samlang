@@ -256,9 +256,9 @@ mod tests {
     hir::GlobalString,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-      FunctionNameExpression, GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement,
-      SymbolTable, Type, TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName,
-      INT_32_TYPE, ZERO,
+      FunctionNameExpression, GenenalLoopVariable, INT_32_TYPE, IfElseFinalAssignment, Sources,
+      Statement, SymbolTable, Type, TypeDefinition, TypeDefinitionMappings, TypeNameId,
+      VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, PStr};

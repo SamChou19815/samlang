@@ -24,7 +24,7 @@ mod typing_context_tests;
 
 pub use global_signature::build_module_signature;
 pub use main_checker::type_check_module;
-pub use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
+pub use ssa_analysis::{SsaAnalysisResult, perform_ssa_analysis_on_module};
 
 pub fn type_check_sources(
   sources: &HashMap<ModuleReference, Module<()>>,

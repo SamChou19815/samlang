@@ -33,11 +33,7 @@ impl CommentsNode {
   }
 
   pub fn from(comments: Vec<Comment>) -> CommentsNode {
-    if !comments.is_empty() {
-      CommentsNode::Comments(comments)
-    } else {
-      CommentsNode::NoComment
-    }
+    if !comments.is_empty() { CommentsNode::Comments(comments) } else { CommentsNode::NoComment }
   }
 }
 
@@ -379,7 +375,7 @@ pub struct AnnotatedId<T: Clone> {
 
 pub mod expr {
   use super::super::loc::Location;
-  use super::{annotation, pattern, CommentReference, Id, Literal};
+  use super::{CommentReference, Id, Literal, annotation, pattern};
   use samlang_heap::{ModuleReference, PStr};
   use std::collections::HashMap;
 

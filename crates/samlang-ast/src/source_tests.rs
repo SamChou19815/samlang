@@ -16,21 +16,20 @@ mod tests {
     let comment = Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str_for_test("d") };
 
     assert!(CommentKind::DOC == CommentKind::DOC);
-    assert!(!format!(
-      "{:?}{:?}{:?}",
-      comment.text,
-      CommentStore::new().clone().create_comment_reference(vec![]).clone(),
-      CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
-    )
-    .is_empty());
+    assert!(
+      !format!(
+        "{:?}{:?}{:?}",
+        comment.text,
+        CommentStore::new().clone().create_comment_reference(vec![]).clone(),
+        CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
+      )
+      .is_empty()
+    );
     CommentStore::new().all_comments();
     assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).iter().collect_vec().is_empty());
-    assert!(CommentStore::new()
-      .clone()
-      .get_mut(NO_COMMENT_REFERENCE)
-      .iter()
-      .collect_vec()
-      .is_empty());
+    assert!(
+      CommentStore::new().clone().get_mut(NO_COMMENT_REFERENCE).iter().collect_vec().is_empty()
+    );
     assert!(CommentsNode::Comments(vec![comment]).eq(&CommentsNode::Comments(vec![comment])));
     assert!(CommentStore::new().eq(&CommentStore::new()));
 
@@ -596,60 +595,64 @@ mod tests {
 
     let builder = test_builder::create();
 
-    assert!(InterfaceDeclaration {
-      loc: Location::dummy(),
-      associated_comments: NO_COMMENT_REFERENCE,
-      private: false,
-      name: Id::from(PStr::LOWER_A),
-      type_parameters: None,
-      extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
-        location: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        nodes: vec![],
-      }),
-      type_definition: (),
-      members: InterfaceMembersCommon {
+    assert!(
+      InterfaceDeclaration {
         loc: Location::dummy(),
-        members: vec![ClassMemberDeclaration {
-          loc: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        private: false,
+        name: Id::from(PStr::LOWER_A),
+        type_parameters: None,
+        extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
+          location: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          is_public: true,
-          is_method: true,
-          name: Id::from(PStr::LOWER_A),
-          type_parameters: Some(annotation::TypeParameters {
-            location: Location::dummy(),
-            start_associated_comments: NO_COMMENT_REFERENCE,
-            ending_associated_comments: NO_COMMENT_REFERENCE,
-            parameters: vec![]
-          }),
-          parameters: FunctionParameters {
-            location: Location::dummy(),
-            start_associated_comments: NO_COMMENT_REFERENCE,
-            ending_associated_comments: NO_COMMENT_REFERENCE,
-            parameters: Rc::new(vec![AnnotatedId {
-              name: Id::from(PStr::LOWER_A),
-              type_: (),
-              annotation: builder.int_annot()
-            }])
-          },
-          return_type: builder.int_annot(),
-        }],
-        ending_associated_comments: NO_COMMENT_REFERENCE
+          nodes: vec![],
+        }),
+        type_definition: (),
+        members: InterfaceMembersCommon {
+          loc: Location::dummy(),
+          members: vec![ClassMemberDeclaration {
+            loc: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
+            is_public: true,
+            is_method: true,
+            name: Id::from(PStr::LOWER_A),
+            type_parameters: Some(annotation::TypeParameters {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              parameters: vec![]
+            }),
+            parameters: FunctionParameters {
+              location: Location::dummy(),
+              start_associated_comments: NO_COMMENT_REFERENCE,
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+              parameters: Rc::new(vec![AnnotatedId {
+                name: Id::from(PStr::LOWER_A),
+                type_: (),
+                annotation: builder.int_annot()
+              }])
+            },
+            return_type: builder.int_annot(),
+          }],
+          ending_associated_comments: NO_COMMENT_REFERENCE
+        }
       }
-    }
-    .clone()
-    .type_parameters
-    .is_none());
-    assert!(ModuleMembersImport {
-      loc: Location::dummy(),
-      associated_comments: NO_COMMENT_REFERENCE,
-      imported_members: vec![],
-      imported_module: ModuleReference::DUMMY,
-      imported_module_loc: Location::dummy(),
-    }
-    .clone()
-    .imported_members
-    .is_empty());
+      .clone()
+      .type_parameters
+      .is_none()
+    );
+    assert!(
+      ModuleMembersImport {
+        loc: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        imported_members: vec![],
+        imported_module: ModuleReference::DUMMY,
+        imported_module_loc: Location::dummy(),
+      }
+      .clone()
+      .imported_members
+      .is_empty()
+    );
     let _ = TypeDefinition::Struct {
       loc: Location::dummy(),
       start_associated_comments: NO_COMMENT_REFERENCE,
@@ -677,26 +680,23 @@ mod tests {
     };
     assert!(enum_type_def.clone().eq(&enum_type_def));
 
-    assert!(AnnotatedId {
-      name: Id::from(PStr::LOWER_A),
-      type_: (),
-      annotation: builder.int_annot(),
-    }
-    .eq(&AnnotatedId {
-      name: Id::from(PStr::LOWER_A),
-      type_: (),
-      annotation: builder.int_annot(),
-    }));
-    assert!(annotation::TypeParameter {
-      loc: Location::dummy(),
-      name: Id::from(PStr::LOWER_A),
-      bound: None
-    }
-    .eq(&annotation::TypeParameter {
-      loc: Location::dummy(),
-      name: Id::from(PStr::LOWER_A),
-      bound: None
-    }));
+    assert!(
+      AnnotatedId { name: Id::from(PStr::LOWER_A), type_: (), annotation: builder.int_annot() }.eq(
+        &AnnotatedId { name: Id::from(PStr::LOWER_A), type_: (), annotation: builder.int_annot() }
+      )
+    );
+    assert!(
+      annotation::TypeParameter {
+        loc: Location::dummy(),
+        name: Id::from(PStr::LOWER_A),
+        bound: None
+      }
+      .eq(&annotation::TypeParameter {
+        loc: Location::dummy(),
+        name: Id::from(PStr::LOWER_A),
+        bound: None
+      })
+    );
 
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),

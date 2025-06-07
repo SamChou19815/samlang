@@ -212,7 +212,7 @@ pub(super) fn optimize_function_by_tailrec_rewrite(
 mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{FunctionNameExpression, IfElseFinalAssignment, SymbolTable, INT_32_TYPE};
+  use samlang_ast::mir::{FunctionNameExpression, INT_32_TYPE, IfElseFinalAssignment, SymbolTable};
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {
     assert!(!optimize_function_by_tailrec_rewrite_aux(heap, f).1)

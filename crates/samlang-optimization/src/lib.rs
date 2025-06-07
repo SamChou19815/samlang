@@ -113,7 +113,7 @@ pub fn optimize_sources(
 #[cfg(test)]
 mod tests {
   use pretty_assertions::assert_eq;
-  use samlang_ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_32_TYPE, ZERO};
+  use samlang_ast::mir::{Function, FunctionName, INT_32_TYPE, Sources, SymbolTable, Type, ZERO};
   use samlang_heap::{Heap, PStr};
 
   fn sources() -> Sources {

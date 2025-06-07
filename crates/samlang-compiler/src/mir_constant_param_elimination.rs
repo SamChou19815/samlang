@@ -416,8 +416,8 @@ mod tests {
     hir::BinaryOperator,
     mir::{
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
-      GenenalLoopVariable, IfElseFinalAssignment, Sources, Statement, SymbolTable, Type,
-      VariableName, INT_31_TYPE, INT_32_TYPE, ZERO,
+      GenenalLoopVariable, INT_31_TYPE, INT_32_TYPE, IfElseFinalAssignment, Sources, Statement,
+      SymbolTable, Type, VariableName, ZERO,
     },
   };
   use samlang_heap::{Heap, ModuleReference, PStr};
