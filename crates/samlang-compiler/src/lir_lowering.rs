@@ -744,8 +744,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
 mod tests {
   use pretty_assertions::assert_eq;
   use samlang_ast::{
-    hir::{self, BinaryOperator},
-    lir,
+    hir, lir,
     mir::{
       Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
       FunctionNameExpression, GenenalLoopVariable, INT_31_TYPE, INT_32_TYPE, IfElseFinalAssignment,
@@ -909,7 +908,7 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
           body: vec![
             Statement::Not { name: heap.alloc_str_for_test("v1"), operand: ZERO },
-            Statement::binary(heap.alloc_str_for_test("v1"), BinaryOperator::PLUS, ZERO, ZERO),
+            Statement::binary(heap.alloc_str_for_test("v1"), hir::BinaryOperator::PLUS, ZERO, ZERO),
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("O"),
               type_name: obj_type.into_id().unwrap(),

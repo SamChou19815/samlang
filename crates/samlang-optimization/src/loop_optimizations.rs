@@ -1,6 +1,6 @@
 use super::{
   dead_code_elimination, loop_algebraic_optimization,
-  loop_induction_analysis::{self, OptimizableWhileLoop},
+  loop_induction_analysis::{OptimizableWhileLoop, extract_optimizable_while_loop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
   optimization_common::take_mut,
 };
@@ -127,10 +127,7 @@ fn optimize_while_statement_with_all_loop_optimizations(
     optimized_while_statement,
     non_loop_invariant_variables,
   } = loop_invariant_code_motion::optimize(while_stmt);
-  match loop_induction_analysis::extract_optimizable_while_loop(
-    optimized_while_statement,
-    &non_loop_invariant_variables,
-  ) {
+  match extract_optimizable_while_loop(optimized_while_statement, &non_loop_invariant_variables) {
     Ok(mut optimizable_while_loop) => {
       if let Some(mut stmts) = loop_algebraic_optimization::optimize(&optimizable_while_loop, heap)
       {

@@ -1,6 +1,5 @@
 use super::{
-  global_signature,
-  pattern_matching::{self, AbstractPatternNode},
+  global_signature, pattern_matching,
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
     FunctionType, GlobalSignature, ISourceType, MemberSignature, NominalType, PrimitiveTypeKind,
@@ -937,7 +936,7 @@ fn check_if_else(
       if !pattern_matching::is_additional_pattern_useful(
         cx,
         &[abstract_pattern_node],
-        AbstractPatternNode::wildcard(),
+        pattern_matching::AbstractPatternNode::wildcard(),
       ) {
         cx.error_set.report_useless_pattern_error(*p.loc(), true);
       }
@@ -1264,7 +1263,7 @@ fn check_matching_pattern(
         field_order_mapping.insert(field.name, i);
         not_mentioned_fields.insert(field.name);
         field_mappings.insert(field.name, (field.type_, field.is_public));
-        abstract_pattern_nodes.push(AbstractPatternNode::wildcard());
+        abstract_pattern_nodes.push(pattern_matching::AbstractPatternNode::wildcard());
       }
       let mut checked_destructured_names = vec![];
       for pattern::ObjectPatternElement {
