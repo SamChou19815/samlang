@@ -827,16 +827,16 @@ mod runners {
 
     eprintln!("==================== Step 4 ====================");
     eprintln!("Checking generated WebAssembly code...");
+    let run_wasm_result = std::process::Command::new("node")
+      .args(["out/tests.AllTests.wasm.js"])
+      .output()
+      .expect("WASM/JS execution failure");
+    let run_wasm_stderr_result = String::from_utf8(run_wasm_result.stderr).unwrap();
     pretty_assertions::assert_eq!(
       expected,
-      String::from_utf8(
-        std::process::Command::new("node")
-          .args(["out/tests.AllTests.wasm.js"])
-          .output()
-          .expect("WASM/JS execution failure")
-          .stdout,
-      )
-      .unwrap()
+      String::from_utf8(run_wasm_result.stdout).unwrap(),
+      "Standard Error:\n{}",
+      run_wasm_stderr_result
     );
     eprintln!("Generated WebAssembly code is good.");
 
