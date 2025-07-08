@@ -31,7 +31,7 @@ impl LocalTypingContext {
   }
 
   pub fn possibly_in_scope_local_variables(&self, position: Position) -> Vec<(&PStr, &Type)> {
-    let mut collector = vec![];
+    let mut collector = Vec::new();
     for (scope_loc, map) in &self.ssa_analysis_result.local_scoped_def_locs {
       if scope_loc.contains_position(position) {
         for (name, def_loc) in map {

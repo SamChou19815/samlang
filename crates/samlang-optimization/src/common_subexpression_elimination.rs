@@ -17,7 +17,7 @@ fn optimize_stmts(
   heap: &mut Heap,
 ) -> (Vec<Statement>, BTreeSet<BindedValue>) {
   let mut set = BTreeSet::new();
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   for stmt in stmts.into_iter().rev() {
     match stmt {
       // handle similar optimization in loop-invariant code motion for while
@@ -106,8 +106,8 @@ mod tests {
   fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {
     let mut f = Function {
       name: FunctionName::new_for_test(PStr::LOWER_A),
-      parameters: vec![],
-      type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+      parameters: Vec::new(),
+      type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
       body: stmts,
       return_value: ZERO,
     };
@@ -145,7 +145,7 @@ mod tests {
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(heap.alloc_str_for_test("fff")),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             }),
             arguments: vec![
               Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
@@ -182,7 +182,7 @@ mod tests {
             return_collector: None,
           },
         ],
-        final_assignments: vec![],
+        final_assignments: Vec::new(),
       }],
       heap,
       r#"let _t3: int = 0[3];

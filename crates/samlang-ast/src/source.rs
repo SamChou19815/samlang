@@ -22,7 +22,7 @@ pub enum CommentsNode {
   Comments(Vec<Comment>),
 }
 
-static EMPTY_COMMENTS: Vec<Comment> = vec![];
+static EMPTY_COMMENTS: Vec<Comment> = Vec::new();
 
 impl CommentsNode {
   pub fn iter(&self) -> std::slice::Iter<'_, Comment> {
@@ -979,7 +979,7 @@ pub mod test_builder {
     }
 
     pub fn simple_id_annot(&self, id: PStr) -> annotation::T {
-      self.general_id_annot(id, vec![])
+      self.general_id_annot(id, Vec::new())
     }
 
     pub fn generic_annot(&self, id: PStr) -> annotation::T {

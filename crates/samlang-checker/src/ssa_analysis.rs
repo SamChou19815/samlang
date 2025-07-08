@@ -118,8 +118,8 @@ impl<'a> SsaAnalysisState<'a> {
             }
           }
           if let Some(type_def) = type_definition {
-            let mut names = vec![];
-            let mut annots = vec![];
+            let mut names = Vec::new();
+            let mut annots = Vec::new();
             match type_def {
               TypeDefinition::Struct {
                 loc: _,

@@ -43,7 +43,7 @@ mod tests {
       &mut error_set,
       ModuleReference::DUMMY,
       test_str,
-      /* availableTypeParameters */ vec![],
+      /* availableTypeParameters */ Vec::new(),
     );
 
     type_check_expression_for_tests(
@@ -58,7 +58,7 @@ mod tests {
           loc: Location::dummy(),
           start_associated_comments: NO_COMMENT_REFERENCE,
           ending_associated_comments: NO_COMMENT_REFERENCE,
-          expressions: vec![],
+          expressions: Vec::new(),
         },
       ),
       None,
@@ -87,7 +87,7 @@ mod tests {
       &mut error_set,
       ModuleReference::DUMMY,
       test_str,
-      /* availableTypeParameters */ vec![],
+      /* availableTypeParameters */ Vec::new(),
     );
 
     type_check_expression_for_tests(
@@ -99,7 +99,7 @@ mod tests {
           type_: (),
         },
         explicit_type_arguments: None,
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id {
           loc: Location::dummy(),
@@ -137,7 +137,7 @@ mod tests {
                   },
                   StructItemDefinitionSignature {
                     name: heap.alloc_str_for_test("fff"),
-                    type_: builder.fun_type(vec![], builder.string_type()),
+                    type_: builder.fun_type(Vec::new(), builder.string_type()),
                     is_public: false,
                   },
                 ])),
@@ -146,7 +146,7 @@ mod tests {
                     PStr::INIT,
                     MemberSignature {
                       is_public: true,
-                      type_parameters: vec![],
+                      type_parameters: Vec::new(),
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type(), builder.int_type()],
@@ -158,7 +158,7 @@ mod tests {
                     heap.alloc_str_for_test("helloWorld"),
                     MemberSignature {
                       is_public: false,
-                      type_parameters: vec![],
+                      type_parameters: Vec::new(),
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.string_type()],
@@ -242,7 +242,7 @@ mod tests {
                     heap.alloc_str_for_test("generic4"),
                     MemberSignature {
                       is_public: false,
-                      type_parameters: vec![],
+                      type_parameters: Vec::new(),
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.fun_type(
@@ -259,7 +259,7 @@ mod tests {
                     heap.alloc_str_for_test("baz"),
                     MemberSignature {
                       is_public: false,
-                      type_parameters: vec![],
+                      type_parameters: Vec::new(),
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
@@ -298,8 +298,8 @@ mod tests {
                     },
                   ),
                 ]),
-                type_parameters: vec![],
-                super_types: vec![],
+                type_parameters: Vec::new(),
+                super_types: Vec::new(),
               },
             ),
             (
@@ -321,7 +321,7 @@ mod tests {
                     heap.alloc_str_for_test("Foo"),
                     MemberSignature {
                       is_public: true,
-                      type_parameters: vec![],
+                      type_parameters: Vec::new(),
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type()],
@@ -333,7 +333,7 @@ mod tests {
                     heap.alloc_str_for_test("Bar"),
                     MemberSignature {
                       is_public: true,
-                      type_parameters: vec![],
+                      type_parameters: Vec::new(),
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
@@ -343,8 +343,8 @@ mod tests {
                   ),
                 ]),
                 methods: HashMap::new(),
-                type_parameters: vec![],
-                super_types: vec![],
+                type_parameters: Vec::new(),
+                super_types: Vec::new(),
               },
             ),
             (
@@ -366,7 +366,7 @@ mod tests {
                 ])),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
-                super_types: vec![],
+                super_types: Vec::new(),
               },
             ),
             (
@@ -423,7 +423,7 @@ mod tests {
                   ),
                 ]),
                 methods: HashMap::new(),
-                super_types: vec![],
+                super_types: Vec::new(),
               },
             ),
             (
@@ -446,17 +446,17 @@ mod tests {
                   PStr::INIT,
                   MemberSignature {
                     is_public: true,
-                    type_parameters: vec![],
+                    type_parameters: Vec::new(),
                     type_: FunctionType {
                       reason: Reason::dummy(),
-                      argument_types: vec![],
+                      argument_types: Vec::new(),
                       return_type: builder.simple_nominal_type(PStr::UPPER_A),
                     },
                   },
                 )]),
                 methods: HashMap::new(),
-                type_parameters: vec![],
-                super_types: vec![],
+                type_parameters: Vec::new(),
+                super_types: Vec::new(),
               },
             ),
             (
@@ -479,17 +479,17 @@ mod tests {
                   PStr::INIT,
                   MemberSignature {
                     is_public: true,
-                    type_parameters: vec![],
+                    type_parameters: Vec::new(),
                     type_: FunctionType {
                       reason: Reason::dummy(),
-                      argument_types: vec![],
+                      argument_types: Vec::new(),
                       return_type: builder.simple_nominal_type(PStr::UPPER_B),
                     },
                   },
                 )]),
                 methods: HashMap::new(),
-                type_parameters: vec![],
-                super_types: vec![],
+                type_parameters: Vec::new(),
+                super_types: Vec::new(),
               },
             ),
             (
@@ -510,17 +510,17 @@ mod tests {
                   PStr::INIT,
                   MemberSignature {
                     is_public: true,
-                    type_parameters: vec![],
+                    type_parameters: Vec::new(),
                     type_: FunctionType {
                       reason: Reason::dummy(),
-                      argument_types: vec![],
+                      argument_types: Vec::new(),
                       return_type: builder.simple_nominal_type(PStr::UPPER_C),
                     },
                   },
                 )]),
                 methods: HashMap::new(),
-                type_parameters: vec![],
-                super_types: vec![],
+                type_parameters: Vec::new(),
+                super_types: Vec::new(),
               },
             ),
           ]),
@@ -566,7 +566,7 @@ mod tests {
       &mut error_set,
       ModuleReference::DUMMY,
       current_class,
-      /* availableTypeParameters */ vec![],
+      /* availableTypeParameters */ Vec::new(),
     );
 
     let expr = type_check_expression_for_tests(&mut cx, &parsed, Some(expected_type));
@@ -3075,7 +3075,7 @@ Found 2 errors.
     assert_errors(
       heap,
       "(a) -> a",
-      &builder.fun_type(vec![], builder.int_type()),
+      &builder.fun_type(Vec::new(), builder.int_type()),
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:9
 

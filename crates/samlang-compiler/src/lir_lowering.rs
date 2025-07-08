@@ -73,7 +73,7 @@ impl<'a> LoweringManager<'a> {
     variables_not_to_deref: &HashSet<PStr>,
   ) -> Vec<lir::Statement> {
     let mut lowered_statements = stmts.into_iter().flat_map(|s| self.lower_stmt(s)).collect_vec();
-    let mut variable_to_decrease_reference_count = vec![];
+    let mut variable_to_decrease_reference_count = Vec::new();
     for s in &lowered_statements {
       match s {
         lir::Statement::Call { callee: _, arguments: _, return_type, return_collector } => {
@@ -157,7 +157,7 @@ impl<'a> LoweringManager<'a> {
         } else {
           None
         };
-        let mut statements = vec![];
+        let mut statements = Vec::new();
         match callee {
           mir::Callee::FunctionName(fn_name) => {
             statements.push(lir::Statement::Call {
@@ -258,7 +258,7 @@ impl<'a> LoweringManager<'a> {
       }
       mir::Statement::Cast { name, type_, assigned_expression } => {
         let lowered = lower_expression(assigned_expression);
-        let mut statements = vec![];
+        let mut statements = Vec::new();
         self.add_ref_counting_if_type_allowed(&mut statements, &lowered);
         statements.push(lir::Statement::Cast {
           name,
@@ -272,15 +272,15 @@ impl<'a> LoweringManager<'a> {
       }
       mir::Statement::LateInitAssignment { name, assigned_expression } => {
         let lowered = lower_expression(assigned_expression);
-        let mut statements = vec![];
+        let mut statements = Vec::new();
         self.add_ref_counting_if_type_allowed(&mut statements, &lowered);
         statements.push(lir::Statement::LateInitAssignment { name, assigned_expression: lowered });
         statements
       }
       mir::Statement::StructInit { struct_variable_name, type_name, expression_list } => {
         let type_ = lower_type(mir::Type::Id(type_name));
-        let mut statements = vec![];
-        let mut mir_expression_list = vec![];
+        let mut statements = Vec::new();
+        let mut mir_expression_list = Vec::new();
         let mut header = 1;
         for (index, e) in expression_list.into_iter().enumerate() {
           let lowered = lower_expression(e);
@@ -312,7 +312,7 @@ impl<'a> LoweringManager<'a> {
             .collect(),
           return_type: original_fn_type.return_type.clone(),
         };
-        let mut statements = vec![];
+        let mut statements = Vec::new();
         let context = lower_expression(context);
         let mut header = 1;
         if self.add_ref_counting_if_type_allowed(&mut statements, &context) {
@@ -657,7 +657,7 @@ fn generate_dec_ref_fn() -> lir::Function {
                     return_collector: None,
                   },
                 ],
-                final_assignments: vec![],
+                final_assignments: Vec::new(),
               },
             ],
           },
@@ -669,7 +669,7 @@ fn generate_dec_ref_fn() -> lir::Function {
 }
 
 pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Sources {
-  let mut type_defs = vec![];
+  let mut type_defs = Vec::new();
   let mut closure_def_map = BTreeMap::new();
   let mut type_def_map = BTreeMap::new();
   let mir::Sources {
@@ -776,11 +776,11 @@ mod tests {
     assert_lowered(
       Sources {
         symbol_table: SymbolTable::new(),
-        global_variables: vec![],
-        closure_types: vec![],
-        type_definitions: vec![],
-        main_function_names: vec![],
-        functions: vec![],
+        global_variables: Vec::new(),
+        closure_types: Vec::new(),
+        type_definitions: Vec::new(),
+        main_function_names: Vec::new(),
+        functions: Vec::new(),
       },
       heap,
       &lir::ts_prolog(),
@@ -824,11 +824,11 @@ mod tests {
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant2")),
-          mappings: TypeDefinitionMappings::Enum(vec![]),
+          mappings: TypeDefinitionMappings::Enum(Vec::new()),
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant3")),
-          mappings: TypeDefinitionMappings::Enum(vec![]),
+          mappings: TypeDefinitionMappings::Enum(Vec::new()),
         },
       ],
       main_function_names: vec![FunctionName::new_for_test(
@@ -837,8 +837,8 @@ mod tests {
       functions: vec![
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("cc")),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_31_TYPE),
+          parameters: Vec::new(),
+          type_: Type::new_fn_unwrapped(Vec::new(), INT_31_TYPE),
           body: vec![
             Statement::Call {
               callee: Callee::Variable(VariableName::new(
@@ -874,11 +874,11 @@ mod tests {
               index: 1,
             },
             Statement::While {
-              loop_variables: vec![],
+              loop_variables: Vec::new(),
               statements: vec![Statement::SingleIf {
                 condition: ZERO,
                 invert_condition: false,
-                statements: vec![],
+                statements: Vec::new(),
               }],
               break_collector: None,
             },
@@ -904,8 +904,8 @@ mod tests {
         },
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          parameters: Vec::new(),
+          type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           body: vec![
             Statement::Not { name: heap.alloc_str_for_test("v1"), operand: ZERO },
             Statement::binary(heap.alloc_str_for_test("v1"), hir::BinaryOperator::PLUS, ZERO, ZERO),
@@ -956,8 +956,8 @@ mod tests {
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("compiled_program_main")),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          parameters: Vec::new(),
+          type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           body: vec![
             Statement::IfElse {
               condition: ONE,
@@ -965,7 +965,7 @@ mod tests {
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionNameExpression {
                     name: FunctionName::new_for_test(PStr::MAIN_FN),
-                    type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                    type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
                   }),
                   arguments: vec![ZERO],
                   return_type: INT_32_TYPE,
@@ -974,7 +974,7 @@ mod tests {
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionNameExpression {
                     name: FunctionName::new_for_test(heap.alloc_str_for_test("cc")),
-                    type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                    type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
                   }),
                   arguments: vec![ZERO],
                   return_type: INT_32_TYPE,
@@ -1041,8 +1041,8 @@ mod tests {
               }],
             },
             Statement::While {
-              loop_variables: vec![],
-              statements: vec![],
+              loop_variables: Vec::new(),
+              statements: Vec::new(),
               break_collector: Some(VariableName::new(
                 heap.alloc_str_for_test("finalV3"),
                 INT_32_TYPE,

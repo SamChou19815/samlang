@@ -260,17 +260,17 @@ mod tests {
       functions: vec![
         Function {
           name: FunctionName::new_for_test(PStr::MAIN_FN),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          parameters: Vec::new(),
+          type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           body: vec![Statement::Call {
             callee: Expression::FnName(
               FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
               Type::new_fn_unwrapped(
-                vec![],
+                Vec::new(),
                 Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Foo"))),
               ),
             ),
-            arguments: vec![],
+            arguments: Vec::new(),
             return_type: INT_32_TYPE,
             return_collector: None,
           }],
@@ -278,7 +278,7 @@ mod tests {
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
-          parameters: vec![],
+          parameters: Vec::new(),
           type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
           body: vec![
             Statement::Cast {
@@ -291,7 +291,7 @@ mod tests {
               type_: INT_32_TYPE,
               expression_list: vec![Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               )],
             },
             Statement::IndexedAccess {
@@ -299,7 +299,7 @@ mod tests {
               type_: INT_32_TYPE,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               ),
               index: 0,
             },
@@ -307,18 +307,18 @@ mod tests {
               assigned_expression: ZERO,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               ),
               index: 0,
             },
             Statement::Call {
               callee: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("baz")),
-                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               ),
               arguments: vec![Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("haha")),
-                Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               )],
               return_type: INT_32_TYPE,
               return_collector: None,
@@ -331,11 +331,11 @@ mod tests {
                 hir::BinaryOperator::GE,
                 Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
-                  Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                  Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
                 ),
                 Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                  Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                  Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
                 ),
               )],
               s2: vec![Statement::Cast {
@@ -357,22 +357,22 @@ mod tests {
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
-              statements: vec![],
+              statements: Vec::new(),
               break_collector: Some((PStr::LOWER_D, INT_32_TYPE)),
             },
           ],
           return_value: Expression::FnName(
             FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-            Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           ),
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          parameters: Vec::new(),
+          type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           body: vec![Statement::Call {
             callee: Expression::StringName(heap.alloc_str_for_test("foo")),
-            arguments: vec![],
+            arguments: Vec::new(),
             return_type: INT_32_TYPE,
             return_collector: None,
           }],
@@ -380,9 +380,9 @@ mod tests {
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("baz")),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
-          body: vec![],
+          parameters: Vec::new(),
+          type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
+          body: Vec::new(),
           return_value: ZERO,
         },
       ],

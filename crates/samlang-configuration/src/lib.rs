@@ -31,7 +31,7 @@ fn parse_string_field(parsed: &Value, field: &str, default: &str) -> Option<Stri
 }
 
 fn parse_string_array_field(parsed: &Value, field: &str) -> Option<Vec<String>> {
-  let mut parsed_array = vec![];
+  let mut parsed_array = Vec::new();
   if let Some(array) = parsed.get(field) {
     for elem in array.as_array()? {
       parsed_array.push(elem.as_str()?.to_string());
@@ -103,8 +103,8 @@ mod tests {
         ProjectConfiguration {
           source_directory: "".to_string(),
           output_directory: "out".to_string(),
-          entry_points: vec![],
-          ignores: vec![],
+          entry_points: Vec::new(),
+          ignores: Vec::new(),
           dangerously_allow_libdef_shadowing: false,
         }
       )
@@ -114,8 +114,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: ".".to_string(),
         output_directory: "out".to_string(),
-        entry_points: vec![],
-        ignores: vec![],
+        entry_points: Vec::new(),
+        ignores: Vec::new(),
         dangerously_allow_libdef_shadowing: false,
       },
       parse_configuration("{}").unwrap()
@@ -124,8 +124,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: "source".to_string(),
         output_directory: "out".to_string(),
-        entry_points: vec![],
-        ignores: vec![],
+        entry_points: Vec::new(),
+        ignores: Vec::new(),
         dangerously_allow_libdef_shadowing: false,
       },
       parse_configuration("{\"sourceDirectory\": \"source\"}").unwrap()
@@ -134,8 +134,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: ".".to_string(),
         output_directory: "out-out".to_string(),
-        entry_points: vec![],
-        ignores: vec![],
+        entry_points: Vec::new(),
+        ignores: Vec::new(),
         dangerously_allow_libdef_shadowing: false,
       },
       parse_configuration("{\"outputDirectory\": \"out-out\"}").unwrap()

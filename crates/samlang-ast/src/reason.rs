@@ -147,7 +147,7 @@ mod tests {
     assert_eq!("class A", Description::Class(PStr::UPPER_A).pretty_print(heap));
     assert_eq!(
       "A",
-      Description::NominalType { name: PStr::UPPER_A, type_args: vec![] }.pretty_print(heap)
+      Description::NominalType { name: PStr::UPPER_A, type_args: Vec::new() }.pretty_print(heap)
     );
     assert_eq!(
       "A<int>",
@@ -169,7 +169,7 @@ mod tests {
     assert_eq!(
       "A | B((_, _))",
       Description::OrPattern(vec![
-        Description::VariantPattern(PStr::UPPER_A, vec![]),
+        Description::VariantPattern(PStr::UPPER_A, Vec::new()),
         Description::VariantPattern(
           PStr::UPPER_B,
           vec![Description::TuplePattern(vec![

@@ -71,7 +71,7 @@ impl Type {
   pub const fn new_generic_type(name: PStr) -> Type {
     Type::Id(IdType {
       name: TypeName { module_reference: None, type_name: name },
-      type_arguments: vec![],
+      type_arguments: Vec::new(),
     })
   }
 
@@ -83,7 +83,7 @@ impl Type {
   }
 
   pub const fn new_id_no_targs_unwrapped(name: PStr) -> IdType {
-    Self::new_id_unwrapped(name, vec![])
+    Self::new_id_unwrapped(name, Vec::new())
   }
 
   pub fn new_id(name: PStr, type_arguments: Vec<Type>) -> Type {
@@ -111,11 +111,11 @@ pub const INT_TYPE: Type = Type::Int32;
 pub const INT31_TYPE: Type = Type::Int31;
 pub const STRING_TYPE: Type = Type::Id(IdType {
   name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
-  type_arguments: vec![],
+  type_arguments: Vec::new(),
 });
 pub const STRING_TYPE_REF: &Type = &Type::Id(IdType {
   name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
-  type_arguments: vec![],
+  type_arguments: Vec::new(),
 });
 
 #[derive(Debug, Clone)]
@@ -272,7 +272,7 @@ pub struct FunctionNameExpression {
 impl FunctionNameExpression {
   #[cfg(test)]
   pub(super) fn new(name: FunctionName, type_: FunctionType) -> FunctionNameExpression {
-    FunctionNameExpression { name, type_, type_arguments: vec![] }
+    FunctionNameExpression { name, type_, type_arguments: Vec::new() }
   }
 
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
@@ -601,7 +601,7 @@ impl Statement {
   }
 
   fn debug_print_leveled(&self, heap: &samlang_heap::Heap, level: usize) -> String {
-    let mut collector = vec![];
+    let mut collector = Vec::new();
     self.debug_print_internal(heap, level, &mut collector);
     collector.join("").trim_end().to_string()
   }
@@ -641,7 +641,7 @@ impl Function {
       typed_parameters,
       self.type_.return_type.pretty_print(heap)
     );
-    let mut lines = vec![];
+    let mut lines = Vec::new();
     lines.push(header);
     for s in &self.body {
       lines.push(s.debug_print_leveled(heap, 1));
@@ -666,7 +666,7 @@ pub struct Sources {
 
 impl Sources {
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
-    let mut lines = vec![];
+    let mut lines = Vec::new();
     for (i, v) in self.global_variables.iter().enumerate() {
       lines.push(format!("const GLOBAL_STRING_{} = '{}';\n", i, v.0.as_str(heap)));
     }

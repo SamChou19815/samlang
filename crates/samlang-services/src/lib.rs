@@ -504,7 +504,7 @@ pub mod rewrite {
   }
 
   pub fn code_actions(state: &server_state::ServerState, location: Location) -> Vec<CodeAction> {
-    let mut actions = vec![];
+    let mut actions = Vec::new();
     for error in state.errors.get(&location.module_reference).iter().flat_map(|it| it.iter()) {
       match &error.detail {
         ErrorDetail::CannotResolveClass { module_reference, name }
@@ -660,7 +660,7 @@ pub mod completion {
                   insert_text: name.to_string(),
                   kind: CompletionItemKind::Variable,
                   detail: t.pretty_print(&state.heap),
-                  additional_edits: vec![],
+                  additional_edits: Vec::new(),
                 }
               })
               .collect(),
@@ -675,7 +675,7 @@ pub mod completion {
             .chain(ast.toplevels.iter().map(|t| t.name()))
             .map(|id| id.name)
             .collect::<HashSet<_>>();
-          let mut items = vec![];
+          let mut items = Vec::new();
           for (import_mod_ref, mod_cx) in &state.global_cx {
             for (n, interface_sig) in &mod_cx.interfaces {
               let name = n.as_str(&state.heap);
@@ -687,7 +687,7 @@ pub mod completion {
               let additional_edits = if available_names.contains(n)
                 || ModuleReference::ROOT.eq(import_mod_ref)
               {
-                vec![]
+                Vec::new()
               } else {
                 rewrite::generate_auto_import_edits(
                   state,
@@ -729,7 +729,7 @@ pub mod completion {
     let class_of_expr = state_searcher_utils::find_class_name(state, module_reference, position);
     let relevant_interface_type =
       state_searcher_utils::find_interface_type(state, &instance_mod_ref, &instance_class_name)?;
-    let mut completion_results = vec![];
+    let mut completion_results = Vec::new();
     let is_inside_class = class_of_expr.eq(&instance_class_name);
     match &relevant_interface_type.type_definition {
       Some(TypeDefinitionSignature::Struct(fields)) if is_inside_class => {
@@ -739,7 +739,7 @@ pub mod completion {
             insert_text: field.name.as_str(&state.heap).to_string(),
             kind: CompletionItemKind::Field,
             detail: field.type_.pretty_print(&state.heap),
-            additional_edits: vec![],
+            additional_edits: Vec::new(),
           });
         }
       }
@@ -781,7 +781,7 @@ pub mod completion {
           .join(", "),
         type_information.type_.return_type.pretty_print(&state.heap)
       ),
-      additional_edits: vec![],
+      additional_edits: Vec::new(),
     }
   }
 }

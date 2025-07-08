@@ -96,7 +96,7 @@ mod tests {
       &mut error_set,
       ModuleReference::DUMMY,
       PStr::UPPER_A,
-      vec![],
+      Vec::new(),
     );
 
     let (a, b) = cx.run_in_synthesis_mode(|cx| cx.in_synthesis_mode());
@@ -120,7 +120,7 @@ mod tests {
           PStr::UPPER_A,
           InterfaceSignature {
             private: false,
-            type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+            type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
             type_parameters: vec![TypeParameterSignature {
               name: heap.alloc_str_for_test("T"),
               bound: None,
@@ -141,7 +141,7 @@ mod tests {
       &mut error_set,
       ModuleReference::DUMMY,
       PStr::UPPER_A,
-      vec![],
+      Vec::new(),
     );
 
     // Non-id lower type
@@ -207,7 +207,7 @@ mod tests {
             PStr::UPPER_A,
             InterfaceSignature {
               private: false,
-              type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+              type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
                 TypeParameterSignature {
@@ -215,7 +215,7 @@ mod tests {
                   bound: Some(builder.simple_nominal_type_unwrapped(PStr::UPPER_B)),
                 },
               ],
-              super_types: vec![],
+              super_types: Vec::new(),
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
@@ -225,7 +225,7 @@ mod tests {
             InterfaceSignature {
               private: false,
               type_definition: None,
-              type_parameters: vec![],
+              type_parameters: Vec::new(),
               super_types: vec![builder.simple_nominal_type_unwrapped(PStr::UPPER_B)],
               functions: HashMap::new(),
               methods: HashMap::new(),
@@ -312,12 +312,12 @@ Found 3 errors.
             PStr::UPPER_A,
             InterfaceSignature {
               private: true,
-              type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
-              type_parameters: vec![],
-              super_types: vec![],
+              type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
+              type_parameters: Vec::new(),
+              super_types: Vec::new(),
               functions: HashMap::from([MemberSignature::create_builtin_function(
                 heap.alloc_str_for_test("f1"),
-                vec![],
+                Vec::new(),
                 builder.int_type(),
                 vec![PStr::UPPER_C],
               )]),
@@ -334,22 +334,22 @@ Found 3 errors.
               PStr::UPPER_A,
               InterfaceSignature {
                 private: false,
-                type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+                type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
                 type_parameters: vec![
                   TypeParameterSignature { name: PStr::UPPER_A, bound: None },
                   TypeParameterSignature { name: PStr::UPPER_B, bound: None },
                 ],
-                super_types: vec![],
+                super_types: Vec::new(),
                 functions: HashMap::from([
                   MemberSignature::create_builtin_function(
                     heap.alloc_str_for_test("f1"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
                   MemberSignature::create_private_builtin_function(
                     heap.alloc_str_for_test("f2"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
@@ -363,7 +363,7 @@ Found 3 errors.
                   ),
                   MemberSignature::create_builtin_function(
                     heap.alloc_str_for_test("m2"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
@@ -379,17 +379,17 @@ Found 3 errors.
                   TypeParameterSignature { name: PStr::UPPER_E, bound: None },
                   TypeParameterSignature { name: PStr::UPPER_F, bound: None },
                 ],
-                super_types: vec![],
+                super_types: Vec::new(),
                 functions: HashMap::from([
                   MemberSignature::create_builtin_function(
                     heap.alloc_str_for_test("f1"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
                   MemberSignature::create_private_builtin_function(
                     heap.alloc_str_for_test("f2"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
@@ -397,13 +397,13 @@ Found 3 errors.
                 methods: HashMap::from([
                   MemberSignature::create_builtin_function(
                     heap.alloc_str_for_test("m1"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
                   MemberSignature::create_private_builtin_function(
                     heap.alloc_str_for_test("m2"),
-                    vec![],
+                    Vec::new(),
                     builder.int_type(),
                     vec![PStr::UPPER_C],
                   ),
@@ -451,7 +451,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: mod_ref_w,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
@@ -466,7 +466,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
@@ -481,7 +481,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
@@ -496,7 +496,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f2"),
         Location::dummy()
@@ -511,7 +511,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f3"),
         Location::dummy()
@@ -526,7 +526,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m1"),
         Location::dummy()
@@ -541,7 +541,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m2"),
         Location::dummy()
@@ -556,7 +556,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m3"),
         Location::dummy()
@@ -571,7 +571,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
@@ -586,7 +586,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f2"),
         Location::dummy()
@@ -601,7 +601,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f3"),
         Location::dummy()
@@ -616,7 +616,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m1"),
         Location::dummy()
@@ -631,7 +631,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m2"),
         Location::dummy()
@@ -646,7 +646,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m3"),
         Location::dummy()
@@ -661,7 +661,7 @@ Found 3 errors.
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m2"),
         Location::dummy(),
@@ -676,7 +676,7 @@ Found 3 errors.
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_B,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m3"),
         Location::dummy(),
@@ -691,7 +691,7 @@ Found 3 errors.
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_C,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m3"),
         Location::dummy(),
@@ -723,7 +723,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_A,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f2"),
         Location::dummy(),
@@ -739,7 +739,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("TT2"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
@@ -753,7 +753,7 @@ Found 3 errors.
           is_class_statics: true,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("TT3"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
@@ -792,7 +792,7 @@ Found 3 errors.
                   TypeParameterSignature { name: PStr::UPPER_A, bound: None },
                   TypeParameterSignature { name: PStr::UPPER_B, bound: None },
                 ],
-                super_types: vec![],
+                super_types: Vec::new(),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
               },
@@ -801,12 +801,12 @@ Found 3 errors.
               PStr::UPPER_B,
               InterfaceSignature {
                 private: false,
-                type_definition: Some(TypeDefinitionSignature::Struct(vec![])),
+                type_definition: Some(TypeDefinitionSignature::Struct(Vec::new())),
                 type_parameters: vec![
                   TypeParameterSignature { name: PStr::UPPER_E, bound: None },
                   TypeParameterSignature { name: PStr::UPPER_F, bound: None },
                 ],
-                super_types: vec![],
+                super_types: Vec::new(),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
               },
@@ -835,7 +835,7 @@ Found 3 errors.
                 TypeParameterSignature { name: PStr::UPPER_A, bound: None },
                 TypeParameterSignature { name: PStr::UPPER_B, bound: None },
               ],
-              super_types: vec![],
+              super_types: Vec::new(),
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
@@ -849,7 +849,7 @@ Found 3 errors.
       &mut error_set,
       ModuleReference::DUMMY,
       PStr::UPPER_A,
-      vec![],
+      Vec::new(),
     );
 
     assert!(cx.resolve_struct_definitions(&builder.bool_type()).is_empty());
@@ -877,7 +877,7 @@ Found 3 errors.
         is_class_statics: false,
         module_reference: mod_ref_w,
         id: PStr::UPPER_A,
-        type_arguments: vec![]
+        type_arguments: Vec::new()
       }))
       .is_none()
     );

@@ -98,8 +98,8 @@ mod estimator {
 
       let actual = super::estimate_fn_inline_cost(&Function {
         name: FunctionName::new_for_test(PStr::EMPTY),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
           Statement::IndexedAccess {
             name: PStr::EMPTY,
@@ -118,14 +118,14 @@ mod estimator {
             closure_type_name: table.create_type_name_for_test(PStr::EMPTY),
             function_name: FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::EMPTY),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             },
             context: ZERO,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::EMPTY),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             }),
             arguments: vec![ZERO, ZERO],
             return_type: INT_32_TYPE,
@@ -133,8 +133,8 @@ mod estimator {
           },
           Statement::IfElse {
             condition: ZERO,
-            s1: vec![],
-            s2: vec![],
+            s1: Vec::new(),
+            s2: Vec::new(),
             final_assignments: vec![IfElseFinalAssignment {
               name: PStr::EMPTY,
               type_: INT_32_TYPE,
@@ -146,7 +146,7 @@ mod estimator {
             condition: ZERO,
             s1: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
             s2: vec![Statement::binary(PStr::EMPTY, BinaryOperator::PLUS, ZERO, ZERO)],
-            final_assignments: vec![],
+            final_assignments: Vec::new(),
           },
           Statement::SingleIf {
             condition: ZERO,
@@ -505,8 +505,8 @@ pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> V
       return temp_functions;
     }
     let mut functions_that_can_be_inlined = HashMap::new();
-    let mut all_other_functions = vec![];
-    let mut names = vec![];
+    let mut all_other_functions = Vec::new();
+    let mut names = Vec::new();
     for f in temp_functions {
       names.push(f.name);
       if estimator_result.functions_that_can_be_inlined.contains(&f.name) {
@@ -515,7 +515,7 @@ pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> V
         all_other_functions.push(f);
       }
     }
-    let mut inlined = vec![];
+    let mut inlined = Vec::new();
     for f in all_other_functions {
       if estimator_result.functions_that_can_perform_inlining.contains(&f.name) {
         inlined.push(perform_inline_rewrite_on_function(f, &functions_that_can_be_inlined, heap))

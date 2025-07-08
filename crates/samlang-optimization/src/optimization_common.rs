@@ -82,7 +82,7 @@ pub(super) fn single_if_or_null(
   statements: Vec<Statement>,
 ) -> Vec<Statement> {
   if statements.is_empty() {
-    vec![]
+    Vec::new()
   } else {
     vec![Statement::SingleIf { condition, invert_condition, statements }]
   }
@@ -121,9 +121,12 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert_eq!(true, if_else_or_null(ZERO, vec![], vec![], vec![]).is_none());
-    assert_eq!(true, if_else_or_null(ZERO, vec![], vec![Statement::Break(ZERO)], vec![]).is_some());
-    assert_eq!(true, single_if_or_null(ZERO, false, vec![]).is_empty());
+    assert_eq!(true, if_else_or_null(ZERO, Vec::new(), Vec::new(), Vec::new()).is_none());
+    assert_eq!(
+      true,
+      if_else_or_null(ZERO, Vec::new(), vec![Statement::Break(ZERO)], Vec::new()).is_some()
+    );
+    assert_eq!(true, single_if_or_null(ZERO, false, Vec::new()).is_empty());
     assert_eq!(false, single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
     let bv1 = BindedValue::IndexedAccess(IndexAccessBindedValue {

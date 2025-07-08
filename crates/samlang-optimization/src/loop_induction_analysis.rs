@@ -473,8 +473,8 @@ fn extract_basic_induction_variables(
   rest_stmts: &[Statement],
   non_loop_invariant_variables: &HashSet<PStr>,
 ) -> Option<ExtractedBasicInductionVariables> {
-  let mut all_basic_induction_variables = vec![];
-  let mut loop_variables_that_are_not_basic_induction_variables = vec![];
+  let mut all_basic_induction_variables = Vec::new();
+  let mut loop_variables_that_are_not_basic_induction_variables = Vec::new();
   'outer: for loop_variable in loop_variables {
     if let Expression::Variable(basic_induction_loop_increment_collector) =
       &loop_variable.loop_value
@@ -549,7 +549,7 @@ fn extract_derived_induction_variables(
   for v in all_basic_induction_variables {
     induction_loop_variable_collector_names.insert(v.loop_value_collector);
   }
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   for stmt in rest_stmts {
     if let Statement::Binary(b) = stmt {
       if let Some(derived_induction_variable) = existing_derived_induction_variable_set.get(&b.name)
@@ -991,7 +991,7 @@ mod tests {
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::LOWER_A),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             }),
             arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_32_TYPE)],
             return_type: INT_32_TYPE,
@@ -1000,7 +1000,7 @@ mod tests {
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::LOWER_A),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             }),
             arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_32_TYPE)],
             return_type: INT_32_TYPE,
@@ -1435,7 +1435,7 @@ mod tests {
           loop_value: Expression::var_name(heap.alloc_str_for_test("name"), INT_32_TYPE),
         },
       ],
-      &mut vec![],
+      &mut Vec::new(),
     );
   }
 
@@ -1448,7 +1448,7 @@ mod tests {
       HashSet::from([PStr::LOWER_A, PStr::LOWER_A, PStr::LOWER_B, heap.alloc_str_for_test("cc")]);
 
     assert!(
-      extract_loop_guard_structure((&vec![], &None), &non_loop_invariant_variables).is_none()
+      extract_loop_guard_structure((&Vec::new(), &None), &non_loop_invariant_variables).is_none()
     );
 
     assert!(
@@ -1458,12 +1458,12 @@ mod tests {
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             },
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             }
           ],
           &None
@@ -1496,12 +1496,12 @@ mod tests {
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             },
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             }
           ],
           &None
@@ -1519,7 +1519,7 @@ mod tests {
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             }
           ],
           &None
@@ -1542,7 +1542,7 @@ mod tests {
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             }
           ],
           &None
@@ -1565,9 +1565,13 @@ mod tests {
             Statement::StructInit {
               struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
-              expression_list: vec![],
+              expression_list: Vec::new(),
             },
-            Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
+            Statement::SingleIf {
+              condition: ZERO,
+              invert_condition: false,
+              statements: Vec::new()
+            }
           ],
           &None
         ),
@@ -1586,7 +1590,11 @@ mod tests {
               Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
               ZERO
             ),
-            Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
+            Statement::SingleIf {
+              condition: ZERO,
+              invert_condition: false,
+              statements: Vec::new()
+            }
           ],
           &None
         ),
@@ -1656,14 +1664,18 @@ mod tests {
               invert_condition: false,
               statements: vec![Statement::Break(ZERO)]
             },
-            Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
+            Statement::While {
+              loop_variables: Vec::new(),
+              statements: Vec::new(),
+              break_collector: None
+            },
             Statement::SingleIf {
               condition: ZERO,
               invert_condition: false,
               statements: vec![Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-                expression_list: vec![]
+                expression_list: Vec::new()
               }]
             },
             Statement::IfElse {
@@ -1671,14 +1683,14 @@ mod tests {
               s1: vec![Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-                expression_list: vec![]
+                expression_list: Vec::new()
               }],
               s2: vec![Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-                expression_list: vec![]
+                expression_list: Vec::new()
               }],
-              final_assignments: vec![]
+              final_assignments: Vec::new()
             },
             Statement::IndexedAccess {
               name: PStr::LOWER_A,
@@ -1695,9 +1707,9 @@ mod tests {
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(PStr::LOWER_A),
-                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
+                type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE)
               }),
-              arguments: vec![],
+              arguments: Vec::new(),
               return_type: INT_32_TYPE,
               return_collector: None
             },
@@ -1749,7 +1761,7 @@ mod tests {
               statements: vec![Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-                expression_list: vec![]
+                expression_list: Vec::new()
               }]
             },
           ],
@@ -1776,7 +1788,7 @@ mod tests {
               statements: vec![Statement::StructInit {
                 struct_variable_name: PStr::LOWER_A,
                 type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
-                expression_list: vec![]
+                expression_list: Vec::new()
               }]
             },
           ],
@@ -1795,7 +1807,7 @@ mod tests {
     assert!(
       extract_optimizable_while_loop(
         (
-          vec![],
+          Vec::new(),
           vec![
             Statement::binary(
               heap.alloc_str_for_test("cc"),
@@ -1819,7 +1831,7 @@ mod tests {
     assert!(
       extract_optimizable_while_loop(
         (
-          vec![],
+          Vec::new(),
           vec![
             Statement::binary(
               heap.alloc_str_for_test("cc"),
@@ -1849,7 +1861,7 @@ mod tests {
     assert!(
       extract_optimizable_while_loop(
         (
-          vec![],
+          Vec::new(),
           vec![
             Statement::binary(
               heap.alloc_str_for_test("cc"),
@@ -1879,7 +1891,7 @@ mod tests {
     assert!(
       extract_optimizable_while_loop(
         (
-          vec![],
+          Vec::new(),
           vec![
             Statement::binary(
               heap.alloc_str_for_test("cc"),

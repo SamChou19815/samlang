@@ -441,10 +441,10 @@ mod tests {
     let dummy_name = PStr::UNDERSCORE;
 
     let input = Sources {
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![],
-      main_function_names: vec![],
+      global_variables: Vec::new(),
+      closure_types: Vec::new(),
+      type_definitions: Vec::new(),
+      main_function_names: Vec::new(),
       functions: vec![
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
@@ -453,7 +453,7 @@ mod tests {
             argument_types: vec![INT_32_TYPE, INT_32_TYPE],
             return_type: Box::new(INT_32_TYPE),
           },
-          body: vec![],
+          body: Vec::new(),
           return_value: ZERO,
         },
         Function {
@@ -515,7 +515,10 @@ mod tests {
               closure_type_name: table.create_type_name_for_test(dummy_name),
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
-                type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) },
+                type_: FunctionType {
+                  argument_types: Vec::new(),
+                  return_type: Box::new(INT_32_TYPE),
+                },
               },
               context: ZERO,
             },

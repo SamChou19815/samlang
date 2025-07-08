@@ -220,15 +220,15 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
+          general_induction_variables: Vec::new(),
           loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
             name: PStr::LOWER_A,
             type_: INT_32_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
           }],
-          derived_induction_variables: vec![],
-          statements: vec![],
+          derived_induction_variables: Vec::new(),
+          statements: Vec::new(),
           break_collector: None
         },
         heap,
@@ -246,10 +246,10 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
-          loop_variables_that_are_not_basic_induction_variables: vec![],
-          derived_induction_variables: vec![],
-          statements: vec![],
+          general_induction_variables: Vec::new(),
+          loop_variables_that_are_not_basic_induction_variables: Vec::new(),
+          derived_induction_variables: Vec::new(),
+          statements: Vec::new(),
           break_collector: Some((
             PStr::LOWER_A,
             INT_32_TYPE,
@@ -271,13 +271,13 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
-          loop_variables_that_are_not_basic_induction_variables: vec![],
-          derived_induction_variables: vec![],
+          general_induction_variables: Vec::new(),
+          loop_variables_that_are_not_basic_induction_variables: Vec::new(),
+          derived_induction_variables: Vec::new(),
           statements: vec![Statement::IfElse {
             condition: ZERO,
-            s1: vec![],
-            s2: vec![],
+            s1: Vec::new(),
+            s2: Vec::new(),
             final_assignments: vec![IfElseFinalAssignment {
               name: PStr::LOWER_A,
               type_: INT_32_TYPE,
@@ -302,14 +302,14 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
-          loop_variables_that_are_not_basic_induction_variables: vec![],
-          derived_induction_variables: vec![],
+          general_induction_variables: Vec::new(),
+          loop_variables_that_are_not_basic_induction_variables: Vec::new(),
+          derived_induction_variables: Vec::new(),
           statements: vec![Statement::IfElse {
             condition: ZERO,
-            s1: vec![],
-            s2: vec![],
-            final_assignments: vec![]
+            s1: Vec::new(),
+            s2: Vec::new(),
+            final_assignments: Vec::new()
           }],
           break_collector: None
         },
@@ -328,9 +328,9 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
-          loop_variables_that_are_not_basic_induction_variables: vec![],
-          derived_induction_variables: vec![],
+          general_induction_variables: Vec::new(),
+          loop_variables_that_are_not_basic_induction_variables: Vec::new(),
+          derived_induction_variables: Vec::new(),
           statements: vec![
             Statement::IndexedAccess {
               name: PStr::LOWER_A,
@@ -357,7 +357,7 @@ mod tests {
                 closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
                 function_name: FunctionNameExpression {
                   name: FunctionName::new_for_test(PStr::LOWER_A),
-                  type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
+                  type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE)
                 },
                 context: ZERO
               }],
@@ -394,7 +394,7 @@ mod tests {
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
                 name: FunctionName::new_for_test(PStr::LOWER_A),
-                type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE)
+                type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE)
               }),
               arguments: vec![ZERO],
               return_type: INT_32_TYPE,
@@ -430,7 +430,7 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
+          general_induction_variables: Vec::new(),
           loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
             name: PStr::LOWER_J,
             type_: INT_32_TYPE,
@@ -451,7 +451,7 @@ mod tests {
               immediate: PotentialLoopInvariantExpression::Int(5)
             }
           ],
-          statements: vec![],
+          statements: Vec::new(),
           break_collector: None
         },
         heap,
@@ -472,7 +472,7 @@ mod tests {
             guard_operator: GuardOperator::LT,
             guard_expression: PotentialLoopInvariantExpression::Int(10),
           },
-          general_induction_variables: vec![],
+          general_induction_variables: Vec::new(),
           loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
             name: PStr::LOWER_J,
             type_: INT_32_TYPE,
@@ -488,7 +488,7 @@ mod tests {
             )),
             immediate: PotentialLoopInvariantExpression::Int(5),
           }],
-          statements: vec![],
+          statements: Vec::new(),
           break_collector: None,
         },
         heap,
@@ -511,7 +511,7 @@ mod tests {
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
         },
-        general_induction_variables: vec![],
+        general_induction_variables: Vec::new(),
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
           type_: INT_32_TYPE,
@@ -524,7 +524,7 @@ mod tests {
           multiplier: PotentialLoopInvariantExpression::Int(3),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],
-        statements: vec![],
+        statements: Vec::new(),
         break_collector: None,
       },
       heap,
@@ -565,7 +565,7 @@ mod tests {
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
         },
-        general_induction_variables: vec![],
+        general_induction_variables: Vec::new(),
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
           type_: INT_32_TYPE,
@@ -581,7 +581,7 @@ mod tests {
           )),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],
-        statements: vec![],
+        statements: Vec::new(),
         break_collector: None,
       },
       heap,
@@ -625,7 +625,7 @@ mod tests {
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
         },
-        general_induction_variables: vec![],
+        general_induction_variables: Vec::new(),
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
           name: PStr::LOWER_J,
           type_: INT_32_TYPE,
@@ -638,7 +638,7 @@ mod tests {
           multiplier: PotentialLoopInvariantExpression::Int(1),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],
-        statements: vec![],
+        statements: Vec::new(),
         break_collector: None,
       },
       heap,

@@ -224,7 +224,7 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
 }
 
 pub(super) fn optimize_stmts(stmts: &mut Vec<Statement>, set: &mut HashSet<PStr>) {
-  let mut indices = vec![];
+  let mut indices = Vec::new();
   for (i, s) in stmts.iter_mut().enumerate().rev() {
     if optimize_stmt(s, set) {
       indices.push(i);

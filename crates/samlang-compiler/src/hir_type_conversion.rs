@@ -204,7 +204,7 @@ impl TypeLoweringManager {
     heap: &mut Heap,
     source_types: &Vec<Rc<type_::Type>>,
   ) -> Vec<Type> {
-    let mut types = vec![];
+    let mut types = Vec::new();
     for t in source_types {
       types.push(self.lower_source_type(heap, t));
     }
@@ -266,7 +266,7 @@ impl TypeLoweringManager {
         ),
       },
       None => {
-        TypeDefinition { name, type_parameters, mappings: TypeDefinitionMappings::Enum(vec![]) }
+        TypeDefinition { name, type_parameters, mappings: TypeDefinitionMappings::Enum(Vec::new()) }
       }
     }
   }
@@ -311,14 +311,14 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType0",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
     assert_eq!(
       "_$SyntheticIDType1",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
@@ -326,14 +326,14 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType0",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
     assert_eq!(
       "_$SyntheticIDType1",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
@@ -341,14 +341,14 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType2",
       synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
+        .synthesize_closure_type(heap, Type::new_fn_unwrapped(Vec::new(), INT_TYPE), Vec::new())
         .name
         .pretty_print(heap),
     );
     assert_eq!(
       "_$SyntheticIDType2",
       synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
+        .synthesize_closure_type(heap, Type::new_fn_unwrapped(Vec::new(), INT_TYPE), Vec::new())
         .name
         .pretty_print(heap),
     );
@@ -395,7 +395,7 @@ mod tests {
     assert_eq!(
       vec![PStr::UPPER_A],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(PStr::UPPER_A)),
+        &Type::new_fn_unwrapped(Vec::new(), Type::new_generic_type(PStr::UPPER_A)),
         &generic_types,
       )
       .into_iter()
@@ -405,7 +405,7 @@ mod tests {
     assert_eq!(
       vec![PStr::UPPER_B],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(PStr::UPPER_B)),
+        &Type::new_fn_unwrapped(Vec::new(), Type::new_generic_type(PStr::UPPER_B)),
         &generic_types,
       )
       .into_iter()
@@ -429,7 +429,7 @@ mod tests {
       vec![PStr::UPPER_B],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
-          vec![],
+          Vec::new(),
           Type::new_id(PStr::UPPER_A, vec![Type::new_generic_type(PStr::UPPER_B)])
         ),
         &generic_types,

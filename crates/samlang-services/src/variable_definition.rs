@@ -52,7 +52,7 @@ fn get_relevant_in_ranges(
   location: &Location,
   DefinitionAndUses { definition_location, use_locations }: &DefinitionAndUses,
 ) -> Vec<Location> {
-  let mut locations = vec![];
+  let mut locations = Vec::new();
   if location.contains(definition_location) {
     locations.push(*definition_location);
   }
@@ -450,7 +450,7 @@ mod tests {
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(()),
         explicit_type_arguments: None,
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0))),
         method_name: Id::from(PStr::LOWER_A),
       }),

@@ -134,7 +134,7 @@ fn solve_type_arguments(
   argument_types: &Vec<Type>,
   valid_return_type_hint: Option<&Type>,
 ) -> FunctionType {
-  let mut constraints = vec![];
+  let mut constraints = Vec::new();
   for (generic_type, concrete_type) in
     generic_function_type.argument_types.iter().zip(argument_types)
   {
@@ -244,7 +244,7 @@ fn check_literal(common: &expr::ExpressionCommon<()>, literal: &Literal) -> expr
       is_class_statics: false,
       module_reference: ModuleReference::ROOT,
       id: PStr::STR_TYPE,
-      type_arguments: vec![],
+      type_arguments: Vec::new(),
     })),
   };
   expr::E::Literal(common.with_new_type(type_), *literal)
@@ -272,7 +272,7 @@ fn check_class_id(
       is_class_statics: true,
       module_reference,
       id: id.name,
-      type_arguments: vec![],
+      type_arguments: Vec::new(),
     }));
     expr::E::ClassId(common.with_new_type(type_), module_reference, *id)
   } else {
@@ -348,7 +348,7 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
       expr::E::FieldAccess(expr::FieldAccess {
         common: e.common.with_new_type(type_),
         explicit_type_arguments: e.explicit_type_arguments,
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: e.object,
         field_name: e.field_name,
         field_order: e.field_order,
@@ -389,12 +389,12 @@ fn check_member_with_unresolved_tparams(
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(any_type),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
         field_name: expression.field_name,
         field_order: expression.field_order,
       });
-      return (partially_checked_expr, vec![]);
+      return (partially_checked_expr, Vec::new());
     }
   };
   let class_id = obj_type.id;
@@ -425,7 +425,7 @@ fn check_member_with_unresolved_tparams(
           object: Box::new(checked_expression),
           method_name: expression.field_name,
         });
-        return (partially_checked_expr, vec![]);
+        return (partially_checked_expr, Vec::new());
       }
       let mut error = StackableError::new();
       error.add_type_args_arity_error(
@@ -440,11 +440,11 @@ fn check_member_with_unresolved_tparams(
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
         common: expression.common.with_new_type(type_),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
         method_name: expression.field_name,
       });
-      return (partially_checked_expr, vec![]);
+      return (partially_checked_expr, Vec::new());
     }
     if let Some(hint) = hint.get_valid_hint() {
       if let Type::Fn(fun_hint) = hint {
@@ -475,7 +475,7 @@ fn check_member_with_unresolved_tparams(
             object: Box::new(checked_expression),
             method_name: expression.field_name,
           });
-          return (partially_checked_expr, vec![]);
+          return (partially_checked_expr, Vec::new());
         }
       }
     }
@@ -514,28 +514,28 @@ fn check_member_with_unresolved_tparams(
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(type_),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
         field_name: expression.field_name,
         field_order: order as i32,
       });
-      (partially_checked_expr, vec![])
+      (partially_checked_expr, Vec::new())
     } else {
       cx.error_set.report_cannot_resolve_member_error(
         expression.field_name.loc,
-        Description::NominalType { name: class_id, type_args: vec![] },
+        Description::NominalType { name: class_id, type_args: Vec::new() },
         expression.field_name.name,
       );
       let any_type = Rc::new(Type::Any(Reason::new(expression.common.loc, None), false));
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(any_type),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
         field_name: expression.field_name,
         field_order: expression.field_order,
       });
-      (partially_checked_expr, vec![])
+      (partially_checked_expr, Vec::new())
     }
   }
 }
@@ -611,8 +611,8 @@ fn check_function_call_implicit_instantiation(
     };
   }
   // Phase 0: Initial Synthesis -> Vec<(Expr, checked)>
-  let mut partially_checked_arguments = vec![];
-  let mut checked_argument_types = vec![];
+  let mut partially_checked_arguments = Vec::new();
+  let mut checked_argument_types = Vec::new();
   for arg in function_arguments {
     if arguments_should_be_checked_without_hint(arg) {
       let checked = type_check_expression(cx, arg, type_hint::MISSING);
@@ -631,7 +631,7 @@ fn check_function_call_implicit_instantiation(
     }
   }
   // Phase 1-n: Best effort inference through arguments that are already checked.
-  let mut checked_arguments = vec![];
+  let mut checked_arguments = Vec::new();
   for maybe_checked_expr in &partially_checked_arguments {
     checked_argument_types.push(match maybe_checked_expr {
       MaybeCheckedExpression::Checked(e) => e.type_().clone(),
@@ -661,7 +661,7 @@ fn check_function_call_implicit_instantiation(
     }
   }
   // Phase n+1: Use fully checked arguments to infer remaining type parameters.
-  let mut final_phase_arguments_constraints = vec![];
+  let mut final_phase_arguments_constraints = Vec::new();
   for (generic_type, concrete_type) in
     generic_function_type.argument_types.iter().zip(&checked_argument_types)
   {
@@ -723,7 +723,7 @@ fn check_function_call(
       };
       (partially_checked_expr, unresolved_tparams)
     }
-    e => (type_check_expression(cx, e, type_hint::MISSING), vec![]),
+    e => (type_check_expression(cx, e, type_hint::MISSING), Vec::new()),
   };
   let partially_checked_callee_type = partially_checked_callee.type_().deref();
   let callee_function_type = match partially_checked_callee_type {
@@ -863,7 +863,7 @@ fn check_binary(cx: &mut TypingContext, expression: &expr::Binary<()>) -> expr::
       is_class_statics: false,
       module_reference: ModuleReference::ROOT,
       id: PStr::STR_TYPE,
-      type_arguments: vec![],
+      type_arguments: Vec::new(),
     }),
   });
   match expression.operator {
@@ -967,7 +967,7 @@ fn check_match(
 ) -> expr::E<Rc<Type>> {
   let checked_matched = type_check_expression(cx, &expression.matched, type_hint::MISSING);
   let checked_matched_type = checked_matched.type_();
-  let mut checked_cases = vec![];
+  let mut checked_cases = Vec::new();
   let mut matching_list_type: Option<Rc<Type>> = None;
   let mut abstract_pattern_nodes = Vec::with_capacity(expression.cases.len());
   for expr::VariantPatternToExpression { loc, pattern, body, ending_associated_comments } in
@@ -1092,7 +1092,7 @@ fn any_typed_invalid_tuple_pattern(
     elements: destructured_names,
   }: &pattern::TuplePattern<()>,
 ) -> pattern::TuplePattern<Rc<Type>> {
-  let mut checked_destructured_names = vec![];
+  let mut checked_destructured_names = Vec::new();
   for pattern::TuplePatternElement { pattern, type_: _ } in destructured_names {
     let loc = pattern.loc();
     checked_destructured_names.push(pattern::TuplePatternElement {
@@ -1122,7 +1122,7 @@ fn any_typed_invalid_matching_pattern(
       ending_associated_comments,
       elements: destructured_names,
     } => {
-      let mut checked_destructured_names = vec![];
+      let mut checked_destructured_names = Vec::new();
       for pattern::ObjectPatternElement {
         loc,
         field_order,
@@ -1195,8 +1195,8 @@ fn check_matching_pattern(
           bad_pattern_default(wildcard_on_bad_pattern),
         );
       };
-      let mut checked_destructured_names = vec![];
-      let mut abstract_pattern_nodes = vec![];
+      let mut checked_destructured_names = Vec::new();
+      let mut abstract_pattern_nodes = Vec::new();
       for (index, pattern::TuplePatternElement { pattern, type_: _ }) in
         destructured_names.iter().enumerate()
       {
@@ -1265,7 +1265,7 @@ fn check_matching_pattern(
         field_mappings.insert(field.name, (field.type_, field.is_public));
         abstract_pattern_nodes.push(pattern_matching::AbstractPatternNode::wildcard());
       }
-      let mut checked_destructured_names = vec![];
+      let mut checked_destructured_names = Vec::new();
       for pattern::ObjectPatternElement {
         loc,
         field_order,
@@ -1369,7 +1369,7 @@ fn check_matching_pattern(
         class_name: abstract_variant_constructor_class_name,
         variant_name: resolved_enum_variant.name,
       };
-      let mut abstract_pattern_nodes = vec![];
+      let mut abstract_pattern_nodes = Vec::new();
       let (checked_data_variables_len, checked_data_variables) =
         if let Some(pattern::TuplePattern {
           location,
@@ -1606,7 +1606,7 @@ pub fn type_check_module(
     }
   }
 
-  let mut checked_toplevels = vec![];
+  let mut checked_toplevels = Vec::new();
   for toplevel in &module.toplevels {
     let nominal_type = NominalType {
       reason: Reason::new(toplevel.name().loc, None),
@@ -1778,7 +1778,7 @@ pub fn type_check_module(
         }
         local_cx.write(c.loc, Rc::new(Type::Nominal(nominal_type)));
 
-        let mut checked_members = vec![];
+        let mut checked_members = Vec::new();
         for member in &c.members.members {
           let tparam_sigs = if member.decl.is_method {
             let mut sigs = TypeParameterSignature::from_list(toplevel.type_parameters());

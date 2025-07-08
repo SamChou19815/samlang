@@ -373,15 +373,15 @@ pub struct Heap {
 impl Heap {
   pub fn new() -> Heap {
     let mut heap = Heap {
-      str_pointer_table: vec![],
-      module_reference_pointer_table: vec![],
+      str_pointer_table: Vec::new(),
+      module_reference_pointer_table: Vec::new(),
       interned_string: HashMap::new(),
       interned_static_str: HashMap::new(),
       interned_module_reference: HashMap::new(),
       unmarked_module_references: HashSet::new(),
       sweep_index: 0,
     };
-    heap.alloc_module_reference(vec![]); // Root
+    heap.alloc_module_reference(Vec::new()); // Root
     let dummy_parts = vec![PStr::DUMMY_MODULE];
     let allocated_dummy = heap.alloc_module_reference(dummy_parts);
     let allocated_std_tuples = heap.alloc_module_reference(vec![PStr::STD, PStr::TUPLES]);
@@ -483,7 +483,7 @@ impl Heap {
   }
 
   pub fn get_allocated_module_reference_opt(&self, parts: Vec<String>) -> Option<ModuleReference> {
-    let mut p_str_parts = vec![];
+    let mut p_str_parts = Vec::new();
     for part in &parts {
       p_str_parts.push(self.get_allocated_str_opt(part)?);
     }

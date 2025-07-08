@@ -24,7 +24,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
   let last_stmt = if let Some(last_stmt) = rev_stmt_iterator.next() {
     last_stmt
   } else {
-    return Err(vec![]);
+    return Err(Vec::new());
   };
   let rest_stmts_iterator = rev_stmt_iterator.rev();
 
@@ -125,7 +125,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
             .into_iter()
             .filter(|it| expected_return_collector.ne(&Some(it.name)))
             .collect_vec();
-          let mut args = vec![];
+          let mut args = Vec::new();
           for ((e1, e2), t) in a1.into_iter().zip(a2).zip(function_parameter_types) {
             let name = heap.alloc_temp_str();
             args.push(Expression::var_name(name, *t));
@@ -234,9 +234,9 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
-        body: vec![],
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
+        body: Vec::new(),
         return_value: Expression::StringName(PStr::LOWER_A),
       },
       heap,
@@ -245,9 +245,9 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
-        body: vec![],
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
+        body: Vec::new(),
         return_value: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
       },
       heap,
@@ -256,8 +256,8 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO)],
         return_value: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
       },
@@ -267,11 +267,11 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![Statement::Call {
           callee: Callee::Variable(VariableName::new(PStr::LOWER_A, INT_32_TYPE)),
-          arguments: vec![],
+          arguments: Vec::new(),
           return_type: INT_32_TYPE,
           return_collector: None,
         }],
@@ -283,14 +283,14 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(PStr::LOWER_A),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
-          arguments: vec![],
+          arguments: Vec::new(),
           return_type: INT_32_TYPE,
           return_collector: None,
         }],
@@ -302,13 +302,13 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![Statement::IfElse {
           condition: ZERO,
-          s1: vec![],
-          s2: vec![],
-          final_assignments: vec![],
+          s1: Vec::new(),
+          s2: Vec::new(),
+          final_assignments: Vec::new(),
         }],
         return_value: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
       },
@@ -318,13 +318,13 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![Statement::IfElse {
           condition: ZERO,
-          s1: vec![],
-          s2: vec![],
-          final_assignments: vec![],
+          s1: Vec::new(),
+          s2: Vec::new(),
+          final_assignments: Vec::new(),
         }],
         return_value: ZERO,
       },
@@ -334,14 +334,14 @@ mod tests {
     assert_optimization_failed(
       Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
-          arguments: vec![],
+          arguments: Vec::new(),
           return_type: INT_32_TYPE,
           return_collector: None,
         }],
@@ -527,7 +527,7 @@ mod tests {
               return_type: INT_32_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r1")),
             }],
-            s2: vec![],
+            s2: Vec::new(),
             final_assignments: vec![IfElseFinalAssignment {
               name: heap.alloc_str_for_test("r"),
               type_: INT_32_TYPE,
@@ -582,8 +582,8 @@ mod tests {
               return_type: INT_32_TYPE,
               return_collector: None,
             }],
-            s2: vec![],
-            final_assignments: vec![],
+            s2: Vec::new(),
+            final_assignments: Vec::new(),
           },
         ],
         return_value: ZERO,
@@ -618,10 +618,10 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![Statement::IfElse {
           condition: ZERO,
-          s1: vec![],
+          s1: Vec::new(),
           s2: vec![Statement::IfElse {
             condition: ZERO,
-            s1: vec![],
+            s1: Vec::new(),
             s2: vec![
               Statement::binary(
                 heap.alloc_str_for_test("nn"),

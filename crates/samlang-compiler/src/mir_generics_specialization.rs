@@ -125,7 +125,7 @@ impl Rewriter {
               mir::Expression::var_name(variable_for_tag, mir::INT_32_TYPE),
               mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
-            let mut nested_stmts = vec![];
+            let mut nested_stmts = Vec::new();
             // Once we pass the check, we can cast the general enum type to a
             // more specific subtype.
             nested_stmts.push(mir::Statement::Cast {
@@ -175,7 +175,7 @@ impl Rewriter {
               pointer_type: *unboxed_t,
               operand: mir::Expression::var_name(casted_int_collector, mir::INT_32_TYPE),
             });
-            let mut nested_stmts = vec![];
+            let mut nested_stmts = Vec::new();
             // Once we pass the is-pointer check, we can cast the test expression to the underlying
             // unboxed pointer type.
             nested_stmts.push(mir::Statement::Cast {
@@ -652,9 +652,9 @@ pub(super) fn perform_generics_specialization(
     used_string_names: HashSet::new(),
     specialized_type_definition_names: HashSet::new(),
     specialized_function_names: HashSet::new(),
-    specialized_closure_definitions: vec![],
+    specialized_closure_definitions: Vec::new(),
     specialized_type_definitions: HashMap::new(),
-    specialized_functions: vec![],
+    specialized_functions: Vec::new(),
     symbol_table,
   };
   let empty_replacement_map = HashMap::new();
@@ -725,11 +725,11 @@ mod tests {
   fn empty_test() {
     assert_specialized(
       hir::Sources {
-        global_variables: vec![],
-        closure_types: vec![],
-        type_definitions: vec![],
-        main_function_names: vec![],
-        functions: vec![],
+        global_variables: Vec::new(),
+        closure_types: Vec::new(),
+        type_definitions: Vec::new(),
+        main_function_names: Vec::new(),
+        functions: Vec::new(),
       },
       &mut Heap::new(),
       "",
@@ -742,9 +742,9 @@ mod tests {
 
     assert_specialized(
       hir::Sources {
-        global_variables: vec![],
-        closure_types: vec![],
-        type_definitions: vec![],
+        global_variables: Vec::new(),
+        closure_types: Vec::new(),
+        type_definitions: Vec::new(),
         main_function_names: vec![hir::FunctionName {
           type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
           fn_name: PStr::MAIN_FN,
@@ -755,10 +755,10 @@ mod tests {
               type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: PStr::MAIN_FN,
             },
-            parameters: vec![],
-            type_parameters: vec![],
+            parameters: Vec::new(),
+            type_parameters: Vec::new(),
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-            body: vec![],
+            body: Vec::new(),
             return_value: hir::ZERO,
           },
           hir::Function {
@@ -766,10 +766,10 @@ mod tests {
               type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("main2"),
             },
-            parameters: vec![],
-            type_parameters: vec![],
+            parameters: Vec::new(),
+            type_parameters: Vec::new(),
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-            body: vec![],
+            body: Vec::new(),
             return_value: hir::ZERO,
           },
         ],
@@ -792,11 +792,11 @@ sources.mains = [_DUMMY_I$main]
     assert_specialized(
       hir::Sources {
         global_variables: vec![GlobalString(heap.alloc_str_for_test("G1"))],
-        closure_types: vec![],
+        closure_types: Vec::new(),
         type_definitions: vec![hir::TypeDefinition {
           name: hir::STRING_TYPE.into_id().unwrap().name,
-          type_parameters: vec![],
-          mappings: hir::TypeDefinitionMappings::Enum(vec![]),
+          type_parameters: Vec::new(),
+          mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
         }],
         main_function_names: vec![hir::FunctionName {
           type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
@@ -807,8 +807,8 @@ sources.mains = [_DUMMY_I$main]
             type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
             fn_name: PStr::MAIN_FN,
           },
-          parameters: vec![],
-          type_parameters: vec![],
+          parameters: Vec::new(),
+          type_parameters: Vec::new(),
           type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
           body: vec![hir::Statement::Call {
             callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
@@ -820,7 +820,7 @@ sources.mains = [_DUMMY_I$main]
                 fn_name: PStr::PRINTLN,
               },
               type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], hir::INT_TYPE),
-              type_arguments: vec![],
+              type_arguments: Vec::new(),
             }),
             arguments: vec![hir::Expression::StringName(heap.alloc_str_for_test("G1"))],
             return_type: hir::INT_TYPE,
@@ -875,55 +875,55 @@ sources.mains = [_DUMMY_I$main]
         type_definitions: vec![
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_A),
-            type_parameters: vec![],
-            mappings: hir::TypeDefinitionMappings::Enum(vec![]),
+            type_parameters: Vec::new(),
+            mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_B),
-            type_parameters: vec![],
-            mappings: hir::TypeDefinitionMappings::Enum(vec![]),
+            type_parameters: Vec::new(),
+            mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_I),
             type_parameters: vec![PStr::UPPER_A, PStr::UPPER_B],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (PStr::UPPER_A, vec![]),
-              (PStr::UPPER_B, vec![]),
+              (PStr::UPPER_A, Vec::new()),
+              (PStr::UPPER_B, Vec::new()),
             ]),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_J),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE]),
           },
           hir::TypeDefinition {
             name: hir::STRING_TYPE.into_id().unwrap().name,
-            type_parameters: vec![],
-            mappings: hir::TypeDefinitionMappings::Enum(vec![]),
+            type_parameters: Vec::new(),
+            mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("Enum")),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(vec![
               (PStr::UPPER_A, vec![hir::Type::new_id_no_targs(PStr::UPPER_J)]),
-              (PStr::UPPER_B, vec![]),
+              (PStr::UPPER_B, Vec::new()),
             ]),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("Enum2")),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(vec![
               (PStr::UPPER_A, vec![hir::INT_TYPE]),
-              (PStr::UPPER_B, vec![]),
+              (PStr::UPPER_B, Vec::new()),
             ]),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("Enum3")),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(vec![
               (PStr::UPPER_A, vec![hir::Type::new_id_no_targs(PStr::UPPER_J)]),
               (PStr::UPPER_B, vec![hir::Type::new_id_no_targs(PStr::UPPER_J)]),
-              (PStr::UPPER_C, vec![]),
+              (PStr::UPPER_C, Vec::new()),
             ]),
           },
         ],
@@ -953,7 +953,7 @@ sources.mains = [_DUMMY_I$main]
                   vec![hir::Type::new_generic_type(PStr::UPPER_A)],
                   hir::INT_TYPE,
                 ),
-                type_arguments: vec![],
+                type_arguments: Vec::new(),
               }),
               arguments: vec![hir::ZERO],
               return_type: hir::INT_TYPE,
@@ -969,7 +969,7 @@ sources.mains = [_DUMMY_I$main]
             parameters: vec![PStr::LOWER_A],
             type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-            body: vec![],
+            body: Vec::new(),
             return_value: hir::ZERO,
           },
           hir::Function {
@@ -980,7 +980,7 @@ sources.mains = [_DUMMY_I$main]
             parameters: vec![PStr::LOWER_A],
             type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
-            body: vec![],
+            body: Vec::new(),
             return_value: hir::ZERO,
           },
           hir::Function {
@@ -1036,9 +1036,9 @@ sources.mains = [_DUMMY_I$main]
               type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: PStr::MAIN_FN,
             },
-            parameters: vec![],
-            type_parameters: vec![],
-            type_: hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
+            parameters: Vec::new(),
+            type_parameters: Vec::new(),
+            type_: hir::Type::new_fn_unwrapped(Vec::new(), hir::INT_TYPE),
             body: vec![
               hir::Statement::IfElse {
                 condition: hir::ONE,
@@ -1133,10 +1133,10 @@ sources.mains = [_DUMMY_I$main]
                         type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: PStr::MAIN_FN,
                       },
-                      type_: hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
-                      type_arguments: vec![],
+                      type_: hir::Type::new_fn_unwrapped(Vec::new(), hir::INT_TYPE),
+                      type_arguments: Vec::new(),
                     }),
-                    arguments: vec![],
+                    arguments: Vec::new(),
                     return_type: hir::INT_TYPE,
                     return_collector: None,
                   },
@@ -1217,9 +1217,9 @@ sources.mains = [_DUMMY_I$main]
                 ),
                 tag: 0,
                 bindings: vec![Some((PStr::LOWER_A, hir::INT_TYPE))],
-                s1: vec![],
-                s2: vec![],
-                final_assignments: vec![],
+                s1: Vec::new(),
+                s2: Vec::new(),
+                final_assignments: Vec::new(),
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
@@ -1227,10 +1227,10 @@ sources.mains = [_DUMMY_I$main]
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum")),
                 ),
                 tag: 1,
-                bindings: vec![],
-                s1: vec![],
-                s2: vec![],
-                final_assignments: vec![],
+                bindings: Vec::new(),
+                s1: Vec::new(),
+                s2: Vec::new(),
+                final_assignments: Vec::new(),
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
@@ -1239,9 +1239,9 @@ sources.mains = [_DUMMY_I$main]
                 ),
                 tag: 1,
                 bindings: vec![Some((PStr::LOWER_A, hir::INT_TYPE))],
-                s1: vec![],
-                s2: vec![],
-                final_assignments: vec![],
+                s1: Vec::new(),
+                s2: Vec::new(),
+                final_assignments: Vec::new(),
               },
               hir::Statement::EnumInit {
                 enum_variable_name: PStr::LOWER_B,
@@ -1262,9 +1262,9 @@ sources.mains = [_DUMMY_I$main]
                 ),
                 tag: 0,
                 bindings: vec![None],
-                s1: vec![],
-                s2: vec![],
-                final_assignments: vec![],
+                s1: Vec::new(),
+                s2: Vec::new(),
+                final_assignments: Vec::new(),
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
@@ -1272,16 +1272,16 @@ sources.mains = [_DUMMY_I$main]
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum2")),
                 ),
                 tag: 1,
-                bindings: vec![],
-                s1: vec![],
-                s2: vec![],
-                final_assignments: vec![],
+                bindings: Vec::new(),
+                s1: Vec::new(),
+                s2: Vec::new(),
+                final_assignments: Vec::new(),
               },
               hir::Statement::EnumInit {
                 enum_variable_name: PStr::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum2")),
                 tag: 1,
-                associated_data_list: vec![],
+                associated_data_list: Vec::new(),
               },
             ],
             return_value: hir::ZERO,
@@ -1400,20 +1400,20 @@ sources.mains = [_DUMMY_I$main]"#,
 
     assert_specialized(
       hir::Sources {
-        global_variables: vec![],
-        closure_types: vec![],
+        global_variables: Vec::new(),
+        closure_types: Vec::new(),
         type_definitions: vec![
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_I),
             type_parameters: vec![PStr::UPPER_A, PStr::UPPER_B],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (PStr::UPPER_A, vec![]),
-              (PStr::UPPER_B, vec![]),
+              (PStr::UPPER_A, Vec::new()),
+              (PStr::UPPER_B, Vec::new()),
             ]),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_J),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::Type::new_id(
               PStr::UPPER_I,
               vec![hir::INT_TYPE, hir::INT_TYPE],
@@ -1421,7 +1421,7 @@ sources.mains = [_DUMMY_I$main]"#,
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(PStr::UPPER_K),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(vec![
               (PStr::UPPER_A, vec![hir::INT_TYPE]),
               (PStr::UPPER_B, vec![hir::INT_TYPE]),
@@ -1429,10 +1429,10 @@ sources.mains = [_DUMMY_I$main]"#,
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("StrOption")),
-            type_parameters: vec![],
+            type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(vec![
               (PStr::UPPER_A, vec![hir::Type::new_id_no_targs(PStr::UPPER_K)]),
-              (PStr::UPPER_B, vec![]),
+              (PStr::UPPER_B, Vec::new()),
             ]),
           },
         ],
@@ -1446,9 +1446,12 @@ sources.mains = [_DUMMY_I$main]"#,
               type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("creatorJ"),
             },
-            parameters: vec![],
-            type_parameters: vec![],
-            type_: hir::Type::new_fn_unwrapped(vec![], hir::Type::new_id_no_targs(PStr::UPPER_J)),
+            parameters: Vec::new(),
+            type_parameters: Vec::new(),
+            type_: hir::Type::new_fn_unwrapped(
+              Vec::new(),
+              hir::Type::new_id_no_targs(PStr::UPPER_J),
+            ),
             body: vec![
               hir::Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("v1"),
@@ -1456,7 +1459,7 @@ sources.mains = [_DUMMY_I$main]"#,
                   PStr::UPPER_I,
                   vec![hir::INT_TYPE, hir::INT_TYPE],
                 ),
-                expression_list: vec![],
+                expression_list: Vec::new(),
               },
               hir::Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("v2"),
@@ -1474,9 +1477,9 @@ sources.mains = [_DUMMY_I$main]"#,
               type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: PStr::MAIN_FN,
             },
-            parameters: vec![],
-            type_parameters: vec![],
-            type_: hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
+            parameters: Vec::new(),
+            type_parameters: Vec::new(),
+            type_: hir::Type::new_fn_unwrapped(Vec::new(), hir::INT_TYPE),
             body: vec![
               hir::Statement::Call {
                 callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
@@ -1485,12 +1488,12 @@ sources.mains = [_DUMMY_I$main]"#,
                     fn_name: heap.alloc_str_for_test("creatorJ"),
                   },
                   type_: hir::Type::new_fn_unwrapped(
-                    vec![],
+                    Vec::new(),
                     hir::Type::new_id_no_targs(PStr::UPPER_J),
                   ),
-                  type_arguments: vec![],
+                  type_arguments: Vec::new(),
                 }),
-                arguments: vec![],
+                arguments: Vec::new(),
                 return_type: hir::Type::new_id_no_targs(PStr::UPPER_J),
                 return_collector: None,
               },

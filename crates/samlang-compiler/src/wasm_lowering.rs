@@ -79,7 +79,7 @@ impl<'a> LoweringManager<'a> {
     let mut instructions =
       function.body.iter().flat_map(|it| instance.lower_stmt(it)).collect_vec();
     instructions.push(wasm::Instruction::Inline(instance.lower_expr(&function.return_value)));
-    let mut parameters = vec![];
+    let mut parameters = Vec::new();
     for (n, t) in function.parameters.iter().zip(&function.type_.argument_types) {
       instance.local_variables.remove(n);
       parameters.push((*n, instance.type_cx.lower(t)));
@@ -195,7 +195,7 @@ impl<'a> LoweringManager<'a> {
         }
         if s1.is_empty() {
           if s2.is_empty() {
-            vec![]
+            Vec::new()
           } else {
             vec![wasm::Instruction::IfElse {
               condition: wasm::InlineInstruction::Binary(
@@ -204,7 +204,7 @@ impl<'a> LoweringManager<'a> {
                 Box::new(wasm::InlineInstruction::Const(1)),
               ),
               s1: s2,
-              s2: vec![],
+              s2: Vec::new(),
             }]
           }
         } else {
@@ -223,7 +223,7 @@ impl<'a> LoweringManager<'a> {
         vec![wasm::Instruction::IfElse {
           condition,
           s1: statements.iter().flat_map(|it| self.lower_stmt(it)).collect(),
-          s2: vec![],
+          s2: Vec::new(),
         }]
       }
       lir::Statement::Break(e) => {
@@ -274,9 +274,7 @@ impl<'a> LoweringManager<'a> {
         let assigned = self.lower_expr(assigned_expression);
         vec![wasm::Instruction::Inline(self.set(name, assigned))]
       }
-      lir::Statement::LateInitDeclaration { name: _, type_: _ } => {
-        vec![]
-      }
+      lir::Statement::LateInitDeclaration { name: _, type_: _ } => Vec::new(),
       lir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
         let mut instructions = vec![wasm::Instruction::Inline(self.set(
           struct_variable_name,
@@ -376,7 +374,7 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
-  let mut global_variables = vec![];
+  let mut global_variables = Vec::new();
   for hir::GlobalString(content) in &sources.global_variables {
     let content_str = content.as_str(heap);
     let mut bytes = vec![0, 0, 0, 0];
@@ -401,7 +399,7 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
     let mappings = mappings.iter().map(|t| type_cx.lower(t)).collect_vec();
     type_definitions.push(wasm::TypeDefinition { name: *name, mappings });
   }
-  let mut functions = vec![];
+  let mut functions = Vec::new();
   for f in &sources.functions {
     let (f, new_type_cx) = LoweringManager::lower_fn(
       type_cx,
@@ -452,7 +450,7 @@ mod tests {
     let mut symbol_table = mir::SymbolTable::new();
     let mut m = wasm::Module {
       symbol_table: mir::SymbolTable::new(),
-      function_type_mapping: vec![],
+      function_type_mapping: Vec::new(),
       type_definitions: vec![wasm::TypeDefinition {
         name: symbol_table.create_type_name_for_test(PStr::UPPER_F),
         mappings: vec![
@@ -460,12 +458,12 @@ mod tests {
           wasm::Type::Reference(symbol_table.create_type_name_for_test(PStr::UPPER_F)),
         ],
       }],
-      global_variables: vec![],
-      exported_functions: vec![],
+      global_variables: Vec::new(),
+      exported_functions: Vec::new(),
       functions: vec![wasm::Function {
         name: mir::FunctionName::PROCESS_PRINTLN,
-        parameters: vec![],
-        local_variables: vec![],
+        parameters: Vec::new(),
+        local_variables: Vec::new(),
         instructions: vec![wasm::Instruction::Inline(wasm::InlineInstruction::IsPointer {
           pointer_type: lir::Type::Int32,
           value: Box::new(wasm::InlineInstruction::StructInit {
@@ -564,23 +562,28 @@ mod tests {
         GlobalString(heap.alloc_str_for_test("FOO")),
         GlobalString(heap.alloc_str_for_test("BAR")),
       ],
-      type_definitions: vec![],
+      type_definitions: Vec::new(),
       main_function_names: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![Function {
         name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![heap.alloc_str_for_test("bar")],
         type_: lir::Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![
-          Statement::IfElse { condition: ZERO, s1: vec![], s2: vec![], final_assignments: vec![] },
           Statement::IfElse {
             condition: ZERO,
-            s1: vec![],
+            s1: Vec::new(),
+            s2: Vec::new(),
+            final_assignments: Vec::new(),
+          },
+          Statement::IfElse {
+            condition: ZERO,
+            s1: Vec::new(),
             s2: vec![Statement::Cast {
               name: PStr::LOWER_C,
               type_: INT_32_TYPE,
               assigned_expression: ZERO,
             }],
-            final_assignments: vec![],
+            final_assignments: Vec::new(),
           },
           Statement::IfElse {
             condition: ZERO,
@@ -604,7 +607,7 @@ mod tests {
             }],
             s2: vec![
               Statement::While {
-                loop_variables: vec![],
+                loop_variables: Vec::new(),
                 statements: vec![Statement::SingleIf {
                   condition: ZERO,
                   invert_condition: false,
@@ -613,7 +616,7 @@ mod tests {
                 break_collector: Some((PStr::LOWER_B, INT_32_TYPE)),
               },
               Statement::While {
-                loop_variables: vec![],
+                loop_variables: Vec::new(),
                 statements: vec![Statement::SingleIf {
                   condition: ZERO,
                   invert_condition: true,
@@ -628,7 +631,7 @@ mod tests {
               Expression::StringName(heap.alloc_str_for_test("FOO")),
               Expression::FnName(
                 mir::FunctionName::new_for_test(PStr::MAIN_FN),
-                lir::Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+                lir::Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               ),
             )],
           },
@@ -683,14 +686,14 @@ mod tests {
           Statement::Call {
             callee: Expression::FnName(
               mir::FunctionName::new_for_test(PStr::MAIN_FN),
-              lir::Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              lir::Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             ),
             arguments: vec![ZERO],
             return_type: INT_32_TYPE,
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(PStr::LOWER_F, lir::Type::new_fn(vec![], INT_32_TYPE)),
+            callee: Expression::Variable(PStr::LOWER_F, lir::Type::new_fn(Vec::new(), INT_32_TYPE)),
             arguments: vec![ZERO],
             return_type: INT_32_TYPE,
             return_collector: Some(heap.alloc_str_for_test("rc")),

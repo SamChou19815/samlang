@@ -119,15 +119,15 @@ mod tests {
   fn sources() -> Sources {
     Sources {
       symbol_table: SymbolTable::new(),
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![],
+      global_variables: Vec::new(),
+      closure_types: Vec::new(),
+      type_definitions: Vec::new(),
       main_function_names: vec![FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![Function {
         name: FunctionName::new_for_test(PStr::MAIN_FN),
-        parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
-        body: vec![],
+        parameters: Vec::new(),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
+        body: Vec::new(),
         return_value: ZERO,
       }],
     }

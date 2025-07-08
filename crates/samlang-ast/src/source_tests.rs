@@ -20,7 +20,7 @@ mod tests {
       !format!(
         "{:?}{:?}{:?}",
         comment.text,
-        CommentStore::new().clone().create_comment_reference(vec![]).clone(),
+        CommentStore::new().clone().create_comment_reference(Vec::new()).clone(),
         CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
       )
       .is_empty()
@@ -338,7 +338,7 @@ mod tests {
     coverage_hack_for_expr(E::FieldAccess(FieldAccess {
       common: common.clone(),
       explicit_type_arguments: None,
-      inferred_type_arguments: vec![],
+      inferred_type_arguments: Vec::new(),
       object: Box::new(zero_expr.clone()),
       field_name: Id::from(heap.alloc_str_for_test("name")),
       field_order: 1,
@@ -346,7 +346,7 @@ mod tests {
     coverage_hack_for_expr(E::MethodAccess(MethodAccess {
       common: common.clone(),
       explicit_type_arguments: None,
-      inferred_type_arguments: vec![],
+      inferred_type_arguments: Vec::new(),
       object: Box::new(zero_expr.clone()),
       method_name: Id::from(heap.alloc_str_for_test("name")),
     }));
@@ -357,7 +357,7 @@ mod tests {
         loc: Location::dummy(),
         start_associated_comments: NO_COMMENT_REFERENCE,
         ending_associated_comments: NO_COMMENT_REFERENCE,
-        expressions: vec![],
+        expressions: Vec::new(),
       },
     }));
     coverage_hack_for_expr(E::Unary(Unary {
@@ -377,13 +377,13 @@ mod tests {
       condition: Box::new(IfElseCondition::Expression(zero_expr.clone())),
       e1: Box::new(Block {
         common: common.clone(),
-        statements: vec![],
+        statements: Vec::new(),
         expression: Some(Box::new(zero_expr.clone())),
         ending_associated_comments: NO_COMMENT_REFERENCE,
       }),
       e2: Box::new(IfElseOrBlock::Block(Block {
         common: common.clone(),
-        statements: vec![],
+        statements: Vec::new(),
         expression: Some(Box::new(zero_expr.clone())),
         ending_associated_comments: NO_COMMENT_REFERENCE,
       })),
@@ -399,7 +399,7 @@ mod tests {
       )),
       e1: Box::new(Block {
         common: common.clone(),
-        statements: vec![],
+        statements: Vec::new(),
         expression: Some(Box::new(zero_expr.clone())),
         ending_associated_comments: NO_COMMENT_REFERENCE,
       }),
@@ -408,13 +408,13 @@ mod tests {
         condition: Box::new(IfElseCondition::Expression(zero_expr.clone())),
         e1: Box::new(Block {
           common: common.clone(),
-          statements: vec![],
+          statements: Vec::new(),
           expression: Some(Box::new(zero_expr.clone())),
           ending_associated_comments: NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(IfElseOrBlock::Block(Block {
           common: common.clone(),
-          statements: vec![],
+          statements: Vec::new(),
           expression: Some(Box::new(zero_expr.clone())),
           ending_associated_comments: NO_COMMENT_REFERENCE,
         })),
@@ -605,7 +605,7 @@ mod tests {
         extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
           location: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          nodes: vec![],
+          nodes: Vec::new(),
         }),
         type_definition: (),
         members: InterfaceMembersCommon {
@@ -620,7 +620,7 @@ mod tests {
               location: Location::dummy(),
               start_associated_comments: NO_COMMENT_REFERENCE,
               ending_associated_comments: NO_COMMENT_REFERENCE,
-              parameters: vec![]
+              parameters: Vec::new()
             }),
             parameters: FunctionParameters {
               location: Location::dummy(),
@@ -645,7 +645,7 @@ mod tests {
       ModuleMembersImport {
         loc: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        imported_members: vec![],
+        imported_members: Vec::new(),
         imported_module: ModuleReference::DUMMY,
         imported_module_loc: Location::dummy(),
       }
@@ -707,12 +707,12 @@ mod tests {
         location: Location::dummy(),
         start_associated_comments: NO_COMMENT_REFERENCE,
         ending_associated_comments: NO_COMMENT_REFERENCE,
-        parameters: vec![],
+        parameters: Vec::new(),
       }),
       extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
         location: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        nodes: vec![],
+        nodes: Vec::new(),
       }),
       type_definition: Some(TypeDefinition::Struct {
         loc: Location::dummy(),
@@ -737,13 +737,13 @@ mod tests {
               location: Location::dummy(),
               start_associated_comments: NO_COMMENT_REFERENCE,
               ending_associated_comments: NO_COMMENT_REFERENCE,
-              parameters: vec![],
+              parameters: Vec::new(),
             }),
             parameters: FunctionParameters {
               location: Location::dummy(),
               start_associated_comments: NO_COMMENT_REFERENCE,
               ending_associated_comments: NO_COMMENT_REFERENCE,
-              parameters: Rc::new(vec![]),
+              parameters: Rc::new(Vec::new()),
             },
             return_type: builder.int_annot(),
           },
@@ -766,12 +766,12 @@ mod tests {
         location: Location::dummy(),
         start_associated_comments: NO_COMMENT_REFERENCE,
         ending_associated_comments: NO_COMMENT_REFERENCE,
-        parameters: vec![],
+        parameters: Vec::new(),
       }),
       extends_or_implements_nodes: Some(ExtendsOrImplementsNodes {
         location: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        nodes: vec![],
+        nodes: Vec::new(),
       }),
       type_definition: (),
       members: InterfaceMembersCommon {
@@ -786,13 +786,13 @@ mod tests {
             location: Location::dummy(),
             start_associated_comments: NO_COMMENT_REFERENCE,
             ending_associated_comments: NO_COMMENT_REFERENCE,
-            parameters: vec![],
+            parameters: Vec::new(),
           }),
           parameters: FunctionParameters {
             location: Location::dummy(),
             start_associated_comments: NO_COMMENT_REFERENCE,
             ending_associated_comments: NO_COMMENT_REFERENCE,
-            parameters: Rc::new(vec![]),
+            parameters: Rc::new(Vec::new()),
           },
           return_type: builder.int_annot(),
         }],
@@ -808,7 +808,7 @@ mod tests {
     let one_import = ModuleMembersImport {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      imported_members: vec![],
+      imported_members: Vec::new(),
       imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
     };

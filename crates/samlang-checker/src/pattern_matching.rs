@@ -245,7 +245,7 @@ fn convert_into_specialized_matrix(
   variant: Option<VariantPatternConstructor>,
   rs_len: usize,
 ) -> PatternMatrix {
-  let mut new_rows = vec![];
+  let mut new_rows = Vec::new();
   for p_row in &p.0 {
     convert_into_specialized_matrix_row(&mut new_rows, p_row, variant, rs_len)
   }
@@ -271,7 +271,7 @@ fn find_roots_constructors(p: &PatternMatrix) -> HashMap<Option<VariantPatternCo
 }
 
 fn default_matrix(p: &PatternMatrix) -> PatternMatrix {
-  let mut default_matrix_rows = vec![];
+  let mut default_matrix_rows = Vec::new();
   let mut convert_to_default_matrix_queue =
     p.0.iter().map(|PatternVector(r)| r.clone()).collect::<VecDeque<_>>();
   while let Some(p_row) = convert_to_default_matrix_queue.pop_front() {
@@ -300,7 +300,7 @@ fn signature_incomplete_names<CX: PatternMatchingContext>(
   if root_constructors.is_empty() {
     return Some(Vec::with_capacity(0));
   }
-  let mut variants_grouped = vec![];
+  let mut variants_grouped = Vec::new();
   for (key, group) in
     &root_constructors.keys().filter_map(|c| *c).chunk_by(|c| (c.module_reference, c.class_name))
   {

@@ -26,8 +26,8 @@ pub(super) fn optimize(
   let mut non_loop_invariant_variables =
     loop_variables.iter().map(|it| it.name).collect::<HashSet<_>>();
 
-  let mut hoisted_stmts = vec![];
-  let mut inner_stmts = vec![];
+  let mut hoisted_stmts = Vec::new();
+  let mut inner_stmts = Vec::new();
   for stmt in stmts {
     match &stmt {
       Statement::IsPointer { name, pointer_type: _, operand }
@@ -229,7 +229,7 @@ mod tests {
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(PStr::LOWER_F),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
           arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_32_TYPE)],
           return_type: INT_32_TYPE,
@@ -238,7 +238,7 @@ mod tests {
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(PStr::LOWER_F),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
           arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_32_TYPE)],
           return_type: INT_32_TYPE,
@@ -279,7 +279,7 @@ mod tests {
           closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
           function_name: FunctionNameExpression {
             name: FunctionName::new_for_test(PStr::LOWER_F),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           },
           context: Expression::var_name(heap.alloc_str_for_test("x"), INT_32_TYPE),
         },
@@ -288,7 +288,7 @@ mod tests {
           closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
           function_name: FunctionNameExpression {
             name: FunctionName::new_for_test(PStr::LOWER_F),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           },
           context: Expression::var_name(PStr::LOWER_D, INT_32_TYPE),
         },
@@ -319,8 +319,8 @@ mod tests {
         },
         Statement::IfElse {
           condition: ZERO,
-          s1: vec![],
-          s2: vec![],
+          s1: Vec::new(),
+          s2: Vec::new(),
           final_assignments: vec![IfElseFinalAssignment {
             name: heap.alloc_str_for_test("bad"),
             type_: INT_32_TYPE,
@@ -328,10 +328,14 @@ mod tests {
             e2: ZERO,
           }],
         },
-        Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
         Statement::While {
-          loop_variables: vec![],
-          statements: vec![],
+          loop_variables: Vec::new(),
+          statements: Vec::new(),
+          break_collector: None,
+        },
+        Statement::While {
+          loop_variables: Vec::new(),
+          statements: Vec::new(),
           break_collector: Some(VariableName::new(heap.alloc_str_for_test("zzzz"), INT_32_TYPE)),
         },
       ],

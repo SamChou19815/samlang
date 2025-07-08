@@ -255,8 +255,8 @@ mod tests {
   ) {
     let mut f = Function {
       name: FunctionName::new_for_test(PStr::INVALID_PSTR),
-      parameters: vec![],
-      type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+      parameters: Vec::new(),
+      type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
       body: stmts,
       return_value,
     };
@@ -432,7 +432,7 @@ mod tests {
   fn loop_optimization_tests() {
     let heap = &mut Heap::new();
     assert_loop_optimized(
-      (vec![], vec![Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO)], None),
+      (Vec::new(), vec![Statement::binary(PStr::LOWER_A, BinaryOperator::PLUS, ZERO, ZERO)], None),
       heap,
       "let a = 0 + 0;\nwhile (true) {\n}",
     );
@@ -637,7 +637,7 @@ while (true) {
           Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
           Expression::i32(2),
         )],
-        final_assignments: vec![],
+        final_assignments: Vec::new(),
       }],
       ZERO,
       heap,
@@ -795,7 +795,7 @@ return (bc: int);"#,
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
               name: FunctionName::new_for_test(PStr::LOWER_F),
-              type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+              type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
             }),
             arguments: vec![Expression::var_name(PStr::LOWER_J, INT_32_TYPE)],
             return_type: INT_32_TYPE,

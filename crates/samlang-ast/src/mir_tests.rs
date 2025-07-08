@@ -67,9 +67,9 @@ mod tests {
     let call = Statement::Call {
       callee: Callee::FunctionName(FunctionNameExpression {
         name: FunctionName::new_for_test(PStr::LOWER_A),
-        type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
       }),
-      arguments: vec![],
+      arguments: Vec::new(),
       return_type: INT_32_TYPE,
       return_collector: None,
     };
@@ -85,8 +85,8 @@ mod tests {
         )
     );
     assert!(
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) }
-        == FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) }
+      FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_32_TYPE) }
+        == FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_32_TYPE) }
     );
     let mut hasher = DefaultHasher::new();
     ZERO.hash(&mut hasher);
@@ -98,10 +98,10 @@ mod tests {
     Statement::binary_flexible_unwrapped(PStr::LOWER_A, BinaryOperator::DIV, ZERO, ZERO);
     Callee::FunctionName(FunctionNameExpression {
       name: FunctionName::new_for_test(heap.alloc_str_for_test("s")),
-      type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_32_TYPE) },
+      type_: FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_32_TYPE) },
     })
     .as_function_name();
-    assert!(TypeDefinitionMappings::Struct(vec![]).as_struct().is_some());
+    assert!(TypeDefinitionMappings::Struct(Vec::new()).as_struct().is_some());
 
     let mut table = SymbolTable::new();
     let mut type_name_id = table.create_type_name_for_test(PStr::UPPER_A);
@@ -213,11 +213,11 @@ mod tests {
           assigned_expression: ZERO,
         },
         Statement::While {
-          loop_variables: vec![],
+          loop_variables: Vec::new(),
           statements: vec![Statement::SingleIf {
             condition: ZERO,
             invert_condition: false,
-            statements: vec![],
+            statements: Vec::new(),
           }],
           break_collector: None,
         },
@@ -257,7 +257,7 @@ mod tests {
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("h")),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
           arguments: vec![Expression::var_name(
             heap.alloc_str_for_test("big"),
@@ -269,7 +269,7 @@ mod tests {
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
           arguments: vec![Expression::var_name(PStr::LOWER_D, INT_32_TYPE)],
           return_type: INT_32_TYPE,
@@ -362,7 +362,7 @@ if 0 {
       closure_types: vec![
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_A),
-          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          function_type: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         }
         .clone(),
       ],
@@ -409,15 +409,15 @@ sources.mains = [__$ddd]"#;
 
     let table = SymbolTable::new();
     let sources2 = Sources {
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![],
-      main_function_names: vec![],
+      global_variables: Vec::new(),
+      closure_types: Vec::new(),
+      type_definitions: Vec::new(),
+      main_function_names: Vec::new(),
       functions: vec![Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
         parameters: vec![PStr::LOWER_F],
         type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
-        body: vec![],
+        body: Vec::new(),
         return_value: ZERO,
       }],
       symbol_table: table,
