@@ -32,9 +32,9 @@ pub(super) fn optimize(
   for v in &general_induction_variables {
     basic_induction_variable_map.insert(v.name, v.clone());
   }
-  let mut prefix_statements = vec![];
-  let mut new_general_induction_variables = vec![];
-  let mut remaining_derived_induction_variables = vec![];
+  let mut prefix_statements = Vec::new();
+  let mut new_general_induction_variables = Vec::new();
+  let mut remaining_derived_induction_variables = Vec::new();
   for derived_induction_variable in derived_induction_variables {
     let associated_basic_induction_variable =
       basic_induction_variable_map.get(&derived_induction_variable.base_name).unwrap();
@@ -121,7 +121,7 @@ mod tests {
             INT_32_TYPE,
           )),
         }],
-        loop_variables_that_are_not_basic_induction_variables: vec![],
+        loop_variables_that_are_not_basic_induction_variables: Vec::new(),
         derived_induction_variables: vec![
           DerivedInductionVariableWithName {
             name: heap.alloc_str_for_test("x"),
@@ -148,7 +148,7 @@ mod tests {
             )),
           },
         ],
-        statements: vec![],
+        statements: Vec::new(),
         break_collector: None,
       },
       heap,

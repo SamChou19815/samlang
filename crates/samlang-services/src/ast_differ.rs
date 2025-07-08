@@ -51,7 +51,7 @@ mod list_differ {
     let m = new_list.len();
     // Keep track of all visited string locations so we don't duplicate work
     let mut visited: HashMap<(usize, usize), Rc<Trace>> = HashMap::with_capacity(m * n);
-    let mut frontier = vec![];
+    let mut frontier = Vec::new();
     // Start with the basic trace, but follow a starting snake to a non-match point.
     let (init_x, init_y, init_trace) = follow_snake(old_list, new_list, 0, 0, Rc::new(Trace::Nil));
     frontier.push((init_x, init_y));
@@ -60,7 +60,7 @@ mod list_differ {
     // Thus, termination is guaranteed.
     loop {
       if let Some(mut final_trace) = visited.get(&(n, m)) {
-        let mut list = vec![];
+        let mut list = Vec::new();
         while let Trace::Cons(x, y, next) = final_trace.as_ref() {
           list.push((*x, *y));
           final_trace = next;
@@ -68,7 +68,7 @@ mod list_differ {
         list.reverse();
         return list;
       }
-      let mut new_frontier = vec![];
+      let mut new_frontier = Vec::new();
       for (x, y) in frontier {
         let trace = visited.get(&(x, y)).unwrap();
         let (x_old, y_old, advance_in_old_list) =
@@ -146,7 +146,7 @@ mod list_differ {
     // on the fact that sorting the script with our change_compare function will order all
     // Insert nodes before Deletes
     let mut old_script_queue = VecDeque::from(script);
-    let mut new_script = vec![];
+    let mut new_script = Vec::new();
     while let Some(curr) = old_script_queue.pop_front() {
       match (curr, old_script_queue.pop_front()) {
         (
@@ -195,7 +195,7 @@ mod list_differ {
     }
 
     fn diff_string<T: ToString + PartialEq>(old: &[T], new: &[T]) -> String {
-      let mut collector = vec![];
+      let mut collector = Vec::new();
       for change in super::compute(old, new).into_iter().map(|(_, c)| c) {
         match change {
           ChangeWithoutLoc::Replace(old, new) => {
@@ -313,7 +313,7 @@ fn wrapped_list_diff<
   flat_map_change: FlatMapChange,
 ) -> Result<Vec<Change<'a>>, (Vec<DiffNode<'a>>, bool)> {
   let unwrapped = list_differ::compute(old_list, new_list);
-  let mut wrapped = vec![];
+  let mut wrapped = Vec::new();
   for (insert_index, change_without_loc) in unwrapped {
     match change_without_loc {
       ChangeWithoutLoc::Replace(old, new) => {
@@ -538,7 +538,7 @@ mod tests {
       type_definition: (),
       members: InterfaceMembersCommon {
         loc: Location::dummy(),
-        members: vec![],
+        members: Vec::new(),
         ending_associated_comments: NO_COMMENT_REFERENCE,
       },
     });

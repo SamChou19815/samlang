@@ -258,7 +258,7 @@ mod tests {
   fn panic_test_2() {
     rewrite_stmt(
       &HashMap::new(),
-      Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] },
+      Statement::SingleIf { condition: ZERO, invert_condition: false, statements: Vec::new() },
     );
   }
 
@@ -267,7 +267,11 @@ mod tests {
   fn panic_test_3() {
     rewrite_stmt(
       &HashMap::new(),
-      Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
+      Statement::While {
+        loop_variables: Vec::new(),
+        statements: Vec::new(),
+        break_collector: None,
+      },
     );
   }
 
@@ -301,20 +305,20 @@ mod tests {
     let mut table = SymbolTable::new();
 
     let sources = Sources {
-      global_variables: vec![],
+      global_variables: Vec::new(),
       closure_types: vec![
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_A),
-          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          function_type: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         },
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_B),
-          function_type: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+          function_type: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         },
         ClosureTypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_C),
           function_type: Type::new_fn_unwrapped(
-            vec![],
+            Vec::new(),
             Type::Id(table.create_type_name_for_test(PStr::UPPER_C)),
           ),
         },
@@ -343,10 +347,10 @@ mod tests {
           ]),
         },
       ],
-      main_function_names: vec![],
+      main_function_names: Vec::new(),
       functions: vec![Function {
         name: FunctionName::new_for_test(PStr::MAIN_FN),
-        parameters: vec![],
+        parameters: Vec::new(),
         type_: Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
         body: vec![Statement::IfElse {
           condition: ONE,
@@ -364,7 +368,7 @@ mod tests {
             },
             Statement::Call {
               callee: Callee::Variable(VariableName { name: PStr::LOWER_F, type_: INT_32_TYPE }),
-              arguments: vec![],
+              arguments: Vec::new(),
               return_type: INT_32_TYPE,
               return_collector: None,
             },

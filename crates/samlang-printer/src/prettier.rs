@@ -263,7 +263,7 @@ fn generate_best_doc(
 /// This function implements the prettier algorithm described in:
 /// https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf
 pub(super) fn pretty_print(available_width: usize, document: Document) -> String {
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   generate_best_doc(
     &mut collector,
     available_width,
@@ -320,7 +320,7 @@ mod tests {
 
   #[test]
   fn concat_tests() {
-    assert_eq!(Document::Nil, Document::concat(vec![]));
+    assert_eq!(Document::Nil, Document::concat(Vec::new()));
     assert_eq!(Document::Text("a"), Document::concat(vec![Document::Text("a")]));
     assert_eq!(
       Document::Concat(Rc::new(Document::Text("a")), Rc::new(Document::Text("b"))),
@@ -468,17 +468,17 @@ b
         Rc::new(Tree {
           name: "bbbbb",
           children: vec![
-            Rc::new(Tree { name: "ccc", children: vec![] }),
-            Rc::new(Tree { name: "dd", children: vec![] }),
+            Rc::new(Tree { name: "ccc", children: Vec::new() }),
+            Rc::new(Tree { name: "dd", children: Vec::new() }),
           ],
         }),
-        Rc::new(Tree { name: "eee", children: vec![] }),
+        Rc::new(Tree { name: "eee", children: Vec::new() }),
         Rc::new(Tree {
           name: "ffff",
           children: vec![
-            Rc::new(Tree { name: "gg", children: vec![] }),
-            Rc::new(Tree { name: "hhh", children: vec![] }),
-            Rc::new(Tree { name: "ii", children: vec![] }),
+            Rc::new(Tree { name: "gg", children: Vec::new() }),
+            Rc::new(Tree { name: "hhh", children: Vec::new() }),
+            Rc::new(Tree { name: "ii", children: Vec::new() }),
           ],
         }),
       ],

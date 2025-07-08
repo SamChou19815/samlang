@@ -605,7 +605,7 @@ pub(super) fn lex_source_program(
   error_set: &mut ErrorSet,
 ) -> Vec<Token> {
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
-  let mut tokens = vec![];
+  let mut tokens = Vec::new();
   let mut known_sorted_operators = TOKEN_OPS.to_vec();
   known_sorted_operators.sort_by_key(|op| -(op.as_str().len() as i64));
 

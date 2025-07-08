@@ -134,7 +134,7 @@ mod lsp {
 
   impl WrappedState {
     fn update(&mut self, absolute_source_path: &Path, updates: Vec<(Url, String)>) {
-      let mut mod_ref_updates = vec![];
+      let mut mod_ref_updates = Vec::new();
       for (url, code) in updates {
         let mod_ref = self.0.heap.alloc_module_reference_from_string_vec(
           convert_url_to_module_reference_helper(absolute_source_path, &url),
@@ -147,7 +147,7 @@ mod lsp {
     fn get_diagnostics(&self, absolute_source_path: &Path) -> Vec<(Url, Vec<Diagnostic>)> {
       let heap = &self.0.heap;
       let sources = &self.0.string_sources;
-      let mut collected = vec![];
+      let mut collected = Vec::new();
       for module_reference in self.0.all_modules() {
         if let Some(url) =
           convert_module_reference_to_url_helper(heap, absolute_source_path, module_reference)

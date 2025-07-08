@@ -28,7 +28,7 @@ mod tests {
           ending_associated_comments: NO_COMMENT_REFERENCE,
           arguments: vec![test_builder::create().bool_annot()],
         }),
-        inferred_type_arguments: vec![],
+        inferred_type_arguments: Vec::new(),
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id::from(heap.alloc_str_for_test("name")),
       }),

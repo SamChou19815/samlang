@@ -34,19 +34,19 @@ impl TypeName {
   const EMPTY: TypeName = TypeName {
     module_reference: ModuleReference::ROOT,
     type_name: PStr::EMPTY,
-    suffix: vec![],
+    suffix: Vec::new(),
     sub_type_tag: None,
   };
   const STR: TypeName = TypeName {
     module_reference: ModuleReference::ROOT,
     type_name: PStr::STR_TYPE,
-    suffix: vec![],
+    suffix: Vec::new(),
     sub_type_tag: None,
   };
   const PROCESS: TypeName = TypeName {
     module_reference: ModuleReference::ROOT,
     type_name: PStr::PROCESS_TYPE,
-    suffix: vec![],
+    suffix: Vec::new(),
     sub_type_tag: None,
   };
 
@@ -870,7 +870,7 @@ impl Statement {
   }
 
   fn debug_print_leveled(&self, heap: &Heap, table: &SymbolTable, level: usize) -> String {
-    let mut collector = vec![];
+    let mut collector = Vec::new();
     self.debug_print_internal(heap, table, level, &None, &mut collector);
     collector.join("").trim_end().to_string()
   }
@@ -903,7 +903,7 @@ impl Function {
       typed_parameters,
       self.type_.return_type.pretty_print(heap, table)
     );
-    let mut lines = vec![];
+    let mut lines = Vec::new();
     lines.push(header);
     for s in &self.body {
       lines.push(s.debug_print_leveled(heap, table, 1));
@@ -926,7 +926,7 @@ pub struct Sources {
 
 impl Sources {
   pub fn debug_print(&self, heap: &Heap) -> String {
-    let mut lines = vec![];
+    let mut lines = Vec::new();
     for (i, v) in self.global_variables.iter().enumerate() {
       lines.push(format!("const GLOBAL_STRING_{} = '{}';\n", i, v.0.as_str(heap)));
     }

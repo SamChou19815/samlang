@@ -396,7 +396,7 @@ mod tests {
             type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
           },
           explicit_type_arguments: None,
-          inferred_type_arguments: vec![],
+          inferred_type_arguments: Vec::new(),
           object: Box::new(expr::E::LocalId(
             expr::ExpressionCommon {
               loc: Location::dummy(),

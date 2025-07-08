@@ -213,7 +213,7 @@ pub(super) fn search_modules_globally(
   modules: &HashMap<ModuleReference, Module<Rc<Type>>>,
   request: &GlobalNameSearchRequest,
 ) -> Vec<Location> {
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   for (mod_ref, module) in modules {
     for toplevel in &module.toplevels {
       let toplevel_name = toplevel.name();
