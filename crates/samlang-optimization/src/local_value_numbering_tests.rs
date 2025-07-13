@@ -22,8 +22,8 @@ mod tests {
   ) {
     let mut f = Function {
       name: FunctionName::new_for_test(PStr::LOWER_A),
-      parameters: vec![],
-      type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+      parameters: Vec::new(),
+      type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
       body: stmts,
       return_value,
     };
@@ -102,14 +102,14 @@ mod tests {
           closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
           function_name: FunctionNameExpression {
             name: FunctionName::new_for_test(PStr::LOWER_A),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           },
           context: ZERO,
         },
         Statement::Call {
           callee: Callee::FunctionName(FunctionNameExpression {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("fff")),
-            type_: Type::new_fn_unwrapped(vec![], INT_32_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
           }),
           arguments: vec![
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_32_TYPE),
@@ -121,7 +121,7 @@ mod tests {
         },
         Statement::Call {
           callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("fff"), INT_32_TYPE)),
-          arguments: vec![],
+          arguments: Vec::new(),
           return_type: INT_32_TYPE,
           return_collector: None,
         },
@@ -187,7 +187,7 @@ return (ss: int);"#,
               index: 1,
             },
           ],
-          final_assignments: vec![],
+          final_assignments: Vec::new(),
         },
         Statement::IndexedAccess {
           name: heap.alloc_str_for_test("i5"),
@@ -293,7 +293,7 @@ return 0;"#,
           ),
           Statement::IfElse {
             condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_32_TYPE),
-            s1: vec![],
+            s1: Vec::new(),
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
               BinaryOperator::MINUS,
@@ -360,7 +360,7 @@ return 0;"#,
           ),
           Statement::IfElse {
             condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_32_TYPE),
-            s1: vec![],
+            s1: Vec::new(),
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
               BinaryOperator::MINUS,

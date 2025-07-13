@@ -37,7 +37,7 @@ fn associated_comments_doc(
   group: DocumentGrouping,
   add_final_line_break: bool,
 ) -> Option<Document> {
-  let mut documents = vec![];
+  let mut documents = Vec::new();
   for associated_comments in associated_comments {
     for comment in comment_store.get(associated_comments).iter() {
       documents.append(&mut match comment.kind {
@@ -258,7 +258,7 @@ fn flattened_if_else(
   if_else: &expr::IfElse<()>,
 ) -> (Vec<FlattenedIfElseChainElement>, &expr::Block<()>) {
   let mut acc = if_else;
-  let mut chain = vec![];
+  let mut chain = Vec::new();
   loop {
     match acc.e2.as_ref() {
       expr::IfElseOrBlock::IfElse(nested) => {
@@ -287,7 +287,7 @@ fn create_doc_for_if_else_condition(
   associated_comments: CommentReference,
   condition: &expr::IfElseCondition<()>,
 ) -> Document {
-  let mut documents = vec![];
+  let mut documents = Vec::new();
   documents.push(create_opt_preceding_comment_doc(
     heap,
     comment_store,
@@ -314,7 +314,7 @@ fn create_doc_for_if_else_customized_flattened(
   if_else: &expr::IfElse<()>,
 ) -> Document {
   let (chain, final_else) = flattened_if_else(if_else);
-  let mut documents = vec![];
+  let mut documents = Vec::new();
   for (i, FlattenedIfElseChainElement { comments, condition, e1 }) in chain.into_iter().enumerate()
   {
     documents.push(create_doc_for_if_else_condition(
@@ -478,7 +478,7 @@ fn create_chainable_ir_docs(
         potential_chainable_expr,
         false,
       ),
-      vec![],
+      Vec::new(),
     ),
   }
 }
@@ -513,7 +513,7 @@ fn create_doc_for_block(
   force_expanded: bool,
   block: &expr::Block<()>,
 ) -> Document {
-  let mut segments = vec![];
+  let mut segments = Vec::new();
   for stmt in &block.statements {
     segments.push(statement_to_document(heap, comment_store, stmt));
     segments.push(Document::LineHard);
@@ -676,7 +676,7 @@ fn create_doc_without_preceding_comment(
     }
 
     expr::E::Match(e) => {
-      let mut list = vec![];
+      let mut list = Vec::new();
       for case in &e.cases {
         list.push(matching_pattern_to_document(heap, comment_store, &case.pattern));
         list.push(Document::Text(" -> "));
@@ -852,7 +852,7 @@ pub(super) fn statement_to_document(
   comment_store: &CommentStore,
   stmt: &expr::DeclarationStatement<()>,
 ) -> Document {
-  let mut segments = vec![];
+  let mut segments = Vec::new();
   let pattern_doc = matching_pattern_to_document(heap, comment_store, &stmt.pattern);
   segments.push(
     associated_comments_doc(
@@ -1196,7 +1196,7 @@ pub(super) fn import_to_document(
   imported_module: ModuleReference,
   imported_members: &[Id],
 ) -> Document {
-  let mut documents = vec![];
+  let mut documents = Vec::new();
   if let Some(comments) = associated_comments_doc(
     heap,
     comment_store,
@@ -1233,7 +1233,7 @@ pub(super) fn toplevel_to_document(
 }
 
 pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Document {
-  let mut documents = vec![];
+  let mut documents = Vec::new();
 
   let mut organized_imports = HashMap::<ModuleReference, (Vec<CommentReference>, Vec<Id>)>::new();
   for import in &module.imports {
@@ -1458,7 +1458,7 @@ ClassName /* b */ /* c */.classMember<
     let e = expr::E::MethodAccess(expr::MethodAccess {
       common: expr::ExpressionCommon::dummy(()),
       explicit_type_arguments: None,
-      inferred_type_arguments: vec![],
+      inferred_type_arguments: Vec::new(),
       object: Box::new(expr::E::LocalId(
         expr::ExpressionCommon::dummy(()),
         Id::from(heap.alloc_str_for_test("foo")),
@@ -1477,7 +1477,7 @@ ClassName /* b */ /* c */.classMember<
         ending_associated_comments: NO_COMMENT_REFERENCE,
         arguments: vec![test_builder::create().int_annot()],
       }),
-      inferred_type_arguments: vec![],
+      inferred_type_arguments: Vec::new(),
       object: Box::new(expr::E::LocalId(
         expr::ExpressionCommon::dummy(()),
         Id::from(heap.alloc_str_for_test("foo")),

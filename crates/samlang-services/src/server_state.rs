@@ -80,7 +80,7 @@ impl ServerState {
     let mut grouped_errors = error_set.group_errors();
     for rechecked_module in recheck_set {
       if !grouped_errors.contains_key(rechecked_module) {
-        grouped_errors.insert(*rechecked_module, vec![]);
+        grouped_errors.insert(*rechecked_module, Vec::new());
       }
     }
     for (mod_ref, mod_scoped_errors) in grouped_errors {

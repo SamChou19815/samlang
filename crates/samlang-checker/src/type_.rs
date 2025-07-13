@@ -306,7 +306,7 @@ impl TypeParameterSignature {
   pub fn from_list(
     type_parameters: Option<&annotation::TypeParameters>,
   ) -> Vec<TypeParameterSignature> {
-    let mut tparam_sigs = vec![];
+    let mut tparam_sigs = Vec::new();
     for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
       tparam_sigs.push(TypeParameterSignature {
         name: tparam.name.name,
@@ -358,7 +358,7 @@ pub mod test_type_builder {
         is_class_statics: false,
         module_reference: ModuleReference::ROOT,
         id: PStr::STR_TYPE,
-        type_arguments: vec![],
+        type_arguments: Vec::new(),
       }))
     }
 
@@ -368,7 +368,7 @@ pub mod test_type_builder {
         is_class_statics: false,
         module_reference: self.module_reference,
         id,
-        type_arguments: vec![],
+        type_arguments: Vec::new(),
       }
     }
 
@@ -502,7 +502,7 @@ pub struct InterfaceSignature {
 impl InterfaceSignature {
   #[cfg(test)]
   pub fn to_string(&self, heap: &Heap) -> String {
-    let mut lines = vec![];
+    let mut lines = Vec::new();
     lines.push(format!(
       "{}{} {} : [{}]",
       if self.private { "private " } else { "" },
@@ -545,7 +545,7 @@ pub enum TypeDefinitionSignature {
 
 impl TypeDefinitionSignature {
   pub fn to_string(&self, heap: &Heap) -> String {
-    let mut collector = vec![];
+    let mut collector = Vec::new();
     match self {
       TypeDefinitionSignature::Struct(items) => {
         for StructItemDefinitionSignature { name, type_, is_public } in items {
@@ -585,7 +585,7 @@ pub struct ModuleSignature {
 impl ModuleSignature {
   #[cfg(test)]
   pub fn to_string(&self, heap: &Heap) -> String {
-    let mut lines = vec![];
+    let mut lines = Vec::new();
     lines.push("\ninterfaces:".to_string());
     for (name, i) in self.interfaces.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
       lines.push(format!("{}: {}", name.as_str(heap), i.to_string(heap)));
@@ -601,9 +601,9 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
         PStr::PROCESS_TYPE,
         InterfaceSignature {
           private: false,
-          type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
-          type_parameters: vec![],
-          super_types: vec![],
+          type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
+          type_parameters: Vec::new(),
+          super_types: Vec::new(),
           methods: HashMap::new(),
           functions: HashMap::from([
             MemberSignature::create_builtin_function(
@@ -613,10 +613,10 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
                 is_class_statics: false,
                 module_reference: ModuleReference::ROOT,
                 id: PStr::STR_TYPE,
-                type_arguments: vec![],
+                type_arguments: Vec::new(),
               }))],
               Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
-              vec![],
+              Vec::new(),
             ),
             MemberSignature::create_builtin_function(
               PStr::PANIC,
@@ -625,7 +625,7 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
                 is_class_statics: false,
                 module_reference: ModuleReference::ROOT,
                 id: PStr::STR_TYPE,
-                type_arguments: vec![],
+                type_arguments: Vec::new(),
               }))],
               Rc::new(Type::Generic(Reason::builtin(), PStr::UPPER_T)),
               vec![PStr::UPPER_T],
@@ -637,7 +637,7 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
         PStr::STR_TYPE,
         InterfaceSignature {
           private: false,
-          type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+          type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
           functions: HashMap::from([MemberSignature::create_builtin_function(
             PStr::FROM_INT,
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
@@ -646,18 +646,18 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
               is_class_statics: false,
               module_reference: ModuleReference::ROOT,
               id: PStr::STR_TYPE,
-              type_arguments: vec![],
+              type_arguments: Vec::new(),
             })),
-            vec![],
+            Vec::new(),
           )]),
           methods: HashMap::from([MemberSignature::create_builtin_function(
             PStr::TO_INT,
-            vec![],
+            Vec::new(),
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
-            vec![],
+            Vec::new(),
           )]),
-          type_parameters: vec![],
-          super_types: vec![],
+          type_parameters: Vec::new(),
+          super_types: Vec::new(),
         },
       ),
     ]),
@@ -686,8 +686,8 @@ mod type_tests {
     builder.int_type().as_fn();
     builder.simple_nominal_type(Heap::new().alloc_str_for_test("")).as_nominal();
     builder.simple_nominal_type(Heap::new().alloc_str_for_test("")).as_generic();
-    builder.fun_type(vec![], builder.int_type()).as_fn();
-    builder.fun_type(vec![], builder.int_type()).as_generic();
+    builder.fun_type(Vec::new(), builder.int_type()).as_fn();
+    builder.fun_type(Vec::new(), builder.int_type()).as_generic();
   }
 
   #[test]
@@ -712,7 +712,7 @@ mod type_tests {
         is_class_statics: true,
         module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("I"),
-        type_arguments: vec![]
+        type_arguments: Vec::new()
       }
       .pretty_print(&heap)
     );
@@ -735,12 +735,12 @@ mod type_tests {
         .clone()
         .pretty_print(&heap)
     );
-    assert_eq!("() -> unit", builder.fun_type(vec![], builder.unit_type()).pretty_print(&heap));
+    assert_eq!("() -> unit", builder.fun_type(Vec::new(), builder.unit_type()).pretty_print(&heap));
     assert_eq!(
       "() -> unit",
       FunctionType {
         reason: Reason::dummy(),
-        argument_types: vec![],
+        argument_types: Vec::new(),
         return_type: builder.unit_type()
       }
       .clone()
@@ -847,18 +847,18 @@ m2: public () -> any
             is_public: false
           },
         ])),
-        type_parameters: vec![],
-        super_types: vec![],
+        type_parameters: Vec::new(),
+        super_types: Vec::new(),
         functions: HashMap::new(),
         methods: HashMap::from([
           (
             heap.alloc_str_for_test("m1"),
             MemberSignature {
               is_public: true,
-              type_parameters: vec![],
+              type_parameters: Vec::new(),
               type_: FunctionType {
                 reason: Reason::dummy(),
-                argument_types: vec![],
+                argument_types: Vec::new(),
                 return_type: Rc::new(Type::Any(Reason::dummy(), false))
               }
             }
@@ -867,10 +867,10 @@ m2: public () -> any
             heap.alloc_str_for_test("m2"),
             MemberSignature {
               is_public: true,
-              type_parameters: vec![],
+              type_parameters: Vec::new(),
               type_: FunctionType {
                 reason: Reason::dummy(),
-                argument_types: vec![],
+                argument_types: Vec::new(),
                 return_type: Rc::new(Type::Any(Reason::dummy(), false))
               }
             }
@@ -901,7 +901,7 @@ m2: public () -> any
       "C",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
         name: PStr::UPPER_C,
-        types: vec![]
+        types: Vec::new()
       }])
       .to_string(&heap)
     );
@@ -910,18 +910,23 @@ m2: public () -> any
       "private a() -> bool",
       MemberSignature::create_private_builtin_function(
         PStr::LOWER_A,
-        vec![],
+        Vec::new(),
         builder.bool_type(),
-        vec![]
+        Vec::new()
       )
       .1
       .pretty_print("a", &heap)
     );
     assert_eq!(
       "public a() -> bool",
-      MemberSignature::create_builtin_function(PStr::LOWER_A, vec![], builder.bool_type(), vec![])
-        .1
-        .pretty_print("a", &heap)
+      MemberSignature::create_builtin_function(
+        PStr::LOWER_A,
+        Vec::new(),
+        builder.bool_type(),
+        Vec::new()
+      )
+      .1
+      .pretty_print("a", &heap)
     );
   }
 
@@ -942,7 +947,7 @@ m2: public () -> any
         is_class_statics: true,
         module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("I"),
-        type_arguments: vec![]
+        type_arguments: Vec::new()
       }
       .to_description()
       .pretty_print(&heap)
@@ -965,7 +970,7 @@ m2: public () -> any
       "() -> unit",
       FunctionType {
         reason: Reason::dummy(),
-        argument_types: vec![],
+        argument_types: Vec::new(),
         return_type: builder.unit_type()
       }
       .to_description()
@@ -1015,7 +1020,7 @@ m2: public () -> any
     assert_eq!(
       "DUMMY.sam:2:3-4:5",
       builder
-        .fun_type(vec![], builder.unit_type())
+        .fun_type(Vec::new(), builder.unit_type())
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
@@ -1127,7 +1132,7 @@ m2: public () -> any
     assert_eq!(
       false,
       builder
-        .fun_type(vec![], builder.string_type())
+        .fun_type(Vec::new(), builder.string_type())
         .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type()))
     );
     assert_eq!(

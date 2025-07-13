@@ -466,7 +466,7 @@ Found 1 error.
 
     assert_failed_meet(
       &builder.fun_type(vec![builder.bool_type()], builder.bool_type()),
-      &builder.fun_type(vec![], builder.bool_type()),
+      &builder.fun_type(Vec::new(), builder.bool_type()),
       heap,
       r#"
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -574,7 +574,7 @@ Found 1 error.
     solver_test(
       &builder.int_type(),
       &builder.unit_type(),
-      vec![],
+      Vec::new(),
       &HashMap::from([("has_error", "true")]),
       heap,
     );
@@ -590,21 +590,21 @@ Found 1 error.
     solver_test(
       &builder.int_type(),
       &builder.simple_nominal_type(heap.alloc_str_for_test("T")),
-      vec![],
+      Vec::new(),
       &HashMap::from([("has_error", "true")]),
       heap,
     );
     solver_test(
       &builder.int_type(),
       &builder.general_nominal_type(heap.alloc_str_for_test("T"), vec![builder.int_type()]),
-      vec![],
+      Vec::new(),
       &HashMap::from([("has_error", "true")]),
       heap,
     );
     solver_test(
       &builder.simple_nominal_type(heap.alloc_str_for_test("T")),
       &builder.general_nominal_type(heap.alloc_str_for_test("T"), vec![builder.int_type()]),
-      vec![],
+      Vec::new(),
       &HashMap::from([("has_error", "true")]),
       heap,
     );

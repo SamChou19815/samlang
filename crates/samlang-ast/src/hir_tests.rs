@@ -90,10 +90,10 @@ mod tests {
           type_name: TypeName::new_for_test(PStr::UPPER_A),
           fn_name: PStr::LOWER_A,
         },
-        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_: Type::new_fn_unwrapped(Vec::new(), INT_TYPE),
         type_arguments: vec![INT_TYPE],
       }),
-      arguments: vec![],
+      arguments: Vec::new(),
       return_type: INT_TYPE,
       return_collector: None,
     };
@@ -121,16 +121,16 @@ mod tests {
       Type::new_id_no_targs(PStr::UPPER_B).cmp(&Type::new_id_no_targs(PStr::UPPER_B)).is_eq()
     );
     assert!(
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
-        == FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+      FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) }
+        == FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) }
     );
     assert!(
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
-        <= FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+      FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) }
+        <= FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) }
     );
     assert!(
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
-        .cmp(&FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) })
+      FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) }
+        .cmp(&FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) })
         .is_eq()
     );
     assert!(INT_TYPE <= INT_TYPE);
@@ -153,10 +153,10 @@ mod tests {
     BinaryOperator::DIV.hash(&mut hasher);
     Callee::FunctionName(FunctionNameExpression::new(
       FunctionName { type_name: TypeName::new_for_test(PStr::UPPER_A), fn_name: PStr::LOWER_A },
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
+      FunctionType { argument_types: Vec::new(), return_type: Box::new(INT_TYPE) },
     ))
     .as_function_name();
-    assert!(TypeDefinitionMappings::Struct(vec![]).as_struct().is_some());
+    assert!(TypeDefinitionMappings::Struct(Vec::new()).as_struct().is_some());
   }
 
   #[test]
@@ -194,7 +194,7 @@ mod tests {
       "object type A = [int, int]",
       TypeDefinition {
         name: TypeName { module_reference: None, type_name: PStr::UPPER_A },
-        type_parameters: vec![],
+        type_parameters: Vec::new(),
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .pretty_print(heap)
@@ -377,7 +377,7 @@ mod tests {
               type_name: TypeName { module_reference: None, type_name: PStr::UPPER_A },
               fn_name: PStr::LOWER_H,
             },
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
+            Type::new_fn_unwrapped(Vec::new(), INT_TYPE),
           )),
           arguments: vec![Expression::var_name(
             heap.alloc_str_for_test("big"),
@@ -392,7 +392,7 @@ mod tests {
               type_name: TypeName { module_reference: None, type_name: PStr::EMPTY },
               fn_name: heap.alloc_str_for_test("stresso"),
             },
-            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            type_: Type::new_fn_unwrapped(Vec::new(), INT_TYPE),
             type_arguments: vec![INT_TYPE],
           }),
           arguments: vec![Expression::var_name(PStr::LOWER_D, INT_TYPE)],
@@ -475,15 +475,15 @@ if 0 {
       closure_types: vec![
         ClosureTypeDefinition {
           name: TypeName { module_reference: None, type_name: PStr::UPPER_C },
-          type_parameters: vec![],
-          function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          type_parameters: Vec::new(),
+          function_type: Type::new_fn_unwrapped(Vec::new(), INT_TYPE),
         }
         .clone(),
       ],
       type_definitions: vec![
         TypeDefinition {
           name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
-          type_parameters: vec![],
+          type_parameters: Vec::new(),
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
         }
         .clone(),
@@ -502,7 +502,7 @@ if 0 {
             fn_name: heap.alloc_str_for_test("Bar"),
           },
           parameters: vec![PStr::LOWER_F],
-          type_parameters: vec![],
+          type_parameters: Vec::new(),
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![Statement::IndexedAccess {
             name: PStr::LOWER_F,
@@ -532,10 +532,10 @@ sources.mains = [Foo$ddd]"#;
     assert_eq!(expected1, sources1.debug_print(heap));
 
     let sources2 = Sources {
-      global_variables: vec![],
-      closure_types: vec![],
-      type_definitions: vec![],
-      main_function_names: vec![],
+      global_variables: Vec::new(),
+      closure_types: Vec::new(),
+      type_definitions: Vec::new(),
+      main_function_names: Vec::new(),
       functions: vec![Function {
         name: FunctionName {
           type_name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
@@ -544,7 +544,7 @@ sources.mains = [Foo$ddd]"#;
         parameters: vec![PStr::LOWER_F],
         type_parameters: vec![PStr::UPPER_A],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-        body: vec![],
+        body: Vec::new(),
         return_value: ZERO,
       }],
     };

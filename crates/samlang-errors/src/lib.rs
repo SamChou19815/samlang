@@ -48,7 +48,7 @@ struct PrintableStream<'a> {
 
 impl<'a> PrintableStream<'a> {
   fn new() -> PrintableStream<'a> {
-    PrintableStream { collector: vec![] }
+    PrintableStream { collector: Vec::new() }
   }
 
   fn push_size(&mut self, size: usize) {
@@ -1093,7 +1093,7 @@ mod tests {
           location: Location::dummy(),
           ide_error: "ide".to_string(),
           full_error: "full".to_string(),
-          reference_locs: vec![]
+          reference_locs: Vec::new()
         },
         CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
       )
@@ -1159,7 +1159,7 @@ Cannot resolve module `DUMMY`.
 
 "#
         .to_string(),
-        reference_locs: vec![]
+        reference_locs: Vec::new()
       },
       error_set.errors()[0].to_ide_format(&heap, &HashMap::new())
     );
@@ -1227,7 +1227,7 @@ Found 2 errors."#
     error_set.report_illegal_function_in_interface(Location::dummy());
     error_set.report_cannot_resolve_member_error(
       Location::dummy(),
-      Description::NominalType { name: heap.alloc_str_for_test("Foo"), type_args: vec![] },
+      Description::NominalType { name: heap.alloc_str_for_test("Foo"), type_args: Vec::new() },
       heap.alloc_str_for_test("bar"),
     );
     error_set.report_missing_class_member_definition_error(
@@ -1267,7 +1267,7 @@ Found 2 errors."#
       stacked.add_type_params_arity_error(1, 2);
       stacked
     });
-    error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![]);
+    error_set.report_type_parameter_mismatch_error(Location::dummy(), Vec::new());
     error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![Description::IntType]);
     error_set.report_type_parameter_mismatch_error(
       Location::dummy(),

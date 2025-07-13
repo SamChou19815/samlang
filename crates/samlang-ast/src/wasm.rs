@@ -469,7 +469,7 @@ mod tests {
     assert_eq!("(func (param i32 i32 i32) (result i32))", collector);
     // assert_eq!("(func (param i32 eq (ref $_A)) (result i31))", collector);
     collector.clear();
-    FunctionType { argument_types: vec![], return_type: Box::new(Type::Int31) }.pretty_print(
+    FunctionType { argument_types: Vec::new(), return_type: Box::new(Type::Int31) }.pretty_print(
       &mut collector,
       heap,
       table,
@@ -495,7 +495,7 @@ mod tests {
 
     let mut module = Module {
       symbol_table: mir::SymbolTable::new(),
-      function_type_mapping: vec![],
+      function_type_mapping: Vec::new(),
       type_definitions: vec![TypeDefinition {
         name: table.create_type_name_for_test(PStr::UPPER_F),
         mappings: vec![
@@ -670,7 +670,7 @@ mod tests {
           Instruction::IfElse {
             condition: InlineInstruction::Const(1),
             s1: vec![Instruction::Inline(InlineInstruction::Const(1))],
-            s2: vec![],
+            s2: Vec::new(),
           },
         ],
       }],

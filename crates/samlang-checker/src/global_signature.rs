@@ -129,7 +129,7 @@ pub fn build_module_signature(
               .collect(),
           ))
         }
-        None => Some(TypeDefinitionSignature::Enum(vec![])),
+        None => Some(TypeDefinitionSignature::Enum(Vec::new())),
       }
     } else {
       None
@@ -267,7 +267,7 @@ pub(super) fn resolve_all_transitive_super_types(
   global_cx: &GlobalSignature,
   interface_type: &NominalType,
 ) -> SuperTypesResolutionResult {
-  let mut collector = SuperTypesResolutionResult { types: vec![], is_cyclic: false };
+  let mut collector = SuperTypesResolutionResult { types: Vec::new(), is_cyclic: false };
   resolve_all_transitive_super_types_recursive(
     global_cx,
     interface_type,
@@ -314,7 +314,7 @@ pub(super) fn resolve_function_signature(
   (module_reference, toplevel_name): (ModuleReference, PStr),
   fn_name: PStr,
 ) -> Vec<&MemberSignature> {
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   resolve_function_signature_internal(
     global_cx,
     fn_name,
@@ -380,7 +380,7 @@ pub(super) fn resolve_method_signature(
   interface_type: &NominalType,
   method_name: PStr,
 ) -> Vec<MemberSignature> {
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   resolve_method_signature_recursive(
     global_cx,
     interface_type,
@@ -397,7 +397,7 @@ pub(super) fn resolve_all_method_signatures(
   interface_types: &[NominalType],
   method_name: PStr,
 ) -> Vec<MemberSignature> {
-  let mut collector = vec![];
+  let mut collector = Vec::new();
   for interface_type in interface_types {
     resolve_method_signature_recursive(
       global_cx,
@@ -543,7 +543,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_C,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
       )
       .debug_print(heap)
@@ -557,7 +557,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("IUseNonExistent"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
       )
       .debug_print(heap)
@@ -585,7 +585,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ICyclic1"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
       )
       .debug_print(heap)
@@ -599,7 +599,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ICyclic2"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
       )
       .debug_print(heap)
@@ -613,7 +613,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
       )
       .debug_print(heap)
@@ -706,7 +706,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: PStr::UPPER_C,
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         PStr::LOWER_A,
       )
@@ -720,7 +720,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("IUseNonExistent"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         PStr::LOWER_A,
       )
@@ -739,7 +739,7 @@ public <C : A>(int, int) -> C
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ILevel2"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         }],
         heap.alloc_str_for_test("m1"),
       )
@@ -772,7 +772,7 @@ public <C : A>(int, int) -> C
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ICyclic1"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         PStr::LOWER_A,
       )
@@ -786,7 +786,7 @@ public <C : A>(int, int) -> C
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ICyclic2"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         PStr::LOWER_A,
       )
@@ -804,7 +804,7 @@ public () -> bool"#
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         }],
         heap.alloc_str_for_test("m"),
       )
@@ -821,7 +821,7 @@ public () -> bool"#
           is_class_statics: false,
           module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
-          type_arguments: vec![]
+          type_arguments: Vec::new()
         },
         heap.alloc_str_for_test("m"),
       )
