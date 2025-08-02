@@ -182,7 +182,7 @@ mod lsp {
                       )
                       .map(|uri| DiagnosticRelatedInformation {
                         location: Location { uri, range: samlang_loc_to_lsp_range(l) },
-                        message: format!("[{}]", i),
+                        message: format!("[{i}]"),
                       })
                     })
                     .collect(),

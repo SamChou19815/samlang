@@ -561,7 +561,7 @@ mod stackable_error_tests {
       Description::AnyType,
     );
 
-    assert!(!format!("{:?}", stacked).is_empty());
+    assert!(!format!("{stacked:?}").is_empty());
     assert!(stacked <= stacked);
     assert!(stacked == stacked);
     assert_eq!(stacked.cmp(&stacked), std::cmp::Ordering::Equal);
