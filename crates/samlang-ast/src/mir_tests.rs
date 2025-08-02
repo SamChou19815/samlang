@@ -73,7 +73,7 @@ mod tests {
       return_type: INT_32_TYPE,
       return_collector: None,
     };
-    assert!(!format!("{:?}", call).is_empty());
+    assert!(!format!("{call:?}").is_empty());
     assert!(call.as_call().is_some());
     assert!(call.into_break().is_err());
 
@@ -105,7 +105,7 @@ mod tests {
 
     let mut table = SymbolTable::new();
     let mut type_name_id = table.create_type_name_for_test(PStr::UPPER_A);
-    assert!(!format!("{:?}", type_name_id).is_empty());
+    assert!(!format!("{type_name_id:?}").is_empty());
     assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id = table.create_type_name_with_suffix(
       ModuleReference::ROOT,

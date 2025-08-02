@@ -680,9 +680,9 @@ pub mod completion {
             for (n, interface_sig) in &mod_cx.interfaces {
               let name = n.as_str(&state.heap);
               let (kind, detail) = if interface_sig.type_definition.is_some() {
-                (CompletionItemKind::Class, format!("class {}", name))
+                (CompletionItemKind::Class, format!("class {name}"))
               } else {
-                (CompletionItemKind::Interface, format!("interface {}", name))
+                (CompletionItemKind::Interface, format!("interface {name}"))
               };
               let additional_edits = if available_names.contains(n)
                 || ModuleReference::ROOT.eq(import_mod_ref)

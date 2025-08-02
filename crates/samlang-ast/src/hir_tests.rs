@@ -97,7 +97,7 @@ mod tests {
       return_type: INT_TYPE,
       return_collector: None,
     };
-    assert!(!format!("{:?}", call).is_empty());
+    assert!(!format!("{call:?}").is_empty());
 
     assert!(
       Expression::var_name(
