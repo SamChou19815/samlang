@@ -420,7 +420,7 @@ impl Expression {
   pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
       Expression::Int32Literal(i) => i.to_string(),
-      Expression::Int31Literal(i) => format!("{} as i31", i),
+      Expression::Int31Literal(i) => format!("{i} as i31"),
       Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
       Expression::Variable(v) => v.debug_print(heap, table),
     }

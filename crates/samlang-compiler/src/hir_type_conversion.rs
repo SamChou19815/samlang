@@ -160,7 +160,7 @@ impl TypeLoweringManager {
   pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &type_::Type) -> Type {
     match type_ {
       type_::Type::Any(reason, placeholder) => {
-        panic!("any(placeholder={}) at {:?}", placeholder, reason)
+        panic!("any(placeholder={placeholder}) at {reason:?}")
       }
       type_::Type::Primitive(_, _) => Type::Int32,
       type_::Type::Nominal(id) => {
