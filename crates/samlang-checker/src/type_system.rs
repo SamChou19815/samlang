@@ -140,16 +140,15 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
             break;
           }
         }
-        if passing {
-          if let Some(return_type) =
+        if passing
+          && let Some(return_type) =
             type_meet_visit(&lower_f.return_type, &upper_f.return_type, error_stack)
-          {
-            return Some(Type::Fn(FunctionType {
-              reason: lower_f.reason,
-              argument_types,
-              return_type: Rc::new(return_type),
-            }));
-          }
+        {
+          return Some(Type::Fn(FunctionType {
+            reason: lower_f.reason,
+            argument_types,
+            return_type: Rc::new(return_type),
+          }));
         }
       } else {
         error_stack
