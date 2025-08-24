@@ -420,12 +420,11 @@ pub mod query {
             active_parameter = i;
           }
         }
-        if let Some(last_arg) = call.arguments.expressions.last() {
-          if last_arg.loc().end.lt(&position)
-            && call.arguments.expressions.len() < signature.argument_types.len()
-          {
-            active_parameter = call.arguments.expressions.len();
-          }
+        if let Some(last_arg) = call.arguments.expressions.last()
+          && last_arg.loc().end.lt(&position)
+          && call.arguments.expressions.len() < signature.argument_types.len()
+        {
+          active_parameter = call.arguments.expressions.len();
         }
         let label = format!(
           "({}) -> {}",

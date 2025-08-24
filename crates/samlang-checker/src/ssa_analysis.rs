@@ -429,12 +429,12 @@ impl<'a> SsaAnalysisState<'a> {
   }
 
   fn define_id(&mut self, name: PStr, loc: Location) {
-    if let Some(previous) = self.context.insert(name, loc) {
-      if !self.invalid_defines.contains(&loc) {
-        // Never error on an illegal define twice, since they might be visited multiple times.
-        self.error_set.report_name_already_bound_error(loc, name, previous);
-        self.invalid_defines.insert(loc);
-      }
+    if let Some(previous) = self.context.insert(name, loc)
+      && !self.invalid_defines.contains(&loc)
+    {
+      // Never error on an illegal define twice, since they might be visited multiple times.
+      self.error_set.report_name_already_bound_error(loc, name, previous);
+      self.invalid_defines.insert(loc);
     }
     self.def_locs.insert(loc);
   }

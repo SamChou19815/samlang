@@ -77,11 +77,11 @@ mod utils {
           sources.insert(mod_ref, src);
         }
       }
-    } else if start_path.is_dir() {
-      if let Ok(read_dir_result) = fs::read_dir(start_path) {
-        for entry in read_dir_result.into_iter().flatten() {
-          walk(heap, configuration, absolute_source_path, entry.path().as_path(), sources);
-        }
+    } else if start_path.is_dir()
+      && let Ok(read_dir_result) = fs::read_dir(start_path)
+    {
+      for entry in read_dir_result.into_iter().flatten() {
+        walk(heap, configuration, absolute_source_path, entry.path().as_path(), sources);
       }
     }
   }

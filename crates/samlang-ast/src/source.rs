@@ -882,7 +882,7 @@ impl<T: Clone> Toplevel<T> {
     }
   }
 
-  pub fn members_iter(&self) -> MemberDeclarationsIterator<T> {
+  pub fn members_iter(&self) -> MemberDeclarationsIterator<'_, T> {
     match self {
       Toplevel::Interface(i) => MemberDeclarationsIterator::Interface(i.members.members.iter()),
       Toplevel::Class(c) => MemberDeclarationsIterator::Class(c.members.members.iter()),
