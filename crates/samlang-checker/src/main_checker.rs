@@ -34,7 +34,7 @@ mod type_hint {
 
   pub(super) const MISSING: Hint<'static> = Hint(None);
 
-  pub(super) fn available(type_: &Type) -> Hint {
+  pub(super) fn available(type_: &'_ Type) -> Hint<'_> {
     Hint(Some(type_))
   }
 
@@ -446,38 +446,34 @@ fn check_member_with_unresolved_tparams(
       });
       return (partially_checked_expr, Vec::new());
     }
-    if let Some(hint) = hint.get_valid_hint() {
-      if let Type::Fn(fun_hint) = hint {
-        if fun_hint.argument_types.len() == method_type_info.type_.argument_types.len() {
-          // Hint matches the shape and can be useful.
-          let type_system::TypeConstraintSolution { solved_generic_type, solved_substitution } =
-            type_system::solve_type_constraints(
-              hint,
-              &Type::Fn(method_type_info.type_.clone()),
-              &method_type_info.type_parameters,
-              cx.error_set,
-            );
-          let common = expression.common.with_new_type(solved_generic_type);
-          let inferred_type_arguments = method_type_info
-            .type_parameters
-            .iter()
-            .map(|it| {
-              type_system::subst_type(
-                &Type::Generic(Reason::dummy(), it.name),
-                &solved_substitution,
-              )
-            })
-            .collect_vec();
-          let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
-            common,
-            explicit_type_arguments: expression.explicit_type_arguments.clone(),
-            inferred_type_arguments,
-            object: Box::new(checked_expression),
-            method_name: expression.field_name,
-          });
-          return (partially_checked_expr, Vec::new());
-        }
-      }
+    if let Some(hint) = hint.get_valid_hint()
+      && let Type::Fn(fun_hint) = hint
+      && fun_hint.argument_types.len() == method_type_info.type_.argument_types.len()
+    {
+      // Hint matches the shape and can be useful.
+      let type_system::TypeConstraintSolution { solved_generic_type, solved_substitution } =
+        type_system::solve_type_constraints(
+          hint,
+          &Type::Fn(method_type_info.type_.clone()),
+          &method_type_info.type_parameters,
+          cx.error_set,
+        );
+      let common = expression.common.with_new_type(solved_generic_type);
+      let inferred_type_arguments = method_type_info
+        .type_parameters
+        .iter()
+        .map(|it| {
+          type_system::subst_type(&Type::Generic(Reason::dummy(), it.name), &solved_substitution)
+        })
+        .collect_vec();
+      let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
+        common,
+        explicit_type_arguments: expression.explicit_type_arguments.clone(),
+        inferred_type_arguments,
+        object: Box::new(checked_expression),
+        method_name: expression.field_name,
+      });
+      return (partially_checked_expr, Vec::new());
     }
     // When hint is bad or there is no hint, we need to give up and let context help us more.
     let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {

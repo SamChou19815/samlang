@@ -349,16 +349,13 @@ fn try_merge_into_derived_induction_variable_without_swap(
   {
     if let Some(another_variable) =
       binary_statement.e2.as_variable().and_then(|it| existing_set.get(&it.name))
-    {
-      if binary_statement.operator == BinaryOperator::PLUS {
-        if let Some(merged) =
+      && binary_statement.operator == BinaryOperator::PLUS
+        && let Some(merged) =
           merge_variable_addition_into_derived_induction_variable(existing, another_variable)
         {
           existing_set.insert(binary_statement.name, merged);
           return true;
         }
-      }
-    }
     if let Some(e2) =
       get_loop_invariant_expression_opt(&binary_statement.e2, non_loop_invariant_variables)
     {
@@ -551,10 +548,9 @@ fn extract_derived_induction_variables(
   }
   let mut collector = Vec::new();
   for stmt in rest_stmts {
-    if let Statement::Binary(b) = stmt {
-      if let Some(derived_induction_variable) = existing_derived_induction_variable_set.get(&b.name)
-      {
-        if !induction_loop_variable_collector_names.contains(&b.name) {
+    if let Statement::Binary(b) = stmt
+      && let Some(derived_induction_variable) = existing_derived_induction_variable_set.get(&b.name)
+        && !induction_loop_variable_collector_names.contains(&b.name) {
           collector.push(DerivedInductionVariableWithName {
             name: b.name,
             base_name: derived_induction_variable.base_name,
@@ -562,8 +558,6 @@ fn extract_derived_induction_variables(
             immediate: derived_induction_variable.immediate.clone(),
           });
         }
-      }
-    }
   }
   collector
 }

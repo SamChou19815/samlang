@@ -1987,13 +1987,12 @@ mod type_parser {
     tparams: &mut [annotation::TypeParameter],
   ) {
     for tparam in tparams {
-      if let Some(bound) = &mut tparam.bound {
-        if let Some(targs) = &mut bound.type_arguments {
+      if let Some(bound) = &mut tparam.bound
+        && let Some(targs) = &mut bound.type_arguments {
           for annot in &mut targs.arguments {
             fix_annot_with_generic_annot(parser, annot);
           }
         }
-      }
     }
   }
 

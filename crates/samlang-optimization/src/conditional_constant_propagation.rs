@@ -201,12 +201,11 @@ fn optimize_stmt(
             return false;
           }
         }
-        if let Expression::Int32Literal(v1) = &e1 {
-          if let Some(value) = evaluate_bin_op(operator, *v1, *v2) {
+        if let Expression::Int32Literal(v1) = &e1
+          && let Some(value) = evaluate_bin_op(operator, *v1, *v2) {
             value_cx.checked_bind(*name, Expression::Int32Literal(value));
             return false;
           }
-        }
       }
       match (&e1, &e2) {
         (Expression::Variable(v1), Expression::Variable(v2)) if v1.name.eq(&v2.name) => {
@@ -230,8 +229,8 @@ fn optimize_stmt(
         e2: Expression::Int32Literal(v2),
       } = &partially_optimized_binary
       {
-        if let Some(existing_b1) = binary_expr_cx.get(&v1.name) {
-          if let Some(BinaryExpression { operator, e1, e2 }) =
+        if let Some(existing_b1) = binary_expr_cx.get(&v1.name)
+          && let Some(BinaryExpression { operator, e1, e2 }) =
             merge_binary_expression(*operator, existing_b1, *v2)
           {
             collector.push(Statement::Binary(Binary {
@@ -242,7 +241,6 @@ fn optimize_stmt(
             }));
             return false;
           }
-        }
         binary_expr_cx.insert(*name, BinaryExpression { operator: *operator, e1: *v1, e2: *v2 });
       }
       collector.push(Statement::Binary(partially_optimized_binary));
