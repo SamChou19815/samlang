@@ -15,11 +15,11 @@ fn transitive_set(
   let mut stack = initial.into_iter().collect_vec();
   let mut result = HashSet::new();
   while let Some(mod_ref) = stack.pop() {
-    if result.insert(mod_ref) {
-      if let Some(edges) = graph.get(&mod_ref) {
-        for e in edges {
-          stack.push(*e);
-        }
+    if result.insert(mod_ref)
+      && let Some(edges) = graph.get(&mod_ref)
+    {
+      for e in edges {
+        stack.push(*e);
       }
     }
   }

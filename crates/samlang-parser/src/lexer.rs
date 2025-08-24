@@ -17,7 +17,7 @@ mod char_stream {
   }
 
   impl CharacterStream<'_> {
-    pub(super) fn new(module_reference: ModuleReference, source: &str) -> CharacterStream {
+    pub(super) fn new(module_reference: ModuleReference, source: &'_ str) -> CharacterStream<'_> {
       CharacterStream {
         line_num: 0,
         col_num: 0,

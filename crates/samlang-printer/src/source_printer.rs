@@ -255,8 +255,8 @@ struct FlattenedIfElseChainElement<'a> {
 }
 
 fn flattened_if_else(
-  if_else: &expr::IfElse<()>,
-) -> (Vec<FlattenedIfElseChainElement>, &expr::Block<()>) {
+  if_else: &'_ expr::IfElse<()>,
+) -> (Vec<FlattenedIfElseChainElement<'_>>, &'_ expr::Block<()>) {
   let mut acc = if_else;
   let mut chain = Vec::new();
   loop {

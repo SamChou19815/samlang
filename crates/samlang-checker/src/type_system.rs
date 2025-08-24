@@ -194,14 +194,13 @@ fn solve_type_constraints_internal(
   match generic {
     Type::Any(_, _) | Type::Primitive(_, _) => {}
     Type::Nominal(g) => {
-      if let Type::Nominal(c) = concrete {
-        if g.module_reference == c.module_reference
-          && g.id == c.id
-          && g.type_arguments.len() == c.type_arguments.len()
-        {
-          for (g_targ, c_targ) in g.type_arguments.iter().zip(&c.type_arguments) {
-            solve_type_constraints_internal(c_targ, g_targ, type_parameters, partially_solved);
-          }
+      if let Type::Nominal(c) = concrete
+        && g.module_reference == c.module_reference
+        && g.id == c.id
+        && g.type_arguments.len() == c.type_arguments.len()
+      {
+        for (g_targ, c_targ) in g.type_arguments.iter().zip(&c.type_arguments) {
+          solve_type_constraints_internal(c_targ, g_targ, type_parameters, partially_solved);
         }
       }
     }

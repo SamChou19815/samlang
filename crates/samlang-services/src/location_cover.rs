@@ -22,9 +22,9 @@ pub(super) enum LocationCoverSearchResult<'a> {
 }
 
 fn search_matching_pattern(
-  pattern: &pattern::MatchingPattern<Rc<Type>>,
+  pattern: &'_ pattern::MatchingPattern<Rc<Type>>,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   match pattern {
     pattern::MatchingPattern::Tuple(pattern::TuplePattern { elements, .. }) => {
       elements.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
@@ -45,17 +45,17 @@ fn search_matching_pattern(
 }
 
 fn search_parenthesized_expression_list(
-  expr_list: &expr::ParenthesizedExpressionList<Rc<Type>>,
+  expr_list: &'_ expr::ParenthesizedExpressionList<Rc<Type>>,
   position: Position,
   stop_at_call: bool,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   expr_list.expressions.iter().find_map(|e| search_expression(e, position, stop_at_call))
 }
 
 fn search_optional_type_parameters(
-  tparams_opt: Option<&annotation::TypeParameters>,
+  tparams_opt: Option<&'_ annotation::TypeParameters>,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   tparams_opt.iter().flat_map(|it| &it.parameters).find_map(|tparam| {
     if tparam.name.loc.contains_position(position) {
       return Some(LocationCoverSearchResult::TypedName(
@@ -69,16 +69,16 @@ fn search_optional_type_parameters(
 }
 
 fn search_optional_type_arguments(
-  targs_opt: Option<&annotation::TypeArguments>,
+  targs_opt: Option<&'_ annotation::TypeArguments>,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   targs_opt.iter().flat_map(|it| &it.arguments).find_map(|it| search_annotation(it, position))
 }
 
 fn search_id_annotation(
-  id_annot: &annotation::Id,
+  id_annot: &'_ annotation::Id,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   if id_annot.id.loc.contains_position(position) {
     return Some(LocationCoverSearchResult::TypedName(
       id_annot.id.loc,
@@ -90,16 +90,16 @@ fn search_id_annotation(
 }
 
 fn search_optional_id_annotation(
-  id_annot_opt: Option<&annotation::Id>,
+  id_annot_opt: Option<&'_ annotation::Id>,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   if let Some(id_annot) = id_annot_opt { search_id_annotation(id_annot, position) } else { None }
 }
 
 fn search_annotation(
-  annotation: &annotation::T,
+  annotation: &'_ annotation::T,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   match annotation {
     annotation::T::Primitive(_, _, _) => None,
     annotation::T::Id(id_annot) => search_id_annotation(id_annot, position),
@@ -120,17 +120,17 @@ fn search_annotation(
 }
 
 fn search_optional_annotation(
-  annotation_opt: Option<&annotation::T>,
+  annotation_opt: Option<&'_ annotation::T>,
   position: Position,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   if let Some(annot) = annotation_opt { search_annotation(annot, position) } else { None }
 }
 
 fn search_if_else(
-  if_else: &expr::IfElse<Rc<Type>>,
+  if_else: &'_ expr::IfElse<Rc<Type>>,
   position: Position,
   stop_at_call: bool,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   (match if_else.condition.as_ref() {
     expr::IfElseCondition::Expression(e) => search_expression(e, position, stop_at_call),
     expr::IfElseCondition::Guard(p, e) => {
@@ -142,10 +142,10 @@ fn search_if_else(
 }
 
 fn search_if_else_or_block(
-  if_else_or_block: &expr::IfElseOrBlock<Rc<Type>>,
+  if_else_or_block: &'_ expr::IfElseOrBlock<Rc<Type>>,
   position: Position,
   stop_at_call: bool,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   match if_else_or_block {
     expr::IfElseOrBlock::IfElse(e) => search_if_else(e, position, stop_at_call),
     expr::IfElseOrBlock::Block(e) => search_block(e, position, stop_at_call),
@@ -153,10 +153,10 @@ fn search_if_else_or_block(
 }
 
 fn search_block(
-  block: &expr::Block<Rc<Type>>,
+  block: &'_ expr::Block<Rc<Type>>,
   position: Position,
   stop_at_call: bool,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   for stmt in &block.statements {
     if let Some(found) = search_optional_annotation(stmt.annotation.as_ref(), position) {
       return Some(found);
@@ -175,10 +175,10 @@ fn search_block(
 }
 
 fn search_expression(
-  expr: &expr::E<Rc<Type>>,
+  expr: &'_ expr::E<Rc<Type>>,
   position: Position,
   stop_at_call: bool,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   if !expr.loc().contains_position(position) {
     return None;
   }
@@ -313,7 +313,7 @@ pub(super) fn search_module_locally(
   module: &Module<Rc<Type>>,
   position: Position,
   stop_at_call: bool,
-) -> Option<LocationCoverSearchResult> {
+) -> Option<LocationCoverSearchResult<'_>> {
   for toplevel in &module.toplevels {
     let name = toplevel.name();
     if !toplevel.loc().contains_position(position) {
