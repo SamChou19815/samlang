@@ -369,14 +369,11 @@ mod lsp {
         .iter()
         .filter_map(|f| Url::parse(&f.uri).ok())
         .filter_map(|uri| {
-          if let Ok(content) = fs::read_to_string(uri.path()) {
-            Some((
-              self.convert_url_to_module_reference_add_if_absent(&mut state.0.heap, &uri),
-              content,
-            ))
-          } else {
-            None
-          }
+          let content = fs::read_to_string(uri.path()).ok()?;
+          Some((
+            self.convert_url_to_module_reference_add_if_absent(&mut state.0.heap, &uri),
+            content,
+          ))
         })
         .collect::<Vec<_>>();
       state.0.update(added_set);
