@@ -477,30 +477,24 @@ fn extract_basic_induction_variables(
       &loop_variable.loop_value
     {
       for stmt in rest_stmts {
-        match stmt {
-          Statement::Binary(Binary {
-            name,
-            operator: BinaryOperator::PLUS,
-            e1: Expression::Variable(e1_var),
-            e2,
-          }) if name.eq(&basic_induction_loop_increment_collector.name)
-            && e1_var.name.eq(&loop_variable.name) =>
-          {
-            if let Some(increment_amount) =
-              get_loop_invariant_expression_opt(e2, non_loop_invariant_variables)
-            {
-              all_basic_induction_variables.push(
-                GeneralBasicInductionVariableWithLoopValueCollector {
-                  name: loop_variable.name,
-                  initial_value: loop_variable.initial_value,
-                  increment_amount,
-                  loop_value_collector: basic_induction_loop_increment_collector.name,
-                },
-              );
-              continue 'outer;
-            }
-          }
-          _ => {}
+        if let Statement::Binary(Binary {
+          name,
+          operator: BinaryOperator::PLUS,
+          e1: Expression::Variable(e1_var),
+          e2,
+        }) = stmt
+          && name.eq(&basic_induction_loop_increment_collector.name)
+          && e1_var.name.eq(&loop_variable.name)
+          && let Some(increment_amount) =
+            get_loop_invariant_expression_opt(e2, non_loop_invariant_variables)
+        {
+          all_basic_induction_variables.push(GeneralBasicInductionVariableWithLoopValueCollector {
+            name: loop_variable.name,
+            initial_value: loop_variable.initial_value,
+            increment_amount,
+            loop_value_collector: basic_induction_loop_increment_collector.name,
+          });
+          continue 'outer;
         }
       }
     }
