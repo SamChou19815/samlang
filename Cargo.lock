@@ -597,7 +597,6 @@ dependencies = [
  "samlang-errors",
  "samlang-heap",
  "samlang-printer",
- "wat",
 ]
 
 [[package]]
