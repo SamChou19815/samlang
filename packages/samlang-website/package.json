@@ -8,9 +8,9 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
-    "@types/node": "22.10.0",
-    "@types/react": "18.3.12",
-    "@types/react-dom": "18.3.1",
+    "@types/node": "24.9.1",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
     "autoprefixer": "10.4.20",
     "dev-sam-theme": "^0.0.1",
     "monaco-editor": "^0.52.2",
