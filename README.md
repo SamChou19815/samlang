@@ -1,7 +1,5 @@
 # samlang
 
-![VSCode Extension](https://img.shields.io/visual-studio-marketplace/i/dev-sam.vscode-samlang.svg?label=vscode%20extension%20installs)
-
 Sam's Programming Language
 
 Read the docs at [the official documentation site](https://samlang.io).
