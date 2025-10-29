@@ -107,6 +107,7 @@ mod utils {
 
 mod lsp {
   use super::*;
+  use serde_json::json;
   use std::collections::HashMap;
   use tokio::sync::RwLock;
   use tower_lsp::jsonrpc::Result;
@@ -163,8 +164,7 @@ mod lsp {
                 full_error,
                 reference_locs,
               } = e.to_ide_format(heap, sources);
-              let mut extra_data_map = serde_json::Map::new();
-              extra_data_map.insert("rendered".to_string(), serde_json::Value::String(full_error));
+              let extra_data = json!({ "rendered": full_error });
               Diagnostic {
                 range: samlang_loc_to_lsp_range(&loc),
                 severity: Some(DiagnosticSeverity::ERROR),
@@ -187,7 +187,7 @@ mod lsp {
                     })
                     .collect(),
                 ),
-                data: Some(serde_json::Value::Object(extra_data_map)),
+                data: Some(extra_data),
                 ..Default::default()
               }
             })
