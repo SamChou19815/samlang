@@ -797,7 +797,7 @@ mod type_tests {
     assert_eq!(
       "<A : B, C>",
       TypeParameterSignature::pretty_print_list(
-        &vec![
+        &[
           TypeParameterSignature {
             name: PStr::UPPER_A,
             bound: Option::Some(builder.simple_nominal_type_unwrapped(PStr::UPPER_B))

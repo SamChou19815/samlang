@@ -952,7 +952,7 @@ mod tests {
             loop_value_collector: heap.alloc_str_for_test("tmp_j"),
           }
         ],
-        &vec![
+        &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             BinaryOperator::PLUS,
@@ -1030,7 +1030,7 @@ mod tests {
             BinaryOperator::PLUS,
             Expression::var_name(PStr::LOWER_I, INT_32_TYPE),
             Expression::var_name(PStr::LOWER_J, INT_32_TYPE),
-          ),
+          )
         ],
         &HashSet::from([
           PStr::LOWER_A,
