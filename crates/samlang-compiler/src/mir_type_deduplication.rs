@@ -12,104 +12,98 @@ fn rewrite_id_type_name(state: &State, id: TypeNameId) -> TypeNameId {
   if let Some(n) = state.get(&id) { *n } else { id }
 }
 
-fn rewrite_type(state: &State, type_: Type) -> Type {
+fn rewrite_type(state: &State, type_: &mut Type) {
   match type_ {
-    Type::Int32 => Type::Int32,
-    Type::Int31 => Type::Int31,
-    Type::Id(id) => Type::Id(rewrite_id_type_name(state, id)),
+    Type::Int32 | Type::Int31 => {}
+    Type::Id(id) => {
+      *id = rewrite_id_type_name(state, *id);
+    }
   }
 }
 
-fn rewrite_fn_type(
-  state: &State,
-  FunctionType { argument_types, return_type }: FunctionType,
-) -> FunctionType {
-  FunctionType {
-    argument_types: argument_types.into_iter().map(|t| rewrite_type(state, t)).collect_vec(),
-    return_type: Box::new(rewrite_type(state, *return_type)),
-  }
+fn rewritten_type(state: &State, mut type_: Type) -> Type {
+  rewrite_type(state, &mut type_);
+  type_
 }
 
-fn rewrite_var_name(state: &State, VariableName { name, type_ }: VariableName) -> VariableName {
-  VariableName { name, type_: rewrite_type(state, type_) }
+fn rewrite_fn_type(state: &State, FunctionType { argument_types, return_type }: &mut FunctionType) {
+  for t in argument_types {
+    rewrite_type(state, t);
+  }
+  rewrite_type(state, return_type.as_mut());
+}
+
+fn rewrite_var_name(state: &State, VariableName { name: _, type_ }: &mut VariableName) {
+  rewrite_type(state, type_);
 }
 
 fn rewrite_fn_name(
   state: &State,
-  FunctionNameExpression { name, type_ }: FunctionNameExpression,
-) -> FunctionNameExpression {
-  FunctionNameExpression { name, type_: rewrite_fn_type(state, type_) }
+  FunctionNameExpression { name: _, type_ }: &mut FunctionNameExpression,
+) {
+  rewrite_fn_type(state, type_);
 }
 
-fn rewrite_expr(state: &State, expr: Expression) -> Expression {
+fn rewrite_expr(state: &State, expr: &mut Expression) {
   match expr {
-    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => expr,
-    Expression::Variable(n) => Expression::Variable(rewrite_var_name(state, n)),
+    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => {}
+    Expression::Variable(n) => rewrite_var_name(state, n),
   }
 }
 
-fn rewrite_expressions(state: &State, expressions: Vec<Expression>) -> Vec<Expression> {
-  expressions.into_iter().map(|e| rewrite_expr(state, e)).collect_vec()
+fn rewrite_expressions(state: &State, expressions: &mut [Expression]) {
+  for e in expressions {
+    rewrite_expr(state, e);
+  }
 }
 
-fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
+fn rewrite_stmt(state: &State, stmt: &mut Statement) {
   match stmt {
-    Statement::IsPointer { name, pointer_type, operand } => {
-      Statement::IsPointer { name, pointer_type, operand: rewrite_expr(state, operand) }
+    Statement::IsPointer { name: _, pointer_type, operand } => {
+      *pointer_type = rewrite_id_type_name(state, *pointer_type);
+      rewrite_expr(state, operand);
     }
-    Statement::Not { name, operand } => {
-      Statement::Not { name, operand: rewrite_expr(state, operand) }
+    Statement::Not { name: _, operand } => {
+      rewrite_expr(state, operand);
     }
-    Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
-      name,
-      operator,
-      e1: rewrite_expr(state, e1),
-      e2: rewrite_expr(state, e2),
-    }),
-    Statement::IndexedAccess { name, type_, pointer_expression, index } => {
-      Statement::IndexedAccess {
-        name,
-        type_: rewrite_type(state, type_),
-        pointer_expression: rewrite_expr(state, pointer_expression),
-        index,
-      }
+    Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
+      rewrite_expr(state, e1);
+      rewrite_expr(state, e2);
+    }
+    Statement::IndexedAccess { name: _, type_, pointer_expression, index: _ } => {
+      rewrite_type(state, type_);
+      rewrite_expr(state, pointer_expression);
     }
     Statement::Call {
       callee: Callee::FunctionName(fn_name),
       arguments,
       return_type,
-      return_collector,
-    } => Statement::Call {
-      callee: Callee::FunctionName(rewrite_fn_name(state, fn_name)),
-      arguments: rewrite_expressions(state, arguments),
-      return_type: rewrite_type(state, return_type),
-      return_collector,
-    },
+      return_collector: _,
+    } => {
+      rewrite_fn_name(state, fn_name);
+      rewrite_expressions(state, arguments);
+      rewrite_type(state, return_type);
+    }
     Statement::Call {
       callee: Callee::Variable(var_name),
       arguments,
       return_type,
-      return_collector,
-    } => Statement::Call {
-      callee: Callee::Variable(rewrite_var_name(state, var_name)),
-      arguments: rewrite_expressions(state, arguments),
-      return_type: rewrite_type(state, return_type),
-      return_collector,
-    },
-    Statement::IfElse { condition, s1, s2, final_assignments } => Statement::IfElse {
-      condition: rewrite_expr(state, condition),
-      s1: rewrite_stmts(state, s1),
-      s2: rewrite_stmts(state, s2),
-      final_assignments: final_assignments
-        .into_iter()
-        .map(|IfElseFinalAssignment { name, type_, e1, e2 }| IfElseFinalAssignment {
-          name,
-          type_: rewrite_type(state, type_),
-          e1: rewrite_expr(state, e1),
-          e2: rewrite_expr(state, e2),
-        })
-        .collect_vec(),
-    },
+      return_collector: _,
+    } => {
+      rewrite_var_name(state, var_name);
+      rewrite_expressions(state, arguments);
+      rewrite_type(state, return_type);
+    }
+    Statement::IfElse { condition, s1, s2, final_assignments } => {
+      rewrite_expr(state, condition);
+      rewrite_stmts(state, s1);
+      rewrite_stmts(state, s2);
+      for IfElseFinalAssignment { name: _, type_, e1, e2 } in final_assignments {
+        rewrite_type(state, type_);
+        rewrite_expr(state, e1);
+        rewrite_expr(state, e2);
+      }
+    }
     Statement::SingleIf { .. } => {
       panic!("SingleIf should not appear before tailrec optimization.")
     }
@@ -119,51 +113,46 @@ fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
     Statement::While { .. } => {
       panic!("While should not appear before tailrec optimization.")
     }
-    Statement::Cast { name, type_, assigned_expression } => Statement::Cast {
-      name,
-      type_: rewrite_type(state, type_),
-      assigned_expression: rewrite_expr(state, assigned_expression),
-    },
-    Statement::LateInitDeclaration { name, type_ } => {
-      Statement::LateInitDeclaration { name, type_: rewrite_type(state, type_) }
+    Statement::Cast { name: _, type_, assigned_expression } => {
+      rewrite_type(state, type_);
+      rewrite_expr(state, assigned_expression);
     }
-    Statement::LateInitAssignment { name, assigned_expression } => Statement::LateInitAssignment {
-      name,
-      assigned_expression: rewrite_expr(state, assigned_expression),
-    },
-    Statement::StructInit { struct_variable_name, type_name, expression_list } => {
-      Statement::StructInit {
-        struct_variable_name,
-        type_name: rewrite_id_type_name(state, type_name),
-        expression_list: rewrite_expressions(state, expression_list),
-      }
+    Statement::LateInitDeclaration { name: _, type_ } => {
+      rewrite_type(state, type_);
     }
-    Statement::ClosureInit { closure_variable_name, closure_type_name, function_name, context } => {
-      Statement::ClosureInit {
-        closure_variable_name,
-        closure_type_name: rewrite_id_type_name(state, closure_type_name),
-        function_name: rewrite_fn_name(state, function_name),
-        context: rewrite_expr(state, context),
-      }
+    Statement::LateInitAssignment { name: _, assigned_expression } => {
+      rewrite_expr(state, assigned_expression);
+    }
+    Statement::StructInit { struct_variable_name: _, type_name, expression_list } => {
+      *type_name = rewrite_id_type_name(state, *type_name);
+      rewrite_expressions(state, expression_list);
+    }
+    Statement::ClosureInit {
+      closure_variable_name: _,
+      closure_type_name,
+      function_name,
+      context,
+    } => {
+      *closure_type_name = rewrite_id_type_name(state, *closure_type_name);
+      rewrite_fn_name(state, function_name);
+      rewrite_expr(state, context);
     }
   }
 }
 
-fn rewrite_stmts(state: &State, stmts: Vec<Statement>) -> Vec<Statement> {
-  stmts.into_iter().map(|s| rewrite_stmt(state, s)).collect_vec()
+fn rewrite_stmts(state: &State, stmts: &mut [Statement]) {
+  for s in stmts {
+    rewrite_stmt(state, s);
+  }
 }
 
 fn rewrite_function(
   state: &State,
-  Function { name, parameters, type_, body, return_value }: Function,
-) -> Function {
-  Function {
-    name,
-    parameters,
-    type_: rewrite_fn_type(state, type_),
-    body: rewrite_stmts(state, body),
-    return_value: rewrite_expr(state, return_value),
-  }
+  Function { name: _, parameters: _, type_, body, return_value }: &mut Function,
+) {
+  rewrite_fn_type(state, type_);
+  rewrite_stmts(state, body);
+  rewrite_expr(state, return_value);
 }
 
 pub(super) fn deduplicate(
@@ -173,7 +162,7 @@ pub(super) fn deduplicate(
     closure_types,
     type_definitions,
     main_function_names,
-    functions,
+    mut functions,
   }: Sources,
 ) -> Sources {
   let mut state = HashMap::new();
@@ -201,42 +190,50 @@ pub(super) fn deduplicate(
     state.insert(original_name, canonical_name);
   }
 
+  let closure_types = closure_type_def_mapping
+    .into_iter()
+    .map(|(mut t, name)| {
+      rewrite_fn_type(&state, &mut t);
+      ClosureTypeDefinition { name, function_type: t }
+    })
+    .sorted_by_key(|d| d.name)
+    .collect_vec();
+  let type_definitions = type_def_mapping
+    .into_iter()
+    .map(|(mappings, name)| TypeDefinition {
+      name,
+      mappings: match mappings {
+        TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
+          types.into_iter().map(|t| rewritten_type(&state, t)).collect(),
+        ),
+        TypeDefinitionMappings::Enum(variants) => TypeDefinitionMappings::Enum(
+          variants
+            .into_iter()
+            .map(|v| match v {
+              EnumTypeDefinition::Boxed(types) => EnumTypeDefinition::Boxed(
+                types.into_iter().map(|t| rewritten_type(&state, t)).collect(),
+              ),
+              EnumTypeDefinition::Unboxed(t) => {
+                EnumTypeDefinition::Unboxed(rewrite_id_type_name(&state, t))
+              }
+              EnumTypeDefinition::Int31 => EnumTypeDefinition::Int31,
+            })
+            .collect(),
+        ),
+      },
+    })
+    .sorted_by_key(|d| d.name)
+    .collect_vec();
+  for f in &mut functions {
+    rewrite_function(&state, f);
+  }
   Sources {
     symbol_table,
     global_variables,
-    closure_types: closure_type_def_mapping
-      .into_iter()
-      .map(|(t, name)| ClosureTypeDefinition { name, function_type: rewrite_fn_type(&state, t) })
-      .sorted_by_key(|d| d.name)
-      .collect_vec(),
-    type_definitions: type_def_mapping
-      .into_iter()
-      .map(|(mappings, name)| TypeDefinition {
-        name,
-        mappings: match mappings {
-          TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
-            types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
-          ),
-          TypeDefinitionMappings::Enum(variants) => TypeDefinitionMappings::Enum(
-            variants
-              .into_iter()
-              .map(|v| match v {
-                EnumTypeDefinition::Boxed(types) => EnumTypeDefinition::Boxed(
-                  types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
-                ),
-                EnumTypeDefinition::Unboxed(t) => {
-                  EnumTypeDefinition::Unboxed(rewrite_id_type_name(&state, t))
-                }
-                EnumTypeDefinition::Int31 => EnumTypeDefinition::Int31,
-              })
-              .collect(),
-          ),
-        },
-      })
-      .sorted_by_key(|d| d.name)
-      .collect_vec(),
+    closure_types,
+    type_definitions,
     main_function_names,
-    functions: functions.into_iter().map(|f| rewrite_function(&state, f)).collect_vec(),
+    functions,
   }
 }
 
@@ -250,7 +247,7 @@ mod tests {
   #[should_panic]
   #[test]
   fn panic_test_1() {
-    rewrite_stmt(&HashMap::new(), Statement::Break(ZERO));
+    rewrite_stmt(&HashMap::new(), &mut Statement::Break(ZERO));
   }
 
   #[should_panic]
@@ -258,7 +255,7 @@ mod tests {
   fn panic_test_2() {
     rewrite_stmt(
       &HashMap::new(),
-      Statement::SingleIf { condition: ZERO, invert_condition: false, statements: Vec::new() },
+      &mut Statement::SingleIf { condition: ZERO, invert_condition: false, statements: Vec::new() },
     );
   }
 
@@ -267,7 +264,7 @@ mod tests {
   fn panic_test_3() {
     rewrite_stmt(
       &HashMap::new(),
-      Statement::While {
+      &mut Statement::While {
         loop_variables: Vec::new(),
         statements: Vec::new(),
         break_collector: None,
@@ -280,7 +277,7 @@ mod tests {
     let heap = &mut Heap::new();
     let table = &mut SymbolTable::new();
 
-    let mir_type = Type::new_fn_unwrapped(
+    let mut mir_type = Type::new_fn_unwrapped(
       vec![
         INT_31_TYPE,
         Type::Id(table.create_type_name_with_suffix(
@@ -293,10 +290,8 @@ mod tests {
     );
     assert_eq!("(i31, DUMMY_A__i31) -> int", mir_type.pretty_print(heap, table));
 
-    assert_eq!(
-      "(i31, DUMMY_A__i31) -> int",
-      rewrite_fn_type(&HashMap::new(), mir_type).pretty_print(heap, table)
-    );
+    rewrite_fn_type(&HashMap::new(), &mut mir_type);
+    assert_eq!("(i31, DUMMY_A__i31) -> int", mir_type.pretty_print(heap, table));
   }
 
   #[test]
