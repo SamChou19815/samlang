@@ -1,7 +1,7 @@
 use samlang_ast::source::Module;
 use samlang_errors::ErrorSet;
 use samlang_heap::ModuleReference;
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 mod checker_integration_tests;
 mod checker_tests;
@@ -29,7 +29,7 @@ pub use ssa_analysis::{SsaAnalysisResult, perform_ssa_analysis_on_module};
 pub fn type_check_sources(
   sources: &HashMap<ModuleReference, Module<()>>,
   error_set: &mut ErrorSet,
-) -> (HashMap<ModuleReference, Module<std::rc::Rc<type_::Type>>>, type_::GlobalSignature) {
+) -> (HashMap<ModuleReference, Module<Rc<type_::Type>>>, type_::GlobalSignature) {
   let builtin_cx = type_::create_builtin_module_signature();
   let global_cx = global_signature::build_global_signature(sources, builtin_cx);
   let mut checked_sources = HashMap::new();
