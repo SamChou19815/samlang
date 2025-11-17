@@ -725,6 +725,41 @@ class Main {
   }
 
   #[test]
+  fn keyword_tests() {
+    lex("protected");
+    lex("internal");
+    lex("public");
+    lex("if");
+    lex("then");
+    lex("else");
+    lex("match");
+    lex("return");
+    lex("int");
+    lex("string");
+    lex("self");
+    lex("var");
+    lex("let");
+    lex("const");
+    lex("type");
+    lex("constructor");
+    lex("destructor");
+    lex("extends");
+    lex("implements");
+    lex("exports");
+    lex("assert");
+    lex("asserts");
+  }
+
+  #[test]
+  fn op_tests() {
+    lex("?");
+    lex("??");
+    lex("!");
+    lex("..");
+    lex("...");
+  }
+
+  #[test]
   fn int_tests() {
     assert_eq!(vec![".sam:1:1-1:2: 0"], lex("0"));
     assert_eq!(vec![".sam:1:1-1:11: 2147483648"], lex("2147483648"));

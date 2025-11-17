@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 itertools = "0.14.0"
 logos = "0.15.1"
-phf = { version = "0.11", features = ["macros"] }
 samlang-ast = { path = "../samlang-ast" }
 samlang-errors = { path = "../samlang-errors" }
 samlang-heap = { path = "../samlang-heap" }

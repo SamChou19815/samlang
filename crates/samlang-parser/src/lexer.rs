@@ -1,118 +1,372 @@
-use phf::phf_map;
-use samlang_ast::Location;
+use itertools::Itertools;
+use logos::Logos;
+use samlang_ast::{Location, Position};
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 
-mod char_stream {
-  use crate::ModuleReference;
-  use itertools::Itertools;
-  use samlang_ast::{Location, Position};
+#[derive(Clone, Copy, Logos)]
+enum LogosToken {
+  // Keywords: Imports
+  #[token("import")]
+  KeywordImport,
+  #[token("from")]
+  KeywordFrom,
+  // Keywords: Declarations
+  #[token("class")]
+  KeywordClass,
+  #[token("interface")]
+  KeywordInterface,
+  #[token("val")]
+  KeywordVal,
+  #[token("function")]
+  KeywordFunction,
+  #[token("method")]
+  KeywordMethod,
+  #[token("as")]
+  KeywordAs,
+  // Keywords: Visibility modifiers
+  #[token("private")]
+  KeywordPrivate,
+  #[token("protected")]
+  KeywordProtected,
+  #[token("internal")]
+  KeywordInternal,
+  #[token("public")]
+  KeywordPublic,
+  // Keywords: Control Flow
+  #[token("if")]
+  KeywordIf,
+  #[token("then")]
+  KeywordThen,
+  #[token("else")]
+  KeywordElse,
+  #[token("match")]
+  KeywordMatch,
+  #[token("return")]
+  KeywordReturn,
+  // Keywords: Types
+  #[token("int")]
+  KeywordInt,
+  #[token("string")]
+  KeywordString,
+  #[token("bool")]
+  KeywordBool,
+  #[token("unit")]
+  // Keywords: Literals
+  KeywordUnit,
+  #[token("true")]
+  KeywordTrue,
+  #[token("false")]
+  KeywordFalse,
+  #[token("this")]
+  KeywordThis,
+  // Keywords: Forbidden Names
+  #[token("self")]
+  KeywordSelfReserved,
+  #[token("const")]
+  KeywordConst,
+  #[token("let")]
+  KeywordLet,
+  #[token("var")]
+  KeywordVar,
+  #[token("type")]
+  KeywordType,
+  #[token("constructor")]
+  KeywordConstructor,
+  #[token("destructor")]
+  KeywordDestructor,
+  #[token("extends")]
+  KeywordExtends,
+  #[token("implements")]
+  KeywordImplements,
+  #[token("exports")]
+  KeywordExports,
+  #[token("assert")]
+  KeywordAssert,
+  // Operators and punctuations
+  #[token("_")]
+  OpUnderscore,
+  #[token("(")]
+  OpLeftParenthesis,
+  #[token(")")]
+  OpRightParenthesis,
+  #[token("{")]
+  OpLeftBrace,
+  #[token("}")]
+  OpRightBrace,
+  #[token("[")]
+  OpLeftBracket,
+  #[token("]")]
+  OpRightBracket,
+  #[token("?")]
+  OpQuestion,
+  #[token(";")]
+  OpSemicolon,
+  #[token(":")]
+  OpColon,
+  #[token("::")]
+  OpColonColon,
+  #[token(",")]
+  OpComma,
+  #[token(".")]
+  OpDot,
+  #[token("|")]
+  OpBar,
+  #[token("->")]
+  OpArrow,
+  #[token("=")]
+  OpAssign,
+  #[token("!")]
+  OpNot,
+  #[token("*")]
+  OpMultiply,
+  #[token("/")]
+  OpDivide,
+  #[token("%")]
+  OpMod,
+  #[token("+")]
+  OpPlus,
+  #[token("-")]
+  OpMinus,
+  #[token("<")]
+  OpLessThan,
+  #[token("<=")]
+  OpLessThanOrEqual,
+  #[token(">")]
+  OpGreaterThan,
+  #[token(">=")]
+  OpGreaterThanOrEqual,
+  #[token("==")]
+  OpEqual,
+  #[token("!=")]
+  OpNotEqual,
+  #[token("&&")]
+  OpAnd,
+  #[token("||")]
+  OpOr,
+  #[token("...")]
+  OpDotDotDot,
+  // Identifiers
+  #[regex("[A-Z][A-Za-z0-9]*")]
+  UpperId,
+  #[regex("[a-z][A-Za-z0-9]*")]
+  LowerId,
+  #[regex("0|([1-9][0-9]*)")]
+  Int,
+}
 
-  pub(super) struct CharacterStream<'a> {
-    pub(super) line_num: i32,
-    pub(super) col_num: i32,
-    pos: usize,
+struct WrappedLogosLexer<'a, 'b, 'c> {
+  lexer: logos::Lexer<'a, LogosToken>,
+  heap: &'b mut Heap,
+  error_set: &'c mut ErrorSet,
+  module_reference: ModuleReference,
+  position: Position,
+}
+
+impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
+  fn new(
+    source: &'a str,
     module_reference: ModuleReference,
-    source: &'a [u8],
+    heap: &'b mut Heap,
+    error_set: &'c mut ErrorSet,
+  ) -> Self {
+    Self {
+      lexer: LogosToken::lexer(source),
+      module_reference,
+      heap,
+      error_set,
+      position: Position(0, 0),
+    }
   }
 
-  impl CharacterStream<'_> {
-    pub(super) fn new(module_reference: ModuleReference, source: &'_ str) -> CharacterStream<'_> {
-      CharacterStream {
-        line_num: 0,
-        col_num: 0,
-        pos: 0,
-        module_reference,
-        source: source.as_bytes(),
+  fn next(&mut self) -> Option<Token> {
+    self.skip_whitespace();
+
+    if let Some((loc, s)) = self.lex_str_lit_opt() {
+      if !string_has_valid_escape(&s) {
+        self.error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
       }
+      return Some(Token(loc, TokenContent::StringLiteral(self.heap.alloc_string(s))));
     }
 
-    fn advance_char(&mut self, c: u8) {
-      self.pos += 1;
-      if c == b'\n' {
-        self.line_num += 1;
-        self.col_num = 0;
-      } else {
-        self.col_num += 1;
-      }
+    if let Some((loc, s)) = self.lex_line_comment_opt() {
+      let comment_pstr = self.heap.alloc_string(s);
+      return Some(Token(loc, TokenContent::LineComment(comment_pstr)));
     }
 
-    /// Returns whether we actually consumed something
-    pub(super) fn consume_whitespace(&mut self) -> bool {
-      while self.pos < self.source.len() {
-        let c = self.source[self.pos];
-        if !c.is_ascii_whitespace() {
-          return true;
+    if let Some((is_doc, loc, s)) = self.lex_block_comment_opt() {
+      let comment_pstr = self.heap.alloc_string(s);
+      return Some(Token(
+        loc,
+        if is_doc {
+          TokenContent::DocComment(comment_pstr)
+        } else {
+          TokenContent::BlockComment(comment_pstr)
+        },
+      ));
+    }
+
+    let token = match self.lexer.next()? {
+      Ok(token) => token,
+      Err(()) => {
+        let start = self.position;
+        let mut content = self.lexer.slice().to_string();
+        self.position.1 += content.len() as i32;
+        let mut skip_count = 0;
+        for c in self.lexer.remainder().as_bytes() {
+          if c.is_ascii_whitespace() {
+            break;
+          }
+          skip_count += 1;
         }
-        self.advance_char(c)
+        content.push_str(&self.lexer.remainder()[..skip_count]);
+        self.position.1 += skip_count as i32;
+        self.lexer.bump(skip_count);
+        let p_str = self.heap.alloc_string(content.to_string());
+        let loc = Location { module_reference: self.module_reference, start, end: self.position };
+        self.error_set.report_invalid_syntax_error(loc, "Invalid token.".to_string());
+        return Some(Token(loc, TokenContent::Error(p_str)));
       }
-      false
-    }
+    };
 
-    pub(super) fn consume_and_get_loc(&mut self, length: usize) -> Location {
-      let start_position = Position(self.line_num, self.col_num);
-      let starting_pos = self.pos;
-      for i in starting_pos..(starting_pos + length) {
-        self.advance_char(self.source[i]);
+    match token {
+      LogosToken::KeywordImport => Some(self.translate_keyword_token(Keyword::Import)),
+      LogosToken::KeywordFrom => Some(self.translate_keyword_token(Keyword::From)),
+      LogosToken::KeywordClass => Some(self.translate_keyword_token(Keyword::Class)),
+      LogosToken::KeywordInterface => Some(self.translate_keyword_token(Keyword::Interface)),
+      LogosToken::KeywordVal => Some(self.translate_keyword_token(Keyword::Val)),
+      LogosToken::KeywordFunction => Some(self.translate_keyword_token(Keyword::Function)),
+      LogosToken::KeywordMethod => Some(self.translate_keyword_token(Keyword::Method)),
+      LogosToken::KeywordAs => Some(self.translate_keyword_token(Keyword::As)),
+      LogosToken::KeywordPrivate => Some(self.translate_keyword_token(Keyword::Private)),
+      LogosToken::KeywordProtected => Some(self.translate_keyword_token(Keyword::Protected)),
+      LogosToken::KeywordInternal => Some(self.translate_keyword_token(Keyword::Internal)),
+      LogosToken::KeywordPublic => Some(self.translate_keyword_token(Keyword::Public)),
+      LogosToken::KeywordIf => Some(self.translate_keyword_token(Keyword::If)),
+      LogosToken::KeywordThen => Some(self.translate_keyword_token(Keyword::Then)),
+      LogosToken::KeywordElse => Some(self.translate_keyword_token(Keyword::Else)),
+      LogosToken::KeywordMatch => Some(self.translate_keyword_token(Keyword::Match)),
+      LogosToken::KeywordReturn => Some(self.translate_keyword_token(Keyword::Return)),
+      LogosToken::KeywordInt => Some(self.translate_keyword_token(Keyword::Int)),
+      LogosToken::KeywordString => Some(self.translate_keyword_token(Keyword::String)),
+      LogosToken::KeywordBool => Some(self.translate_keyword_token(Keyword::Bool)),
+      LogosToken::KeywordUnit => Some(self.translate_keyword_token(Keyword::Unit)),
+      LogosToken::KeywordTrue => Some(self.translate_keyword_token(Keyword::True)),
+      LogosToken::KeywordFalse => Some(self.translate_keyword_token(Keyword::False)),
+      LogosToken::KeywordThis => Some(self.translate_keyword_token(Keyword::This)),
+      LogosToken::KeywordSelfReserved => Some(self.translate_keyword_token(Keyword::SelfReserved)),
+      LogosToken::KeywordConst => Some(self.translate_keyword_token(Keyword::Const)),
+      LogosToken::KeywordLet => Some(self.translate_keyword_token(Keyword::Let)),
+      LogosToken::KeywordVar => Some(self.translate_keyword_token(Keyword::Var)),
+      LogosToken::KeywordType => Some(self.translate_keyword_token(Keyword::Type)),
+      LogosToken::KeywordConstructor => Some(self.translate_keyword_token(Keyword::Constructor)),
+      LogosToken::KeywordDestructor => Some(self.translate_keyword_token(Keyword::Destructor)),
+      LogosToken::KeywordExtends => Some(self.translate_keyword_token(Keyword::Extends)),
+      LogosToken::KeywordImplements => Some(self.translate_keyword_token(Keyword::Implements)),
+      LogosToken::KeywordExports => Some(self.translate_keyword_token(Keyword::Exports)),
+      LogosToken::KeywordAssert => Some(self.translate_keyword_token(Keyword::Assert)),
+      LogosToken::OpUnderscore => Some(self.translate_op_token(TokenOp::Underscore)),
+      LogosToken::OpLeftParenthesis => Some(self.translate_op_token(TokenOp::LeftParenthesis)),
+      LogosToken::OpRightParenthesis => Some(self.translate_op_token(TokenOp::RightParenthesis)),
+      LogosToken::OpLeftBrace => Some(self.translate_op_token(TokenOp::LeftBrace)),
+      LogosToken::OpRightBrace => Some(self.translate_op_token(TokenOp::RightBrace)),
+      LogosToken::OpLeftBracket => Some(self.translate_op_token(TokenOp::LeftBracket)),
+      LogosToken::OpRightBracket => Some(self.translate_op_token(TokenOp::RightBracket)),
+      LogosToken::OpQuestion => Some(self.translate_op_token(TokenOp::Question)),
+      LogosToken::OpSemicolon => Some(self.translate_op_token(TokenOp::Semicolon)),
+      LogosToken::OpColon => Some(self.translate_op_token(TokenOp::Colon)),
+      LogosToken::OpColonColon => Some(self.translate_op_token(TokenOp::ColonColon)),
+      LogosToken::OpComma => Some(self.translate_op_token(TokenOp::Comma)),
+      LogosToken::OpDot => Some(self.translate_op_token(TokenOp::Dot)),
+      LogosToken::OpBar => Some(self.translate_op_token(TokenOp::Bar)),
+      LogosToken::OpArrow => Some(self.translate_op_token(TokenOp::Arrow)),
+      LogosToken::OpAssign => Some(self.translate_op_token(TokenOp::Assign)),
+      LogosToken::OpNot => Some(self.translate_op_token(TokenOp::Not)),
+      LogosToken::OpMultiply => Some(self.translate_op_token(TokenOp::Multiply)),
+      LogosToken::OpDivide => Some(self.translate_op_token(TokenOp::Divide)),
+      LogosToken::OpMod => Some(self.translate_op_token(TokenOp::Mod)),
+      LogosToken::OpPlus => Some(self.translate_op_token(TokenOp::Plus)),
+      LogosToken::OpMinus => Some(self.translate_op_token(TokenOp::Minus)),
+      LogosToken::OpLessThan => Some(self.translate_op_token(TokenOp::LessThan)),
+      LogosToken::OpLessThanOrEqual => Some(self.translate_op_token(TokenOp::LessThanOrEqual)),
+      LogosToken::OpGreaterThan => Some(self.translate_op_token(TokenOp::GreaterThan)),
+      LogosToken::OpGreaterThanOrEqual => {
+        Some(self.translate_op_token(TokenOp::GreaterThanOrEqual))
       }
-      Location {
-        module_reference: self.module_reference,
-        start: start_position,
-        end: Position(self.line_num, self.col_num),
+      LogosToken::OpEqual => Some(self.translate_op_token(TokenOp::Equal)),
+      LogosToken::OpNotEqual => Some(self.translate_op_token(TokenOp::NotEqual)),
+      LogosToken::OpAnd => Some(self.translate_op_token(TokenOp::And)),
+      LogosToken::OpOr => Some(self.translate_op_token(TokenOp::Or)),
+      LogosToken::OpDotDotDot => Some(self.translate_op_token(TokenOp::DotDotDot)),
+      LogosToken::UpperId => {
+        let loc = self.loc_of_lexer_span();
+        let p_str = self.heap.alloc_string(self.lexer.slice().to_string());
+        Some(Token(loc, TokenContent::UpperId(p_str)))
+      }
+      LogosToken::LowerId => {
+        let loc = self.loc_of_lexer_span();
+        let p_str = self.heap.alloc_string(self.lexer.slice().to_string());
+        Some(Token(loc, TokenContent::LowerId(p_str)))
+      }
+      LogosToken::Int => {
+        let loc = self.loc_of_lexer_span();
+        let p_str = self.heap.alloc_string(self.lexer.slice().to_string());
+        Some(Token(loc, TokenContent::IntLiteral(p_str)))
       }
     }
+  }
 
-    pub(super) fn consume_until_whitespace(&mut self) -> (Location, String) {
-      let mut position = self.pos;
-      while position < self.source.len() {
-        if self.source[position].is_ascii_whitespace() {
-          break;
-        }
-        position += 1;
-      }
-      let string = String::from_utf8(self.source[self.pos..position].to_vec()).unwrap();
-      (self.consume_and_get_loc(position - self.pos), string)
+  fn translate_keyword_token(&mut self, keyword: Keyword) -> Token {
+    let loc = self.loc_of_lexer_span();
+    Token(loc, TokenContent::Keyword(keyword))
+  }
+
+  fn translate_op_token(&mut self, op: TokenOp) -> Token {
+    let loc = self.loc_of_lexer_span();
+    Token(loc, TokenContent::Operator(op))
+  }
+
+  fn lex_str_lit_opt(&mut self) -> Option<(Location, String)> {
+    let remainder = self.lexer.remainder();
+    if !remainder.starts_with('"') {
+      return None;
     }
-
-    pub(super) fn consume_opt_next_constant_token(&mut self, token: &str) -> Option<Location> {
-      let l = token.len();
-      if self.pos + l > self.source.len() {
-        return None;
-      }
-      if token.as_bytes().eq(&self.source[self.pos..(self.pos + l)]) {
-        let loc = self.consume_and_get_loc(l);
-        Some(loc)
-      } else {
-        None
-      }
-    }
-
-    /// Returns comment string including // or null if it's not a line comment.
-    pub(super) fn consume_line_comment_opt(&mut self) -> Option<(Location, String)> {
-      if self.pos + 2 > self.source.len()
-        || self.source[self.pos..(self.pos + 2)].ne("//".as_bytes())
-      {
+    let remainder_bytes = remainder.as_bytes();
+    let start = self.position;
+    let mut pos = 1;
+    loop {
+      if pos >= remainder_bytes.len() {
         return Option::None;
       }
-      let mut comment_length = 2;
-      loop {
-        if self.pos + comment_length >= self.source.len() {
-          break;
+      let c = remainder_bytes[pos];
+      if c == b'"' {
+        let mut escape_count = 0;
+        for i in (1..pos).rev() {
+          if (remainder_bytes[i]) != b'\\' {
+            break;
+          }
+          escape_count += 1;
         }
-        let c = self.source[self.pos + comment_length];
-        if c == b'\n' {
-          break;
+        // We don't validate escaping here.
+        if escape_count % 2 == 0 {
+          let string = String::from_utf8(remainder_bytes[..(pos + 1)].to_vec()).unwrap();
+          self.lexer.bump(pos + 1);
+          // When there are even number of escapes, the quote is not escaped,
+          // so it's the ending quote.
+          self.position.1 += pos as i32 + 1;
+          let end = self.position;
+          let loc = Location { module_reference: self.module_reference, start, end };
+          return Some((loc, string));
         }
-        comment_length += 1;
       }
-      let string =
-        String::from_utf8_lossy(&self.source[(self.pos + 2)..(self.pos + comment_length)])
-          .trim()
-          .to_string();
-      let loc = self.consume_and_get_loc(comment_length);
-      Option::Some((loc, string))
+      if c == b'\n' {
+        return None;
+      }
+      pos += 1;
     }
+  }
 
+  fn lex_block_comment_opt(&mut self) -> Option<(bool, Location, String)> {
     fn post_process_block_comment(block_comment: &str) -> String {
       block_comment
         .split('\n')
@@ -128,113 +382,115 @@ mod char_stream {
         .join(" ")
     }
 
-    /// Returns comment string including /* or null if it's not a block comment.
-    pub(super) fn consume_opt_block_comment(&mut self) -> Option<(bool, Location, String)> {
-      if self.pos + 2 > self.source.len()
-        || self.source[self.pos..(self.pos + 2)].ne("/*".as_bytes())
-      {
-        return Option::None;
+    let remainder = self.lexer.remainder();
+    if !remainder.starts_with("/*") {
+      return None;
+    }
+    let remainder_bytes = remainder.as_bytes();
+    let start = self.position;
+    let mut comment_length = 2;
+    let saved_position = self.position;
+    self.next_n_column(2);
+    loop {
+      if comment_length + 2 > remainder_bytes.len() {
+        self.position = saved_position;
+        return None;
       }
-      let mut comment_length = 2;
-      loop {
-        if self.pos + comment_length >= self.source.len() {
-          return Option::None;
-        }
-        if self.source[self.pos + comment_length] == b'*'
-          && self.source[self.pos + comment_length + 1] == b'/'
-        {
-          break;
-        }
-        comment_length += 1;
+      let c = remainder_bytes[comment_length];
+      if c == b'*' && remainder_bytes[comment_length + 1] == b'/' {
+        comment_length += 2;
+        self.next_n_column(2);
+        break;
       }
-      comment_length += 2;
-      let loc = self.consume_and_get_loc(comment_length);
-      let chars = &self.source[(self.pos - comment_length)..(self.pos)];
-      if chars[2] == b'*' {
-        Option::Some((
-          true,
-          loc,
-          Self::post_process_block_comment(&String::from_utf8_lossy(&chars[3..(chars.len() - 2)])),
-        ))
+      if c == b'\n' {
+        self.next_line();
       } else {
-        Option::Some((
-          false,
-          loc,
-          Self::post_process_block_comment(&String::from_utf8_lossy(&chars[2..(chars.len() - 2)])),
-        ))
+        self.next_column();
       }
+      comment_length += 1;
     }
+    let end = self.position;
+    self.lexer.bump(comment_length);
 
-    pub(super) fn consume_opt_int(&mut self) -> Option<(Location, String)> {
-      if *self.source.get(self.pos).unwrap_or(&b'_') == b'0' {
-        let loc = self.consume_and_get_loc(1);
-        return Option::Some((loc, "0".to_string()));
+    let loc = Location { module_reference: self.module_reference, start, end };
+    let chars = &remainder_bytes[..comment_length];
+    if chars[2] == b'*' {
+      Some((
+        true,
+        loc,
+        post_process_block_comment(&String::from_utf8_lossy(&chars[3..(chars.len() - 2)])),
+      ))
+    } else {
+      Some((
+        false,
+        loc,
+        post_process_block_comment(&String::from_utf8_lossy(&chars[2..(chars.len() - 2)])),
+      ))
+    }
+  }
+
+  fn lex_line_comment_opt(&mut self) -> Option<(Location, String)> {
+    let remainder = self.lexer.remainder();
+    if !remainder.starts_with("//") {
+      return None;
+    }
+    let mut bump_counter = 2;
+    let bytes_remainder = remainder.as_bytes();
+    for c in &bytes_remainder[2..] {
+      if *c == b'\n' {
+        break;
       }
-      let mut pos = self.pos;
-      loop {
-        let c = *self.source.get(pos).unwrap_or(&b'a');
-        if c.is_ascii_digit() {
-          pos += 1;
-        } else if pos == self.pos {
-          return Option::None;
+      bump_counter += 1;
+    }
+    let string = String::from_utf8_lossy(&bytes_remainder[2..bump_counter]).trim().to_string();
+    let loc = self.loc_of_advance(bump_counter);
+    self.lexer.bump(bump_counter);
+    Some((loc, string))
+  }
+
+  // Assumption: no line break
+  fn loc_of_lexer_span(&mut self) -> Location {
+    let len = self.lexer.span().len();
+    self.loc_of_advance(len)
+  }
+
+  // Assumption: no line break
+  fn loc_of_advance(&mut self, len: usize) -> Location {
+    let start = self.position;
+    self.next_n_column(len);
+    let end = self.position;
+    Location { module_reference: self.module_reference, start, end }
+  }
+
+  fn next_column(&mut self) {
+    self.position.1 += 1;
+  }
+
+  fn next_n_column(&mut self, n: usize) {
+    self.position.1 += n as i32;
+  }
+
+  fn next_line(&mut self) {
+    self.position.0 += 1;
+    self.position.1 = 0;
+  }
+
+  fn skip_whitespace(&mut self) {
+    let remainder = self.lexer.remainder();
+    let mut bump_counter = 0;
+    for c in remainder.as_bytes() {
+      if c.is_ascii_whitespace() {
+        if *c == b'\n' {
+          self.next_line();
         } else {
-          let string = String::from_utf8(self.source[self.pos..pos].to_vec()).unwrap();
-          let loc = self.consume_and_get_loc(pos - self.pos);
-          return Option::Some((loc, string));
+          self.next_column();
         }
+        bump_counter += 1;
+      } else {
+        break;
       }
     }
-
-    pub(super) fn consume_opt_id(&mut self) -> Option<(Location, String)> {
-      if self.pos >= self.source.len() || !self.source[self.pos].is_ascii_alphabetic() {
-        return Option::None;
-      }
-      let mut pos = self.pos + 1;
-      loop {
-        let c = *self.source.get(pos).unwrap_or(&b' ');
-        if c.is_ascii_alphanumeric() {
-          pos += 1;
-        } else {
-          let string = String::from_utf8(self.source[self.pos..pos].to_vec()).unwrap();
-          let loc = self.consume_and_get_loc(pos - self.pos);
-          return Option::Some((loc, string));
-        }
-      }
-    }
-
-    pub(super) fn consume_str_opt(&mut self) -> Option<(Location, String)> {
-      if self.pos >= self.source.len() || (self.source[self.pos]) != b'"' {
-        return Option::None;
-      }
-      let mut pos = self.pos + 1;
-      loop {
-        if pos >= self.source.len() {
-          return Option::None;
-        }
-        let c = self.source[pos];
-        if c == b'"' {
-          let mut escape_count = 0;
-          for i in ((self.pos + 1)..(pos)).rev() {
-            if (self.source[i]) != b'\\' {
-              break;
-            }
-            escape_count += 1;
-          }
-          // We don't validate escaping here.
-          if escape_count % 2 == 0 {
-            let string = String::from_utf8(self.source[self.pos..(pos + 1)].to_vec()).unwrap();
-            // When there are even number of escapes, the quote is not escaped,
-            // so it's the ending quote.
-            let loc = self.consume_and_get_loc(pos + 1 - self.pos);
-            return Option::Some((loc, string));
-          }
-        }
-        if c == b'\n' {
-          return Option::None;
-        }
-        pos += 1;
-      }
-    }
+    self.lexer.bump(bump_counter);
   }
 }
 
@@ -325,78 +581,6 @@ impl Keyword {
     }
   }
 }
-
-static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
-  "import" => Keyword::Import,
-  "from" => Keyword::From,
-  "class" => Keyword::Class,
-  "interface" => Keyword::Interface,
-  "val" => Keyword::Val,
-  "function" => Keyword::Function,
-  "method" => Keyword::Method,
-  "as" => Keyword::As,
-  "private" => Keyword::Private,
-  "protected" => Keyword::Protected,
-  "internal" => Keyword::Internal,
-  "public" => Keyword::Public,
-  "if" => Keyword::If,
-  "then" => Keyword::Then,
-  "else" => Keyword::Else,
-  "match" => Keyword::Match,
-  "return" => Keyword::Return,
-  "int" => Keyword::Int,
-  "string" => Keyword::String,
-  "bool" => Keyword::Bool,
-  "unit" => Keyword::Unit,
-  "true" => Keyword::True,
-  "false" => Keyword::False,
-  "this" => Keyword::This,
-  "self" => Keyword::SelfReserved,
-  "const" => Keyword::Const,
-  "let" => Keyword::Let,
-  "var" => Keyword::Var,
-  "type" => Keyword::Type,
-  "constructor" => Keyword::Constructor,
-  "destructor" => Keyword::Destructor,
-  "extends" => Keyword::Extends,
-  "implements" => Keyword::Implements,
-  "exports" => Keyword::Exports,
-  "assert" => Keyword::Assert,
-};
-
-static TOKEN_OPS: [TokenOp; 31] = [
-  TokenOp::Underscore,
-  TokenOp::LeftParenthesis,
-  TokenOp::RightParenthesis,
-  TokenOp::LeftBrace,
-  TokenOp::RightBrace,
-  TokenOp::LeftBracket,
-  TokenOp::RightBracket,
-  TokenOp::Question,
-  TokenOp::Semicolon,
-  TokenOp::Colon,
-  TokenOp::ColonColon,
-  TokenOp::Comma,
-  TokenOp::Dot,
-  TokenOp::Bar,
-  TokenOp::Arrow,
-  TokenOp::Assign,
-  TokenOp::Not,
-  TokenOp::Multiply,
-  TokenOp::Divide,
-  TokenOp::Mod,
-  TokenOp::Plus,
-  TokenOp::Minus,
-  TokenOp::LessThan,
-  TokenOp::LessThanOrEqual,
-  TokenOp::GreaterThan,
-  TokenOp::GreaterThanOrEqual,
-  TokenOp::Equal,
-  TokenOp::NotEqual,
-  TokenOp::And,
-  TokenOp::Or,
-  TokenOp::DotDotDot,
-];
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(super) enum TokenOp {
@@ -537,91 +721,30 @@ fn string_has_valid_escape(s: &str) -> bool {
   true
 }
 
-fn get_next_token(
-  stream: &mut char_stream::CharacterStream,
-  heap: &mut Heap,
-  error_set: &mut ErrorSet,
-  known_sorted_operators: &Vec<TokenOp>,
-) -> Option<Token> {
-  if !stream.consume_whitespace() {
-    return None;
-  }
-  if let Option::Some((loc, s)) = stream.consume_line_comment_opt() {
-    let comment_pstr = heap.alloc_string(s);
-    return Option::Some(Token(loc, TokenContent::LineComment(comment_pstr)));
-  }
-
-  if let Option::Some((is_doc, loc, s)) = stream.consume_opt_block_comment() {
-    let comment_pstr = heap.alloc_string(s);
-    return Option::Some(Token(
-      loc,
-      if is_doc {
-        TokenContent::DocComment(comment_pstr)
-      } else {
-        TokenContent::BlockComment(comment_pstr)
-      },
-    ));
-  }
-
-  if let Option::Some((loc, s)) = stream.consume_opt_int() {
-    return Option::Some(Token(loc, TokenContent::IntLiteral(heap.alloc_string(s))));
-  }
-
-  if let Option::Some((loc, s)) = stream.consume_str_opt() {
-    if !string_has_valid_escape(&s) {
-      error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
-    }
-    return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
-  }
-
-  if let Option::Some((loc, s)) = stream.consume_opt_id() {
-    if let Option::Some(k) = KEYWORDS.get(s.as_str()) {
-      return Option::Some(Token(loc, TokenContent::Keyword(*k)));
-    }
-    let content = if s.chars().next().unwrap().is_ascii_uppercase() {
-      TokenContent::UpperId(heap.alloc_string(s))
-    } else {
-      TokenContent::LowerId(heap.alloc_string(s))
-    };
-    return Option::Some(Token(loc, content));
-  }
-
-  for op in known_sorted_operators {
-    let op_string = op.as_str();
-    if let Some(loc) = stream.consume_opt_next_constant_token(op_string) {
-      return Option::Some(Token(loc, TokenContent::Operator(*op)));
-    }
-  }
-
-  let (error_loc, error_token_content) = stream.consume_until_whitespace();
-  error_set.report_invalid_syntax_error(error_loc, "Invalid token.".to_string());
-  Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_string(error_token_content))))
-}
-
 pub(super) fn lex_source_program(
   source: &str,
   module_reference: ModuleReference,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> Vec<Token> {
-  let mut stream = char_stream::CharacterStream::new(module_reference, source);
+  let mut lexer = WrappedLogosLexer::new(source, module_reference, heap, error_set);
   let mut tokens = Vec::new();
-  let mut known_sorted_operators = TOKEN_OPS.to_vec();
-  known_sorted_operators.sort_by_key(|op| -(op.as_str().len() as i64));
 
   loop {
-    match get_next_token(&mut stream, heap, error_set, &known_sorted_operators) {
-      Option::None => return tokens,
-      Option::Some(Token(loc, TokenContent::IntLiteral(p_str))) => {
-        let s = p_str.as_str(heap);
+    let Some(token) = lexer.next() else {
+      return tokens;
+    };
+    match token {
+      Token(loc, TokenContent::IntLiteral(p_str)) => {
+        let s = p_str.as_str(lexer.heap);
         match s.parse::<i64>() {
           Result::Err(_) => {
-            error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
+            lexer.error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
           }
           Result::Ok(i64) => {
             let maxi32_plus1 = (i32::MAX as i64) + 1;
             if i64 > maxi32_plus1 || (i64 == maxi32_plus1 && tokens.is_empty()) {
-              error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
+              lexer.error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
             } else if i64 == maxi32_plus1 {
               let prev_index = tokens.len() - 1;
               if let Option::Some(Token(prev_loc, TokenContent::Operator(TokenOp::Minus))) =
@@ -630,7 +753,7 @@ pub(super) fn lex_source_program(
                 // Merge - and MAX_INT_PLUS_ONE into MIN_INT
                 tokens[prev_index] = Token(
                   prev_loc.union(&loc),
-                  TokenContent::IntLiteral(heap.alloc_string(format!("-{s}"))),
+                  TokenContent::IntLiteral(lexer.heap.alloc_string(format!("-{s}"))),
                 );
                 continue;
               }
@@ -639,7 +762,7 @@ pub(super) fn lex_source_program(
         };
         tokens.push(Token(loc, TokenContent::IntLiteral(p_str)));
       }
-      Option::Some(t) => {
+      t => {
         tokens.push(t);
       }
     }
@@ -648,13 +771,99 @@ pub(super) fn lex_source_program(
 
 #[cfg(test)]
 mod tests {
-  use itertools::Itertools;
+  use crate::lexer::{Keyword, TokenOp};
+
+  static KEYWORDS: [Keyword; 35] = [
+    Keyword::Import,
+    Keyword::From,
+    Keyword::Class,
+    Keyword::Interface,
+    Keyword::Val,
+    Keyword::Function,
+    Keyword::Method,
+    Keyword::As,
+    Keyword::Private,
+    Keyword::Protected,
+    Keyword::Internal,
+    Keyword::Public,
+    Keyword::If,
+    Keyword::Then,
+    Keyword::Else,
+    Keyword::Match,
+    Keyword::Return,
+    Keyword::Int,
+    Keyword::String,
+    Keyword::Bool,
+    Keyword::Unit,
+    Keyword::True,
+    Keyword::False,
+    Keyword::This,
+    Keyword::SelfReserved,
+    Keyword::Const,
+    Keyword::Let,
+    Keyword::Var,
+    Keyword::Type,
+    Keyword::Constructor,
+    Keyword::Destructor,
+    Keyword::Extends,
+    Keyword::Implements,
+    Keyword::Exports,
+    Keyword::Assert,
+  ];
+
+  static TOKEN_OPS: [TokenOp; 31] = [
+    TokenOp::Underscore,
+    TokenOp::LeftParenthesis,
+    TokenOp::RightParenthesis,
+    TokenOp::LeftBrace,
+    TokenOp::RightBrace,
+    TokenOp::LeftBracket,
+    TokenOp::RightBracket,
+    TokenOp::Question,
+    TokenOp::Semicolon,
+    TokenOp::Colon,
+    TokenOp::ColonColon,
+    TokenOp::Comma,
+    TokenOp::Dot,
+    TokenOp::Bar,
+    TokenOp::Arrow,
+    TokenOp::Assign,
+    TokenOp::Not,
+    TokenOp::Multiply,
+    TokenOp::Divide,
+    TokenOp::Mod,
+    TokenOp::Plus,
+    TokenOp::Minus,
+    TokenOp::LessThan,
+    TokenOp::LessThanOrEqual,
+    TokenOp::GreaterThan,
+    TokenOp::GreaterThanOrEqual,
+    TokenOp::Equal,
+    TokenOp::NotEqual,
+    TokenOp::And,
+    TokenOp::Or,
+    TokenOp::DotDotDot,
+  ];
 
   #[test]
   fn boilterplate() {
-    pretty_assertions::assert_eq!(
-      false,
-      super::KEYWORDS.values().map(|it| it.as_str()).join("\n").is_empty()
+    let mut heap = samlang_heap::Heap::new();
+    let mut errors = samlang_errors::ErrorSet::new();
+    let mut lexer = super::WrappedLogosLexer::new(
+      "",
+      samlang_heap::ModuleReference::DUMMY,
+      &mut heap,
+      &mut errors,
     );
+
+    for keyword in KEYWORDS {
+      pretty_assertions::assert_eq!(false, keyword.as_str().is_empty());
+      lexer.translate_keyword_token(keyword);
+    }
+
+    for op in TOKEN_OPS {
+      pretty_assertions::assert_eq!(false, op.as_str().is_empty());
+      lexer.translate_op_token(op);
+    }
   }
 }
