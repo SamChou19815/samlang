@@ -377,41 +377,28 @@ mod toplevel_parser {
     super::lexer::{Keyword, Token, TokenContent, TokenOp},
     MAX_STRUCT_SIZE, MAX_VARIANT_SIZE,
   };
-  use samlang_ast::source::*;
+  use samlang_ast::{Location, source::*};
   use std::collections::HashSet;
 
   pub(super) fn parse_toplevel(parser: &mut super::SourceParser) -> Toplevel<()> {
+    /*
+    let (mut loc, private, associated_comments) =
+      parse_private_interface_or_class_keyword(parser, Keyword::Class);
+     */
     parser.unconsume_comments();
-    let is_private = if let TokenContent::Keyword(Keyword::Private) = parser.peek().1 {
-      parser.consume();
-      true
+    let (loc, is_private, is_interface, comments) =
+      parse_private_interface_or_class_keyword(parser);
+    if is_interface {
+      Toplevel::Interface(parse_interface(parser, (loc, is_private, comments)))
     } else {
-      false
-    };
-    let is_class = matches!(parser.peek().1, TokenContent::Keyword(Keyword::Class));
-    if is_private {
-      parser.unconsume();
-    }
-    if is_class {
-      Toplevel::Class(parse_class(parser))
-    } else {
-      Toplevel::Interface(parse_interface(parser))
+      Toplevel::Class(parse_class(parser, (loc, is_private, comments)))
     }
   }
 
-  pub(super) fn parse_class(parser: &mut super::SourceParser) -> ClassDefinition<()> {
-    let mut associated_comments = Vec::new();
-    let (mut loc, private) =
-      if let Token(loc, TokenContent::Keyword(Keyword::Private)) = parser.peek() {
-        associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.consume();
-        associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.assert_and_consume_keyword(Keyword::Class);
-        (loc, true)
-      } else {
-        associated_comments.append(&mut parser.collect_preceding_comments());
-        (parser.assert_and_consume_keyword(Keyword::Class), false)
-      };
+  pub(super) fn parse_class(
+    parser: &mut super::SourceParser,
+    (mut loc, private, associated_comments): (Location, bool, Vec<Comment>),
+  ) -> ClassDefinition<()> {
     let name = parser.parse_upper_id();
     loc = loc.union(&name.loc);
     parser.available_tparams = HashSet::new();
@@ -476,19 +463,10 @@ mod toplevel_parser {
     }
   }
 
-  pub(super) fn parse_interface(parser: &mut super::SourceParser) -> InterfaceDeclaration {
-    let mut associated_comments = Vec::new();
-    let (mut loc, private) =
-      if let Token(loc, TokenContent::Keyword(Keyword::Private)) = parser.peek() {
-        associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.consume();
-        associated_comments.append(&mut parser.collect_preceding_comments());
-        parser.assert_and_consume_keyword(Keyword::Interface);
-        (loc, true)
-      } else {
-        associated_comments.append(&mut parser.collect_preceding_comments());
-        (parser.assert_and_consume_keyword(Keyword::Interface), false)
-      };
+  pub(super) fn parse_interface(
+    parser: &mut super::SourceParser,
+    (mut loc, private, associated_comments): (Location, bool, Vec<Comment>),
+  ) -> InterfaceDeclaration {
     let name = parser.parse_upper_id();
     parser.available_tparams = HashSet::new();
     let type_parameters = super::type_parser::parse_type_parameters(parser);
@@ -521,6 +499,36 @@ mod toplevel_parser {
         members,
         ending_associated_comments,
       },
+    }
+  }
+
+  fn parse_private_interface_or_class_keyword(
+    parser: &mut super::SourceParser,
+  ) -> (Location, bool, bool, Vec<Comment>) {
+    let mut associated_comments = Vec::new();
+    if let Token(loc, TokenContent::Keyword(Keyword::Private)) = parser.peek() {
+      associated_comments.append(&mut parser.collect_preceding_comments());
+      parser.consume();
+      associated_comments.append(&mut parser.collect_preceding_comments());
+      let is_interface = if matches!(parser.peek().1, TokenContent::Keyword(Keyword::Interface)) {
+        parser.assert_and_consume_keyword(Keyword::Interface);
+        true
+      } else {
+        parser.assert_and_consume_keyword(Keyword::Class);
+        false
+      };
+      (loc, true, is_interface, associated_comments)
+    } else {
+      associated_comments.append(&mut parser.collect_preceding_comments());
+      let (loc, is_interface) =
+        if matches!(parser.peek().1, TokenContent::Keyword(Keyword::Interface)) {
+          let loc = parser.assert_and_consume_keyword(Keyword::Interface);
+          (loc, true)
+        } else {
+          let loc = parser.assert_and_consume_keyword(Keyword::Class);
+          (loc, false)
+        };
+      (loc, false, is_interface, associated_comments)
     }
   }
 
@@ -2165,8 +2173,6 @@ mod tests {
     super::expression_parser::parse_expression(&mut parser);
     super::expression_parser::parse_statement(&mut parser);
     super::type_parser::parse_annotation(&mut parser);
-    super::toplevel_parser::parse_interface(&mut parser);
-    super::toplevel_parser::parse_class(&mut parser);
     super::toplevel_parser::parse_class_member_definition(&mut parser);
     super::toplevel_parser::parse_class_member_declaration(&mut parser);
     super::parse_module(parser);
