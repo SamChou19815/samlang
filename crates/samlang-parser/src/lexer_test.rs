@@ -13,7 +13,7 @@ mod tests {
     assert!(Keyword::Match == Keyword::Match);
     assert!(TokenOp::Equal == TokenOp::Equal);
     assert_eq!(
-      "DUMMY.sam:0:0-0:0: as",
+      "DUMMY.sam:DUMMY: as",
       Token(Location::dummy(), TokenContent::Keyword(Keyword::As)).clone().pretty_print(&heap)
     );
   }

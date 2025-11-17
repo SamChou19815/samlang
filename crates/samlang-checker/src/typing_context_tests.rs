@@ -274,17 +274,17 @@ mod tests {
     cx.validate_type_instantiation_strictly(&builder.simple_nominal_type(str_b));
 
     let expected_errors = r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `int` is not a subtype of `B`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `B` is incompatible with `non-abstract type`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Type argument arity of 0 is incompatible with type argument arity of 2.
 

@@ -42,27 +42,27 @@ pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
 #[derive(Serialize)]
 pub struct Range {
   #[serde(rename(serialize = "startLineNumber"))]
-  pub start_line: i32,
+  pub start_line: u32,
   #[serde(rename(serialize = "startColumn"))]
-  pub start_col: i32,
+  pub start_col: u32,
   #[serde(rename(serialize = "endLineNumber"))]
-  pub end_line: i32,
+  pub end_line: u32,
   #[serde(rename(serialize = "endColumn"))]
-  pub end_col: i32,
+  pub end_col: u32,
 }
 
 #[derive(Serialize)]
 pub struct Diagnostic {
   #[serde(rename(serialize = "startLineNumber"))]
-  pub start_line: i32,
+  pub start_line: u32,
   #[serde(rename(serialize = "startColumn"))]
-  pub start_col: i32,
+  pub start_col: u32,
   #[serde(rename(serialize = "endLineNumber"))]
-  pub end_line: i32,
+  pub end_line: u32,
   #[serde(rename(serialize = "endColumn"))]
-  pub end_col: i32,
+  pub end_col: u32,
   pub message: String,
-  pub severity: i32,
+  pub severity: u32,
 }
 
 #[derive(Serialize)]
@@ -148,7 +148,7 @@ impl State {
   }
 
   #[wasm_bindgen(js_name=queryType)]
-  pub fn query_type(&mut self, line: i32, column: i32) -> JsValue {
+  pub fn query_type(&mut self, line: u32, column: u32) -> JsValue {
     let mod_ref = demo_mod_ref(&mut self.0.heap);
     samlang_services::query::hover(&self.0, &mod_ref, samlang_ast::Position(line - 1, column - 1))
       .map(|result| {
@@ -166,7 +166,7 @@ impl State {
   }
 
   #[wasm_bindgen(js_name=queryDefinitionLocation)]
-  pub fn query_definition_location(&mut self, line: i32, column: i32) -> JsValue {
+  pub fn query_definition_location(&mut self, line: u32, column: u32) -> JsValue {
     let mod_ref = demo_mod_ref(&mut self.0.heap);
     samlang_services::query::definition_location(
       &self.0,
@@ -178,7 +178,7 @@ impl State {
   }
 
   #[wasm_bindgen(js_name=autoComplete)]
-  pub fn autocomplete(&mut self, line: i32, column: i32) -> JsValue {
+  pub fn autocomplete(&mut self, line: u32, column: u32) -> JsValue {
     let mod_ref = demo_mod_ref(&mut self.0.heap);
     serde_wasm_bindgen::to_value(
       &(samlang_services::completion::auto_complete(

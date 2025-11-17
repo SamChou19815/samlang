@@ -115,13 +115,13 @@ mod lsp {
   use tower_lsp::{Client, LanguageServer};
 
   fn lsp_pos_to_samlang_pos(position: Position) -> samlang_ast::Position {
-    samlang_ast::Position(position.line as i32, position.character as i32)
+    samlang_ast::Position(position.line, position.character)
   }
 
   fn samlang_loc_to_lsp_range(loc: &samlang_ast::Location) -> Range {
     Range {
-      start: Position { line: loc.start.0 as u32, character: loc.start.1 as u32 },
-      end: Position { line: loc.end.0 as u32, character: loc.end.1 as u32 },
+      start: Position { line: loc.start.0, character: loc.start.1 },
+      end: Position { line: loc.end.0, character: loc.end.1 },
     }
   }
 
@@ -669,10 +669,10 @@ mod lsp {
         ranges
           .into_iter()
           .map(|location| FoldingRange {
-            start_line: location.start.0 as u32,
-            start_character: Some(location.start.1 as u32),
-            end_line: location.end.0 as u32,
-            end_character: Some(location.end.1 as u32),
+            start_line: location.start.0,
+            start_character: Some(location.start.1),
+            end_line: location.end.0,
+            end_character: Some(location.end.1),
             kind: None,
           })
           .collect()
