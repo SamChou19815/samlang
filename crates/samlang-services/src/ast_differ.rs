@@ -301,16 +301,11 @@ impl Change<'_> {
   }
 }
 
-fn wrapped_list_diff<
-  'a,
-  T: PartialEq,
-  ToNode: Fn(&'a T) -> DiffNode<'a>,
-  FlatMapChange: Fn(&'a T, &'a T) -> Option<Vec<Change<'a>>>,
->(
+fn wrapped_list_diff<'a, T: PartialEq>(
   old_list: &'a [T],
   new_list: &'a [T],
-  to_diff_node: &ToNode,
-  flat_map_change: FlatMapChange,
+  to_diff_node: &impl Fn(&'a T) -> DiffNode<'a>,
+  flat_map_change: impl Fn(&'a T, &'a T) -> Option<Vec<Change<'a>>>,
 ) -> Result<Vec<Change<'a>>, (Vec<DiffNode<'a>>, bool)> {
   let unwrapped = list_differ::compute(old_list, new_list);
   let mut wrapped = Vec::new();
@@ -320,7 +315,9 @@ fn wrapped_list_diff<
         if let Some(mut diffs) = flat_map_change(old, new) {
           wrapped.append(&mut diffs);
         } else {
-          wrapped.push(Change::Replace(to_diff_node(old), to_diff_node(new)));
+          let old = to_diff_node(old);
+          let new = to_diff_node(new);
+          wrapped.push(Change::Replace(old, new));
         }
       }
       ChangeWithoutLoc::Delete(old) => wrapped.push(Change::Delete(to_diff_node(old))),
