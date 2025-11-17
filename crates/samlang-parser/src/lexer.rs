@@ -666,6 +666,13 @@ pub(super) enum TokenContent {
 }
 
 impl TokenContent {
+  pub(super) fn is_comment(&self) -> bool {
+    matches!(
+      self,
+      TokenContent::LineComment(_) | TokenContent::BlockComment(_) | TokenContent::DocComment(_)
+    )
+  }
+
   pub(super) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       TokenContent::Keyword(k) => k.as_str().to_string(),
