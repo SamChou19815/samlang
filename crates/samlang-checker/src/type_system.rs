@@ -430,7 +430,7 @@ mod tests {
       ),
       heap,
       r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `(A<B>) -> bool` is incompatible with `(A<bool>) -> bool`.
 - `A<B>` is incompatible with `A<bool>`.
@@ -452,7 +452,7 @@ Found 1 error.
       ),
       heap,
       r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `(A<bool>) -> bool` is incompatible with `(A<bool>) -> int`.
 - `bool`  is incompatible with `int` .
@@ -467,7 +467,7 @@ Found 1 error.
       &builder.fun_type(Vec::new(), builder.bool_type()),
       heap,
       r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `(bool) -> bool` is incompatible with `() -> bool`.
 - Function parameter arity of 1 is incompatible with function parameter arity of 0.
@@ -481,7 +481,7 @@ Found 1 error.
       &builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type(), builder.bool_type()]),
       heap,
       r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `A<bool>` is incompatible with `A<bool, bool>`.
 - Type argument arity of 1 is incompatible with type argument arity of 2.

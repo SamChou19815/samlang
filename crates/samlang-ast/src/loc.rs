@@ -1,9 +1,15 @@
 use samlang_heap::{Heap, ModuleReference};
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub struct Position(pub i32, pub i32);
+pub struct Position(pub u32, pub u32);
 
-pub const DUMMY_POSITION: Position = Position(-1, -1);
+pub const DUMMY_POSITION: Position = Position(u32::MAX, u32::MAX);
+
+impl Position {
+  pub fn is_dummy(self) -> bool {
+    self == DUMMY_POSITION
+  }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {
@@ -26,10 +32,10 @@ impl Location {
   }
 
   pub fn full_document(module_reference: ModuleReference) -> Location {
-    Location { module_reference, start: Position(0, 0), end: Position(i32::MAX - 1, i32::MAX - 1) }
+    Location { module_reference, start: Position(0, 0), end: Position(u32::MAX, u32::MAX) }
   }
 
-  pub fn from_pos(sl: i32, sc: i32, el: i32, ec: i32) -> Location {
+  pub fn from_pos(sl: u32, sc: u32, el: u32, ec: u32) -> Location {
     Location {
       module_reference: ModuleReference::DUMMY,
       start: Position(sl, sc),
@@ -53,7 +59,16 @@ impl Location {
   }
 
   pub fn pretty_print_without_file(&self) -> String {
-    format!("{}:{}-{}:{}", self.start.0 + 1, self.start.1 + 1, self.end.0 + 1, self.end.1 + 1)
+    if self.start.is_dummy() && self.end.is_dummy() {
+      return "DUMMY".to_owned();
+    }
+    let (a, b, c, d) = (
+      self.start.0 as u64 + 1,
+      self.start.1 as u64 + 1,
+      self.end.0 as u64 + 1,
+      self.end.1 as u64 + 1,
+    );
+    format!("{}:{}-{}:{}", a, b, c, d)
   }
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
@@ -87,7 +102,7 @@ mod tests {
   #[test]
   fn location_to_string_tests() {
     let heap = Heap::new();
-    assert_eq!("DUMMY.sam:0:0-0:0", Location::dummy().pretty_print(&heap));
+    assert_eq!("DUMMY.sam:DUMMY", Location::dummy().pretty_print(&heap));
     assert_eq!("DUMMY.sam:2:2-3:5", Location::from_pos(1, 1, 2, 4).pretty_print(&heap));
   }
 
