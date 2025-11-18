@@ -309,7 +309,7 @@ fn check_tuple(
     14 => PStr::TUPLE_14,
     15 => PStr::TUPLE_15,
     16 => PStr::TUPLE_16,
-    _ => panic!("Invalid tuple length"),
+    l => panic!("Invalid tuple length {l}"),
   };
   let type_ = Rc::new(Type::Nominal(NominalType {
     reason: Reason::new(common.loc, None),
