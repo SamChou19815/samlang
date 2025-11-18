@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 
 /// Forked from https://github.com/Sgeo/take_mut/blob/master/src/lib.rs
 /// Assuming no panic
-pub(super) fn take_mut<T, F: FnOnce(T) -> T>(mut_ref: &mut T, closure: F) {
+pub(super) fn take_mut<T>(mut_ref: &mut T, closure: impl FnOnce(T) -> T) {
   unsafe {
     let old_t = std::ptr::read(mut_ref);
     let new_t = closure(old_t);

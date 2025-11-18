@@ -507,10 +507,10 @@ mod tests {
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(heap));
     for m in checked_sources.values() {
       for (i, line) in source_code.lines().enumerate() {
-        let i = i as i32;
+        let i = i as u32;
         let mut l = 0;
         for (j, _) in line.char_indices() {
-          let j = j as i32;
+          let j = j as u32;
           l += 1;
           super::search_module_locally(mod_ref, m, Position(i, j), true);
           super::search_module_locally(mod_ref, m, Position(i, j), false);

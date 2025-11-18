@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F) -> R {
+pub fn measure_time<R>(enabled: bool, name: &'static str, f: impl FnOnce() -> R) -> R {
   if enabled {
     let now = Instant::now();
     let result = f();
