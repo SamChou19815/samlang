@@ -94,9 +94,9 @@ impl<'a> TypingContext<'a> {
     self.in_synthesis_mode
   }
 
-  pub(super) fn run_in_synthesis_mode<R, F: FnOnce(&mut TypingContext<'a>) -> R>(
+  pub(super) fn run_in_synthesis_mode<R>(
     &mut self,
-    f: F,
+    f: impl FnOnce(&mut TypingContext<'a>) -> R,
   ) -> (R, bool) {
     let saved_in_synthesis_mode = self.in_synthesis_mode;
     let saved_produced_placeholders = self.produced_placeholders;

@@ -86,12 +86,7 @@ mod printer {
     location: &Location,
     sources: &'a HashMap<ModuleReference, String>,
   ) -> Option<Vec<&'a str>> {
-    if location.start.0 < 0
-      || location.start.1 < 0
-      || location.end.0 < 0
-      || location.end.1 < 0
-      || location.start.0 > location.end.0
-    {
+    if location.start.is_dummy() || location.end.is_dummy() || location.start.0 > location.end.0 {
       return None;
     }
     let relevant_code = sources.get(&location.module_reference)?;
@@ -283,7 +278,7 @@ mod printer {
       heap: &Heap,
       source: &'static str,
       module_reference: ModuleReference,
-      range: (i32, i32, i32, i32),
+      range: (u32, u32, u32, u32),
       ref_id: u32,
     ) -> String {
       let mut collector = String::new();
@@ -309,7 +304,16 @@ mod printer {
       // No source
       assert_eq!("", get_frame(heap, "", ModuleReference::ROOT, (0, 0, 0, 0), 0));
       // No source
-      assert_eq!("", get_frame(&Heap::new(), "", ModuleReference::DUMMY, (-1, -1, -1, -1), 0));
+      assert_eq!(
+        "",
+        get_frame(
+          &Heap::new(),
+          "",
+          ModuleReference::DUMMY,
+          (u32::MAX, u32::MAX, u32::MAX, u32::MAX),
+          0
+        )
+      );
       // Bad location
       assert_eq!("", get_frame(heap, "", ModuleReference::DUMMY, (10, 10, 1, 1), 0));
       // Source too short
@@ -1138,7 +1142,7 @@ mod tests {
 
     error_set.report_cannot_resolve_module_error(Location::dummy(), ModuleReference::DUMMY);
     assert_eq!(
-      r#"Error ------------------------------------ DUMMY.sam:0:0-0:0
+      r#"Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot resolve module `DUMMY`.
 
@@ -1152,7 +1156,7 @@ Found 1 error.
       ErrorInIDEFormat {
         location: Location::dummy(),
         ide_error: "Cannot resolve module `DUMMY`.".to_string(),
-        full_error: r#"Error ------------------------------------ DUMMY.sam:0:0-0:0
+        full_error: r#"Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot resolve module `DUMMY`.
 
@@ -1190,13 +1194,13 @@ Cannot resolve module `DUMMY`.
     );
     assert_eq!(
       r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot resolve module `DUMMY`.
 
 
 Error ------------------------------------------------------
-Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:0:0-0:0
+Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:DUMMY
 
 Cannot resolve name `global`.
 
@@ -1278,97 +1282,97 @@ Found 2 errors."#
     error_set.report_useless_pattern_error(Location::dummy(), true);
 
     let expected_errors = r#"
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot resolve class `global`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot resolve member `bar` on `Foo`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot resolve module `DUMMY`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Type `int` has a cyclic definition.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Cannot access member of `nominal type` at index 1.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Function declarations are not allowed in interfaces.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `int` is not a subtype of `bool`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `class type` is incompatible with `interface type`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 bad code
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 The following members must be implemented for the class:
 - `foo`
 - `bar`
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 There is no `bar` export in `DUMMY`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Name `a` collides with a previously defined name at .
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 The pattern does not bind all fields. The following names have not been mentioned:
 - `A`
 - `B`
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 The pattern does not bind all fields. Expected number of elements: 7, actual number of elements: 4.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 This pattern-matching is not exhaustive.
 Here is an example of a non-matching value: `int`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `int` is not an instance of an enum class.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 `int` is not an instance of a struct class.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Type parameter arity of 1 is incompatible with type parameter arity of 2.
 - `any` is incompatible with `any`.
@@ -1377,38 +1381,38 @@ Type parameter arity of 1 is incompatible with type parameter arity of 2.
       - `any`  is incompatible with `any` .
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Type parameter name mismatch. Expected empty type parameters.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Type parameter name mismatch. Expected exact match of `<int>`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 Type parameter name mismatch. Expected exact match of `<int, int>`.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 There is not enough context information to decide the type of this expression.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 The pattern is already covered by previous cases.
 
 
-Error ------------------------------------ DUMMY.sam:0:0-0:0
+Error -------------------------------------- DUMMY.sam:DUMMY
 
 The pattern is irrefutable.
 
 
 Error ------------------------------------------------------
-Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:0:0-0:0
+Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.sam:DUMMY
 
 Cannot resolve name `global`.
 

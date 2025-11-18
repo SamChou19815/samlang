@@ -97,12 +97,12 @@ fn create_opt_preceding_comment_doc(
   }
 }
 
-fn comma_sep_list<E, F: Fn(&E) -> Document>(
+fn comma_sep_list<E>(
   heap: &Heap,
   comment_store: &CommentStore,
   elements: &[E],
   ending_comments: CommentReference,
-  doc_creator: F,
+  doc_creator: impl Fn(&E) -> Document,
 ) -> Document {
   let comment_doc_opt = associated_comments_doc(
     heap,
