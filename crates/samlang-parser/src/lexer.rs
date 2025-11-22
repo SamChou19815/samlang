@@ -211,7 +211,7 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
       Err(()) => {
         let start = self.position;
         let mut content = self.lexer.slice().to_string();
-        self.position.1 += content.len() as i32;
+        self.position.1 += content.len() as u32;
         let mut skip_count = 0;
         for c in self.lexer.remainder().as_bytes() {
           if c.is_ascii_whitespace() {
@@ -220,7 +220,7 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
           skip_count += 1;
         }
         content.push_str(&self.lexer.remainder()[..skip_count]);
-        self.position.1 += skip_count as i32;
+        self.position.1 += skip_count as u32;
         self.lexer.bump(skip_count);
         let p_str = self.heap.alloc_string(content.to_string());
         let loc = Location { module_reference: self.module_reference, start, end: self.position };
@@ -353,7 +353,7 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
           self.lexer.bump(pos + 1);
           // When there are even number of escapes, the quote is not escaped,
           // so it's the ending quote.
-          self.position.1 += pos as i32 + 1;
+          self.position.1 += pos as u32 + 1;
           let end = self.position;
           let loc = Location { module_reference: self.module_reference, start, end };
           return Some((loc, string));
@@ -402,11 +402,7 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
         self.next_n_column(2);
         break;
       }
-      if c == b'\n' {
-        self.next_line();
-      } else {
-        self.next_column();
-      }
+      self.next_line_or_column(c);
       comment_length += 1;
     }
     let end = self.position;
@@ -462,17 +458,17 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
     Location { module_reference: self.module_reference, start, end }
   }
 
-  fn next_column(&mut self) {
-    self.position.1 += 1;
-  }
-
   fn next_n_column(&mut self, n: usize) {
-    self.position.1 += n as i32;
+    self.position.1 += n as u32;
   }
 
-  fn next_line(&mut self) {
-    self.position.0 += 1;
-    self.position.1 = 0;
+  fn next_line_or_column(&mut self, c: u8) {
+    if c == b'\n' {
+      self.position.0 += 1;
+      self.position.1 = 0;
+    } else {
+      self.position.1 += 1;
+    }
   }
 
   fn skip_whitespace(&mut self) {
@@ -480,11 +476,7 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
     let mut bump_counter = 0;
     for c in remainder.as_bytes() {
       if c.is_ascii_whitespace() {
-        if *c == b'\n' {
-          self.next_line();
-        } else {
-          self.next_column();
-        }
+        self.next_line_or_column(*c);
         bump_counter += 1;
       } else {
         break;
