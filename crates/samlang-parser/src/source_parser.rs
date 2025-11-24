@@ -211,10 +211,10 @@ impl<'a> SourceParser<'a> {
     self.error_set.report_invalid_syntax_error(loc, reason)
   }
 
-  fn parse_comma_separated_list_with_end_token<T, F: FnMut(&mut Self, Vec<Comment>) -> T>(
+  fn parse_comma_separated_list_with_end_token<T>(
     &mut self,
     end_token: TokenOp,
-    parser: &mut F,
+    mut parser: impl FnMut(&mut Self, Vec<Comment>) -> T,
   ) -> Vec<T> {
     let mut collector = vec![parser(self, Vec::new())];
     while let Token(_, TokenContent::Operator(op)) = self.peek() {
