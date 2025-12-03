@@ -14,7 +14,7 @@
     "autoprefixer": "10.4.20",
     "dev-sam-theme": "^0.0.1",
     "monaco-editor": "^0.52.2",
-    "next": "15.4.7",
+    "next": "15.4.8",
     "postcss": "8.5.3",
     "react": "19.0.0",
     "react-dom": "19.0.0",
