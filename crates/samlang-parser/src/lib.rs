@@ -4,7 +4,6 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{HashMap, HashSet};
 
 mod lexer;
-mod lexer_test;
 mod source_parser;
 
 fn builtin_classes() -> HashSet<PStr> {
