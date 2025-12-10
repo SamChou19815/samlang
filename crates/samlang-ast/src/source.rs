@@ -188,19 +188,19 @@ pub mod annotation {
   impl T {
     pub fn location(&self) -> Location {
       match self {
-        T::Primitive(l, _, _) => *l,
-        T::Id(annot) => annot.location,
-        T::Generic(l, _) => *l,
-        T::Fn(annot) => annot.location,
+        Self::Primitive(l, _, _) => *l,
+        Self::Id(annot) => annot.location,
+        Self::Generic(l, _) => *l,
+        Self::Fn(annot) => annot.location,
       }
     }
 
     pub fn associated_comments(&self) -> CommentReference {
       match self {
-        T::Primitive(_, c, _) => *c,
-        T::Id(annot) => annot.id.associated_comments,
-        T::Generic(_, id) => id.associated_comments,
-        T::Fn(annot) => annot.associated_comments,
+        Self::Primitive(_, c, _) => *c,
+        Self::Id(annot) => annot.id.associated_comments,
+        Self::Generic(_, id) => id.associated_comments,
+        Self::Fn(annot) => annot.associated_comments,
       }
     }
   }
@@ -229,8 +229,8 @@ pub struct Id {
 }
 
 impl Id {
-  pub fn from(name: PStr) -> Id {
-    Id { loc: Location::dummy(), associated_comments: NO_COMMENT_REFERENCE, name }
+  pub fn from(name: PStr) -> Self {
+    Self { loc: Location::dummy(), associated_comments: NO_COMMENT_REFERENCE, name }
   }
 }
 
@@ -483,20 +483,20 @@ pub mod expr {
   impl BinaryOperator {
     pub fn kind_str(&self) -> &'static str {
       match self {
-        BinaryOperator::MUL => "*",
-        BinaryOperator::DIV => "/",
-        BinaryOperator::MOD => "%",
-        BinaryOperator::PLUS => "+",
-        BinaryOperator::MINUS => "-",
-        BinaryOperator::CONCAT => "::",
-        BinaryOperator::LT => "<",
-        BinaryOperator::LE => "<=",
-        BinaryOperator::GT => ">",
-        BinaryOperator::GE => ">=",
-        BinaryOperator::EQ => "==",
-        BinaryOperator::NE => "!=",
-        BinaryOperator::AND => "&&",
-        BinaryOperator::OR => "||",
+        Self::MUL => "*",
+        Self::DIV => "/",
+        Self::MOD => "%",
+        Self::PLUS => "+",
+        Self::MINUS => "-",
+        Self::CONCAT => "::",
+        Self::LT => "<",
+        Self::LE => "<=",
+        Self::GT => ">",
+        Self::GE => ">=",
+        Self::EQ => "==",
+        Self::NE => "!=",
+        Self::AND => "&&",
+        Self::OR => "||",
       }
     }
   }
@@ -510,20 +510,20 @@ pub mod expr {
   impl BinaryOperator {
     pub fn precedence(&self) -> i32 {
       match self {
-        BinaryOperator::MUL => 0,
-        BinaryOperator::DIV => 0,
-        BinaryOperator::MOD => 0,
-        BinaryOperator::PLUS => 1,
-        BinaryOperator::MINUS => 1,
-        BinaryOperator::CONCAT => 1,
-        BinaryOperator::LT => 2,
-        BinaryOperator::LE => 2,
-        BinaryOperator::GT => 2,
-        BinaryOperator::GE => 2,
-        BinaryOperator::EQ => 2,
-        BinaryOperator::NE => 2,
-        BinaryOperator::AND => 3,
-        BinaryOperator::OR => 4,
+        Self::MUL => 0,
+        Self::DIV => 0,
+        Self::MOD => 0,
+        Self::PLUS => 1,
+        Self::MINUS => 1,
+        Self::CONCAT => 1,
+        Self::LT => 2,
+        Self::LE => 2,
+        Self::GT => 2,
+        Self::GE => 2,
+        Self::EQ => 2,
+        Self::NE => 2,
+        Self::AND => 3,
+        Self::OR => 4,
       }
     }
   }
@@ -624,37 +624,37 @@ pub mod expr {
   impl<T: Clone> E<T> {
     pub fn common(&self) -> &ExpressionCommon<T> {
       match self {
-        E::Literal(common, _)
-        | E::LocalId(common, _)
-        | E::ClassId(common, _, _)
-        | E::Tuple(common, _)
-        | E::FieldAccess(FieldAccess { common, .. })
-        | E::MethodAccess(MethodAccess { common, .. })
-        | E::Unary(Unary { common, .. })
-        | E::Call(Call { common, .. })
-        | E::Binary(Binary { common, .. })
-        | E::IfElse(IfElse { common, .. })
-        | E::Match(Match { common, .. })
-        | E::Lambda(Lambda { common, .. })
-        | E::Block(Block { common, .. }) => common,
+        Self::Literal(common, _)
+        | Self::LocalId(common, _)
+        | Self::ClassId(common, _, _)
+        | Self::Tuple(common, _)
+        | Self::FieldAccess(FieldAccess { common, .. })
+        | Self::MethodAccess(MethodAccess { common, .. })
+        | Self::Unary(Unary { common, .. })
+        | Self::Call(Call { common, .. })
+        | Self::Binary(Binary { common, .. })
+        | Self::IfElse(IfElse { common, .. })
+        | Self::Match(Match { common, .. })
+        | Self::Lambda(Lambda { common, .. })
+        | Self::Block(Block { common, .. }) => common,
       }
     }
 
     pub fn common_mut(&mut self) -> &mut ExpressionCommon<T> {
       match self {
-        E::Literal(common, _)
-        | E::LocalId(common, _)
-        | E::ClassId(common, _, _)
-        | E::Tuple(common, _)
-        | E::FieldAccess(FieldAccess { common, .. })
-        | E::MethodAccess(MethodAccess { common, .. })
-        | E::Unary(Unary { common, .. })
-        | E::Call(Call { common, .. })
-        | E::Binary(Binary { common, .. })
-        | E::IfElse(IfElse { common, .. })
-        | E::Match(Match { common, .. })
-        | E::Lambda(Lambda { common, .. })
-        | E::Block(Block { common, .. }) => common,
+        Self::Literal(common, _)
+        | Self::LocalId(common, _)
+        | Self::ClassId(common, _, _)
+        | Self::Tuple(common, _)
+        | Self::FieldAccess(FieldAccess { common, .. })
+        | Self::MethodAccess(MethodAccess { common, .. })
+        | Self::Unary(Unary { common, .. })
+        | Self::Call(Call { common, .. })
+        | Self::Binary(Binary { common, .. })
+        | Self::IfElse(IfElse { common, .. })
+        | Self::Match(Match { common, .. })
+        | Self::Lambda(Lambda { common, .. })
+        | Self::Block(Block { common, .. }) => common,
       }
     }
 
@@ -668,13 +668,13 @@ pub mod expr {
 
     pub fn precedence(&self) -> i32 {
       match self {
-        E::Literal(_, _) | E::LocalId(_, _) | E::ClassId(_, _, _) | E::Tuple(_, _) => 0,
-        E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 1,
-        E::Unary(_) => 2,
-        E::Binary(b) => 4 + b.operator.precedence(),
-        E::IfElse(_) => 10,
-        E::Match(_) => 11,
-        E::Lambda(_) => 12,
+        Self::Literal(_, _) | Self::LocalId(_, _) | Self::ClassId(_, _, _) | Self::Tuple(_, _) => 0,
+        Self::FieldAccess(_) | Self::MethodAccess(_) | Self::Call(_) | Self::Block(_) => 1,
+        Self::Unary(_) => 2,
+        Self::Binary(b) => 4 + b.operator.precedence(),
+        Self::IfElse(_) => 10,
+        Self::Match(_) => 11,
+        Self::Lambda(_) => 12,
       }
     }
   }
@@ -767,13 +767,13 @@ pub enum TypeDefinition {
 impl TypeDefinition {
   pub fn loc(&self) -> &Location {
     match self {
-      TypeDefinition::Struct {
+      Self::Struct {
         loc,
         start_associated_comments: _,
         ending_associated_comments: _,
         fields: _,
       }
-      | TypeDefinition::Enum {
+      | Self::Enum {
         loc,
         start_associated_comments: _,
         ending_associated_comments: _,
@@ -784,13 +784,13 @@ impl TypeDefinition {
 
   pub fn loc_mut(&mut self) -> &mut Location {
     match self {
-      TypeDefinition::Struct {
+      Self::Struct {
         loc,
         start_associated_comments: _,
         ending_associated_comments: _,
         fields: _,
       }
-      | TypeDefinition::Enum {
+      | Self::Enum {
         loc,
         start_associated_comments: _,
         ending_associated_comments: _,
@@ -819,8 +819,8 @@ impl<'a, T: Clone> Iterator for MemberDeclarationsIterator<'a, T> {
 
   fn next(&mut self) -> Option<Self::Item> {
     match self {
-      MemberDeclarationsIterator::Class(iter) => iter.next().map(|it| &it.decl),
-      MemberDeclarationsIterator::Interface(iter) => iter.next(),
+      Self::Class(iter) => iter.next().map(|it| &it.decl),
+      Self::Interface(iter) => iter.next(),
     }
   }
 }
@@ -828,64 +828,64 @@ impl<'a, T: Clone> Iterator for MemberDeclarationsIterator<'a, T> {
 impl<T: Clone> Toplevel<T> {
   pub fn is_class(&self) -> bool {
     match self {
-      Toplevel::Interface(_) => false,
-      Toplevel::Class(_) => true,
+      Self::Interface(_) => false,
+      Self::Class(_) => true,
     }
   }
 
   pub fn loc(&self) -> Location {
     match self {
-      Toplevel::Interface(i) => i.loc,
-      Toplevel::Class(c) => c.loc,
+      Self::Interface(i) => i.loc,
+      Self::Class(c) => c.loc,
     }
   }
 
   pub fn associated_comments(&self) -> CommentReference {
     match self {
-      Toplevel::Interface(i) => i.associated_comments,
-      Toplevel::Class(c) => c.associated_comments,
+      Self::Interface(i) => i.associated_comments,
+      Self::Class(c) => c.associated_comments,
     }
   }
 
   pub fn is_private(&self) -> bool {
     match self {
-      Toplevel::Interface(i) => i.private,
-      Toplevel::Class(c) => c.private,
+      Self::Interface(i) => i.private,
+      Self::Class(c) => c.private,
     }
   }
 
   pub fn name(&self) -> &Id {
     match self {
-      Toplevel::Interface(i) => &i.name,
-      Toplevel::Class(c) => &c.name,
+      Self::Interface(i) => &i.name,
+      Self::Class(c) => &c.name,
     }
   }
 
   pub fn type_parameters(&self) -> Option<&annotation::TypeParameters> {
     match self {
-      Toplevel::Interface(i) => i.type_parameters.as_ref(),
-      Toplevel::Class(c) => c.type_parameters.as_ref(),
+      Self::Interface(i) => i.type_parameters.as_ref(),
+      Self::Class(c) => c.type_parameters.as_ref(),
     }
   }
 
   pub fn extends_or_implements_nodes(&self) -> Option<&ExtendsOrImplementsNodes> {
     match self {
-      Toplevel::Interface(i) => i.extends_or_implements_nodes.as_ref(),
-      Toplevel::Class(c) => c.extends_or_implements_nodes.as_ref(),
+      Self::Interface(i) => i.extends_or_implements_nodes.as_ref(),
+      Self::Class(c) => c.extends_or_implements_nodes.as_ref(),
     }
   }
 
   pub fn type_definition(&self) -> Option<&TypeDefinition> {
     match self {
-      Toplevel::Interface(_) => None,
-      Toplevel::Class(c) => c.type_definition.as_ref(),
+      Self::Interface(_) => None,
+      Self::Class(c) => c.type_definition.as_ref(),
     }
   }
 
   pub fn members_iter(&self) -> MemberDeclarationsIterator<'_, T> {
     match self {
-      Toplevel::Interface(i) => MemberDeclarationsIterator::Interface(i.members.members.iter()),
-      Toplevel::Class(c) => MemberDeclarationsIterator::Class(c.members.members.iter()),
+      Self::Interface(i) => MemberDeclarationsIterator::Interface(i.members.members.iter()),
+      Self::Class(c) => MemberDeclarationsIterator::Class(c.members.members.iter()),
     }
   }
 }

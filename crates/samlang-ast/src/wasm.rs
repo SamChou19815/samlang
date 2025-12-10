@@ -107,43 +107,43 @@ pub enum InlineInstruction {
 impl InlineInstruction {
   fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &mir::SymbolTable) {
     match self {
-      InlineInstruction::Const(i) => {
+      Self::Const(i) => {
         collector.push_str("(i32.const ");
         collector.push_str(&i.to_string());
         collector.push(')');
       }
-      InlineInstruction::Drop(v) => {
+      Self::Drop(v) => {
         collector.push_str("(drop ");
         v.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::LocalGet(name) => {
+      Self::LocalGet(name) => {
         collector.push_str("(local.get $");
         collector.push_str(name.as_str(heap));
         collector.push(')');
       }
-      InlineInstruction::LocalSet(name, assigned) => {
+      Self::LocalSet(name, assigned) => {
         collector.push_str("(local.set $");
         collector.push_str(name.as_str(heap));
         collector.push(' ');
         assigned.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::IsPointer { pointer_type, value } => {
+      Self::IsPointer { pointer_type, value } => {
         collector.push_str("(ref.test $");
         pointer_type.pretty_print(collector, heap, table);
         collector.push(' ');
         value.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::Cast { pointer_type, value } => {
+      Self::Cast { pointer_type, value } => {
         collector.push_str("(ref.cast $");
         pointer_type.pretty_print(collector, heap, table);
         collector.push(' ');
         value.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::Binary(v1, op, v2) => {
+      Self::Binary(v1, op, v2) => {
         let op_s = match op {
           hir::BinaryOperator::MUL => "mul",
           hir::BinaryOperator::DIV => "div_s",
@@ -170,7 +170,7 @@ impl InlineInstruction {
         v2.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::Load { index, pointer } => {
+      Self::Load { index, pointer } => {
         if *index == 0 {
           collector.push_str("(i32.load ");
           pointer.pretty_print(collector, heap, table);
@@ -183,7 +183,7 @@ impl InlineInstruction {
           collector.push(')');
         }
       }
-      InlineInstruction::StructLoad { index, struct_type, struct_ref } => {
+      Self::StructLoad { index, struct_type, struct_ref } => {
         collector.push_str("(struct.get $");
         struct_type.write_encoded(collector, heap, table);
         collector.push(' ');
@@ -192,7 +192,7 @@ impl InlineInstruction {
         struct_ref.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::Store { index, pointer, assigned } => {
+      Self::Store { index, pointer, assigned } => {
         if *index == 0 {
           collector.push_str("(i32.store ");
           pointer.pretty_print(collector, heap, table);
@@ -209,7 +209,7 @@ impl InlineInstruction {
           collector.push(')');
         }
       }
-      InlineInstruction::StructStore { index, struct_type, struct_ref, assigned } => {
+      Self::StructStore { index, struct_type, struct_ref, assigned } => {
         collector.push_str("(struct.set $");
         struct_type.write_encoded(collector, heap, table);
         collector.push(' ');
@@ -220,7 +220,7 @@ impl InlineInstruction {
         assigned.pretty_print(collector, heap, table);
         collector.push(')');
       }
-      InlineInstruction::StructInit { type_, expression_list } => {
+      Self::StructInit { type_, expression_list } => {
         collector.push_str("(struct.new $");
         type_.write_encoded(collector, heap, table);
         for e in expression_list {
@@ -229,7 +229,7 @@ impl InlineInstruction {
         }
         collector.push(')');
       }
-      InlineInstruction::DirectCall(name, arguments) => {
+      Self::DirectCall(name, arguments) => {
         collector.push_str("(call $");
         name.write_encoded(collector, heap, table);
         for e in arguments {
@@ -238,7 +238,7 @@ impl InlineInstruction {
         }
         collector.push(')');
       }
-      InlineInstruction::IndirectCall { function_index, function_type_name, arguments } => {
+      Self::IndirectCall { function_index, function_type_name, arguments } => {
         collector.push_str("(call_indirect $0 (type $");
         function_type_name.write_encoded(collector, heap, table);
         collector.push(')');
@@ -279,12 +279,12 @@ impl Instruction {
     level: usize,
   ) {
     match self {
-      Instruction::Inline(i) => {
+      Self::Inline(i) => {
         Self::append_spaces(collector, level);
         i.pretty_print(collector, heap, table);
         collector.push('\n');
       }
-      Instruction::IfElse { condition, s1, s2 } => {
+      Self::IfElse { condition, s1, s2 } => {
         Self::append_spaces(collector, level);
         collector.push_str("(if ");
         condition.pretty_print(collector, heap, table);
@@ -302,13 +302,13 @@ impl Instruction {
         Self::append_spaces(collector, level);
         collector.push_str("))\n");
       }
-      Instruction::UnconditionalJump(label) => {
+      Self::UnconditionalJump(label) => {
         Self::append_spaces(collector, level);
         collector.push_str("(br $l");
         collector.push_str(&label.0.to_string());
         collector.push_str(")\n");
       }
-      Instruction::Loop { continue_label, exit_label, instructions } => {
+      Self::Loop { continue_label, exit_label, instructions } => {
         Self::append_spaces(collector, level);
         collector.push_str("(loop $l");
         collector.push_str(&continue_label.0.to_string());

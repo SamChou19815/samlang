@@ -68,8 +68,8 @@ pub enum Type {
 }
 
 impl Type {
-  pub const fn new_generic_type(name: PStr) -> Type {
-    Type::Id(IdType {
+  pub const fn new_generic_type(name: PStr) -> Self {
+    Self::Id(IdType {
       name: TypeName { module_reference: None, type_name: name },
       type_arguments: Vec::new(),
     })
@@ -100,9 +100,9 @@ impl Type {
 
   pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
-      Type::Int32 => "int".to_string(),
-      Type::Int31 => "i31".to_string(),
-      Type::Id(id) => id.pretty_print(heap),
+      Self::Int32 => "int".to_string(),
+      Self::Int31 => "i31".to_string(),
+      Self::Id(id) => id.pretty_print(heap),
     }
   }
 }
@@ -206,22 +206,22 @@ pub enum BinaryOperator {
 impl BinaryOperator {
   pub fn as_str(&self) -> &'static str {
     match self {
-      BinaryOperator::MUL => "*",
-      BinaryOperator::DIV => "/",
-      BinaryOperator::MOD => "%",
-      BinaryOperator::PLUS => "+",
-      BinaryOperator::MINUS => "-",
-      BinaryOperator::LAND => "&",
-      BinaryOperator::LOR => "|",
-      BinaryOperator::SHL => "<<",
-      BinaryOperator::SHR => ">>>",
-      BinaryOperator::XOR => "^",
-      BinaryOperator::LT => "<",
-      BinaryOperator::LE => "<=",
-      BinaryOperator::GT => ">",
-      BinaryOperator::GE => ">=",
-      BinaryOperator::EQ => "==",
-      BinaryOperator::NE => "!=",
+      Self::MUL => "*",
+      Self::DIV => "/",
+      Self::MOD => "%",
+      Self::PLUS => "+",
+      Self::MINUS => "-",
+      Self::LAND => "&",
+      Self::LOR => "|",
+      Self::SHL => "<<",
+      Self::SHR => ">>>",
+      Self::XOR => "^",
+      Self::LT => "<",
+      Self::LE => "<=",
+      Self::GT => ">",
+      Self::GE => ">=",
+      Self::EQ => "==",
+      Self::NE => "!=",
     }
   }
 }
@@ -241,8 +241,8 @@ impl PartialEq for VariableName {
 impl Eq for VariableName {}
 
 impl VariableName {
-  pub fn new(name: PStr, type_: Type) -> VariableName {
-    VariableName { name, type_ }
+  pub fn new(name: PStr, type_: Type) -> Self {
+    Self { name, type_ }
   }
 
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
@@ -271,8 +271,8 @@ pub struct FunctionNameExpression {
 
 impl FunctionNameExpression {
   #[cfg(test)]
-  pub(super) fn new(name: FunctionName, type_: FunctionType) -> FunctionNameExpression {
-    FunctionNameExpression { name, type_, type_arguments: Vec::new() }
+  pub(super) fn new(name: FunctionName, type_: FunctionType) -> Self {
+    Self { name, type_, type_arguments: Vec::new() }
   }
 
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
@@ -297,36 +297,36 @@ pub enum Expression {
 }
 
 impl Expression {
-  pub fn int(value: i32) -> Expression {
-    Expression::IntLiteral(value)
+  pub fn int(value: i32) -> Self {
+    Self::IntLiteral(value)
   }
 
-  pub fn var_name(name: PStr, type_: Type) -> Expression {
-    Expression::Variable(VariableName { name, type_ })
+  pub fn var_name(name: PStr, type_: Type) -> Self {
+    Self::Variable(VariableName { name, type_ })
   }
 
   pub fn type_(&self) -> &Type {
     match self {
-      Expression::IntLiteral(_) => &INT_TYPE,
-      Expression::Int31Zero => &INT31_TYPE,
-      Expression::StringName(_) => STRING_TYPE_REF,
-      Expression::Variable(v) => &v.type_,
+      Self::IntLiteral(_) => &INT_TYPE,
+      Self::Int31Zero => &INT31_TYPE,
+      Self::StringName(_) => STRING_TYPE_REF,
+      Self::Variable(v) => &v.type_,
     }
   }
 
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
-      Expression::IntLiteral(i) => i.to_string(),
-      Expression::Int31Zero => "0 as i31".to_string(),
-      Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
-      Expression::Variable(v) => v.debug_print(heap),
+      Self::IntLiteral(i) => i.to_string(),
+      Self::Int31Zero => "0 as i31".to_string(),
+      Self::StringName(n) => format!("\"{}\"", n.as_str(heap)),
+      Self::Variable(v) => v.debug_print(heap),
     }
   }
 
   pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
-      Expression::IntLiteral(_) | Expression::Int31Zero | Expression::StringName(_) => None,
-      Expression::Variable(v) => Some(Callee::Variable(v)),
+      Self::IntLiteral(_) | Self::Int31Zero | Self::StringName(_) => None,
+      Self::Variable(v) => Some(Callee::Variable(v)),
     }
   }
 }
@@ -343,8 +343,8 @@ pub enum Callee {
 impl Callee {
   pub fn debug_print(&self, heap: &samlang_heap::Heap) -> String {
     match self {
-      Callee::FunctionName(f) => f.debug_print(heap),
-      Callee::Variable(v) => v.debug_print(heap),
+      Self::FunctionName(f) => f.debug_print(heap),
+      Self::Variable(v) => v.debug_print(heap),
     }
   }
 }
@@ -422,7 +422,7 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::Not { name, operand } => {
+      Self::Not { name, operand } => {
         collector.push(format!(
           "{}let {} = !{};\n",
           "  ".repeat(level),
@@ -430,7 +430,7 @@ impl Statement {
           operand.debug_print(heap),
         ));
       }
-      Statement::Binary { name, operator, e1, e2 } => {
+      Self::Binary { name, operator, e1, e2 } => {
         collector.push(format!(
           "{}let {} = {} {} {};\n",
           "  ".repeat(level),
@@ -440,7 +440,7 @@ impl Statement {
           e2.debug_print(heap)
         ));
       }
-      Statement::IndexedAccess { name, type_, pointer_expression, index } => {
+      Self::IndexedAccess { name, type_, pointer_expression, index } => {
         collector.push(format!(
           "{}let {}: {} = {}[{}];\n",
           "  ".repeat(level),
@@ -450,7 +450,7 @@ impl Statement {
           index
         ));
       }
-      Statement::Call { callee, arguments, return_type, return_collector } => {
+      Self::Call { callee, arguments, return_type, return_collector } => {
         let fun_str = callee.debug_print(heap);
         let args_str = arguments.iter().map(|it| it.debug_print(heap)).join(", ");
         let collector_str = if let Some(collector) = return_collector {
@@ -466,7 +466,7 @@ impl Statement {
           args_str
         ));
       }
-      Statement::ConditionalDestructure { test_expr, tag, bindings, s1, s2, final_assignments } => {
+      Self::ConditionalDestructure { test_expr, tag, bindings, s1, s2, final_assignments } => {
         let bindings_string = bindings
           .iter()
           .map(|b| {
@@ -509,7 +509,7 @@ impl Statement {
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
-      Statement::IfElse { condition, s1, s2, final_assignments } => {
+      Self::IfElse { condition, s1, s2, final_assignments } => {
         for (n, t, _, _) in final_assignments {
           collector.push(format!(
             "{}let {}: {};\n",
@@ -544,7 +544,7 @@ impl Statement {
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
-      Statement::LateInitDeclaration { name, type_ } => {
+      Self::LateInitDeclaration { name, type_ } => {
         collector.push(format!(
           "{}let {}: {};\n",
           "  ".repeat(level),
@@ -552,7 +552,7 @@ impl Statement {
           type_.pretty_print(heap),
         ));
       }
-      Statement::LateInitAssignment { name, assigned_expression } => {
+      Self::LateInitAssignment { name, assigned_expression } => {
         collector.push(format!(
           "{}{} = {};\n",
           "  ".repeat(level),
@@ -560,7 +560,7 @@ impl Statement {
           assigned_expression.debug_print(heap),
         ));
       }
-      Statement::StructInit { struct_variable_name, type_, expression_list } => {
+      Self::StructInit { struct_variable_name, type_, expression_list } => {
         let expression_str = expression_list.iter().map(|it| it.debug_print(heap)).join(", ");
         collector.push(format!(
           "{}let {}: {} = [{}];\n",
@@ -570,7 +570,7 @@ impl Statement {
           expression_str
         ));
       }
-      Statement::EnumInit { enum_variable_name, enum_type, tag, associated_data_list } => {
+      Self::EnumInit { enum_variable_name, enum_type, tag, associated_data_list } => {
         let expression_str = associated_data_list.iter().map(|it| it.debug_print(heap)).join(", ");
         collector.push(format!(
           "{}let {}: {} = [{}, {}];\n",
@@ -581,7 +581,7 @@ impl Statement {
           expression_str
         ));
       }
-      Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
+      Self::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
         let closure_name_type =
           format!("{}: {}", closure_variable_name.as_str(heap), closure_type.pretty_print(heap));
         let function_name_type = format!(

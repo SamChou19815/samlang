@@ -200,15 +200,15 @@ pub enum Type {
 }
 
 impl Type {
-  pub fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
+  pub fn new_fn_unwrapped(argument_types: Vec<Self>, return_type: Self) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
   pub fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Type::Int32 => "int".to_string(),
-      Type::Int31 => "i31".to_string(),
-      Type::Id(id) => id.encoded_for_test(heap, table),
+      Self::Int32 => "int".to_string(),
+      Self::Int31 => "i31".to_string(),
+      Self::Id(id) => id.encoded_for_test(heap, table),
     }
   }
 }
@@ -361,22 +361,22 @@ pub enum Expression {
 impl Ord for Expression {
   fn cmp(&self, other: &Self) -> Ordering {
     match self {
-      Expression::Int32Literal(i1) => match other {
-        Expression::Int32Literal(i2) => i1.cmp(i2),
+      Self::Int32Literal(i1) => match other {
+        Self::Int32Literal(i2) => i1.cmp(i2),
         _ => Ordering::Less,
       },
-      Expression::Int31Literal(i1) => match other {
-        Expression::Int32Literal(_) => Ordering::Greater,
-        Expression::Int31Literal(i2) => i1.cmp(i2),
+      Self::Int31Literal(i1) => match other {
+        Self::Int32Literal(_) => Ordering::Greater,
+        Self::Int31Literal(i2) => i1.cmp(i2),
         _ => Ordering::Less,
       },
-      Expression::StringName(n1) => match other {
-        Expression::Int32Literal(_) | Expression::Int31Literal(_) => Ordering::Greater,
-        Expression::StringName(n2) => n1.cmp(n2),
-        Expression::Variable(_) => Ordering::Less,
+      Self::StringName(n1) => match other {
+        Self::Int32Literal(_) | Self::Int31Literal(_) => Ordering::Greater,
+        Self::StringName(n2) => n1.cmp(n2),
+        Self::Variable(_) => Ordering::Less,
       },
-      Expression::Variable(v1) => match other {
-        Expression::Variable(v2) => v1.name.cmp(&v2.name),
+      Self::Variable(v1) => match other {
+        Self::Variable(v2) => v1.name.cmp(&v2.name),
         _ => Ordering::Greater,
       },
     }
@@ -401,35 +401,35 @@ impl Hash for Expression {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     core::mem::discriminant(self).hash(state);
     match self {
-      Expression::Int32Literal(i) | Expression::Int31Literal(i) => i.hash(state),
-      Expression::StringName(n) => n.hash(state),
-      Expression::Variable(v) => v.hash(state),
+      Self::Int32Literal(i) | Self::Int31Literal(i) => i.hash(state),
+      Self::StringName(n) => n.hash(state),
+      Self::Variable(v) => v.hash(state),
     }
   }
 }
 
 impl Expression {
-  pub fn i32(value: i32) -> Expression {
-    Expression::Int32Literal(value)
+  pub fn i32(value: i32) -> Self {
+    Self::Int32Literal(value)
   }
 
-  pub fn var_name(name: PStr, type_: Type) -> Expression {
-    Expression::Variable(VariableName { name, type_ })
+  pub fn var_name(name: PStr, type_: Type) -> Self {
+    Self::Variable(VariableName { name, type_ })
   }
 
   pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Expression::Int32Literal(i) => i.to_string(),
-      Expression::Int31Literal(i) => format!("{i} as i31"),
-      Expression::StringName(n) => format!("\"{}\"", n.as_str(heap)),
-      Expression::Variable(v) => v.debug_print(heap, table),
+      Self::Int32Literal(i) => i.to_string(),
+      Self::Int31Literal(i) => format!("{i} as i31"),
+      Self::StringName(n) => format!("\"{}\"", n.as_str(heap)),
+      Self::Variable(v) => v.debug_print(heap, table),
     }
   }
 
   pub fn convert_to_callee(self) -> Option<Callee> {
     match self {
-      Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => None,
-      Expression::Variable(v) => Some(Callee::Variable(v)),
+      Self::Int32Literal(_) | Self::Int31Literal(_) | Self::StringName(_) => None,
+      Self::Variable(v) => Some(Callee::Variable(v)),
     }
   }
 }
@@ -454,8 +454,8 @@ pub enum Callee {
 impl Callee {
   pub fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Callee::FunctionName(f) => f.name.encoded_for_test(heap, table),
-      Callee::Variable(v) => v.debug_print(heap, table),
+      Self::FunctionName(f) => f.name.encoded_for_test(heap, table),
+      Self::Variable(v) => v.debug_print(heap, table),
     }
   }
 }
@@ -579,13 +579,8 @@ impl Statement {
     Self::binary_unwrapped(name, operator, e1, e2)
   }
 
-  pub fn binary(
-    name: PStr,
-    operator: hir::BinaryOperator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Statement {
-    Statement::Binary(Self::binary_unwrapped(name, operator, e1, e2))
+  pub fn binary(name: PStr, operator: hir::BinaryOperator, e1: Expression, e2: Expression) -> Self {
+    Self::Binary(Self::binary_unwrapped(name, operator, e1, e2))
   }
 
   pub fn flexible_order_binary(
@@ -654,7 +649,7 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::IsPointer { name, pointer_type, operand } => {
+      Self::IsPointer { name, pointer_type, operand } => {
         collector.push(format!(
           "{}let {} = {} is {};\n",
           "  ".repeat(level),
@@ -663,7 +658,7 @@ impl Statement {
           pointer_type.encoded_for_test(heap, table)
         ));
       }
-      Statement::Not { name, operand } => {
+      Self::Not { name, operand } => {
         collector.push(format!(
           "{}let {} = !{};\n",
           "  ".repeat(level),
@@ -671,7 +666,7 @@ impl Statement {
           operand.debug_print(heap, table),
         ));
       }
-      Statement::Binary(s) => {
+      Self::Binary(s) => {
         let e1 = s.e1.debug_print(heap, table);
         let e2 = s.e2.debug_print(heap, table);
         collector.push(format!(
@@ -683,7 +678,7 @@ impl Statement {
           e2
         ));
       }
-      Statement::IndexedAccess { name, type_, pointer_expression, index } => {
+      Self::IndexedAccess { name, type_, pointer_expression, index } => {
         let type_ = type_.pretty_print(heap, table);
         let pointer_expr = pointer_expression.debug_print(heap, table);
         collector.push(format!(
@@ -695,7 +690,7 @@ impl Statement {
           index
         ));
       }
-      Statement::Call { callee, arguments, return_type, return_collector } => {
+      Self::Call { callee, arguments, return_type, return_collector } => {
         let fun_str = callee.debug_print(heap, table);
         let args_str = arguments.iter().map(|it| it.debug_print(heap, table)).join(", ");
         let collector_str = if let Some(collector) = return_collector {
@@ -711,7 +706,7 @@ impl Statement {
           args_str
         ));
       }
-      Statement::IfElse { condition, s1, s2, final_assignments } => {
+      Self::IfElse { condition, s1, s2, final_assignments } => {
         for IfElseFinalAssignment { name, type_, .. } in final_assignments {
           collector.push(format!(
             "{}let {}: {};\n",
@@ -750,7 +745,7 @@ impl Statement {
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
-      Statement::SingleIf { condition, invert_condition, statements } => {
+      Self::SingleIf { condition, invert_condition, statements } => {
         let invert_str = if *invert_condition { "!" } else { "" };
         collector.push(format!(
           "{}if {}{} {{\n",
@@ -763,7 +758,7 @@ impl Statement {
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
-      Statement::Break(break_value) => {
+      Self::Break(break_value) => {
         let break_collector_str =
           if let Some(s) = break_collector { s.name.as_str(heap) } else { "undefined" };
         collector.push(format!(
@@ -774,7 +769,7 @@ impl Statement {
         ));
         collector.push(format!("{}break;\n", "  ".repeat(level)));
       }
-      Statement::While { loop_variables, break_collector, statements } => {
+      Self::While { loop_variables, break_collector, statements } => {
         for v in loop_variables {
           collector.push(format!(
             "{}let {}: {} = {};\n",
@@ -806,7 +801,7 @@ impl Statement {
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
-      Statement::Cast { name, type_, assigned_expression } => {
+      Self::Cast { name, type_, assigned_expression } => {
         collector.push(format!(
           "{}let {} = {} as {};\n",
           "  ".repeat(level),
@@ -815,7 +810,7 @@ impl Statement {
           type_.pretty_print(heap, table),
         ));
       }
-      Statement::LateInitDeclaration { name, type_ } => {
+      Self::LateInitDeclaration { name, type_ } => {
         collector.push(format!(
           "{}let {}: {};\n",
           "  ".repeat(level),
@@ -823,7 +818,7 @@ impl Statement {
           type_.pretty_print(heap, table),
         ));
       }
-      Statement::LateInitAssignment { name, assigned_expression } => {
+      Self::LateInitAssignment { name, assigned_expression } => {
         collector.push(format!(
           "{}{} = {};\n",
           "  ".repeat(level),
@@ -831,7 +826,7 @@ impl Statement {
           assigned_expression.debug_print(heap, table),
         ));
       }
-      Statement::StructInit { struct_variable_name, type_name, expression_list } => {
+      Self::StructInit { struct_variable_name, type_name, expression_list } => {
         let expression_str =
           expression_list.iter().map(|it| it.debug_print(heap, table)).join(", ");
         collector.push(format!(
@@ -842,12 +837,7 @@ impl Statement {
           expression_str
         ));
       }
-      Statement::ClosureInit {
-        closure_variable_name,
-        closure_type_name,
-        function_name,
-        context,
-      } => {
+      Self::ClosureInit { closure_variable_name, closure_type_name, function_name, context } => {
         let closure_name_type = format!(
           "{}: {}",
           closure_variable_name.as_str(heap),

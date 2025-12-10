@@ -347,7 +347,7 @@ fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
   }
 }
 
-fn rewrite_stmts(state: &RewriteState, stmts: &mut Vec<Statement>) {
+fn rewrite_stmts(state: &RewriteState, stmts: &mut [Statement]) {
   for stmt in stmts {
     rewrite_stmt(state, stmt);
   }

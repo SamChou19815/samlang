@@ -7,8 +7,8 @@ pub(super) struct StringManager {
 }
 
 impl StringManager {
-  pub(super) fn new() -> StringManager {
-    StringManager { global_variable_reference_map: BTreeSet::new() }
+  pub(super) fn new() -> Self {
+    Self { global_variable_reference_map: BTreeSet::new() }
   }
 
   pub(super) fn all_global_variables(self) -> Vec<GlobalString> {
