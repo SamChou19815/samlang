@@ -13,7 +13,7 @@ export default function EditorCodeBlock({
   language = 'samlang',
   path,
   children,
-}: Props): JSX.Element {
+}: Props): React.JSX.Element {
   const height = (children.trim().split('\n').length + 1) * 20;
   return (
     <Editor
@@ -36,7 +36,6 @@ export default function EditorCodeBlock({
       }}
       onChange={(newSource) => {
         if (newSource) {
-          
         }
       }}
       beforeMount={(monaco) => {
