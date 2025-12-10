@@ -1,7 +1,7 @@
 'use client';
 
 import Editor from '@monaco-editor/react';
-import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import type * as monaco from 'monaco-editor';
 import Link from 'next/link';
 import { gc } from 'wasm-feature-detect';
 import type { CompilationResult } from './samlang-wasm-glue';
@@ -17,11 +17,11 @@ const DemoPrograms = [
   { name: 'Expressions', program: ALL_EXPRESSIONS },
 ];
 
-export default function LanguageDemo(): JSX.Element {
+export default function LanguageDemo(): React.JSX.Element {
   const [response, setResponse] = useState<CompilationResult | null>(null);
   const [chosenTab, setChosenTab] = useState(0);
   const [displayNoWasmGC, setDisplayNoWasmGC] = useState(false);
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>(undefined);
   useEffect(() => {
     gc().then((b) => setDisplayNoWasmGC(!b));
   }, []);

@@ -21,8 +21,13 @@ const lang: shiki.LanguageRegistration = {
   scopeName: 'text.samlang',
 };
 
-export default async function StaticSamlangCodeBlock({ children }: Props): Promise<JSX.Element> {
-  const highlighter = await shiki.getHighlighter({ themes: ['andromeeda', theme], langs: [lang] });
+export default async function StaticSamlangCodeBlock({
+  children,
+}: Props): Promise<React.JSX.Element> {
+  const highlighter = await shiki.createHighlighter({
+    themes: ['andromeeda', theme],
+    langs: [lang],
+  });
 
   return (
     <div
