@@ -88,8 +88,8 @@ impl ISourceType for NominalType {
 }
 
 impl NominalType {
-  pub fn reposition(self, use_loc: Location) -> NominalType {
-    NominalType {
+  pub fn reposition(self, use_loc: Location) -> Self {
+    Self {
       reason: self.reason.to_use_reason(use_loc),
       is_class_statics: self.is_class_statics,
       module_reference: self.module_reference,
@@ -98,8 +98,8 @@ impl NominalType {
     }
   }
 
-  pub fn from_annotation(annotation: &annotation::Id) -> NominalType {
-    NominalType {
+  pub fn from_annotation(annotation: &annotation::Id) -> Self {
+    Self {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       is_class_statics: false,
       module_reference: annotation.module_reference,
@@ -227,14 +227,14 @@ impl ISourceType for Type {
 }
 
 impl Type {
-  pub fn unit_type(reason: Reason) -> Type {
-    Type::Primitive(reason, PrimitiveTypeKind::Unit)
+  pub fn unit_type(reason: Reason) -> Self {
+    Self::Primitive(reason, PrimitiveTypeKind::Unit)
   }
-  pub fn bool_type(reason: Reason) -> Type {
-    Type::Primitive(reason, PrimitiveTypeKind::Bool)
+  pub fn bool_type(reason: Reason) -> Self {
+    Self::Primitive(reason, PrimitiveTypeKind::Bool)
   }
-  pub fn int_type(reason: Reason) -> Type {
-    Type::Primitive(reason, PrimitiveTypeKind::Int)
+  pub fn int_type(reason: Reason) -> Self {
+    Self::Primitive(reason, PrimitiveTypeKind::Int)
   }
 
   pub fn get_reason(&self) -> &Reason {
@@ -247,27 +247,27 @@ impl Type {
     }
   }
 
-  pub fn reposition(&self, use_loc: Location) -> Type {
+  pub fn reposition(&self, use_loc: Location) -> Self {
     match self {
       Self::Any(reason, is_placeholder) => {
-        Type::Any(reason.to_use_reason(use_loc), *is_placeholder)
+        Self::Any(reason.to_use_reason(use_loc), *is_placeholder)
       }
-      Self::Primitive(reason, p) => Type::Primitive(reason.to_use_reason(use_loc), *p),
+      Self::Primitive(reason, p) => Self::Primitive(reason.to_use_reason(use_loc), *p),
       Self::Nominal(NominalType {
         reason,
         is_class_statics,
         module_reference,
         id,
         type_arguments,
-      }) => Type::Nominal(NominalType {
+      }) => Self::Nominal(NominalType {
         reason: reason.to_use_reason(use_loc),
         is_class_statics: *is_class_statics,
         module_reference: *module_reference,
         id: *id,
         type_arguments: type_arguments.clone(),
       }),
-      Self::Generic(reason, s) => Type::Generic(reason.to_use_reason(use_loc), *s),
-      Self::Fn(FunctionType { reason, argument_types, return_type }) => Type::Fn(FunctionType {
+      Self::Generic(reason, s) => Self::Generic(reason.to_use_reason(use_loc), *s),
+      Self::Fn(FunctionType { reason, argument_types, return_type }) => Self::Fn(FunctionType {
         reason: reason.to_use_reason(use_loc),
         argument_types: argument_types.clone(),
         return_type: return_type.clone(),
@@ -275,23 +275,23 @@ impl Type {
     }
   }
 
-  pub fn from_annotation(annotation: &annotation::T) -> Type {
+  pub fn from_annotation(annotation: &annotation::T) -> Self {
     match annotation {
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Unit) => {
-        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Unit)
+        Self::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Unit)
       }
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Bool) => {
-        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Bool)
+        Self::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Bool)
       }
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Int) => {
-        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Int)
+        Self::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Int)
       }
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Any) => {
-        Type::Any(Reason::new(*loc, Some(*loc)), false)
+        Self::Any(Reason::new(*loc, Some(*loc)), false)
       }
-      annotation::T::Id(annot) => Type::Nominal(NominalType::from_annotation(annot)),
-      annotation::T::Generic(loc, id) => Type::Generic(Reason::new(*loc, Some(*loc)), id.name),
-      annotation::T::Fn(annot) => Type::Fn(FunctionType::from_annotation(annot)),
+      annotation::T::Id(annot) => Self::Nominal(NominalType::from_annotation(annot)),
+      annotation::T::Generic(loc, id) => Self::Generic(Reason::new(*loc, Some(*loc)), id.name),
+      annotation::T::Fn(annot) => Self::Fn(FunctionType::from_annotation(annot)),
     }
   }
 }

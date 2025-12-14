@@ -41,31 +41,31 @@ pub enum Type {
 }
 
 impl Type {
-  pub fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
+  pub fn new_fn_unwrapped(argument_types: Vec<Self>, return_type: Self) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
-  pub fn new_fn(argument_types: Vec<Type>, return_type: Type) -> Type {
-    Type::Fn(Self::new_fn_unwrapped(argument_types, return_type))
+  pub fn new_fn(argument_types: Vec<Type>, return_type: Type) -> Self {
+    Self::Fn(Self::new_fn_unwrapped(argument_types, return_type))
   }
 
   pub fn pretty_print(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     match self {
-      Type::Int32 => collector.push_str("number"),
-      Type::Int31 => collector.push_str("i31"),
-      Type::AnyPointer => collector.push_str("any"),
-      Type::Id(id) => id.write_encoded(collector, heap, table),
-      Type::Fn(function) => function.pretty_print(collector, heap, table),
+      Self::Int32 => collector.push_str("number"),
+      Self::Int31 => collector.push_str("i31"),
+      Self::AnyPointer => collector.push_str("any"),
+      Self::Id(id) => id.write_encoded(collector, heap, table),
+      Self::Fn(function) => function.pretty_print(collector, heap, table),
     }
   }
 
-  pub fn is_the_same_type(&self, other: &Type) -> bool {
+  pub fn is_the_same_type(&self, other: &Self) -> bool {
     match (self, other) {
-      (Type::Int32, Type::Int32)
-      | (Type::Int31, Type::Int31)
-      | (Type::AnyPointer, Type::AnyPointer) => true,
-      (Type::Id(n1), Type::Id(n2)) => n1 == n2,
-      (Type::Fn(f1), Type::Fn(f2)) => {
+      (Self::Int32, Self::Int32)
+      | (Self::Int31, Self::Int31)
+      | (Self::AnyPointer, Self::AnyPointer) => true,
+      (Self::Id(n1), Self::Id(n2)) => n1 == n2,
+      (Self::Fn(f1), Self::Fn(f2)) => {
         f1.return_type.is_the_same_type(&f2.return_type)
           && f1.argument_types.len() == f2.argument_types.len()
           && f1
@@ -93,15 +93,15 @@ pub enum Expression {
 }
 
 impl Expression {
-  pub fn int32(value: i32) -> Expression {
-    Expression::Int32Literal(value)
+  pub fn int32(value: i32) -> Self {
+    Self::Int32Literal(value)
   }
 
   pub fn ref_countable(&self) -> bool {
     match self {
-      Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::FnName(_, _) => false,
-      Expression::StringName(_) => true,
-      Expression::Variable(_, t) => t.as_id().is_some(),
+      Self::Int32Literal(_) | Self::Int31Literal(_) | Self::FnName(_, _) => false,
+      Self::StringName(_) => true,
+      Self::Variable(_, t) => t.as_id().is_some(),
     }
   }
 
@@ -113,17 +113,17 @@ impl Expression {
     str_table: &HashMap<PStr, usize>,
   ) {
     match self {
-      Expression::Int32Literal(i) => collector.push_str(&i.to_string()),
-      Expression::Int31Literal(i) => {
+      Self::Int32Literal(i) => collector.push_str(&i.to_string()),
+      Self::Int31Literal(i) => {
         let i32_form = i * 2 + 1;
         collector.push_str(&i32_form.to_string())
       }
-      Expression::Variable(n, _) => collector.push_str(n.as_str(heap)),
-      Expression::StringName(n) => {
+      Self::Variable(n, _) => collector.push_str(n.as_str(heap)),
+      Self::StringName(n) => {
         collector.push_str("GLOBAL_STRING_");
         collector.push_str(&str_table.get(n).unwrap().to_string());
       }
-      Expression::FnName(n, _) => n.write_encoded(collector, heap, symbol_table),
+      Self::FnName(n, _) => n.write_encoded(collector, heap, symbol_table),
     }
   }
 }
@@ -257,7 +257,7 @@ impl Statement {
     collector: &mut String,
   ) {
     match self {
-      Statement::IsPointer { name, pointer_type: _, operand } => {
+      Self::IsPointer { name, pointer_type: _, operand } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -265,7 +265,7 @@ impl Statement {
         operand.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(" === 'object';\n");
       }
-      Statement::Not { name, operand } => {
+      Self::Not { name, operand } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -273,7 +273,7 @@ impl Statement {
         operand.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(";\n");
       }
-      Statement::Binary { name, operator, e1, e2 } => {
+      Self::Binary { name, operator, e1, e2 } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -322,8 +322,8 @@ impl Statement {
         };
         collector.push_str(";\n");
       }
-      Statement::UntypedIndexedAccess { name, type_, pointer_expression, index }
-      | Statement::IndexedAccess { name, type_, pointer_expression, index } => {
+      Self::UntypedIndexedAccess { name, type_, pointer_expression, index }
+      | Self::IndexedAccess { name, type_, pointer_expression, index } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -335,7 +335,7 @@ impl Statement {
         collector.push_str(&index.to_string());
         collector.push_str("];\n");
       }
-      Statement::UntypedIndexedAssign { assigned_expression, pointer_expression, index } => {
+      Self::UntypedIndexedAssign { assigned_expression, pointer_expression, index } => {
         Self::append_spaces(collector, level);
         pointer_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push('[');
@@ -344,7 +344,7 @@ impl Statement {
         assigned_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(";\n");
       }
-      Statement::Call { callee, arguments, return_type, return_collector } => {
+      Self::Call { callee, arguments, return_type, return_collector } => {
         Self::append_spaces(collector, level);
         if let Some(c) = return_collector {
           collector.push_str("let ");
@@ -358,7 +358,7 @@ impl Statement {
         Self::print_expression_list(collector, heap, symbol_table, str_table, arguments);
         collector.push_str(");\n");
       }
-      Statement::IfElse { condition, s1, s2, final_assignments } => {
+      Self::IfElse { condition, s1, s2, final_assignments } => {
         for (n, t, _, _) in final_assignments {
           Self::append_spaces(collector, level);
           collector.push_str("let ");
@@ -410,7 +410,7 @@ impl Statement {
         Self::append_spaces(collector, level);
         collector.push_str("}\n");
       }
-      Statement::SingleIf { condition, invert_condition, statements } => {
+      Self::SingleIf { condition, invert_condition, statements } => {
         Self::append_spaces(collector, level);
         collector.push_str("if (");
         if *invert_condition {
@@ -431,7 +431,7 @@ impl Statement {
         Self::append_spaces(collector, level);
         collector.push_str("}\n");
       }
-      Statement::Break(break_value) => {
+      Self::Break(break_value) => {
         if let Some((break_collector_str, _)) = break_collector {
           Self::append_spaces(collector, level);
           collector.push_str(break_collector_str.as_str(heap));
@@ -442,7 +442,7 @@ impl Statement {
         Self::append_spaces(collector, level);
         collector.push_str("break;\n");
       }
-      Statement::While { loop_variables, statements, break_collector } => {
+      Self::While { loop_variables, statements, break_collector } => {
         for v in loop_variables {
           Self::append_spaces(collector, level);
           collector.push_str("let ");
@@ -483,7 +483,7 @@ impl Statement {
         Self::append_spaces(collector, level);
         collector.push_str("}\n");
       }
-      Statement::Cast { name, type_, assigned_expression } => {
+      Self::Cast { name, type_, assigned_expression } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -493,7 +493,7 @@ impl Statement {
         type_.pretty_print(collector, heap, symbol_table);
         collector.push_str(";\n");
       }
-      Statement::LateInitDeclaration { name, type_ } => {
+      Self::LateInitDeclaration { name, type_ } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -501,14 +501,14 @@ impl Statement {
         type_.pretty_print(collector, heap, symbol_table);
         collector.push_str(" = undefined as any;\n");
       }
-      Statement::LateInitAssignment { name, assigned_expression } => {
+      Self::LateInitAssignment { name, assigned_expression } => {
         Self::append_spaces(collector, level);
         collector.push_str(name.as_str(heap));
         collector.push_str(" = ");
         assigned_expression.pretty_print(collector, heap, symbol_table, str_table);
         collector.push_str(";\n");
       }
-      Statement::StructInit { struct_variable_name, type_, expression_list } => {
+      Self::StructInit { struct_variable_name, type_, expression_list } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(struct_variable_name.as_str(heap));

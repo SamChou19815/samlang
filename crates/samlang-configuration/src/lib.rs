@@ -19,9 +19,9 @@ pub enum ConfigurationLoadingFailure {
 impl ConfigurationLoadingFailure {
   pub fn to_str(&self) -> &'static str {
     match self {
-      ConfigurationLoadingFailure::UnreadableConfigurationFile => "UNREADABLE_CONFIGURATION_FILE",
-      ConfigurationLoadingFailure::UnparsableConfigurationFile => "UNPARSABLE_CONFIGURATION_FILE",
-      ConfigurationLoadingFailure::NoConfiguration => "NO_CONFIGURATION",
+      Self::UnreadableConfigurationFile => "UNREADABLE_CONFIGURATION_FILE",
+      Self::UnparsableConfigurationFile => "UNPARSABLE_CONFIGURATION_FILE",
+      Self::NoConfiguration => "NO_CONFIGURATION",
     }
   }
 }

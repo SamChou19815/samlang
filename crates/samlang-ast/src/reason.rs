@@ -92,21 +92,21 @@ pub struct Reason {
 }
 
 impl Reason {
-  pub fn dummy() -> Reason {
-    Reason { use_loc: Location::dummy(), def_loc: Option::Some(Location::dummy()) }
+  pub fn dummy() -> Self {
+    Self { use_loc: Location::dummy(), def_loc: Option::Some(Location::dummy()) }
   }
 
   // TODO(reason): Wait until we migrate to location only.
-  pub fn builtin() -> Reason {
-    Reason::dummy()
+  pub fn builtin() -> Self {
+    Self::dummy()
   }
 
-  pub fn new(use_loc: Location, def_loc: Option<Location>) -> Reason {
-    Reason { use_loc, def_loc }
+  pub fn new(use_loc: Location, def_loc: Option<Location>) -> Self {
+    Self { use_loc, def_loc }
   }
 
-  pub fn to_use_reason(self, use_loc: Location) -> Reason {
-    Reason { use_loc, def_loc: self.def_loc }
+  pub fn to_use_reason(self, use_loc: Location) -> Self {
+    Self { use_loc, def_loc: self.def_loc }
   }
 }
 

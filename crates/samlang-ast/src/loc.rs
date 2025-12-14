@@ -19,24 +19,20 @@ pub struct Location {
 }
 
 impl Location {
-  pub fn dummy() -> Location {
-    Location {
-      module_reference: ModuleReference::DUMMY,
-      start: DUMMY_POSITION,
-      end: DUMMY_POSITION,
-    }
+  pub fn dummy() -> Self {
+    Self { module_reference: ModuleReference::DUMMY, start: DUMMY_POSITION, end: DUMMY_POSITION }
   }
 
-  pub fn document_start(module_reference: ModuleReference) -> Location {
-    Location { module_reference, start: Position(0, 0), end: Position(0, 0) }
+  pub fn document_start(module_reference: ModuleReference) -> Self {
+    Self { module_reference, start: Position(0, 0), end: Position(0, 0) }
   }
 
-  pub fn full_document(module_reference: ModuleReference) -> Location {
-    Location { module_reference, start: Position(0, 0), end: Position(u32::MAX, u32::MAX) }
+  pub fn full_document(module_reference: ModuleReference) -> Self {
+    Self { module_reference, start: Position(0, 0), end: Position(u32::MAX, u32::MAX) }
   }
 
-  pub fn from_pos(sl: u32, sc: u32, el: u32, ec: u32) -> Location {
-    Location {
+  pub fn from_pos(sl: u32, sc: u32, el: u32, ec: u32) -> Self {
+    Self {
       module_reference: ModuleReference::DUMMY,
       start: Position(sl, sc),
       end: Position(el, ec),
@@ -47,15 +43,15 @@ impl Location {
     self.start <= position && self.end >= position
   }
 
-  pub fn contains(&self, other: &Location) -> bool {
+  pub fn contains(&self, other: &Self) -> bool {
     self.contains_position(other.start) && self.contains_position(other.end)
   }
 
-  pub fn union(&self, other: &Location) -> Location {
+  pub fn union(&self, other: &Self) -> Self {
     assert!(self.module_reference == other.module_reference);
     let start = if self.start < other.start { self.start } else { other.start };
     let end = if self.end > other.end { self.end } else { other.end };
-    Location { module_reference: self.module_reference, start, end }
+    Self { module_reference: self.module_reference, start, end }
   }
 
   pub fn pretty_print_without_file(&self) -> String {

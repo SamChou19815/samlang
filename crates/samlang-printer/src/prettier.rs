@@ -55,48 +55,46 @@ pub(super) enum Document {
 }
 
 impl Document {
-  pub(super) fn non_static_str(s: String) -> Document {
-    Document::NonStaticText(Str(Rc::from(s)))
+  pub(super) fn non_static_str(s: String) -> Self {
+    Self::NonStaticText(Str(Rc::from(s)))
   }
 
   /// Replace all LINE with TEXT(' '). Correspond to the `flatten` function in the prettier paper.
-  pub(super) fn flatten(&self) -> Option<Document> {
+  pub(super) fn flatten(&self) -> Option<Self> {
     match self {
-      Document::Nil => Some(Document::Nil),
-      Document::Concat(d1, d2) => {
+      Self::Nil => Some(Self::Nil),
+      Self::Concat(d1, d2) => {
         if let (Some(d1), Some(d2)) = (d1.flatten(), d2.flatten()) {
-          Some(Document::Concat(Rc::new(d1), Rc::new(d2)))
+          Some(Self::Concat(Rc::new(d1), Rc::new(d2)))
         } else {
           None
         }
       }
-      Document::Nest(indentation, d) => {
-        d.flatten().map(|d| Document::Nest(*indentation, Rc::new(d)))
-      }
-      Document::Text(s) => Some(Document::Text(s)),
-      Document::NonStaticText(s) => Some(Document::NonStaticText(s.clone())),
-      Document::Line => Some(Document::Text(" ")),
-      Document::LineFlattenToNil => Some(Document::Nil),
-      Document::LineHard => None,
-      Document::Union(d, _) => d.flatten(),
+      Self::Nest(indentation, d) => d.flatten().map(|d| Self::Nest(*indentation, Rc::new(d))),
+      Self::Text(s) => Some(Self::Text(s)),
+      Self::NonStaticText(s) => Some(Self::NonStaticText(s.clone())),
+      Self::Line => Some(Self::Text(" ")),
+      Self::LineFlattenToNil => Some(Self::Nil),
+      Self::LineHard => None,
+      Self::Union(d, _) => d.flatten(),
     }
   }
 
-  pub(super) fn concat(mut docs: Vec<Document>) -> Document {
+  pub(super) fn concat(mut docs: Vec<Self>) -> Self {
     if let Some(last) = docs.pop() {
       let mut base = last;
       while !docs.is_empty() {
-        base = Document::Concat(Rc::new(docs.pop().unwrap()), Rc::new(base));
+        base = Self::Concat(Rc::new(docs.pop().unwrap()), Rc::new(base));
       }
       base
     } else {
-      Document::Nil
+      Self::Nil
     }
   }
 
-  pub(super) fn group(doc: Document) -> Document {
+  pub(super) fn group(doc: Self) -> Self {
     if let Some(flattened) = doc.flatten() {
-      Document::Union(Rc::new(flattened), Rc::new(doc))
+      Self::Union(Rc::new(flattened), Rc::new(doc))
     } else {
       doc
     }
@@ -104,10 +102,10 @@ impl Document {
 
   pub(super) fn bracket_flexible(
     left: &'static str,
-    separator: Document,
-    doc: Document,
+    separator: Self,
+    doc: Self,
     right: &'static str,
-  ) -> Document {
+  ) -> Self {
     Self::group(Self::concat(vec![
       Self::Text(left),
       Self::Nest(2, Rc::new(Self::Concat(Rc::new(separator.clone()), Rc::new(doc)))),
@@ -116,19 +114,15 @@ impl Document {
     ]))
   }
 
-  pub(super) fn no_space_bracket(
-    left: &'static str,
-    doc: Document,
-    right: &'static str,
-  ) -> Document {
+  pub(super) fn no_space_bracket(left: &'static str, doc: Self, right: &'static str) -> Self {
     Self::bracket_flexible(left, Self::LineFlattenToNil, doc, right)
   }
 
-  pub(super) fn spaced_bracket(left: &'static str, doc: Document, right: &'static str) -> Document {
+  pub(super) fn spaced_bracket(left: &'static str, doc: Document, right: &'static str) -> Self {
     Self::bracket_flexible(left, Self::Line, doc, right)
   }
 
-  pub(super) fn line_comment(text: &str) -> Document {
+  pub(super) fn line_comment(text: &str) -> Self {
     let mut multiline_docs = vec![Self::Text("// ")];
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
@@ -152,7 +146,7 @@ impl Document {
     )
   }
 
-  pub(super) fn multiline_comment(starter: &'static str, text: &str) -> Document {
+  pub(super) fn multiline_comment(starter: &'static str, text: &str) -> Self {
     let mut multiline_docs = vec![Self::Text(starter), Self::LineHard, Self::Text(" * ")];
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
