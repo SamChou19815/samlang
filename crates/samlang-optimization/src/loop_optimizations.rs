@@ -2,7 +2,6 @@ use super::{
   dead_code_elimination, loop_algebraic_optimization,
   loop_induction_analysis::{OptimizableWhileLoop, extract_optimizable_while_loop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
-  optimization_common::take_mut,
 };
 use itertools::Itertools;
 use samlang_ast::hir::BinaryOperator;
@@ -219,7 +218,8 @@ fn optimize_stmts(stmts: Vec<Statement>, heap: &mut Heap) -> Vec<Statement> {
 }
 
 pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
-  take_mut(&mut function.body, |body| optimize_stmts(body, heap));
+  let body = std::mem::take(&mut function.body);
+  function.body = optimize_stmts(body, heap);
 }
 
 #[cfg(test)]

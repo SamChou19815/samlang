@@ -3,16 +3,6 @@ use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 use std::ops::{Deref, DerefMut};
 
-/// Forked from https://github.com/Sgeo/take_mut/blob/master/src/lib.rs
-/// Assuming no panic
-pub(super) fn take_mut<T>(mut_ref: &mut T, closure: impl FnOnce(T) -> T) {
-  unsafe {
-    let old_t = std::ptr::read(mut_ref);
-    let new_t = closure(old_t);
-    std::ptr::write(mut_ref, new_t);
-  }
-}
-
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct IndexAccessBindedValue {
   pub(super) type_: Type,
@@ -93,31 +83,6 @@ mod tests {
   use super::*;
   use pretty_assertions::assert_eq;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
-
-  #[test]
-  fn take_mut_tests() {
-    #[derive(PartialEq, Eq, Debug)]
-    enum Foo {
-      A,
-      B,
-    }
-    assert_eq!("A", format!("{:?}", Foo::A));
-    assert_eq!("B", format!("{:?}", Foo::B));
-    impl Drop for Foo {
-      fn drop(&mut self) {
-        match *self {
-          Foo::A => println!("Foo::A dropped"),
-          Foo::B => println!("Foo::B dropped"),
-        }
-      }
-    }
-    let mut foo = Foo::A;
-    super::take_mut(&mut foo, |f| {
-      drop(f);
-      Foo::B
-    });
-    assert_eq!(&foo, &Foo::B);
-  }
 
   #[test]
   fn boilterplate() {
