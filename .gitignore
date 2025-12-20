@@ -1,3 +1,6 @@
+# sl
+.sl
+
 # Native compiler output
 *.o
 samlang-runtime/*.wasm
