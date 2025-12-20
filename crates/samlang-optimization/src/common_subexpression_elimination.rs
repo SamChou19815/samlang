@@ -1,6 +1,4 @@
-use super::optimization_common::{
-  BinaryBindedValue, BindedValue, IndexAccessBindedValue, take_mut,
-};
+use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use samlang_ast::mir::{Binary, Function, Statement};
 use samlang_heap::Heap;
 use std::collections::BTreeSet;
@@ -87,7 +85,8 @@ fn optimize_stmts(
 }
 
 pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
-  take_mut(&mut function.body, |body| optimize_stmts(body, heap).0);
+  let body = std::mem::take(&mut function.body);
+  function.body = optimize_stmts(body, heap).0;
 }
 
 #[cfg(test)]
