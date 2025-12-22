@@ -1,5 +1,5 @@
 {
   "permissions": {
-    "allow": ["Bash"]
+    "allow": ["Bash", "Grep", "mcp__ide__getDiagnostics"]
   }
 }
