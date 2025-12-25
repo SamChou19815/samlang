@@ -1,0 +1,109 @@
+import { Pair, Triple } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class TupleOperations {
+  private function testPairCreation(): unit = {
+    let p1 = (1, 2);
+    let p2 = ("hello", 42);
+    let p3 = (true, false);
+    let (a, b) = p1;
+    let _ = ForTests.assertIntEquals(1, a);
+    let _ = ForTests.assertIntEquals(2, b);
+  }
+
+  private function testPairAccess(): unit = {
+    let pair = Pair.init(100, "world");
+    let { e0, e1 } = pair;
+    let _ = ForTests.assertIntEquals(100, e0);
+    let num = pair.e0;
+    let str = pair.e1;
+    let _ = ForTests.assertIntEquals(100, num);
+  }
+
+  private function testTripleCreation(): unit = {
+    let t1 = (1, 2, 3);
+    let t2 = ("x", "y", "z");
+    let t3 = (true, 42, "test");
+    let (a, b, c) = t1;
+    let _ = ForTests.assertIntEquals(1, a);
+    let _ = ForTests.assertIntEquals(2, b);
+    let _ = ForTests.assertIntEquals(3, c);
+  }
+
+  private function testTripleAccess(): unit = {
+    let triple = Triple.init(10, 20, 30);
+    let { e0, e1, e2 } = triple;
+    let _ = ForTests.assertIntEquals(10, e0);
+    let _ = ForTests.assertIntEquals(20, e1);
+    let _ = ForTests.assertIntEquals(30, e2);
+    let a = triple.e0;
+    let b = triple.e1;
+    let c = triple.e2;
+    let _ = ForTests.assertIntEquals(10, a);
+    let _ = ForTests.assertIntEquals(20, b);
+    let _ = ForTests.assertIntEquals(30, c);
+  }
+
+  private function testNestedTuples(): unit = {
+    let nested = ((1, 2), (3, 4));
+    let (pair1, pair2) = nested;
+    let (a, b) = pair1;
+    let (c, d) = pair2;
+    let _ = ForTests.assertIntEquals(1, a);
+    let _ = ForTests.assertIntEquals(2, b);
+    let _ = ForTests.assertIntEquals(3, c);
+    let _ = ForTests.assertIntEquals(4, d);
+  }
+
+  private function makePair(): Pair<int, int> = Pair.init(42, 84)
+
+  private function testTupleReturn(): unit = {
+    let pair = TupleOperations.makePair();
+    let (x, y) = (pair.e0, pair.e1);
+    let _ = ForTests.assertIntEquals(42, x);
+    let _ = ForTests.assertIntEquals(84, y);
+  }
+
+  private function swapPair(p: Pair<int, int>): Pair<int, int> = {
+    let { e0, e1 } = p;
+    Pair.init(e1, e0)
+  }
+
+  private function testTupleTransform(): unit = {
+    let original = Pair.init(10, 20);
+    let swapped = TupleOperations.swapPair(original);
+    let _ = ForTests.assertIntEquals(20, swapped.e0);
+    let _ = ForTests.assertIntEquals(10, swapped.e1);
+  }
+
+  private function testComplexTuplePattern(): unit = {
+    let complex = (1, (2, (3, 4)));
+    let (a, (b, (c, d))) = complex;
+    let _ = ForTests.assertIntEquals(1, a);
+    let _ = ForTests.assertIntEquals(2, b);
+    let _ = ForTests.assertIntEquals(3, c);
+    let _ = ForTests.assertIntEquals(4, d);
+  }
+
+  private function testMixedTypeTuples(): unit = {
+    let mixed1 = (42, "answer");
+    let mixed2 = (true, 100, "test");
+    let (num, str) = mixed1;
+    let (flag, value, text) = mixed2;
+    let _ = ForTests.assertIntEquals(42, num);
+    let _ = ForTests.assertBool(flag, "Flag should be true");
+    ForTests.assertIntEquals(100, value)
+  }
+
+  function run(): unit = {
+    let _ = TupleOperations.testPairCreation();
+    let _ = TupleOperations.testPairAccess();
+    let _ = TupleOperations.testTripleCreation();
+    let _ = TupleOperations.testTripleAccess();
+    let _ = TupleOperations.testNestedTuples();
+    let _ = TupleOperations.testTupleReturn();
+    let _ = TupleOperations.testTupleTransform();
+    let _ = TupleOperations.testComplexTuplePattern();
+    let _ = TupleOperations.testMixedTypeTuples();
+  }
+}
