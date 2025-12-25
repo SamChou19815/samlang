@@ -1,0 +1,117 @@
+import { List } from std.list;
+import { ForTests } from tests.StdLib;
+
+class ArrayOperations {
+  private function testListCreation(): unit = {
+    let empty = List.nil<int>();
+    let single = List.of(42);
+    let multi = List.of(1).cons(2).cons(3);
+    let _ = ForTests.assertBool(empty.isEmpty(), "Empty list should be empty");
+    let _ = ForTests.assertBool(!single.isEmpty(), "Single element list should not be empty");
+    let _ = ForTests.assertBool(!multi.isEmpty(), "Multi element list should not be empty");
+  }
+
+  private function testListLength(): unit = {
+    let empty = List.nil<int>();
+    let single = List.of(42);
+    let multi = List.of(1).cons(2).cons(3).cons(4).cons(5);
+    let _ = ForTests.assertIntEquals(0, empty.length());
+    let _ = ForTests.assertIntEquals(1, single.length());
+    let _ = ForTests.assertIntEquals(5, multi.length());
+  }
+
+  private function testListMap(): unit = {
+    let list = List.of(1).cons(2).cons(3);
+    let doubled = list.map((x) -> x * 2);
+    let _ = ForTests.assertIntEquals(3, doubled.length());
+  }
+
+  private function testListFilter(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4).cons(5).cons(6);
+    let evens = list.filter((x) -> x % 2 == 0);
+    let greaterThanThree = list.filter((x) -> x > 3);
+    let _ = ForTests.assertIntEquals(3, evens.length());
+    let _ = ForTests.assertIntEquals(3, greaterThanThree.length());
+  }
+
+  private function testListFold(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4).cons(5);
+    let sum = list.fold((acc, x) -> acc + x, 0);
+    let product = list.fold((acc, x) -> acc * x, 1);
+    let _ = ForTests.assertIntEquals(15, sum);
+    let _ = ForTests.assertIntEquals(120, product);
+  }
+
+  private function testListReverse(): unit = {
+    let list = List.of(1).cons(2).cons(3);
+    let reversed = list.reverse();
+    let head = match reversed {
+      Nil -> -1,
+      Cons(h, _) -> h,
+    };
+    let _ = ForTests.assertIntEquals(1, head);
+  }
+
+  private function testListFirst(): unit = {
+    let list = List.of(10).cons(20).cons(30);
+    let empty = List.nil<int>();
+    let first = list.first();
+    let emptyFirst = empty.first();
+    let _ = match first {
+      Some(v) -> ForTests.assertIntEquals(30, v),
+      None -> Process.panic<unit>("First element should exist"),
+    };
+    let _ = match emptyFirst {
+      Some(_) -> Process.panic<unit>("Empty list should have no first"),
+      None -> {  },
+    };
+  }
+
+  private function testListFind(): unit = {
+    let list = List.of(10).cons(20).cons(30);
+    let found = list.find((x) -> x == 20);
+    let notFound = list.find((x) -> x == 99);
+    let _ = match found {
+      Some(v) -> ForTests.assertIntEquals(20, v),
+      None -> Process.panic<unit>("Should find 20"),
+    };
+    let _ = match notFound {
+      Some(_) -> Process.panic<unit>("Should not find 99"),
+      None -> {  },
+    };
+  }
+
+  private function testListExists(): unit = {
+    let list = List.of(10).cons(20).cons(30);
+    let _ = ForTests.assertBool(list.exists((x) -> x == 20), "List should contain 20");
+    let _ = ForTests.assertBool(list.exists((x) -> x == 10), "List should contain 10");
+    let _ = ForTests.assertBool(!list.exists((x) -> x == 99), "List should not contain 99");
+  }
+
+  private function testListForAll(): unit = {
+    let list = List.of(2).cons(4).cons(6);
+    let _ = ForTests.assertBool(list.forAll((x) -> x % 2 == 0), "All elements should be even");
+    let _ = ForTests.assertBool(!list.forAll((x) -> x > 5), "Not all elements are greater than 5");
+  }
+
+  private function testListAppend(): unit = {
+    let list1 = List.of(1).cons(2);
+    let list2 = List.of(3).cons(4);
+    let combined = list1.append(list2);
+    let _ = ForTests.assertIntEquals(4, combined.length());
+  }
+
+  function run(): unit = {
+    let _ = ArrayOperations.testListCreation();
+    let _ = ArrayOperations.testListLength();
+    let _ = ArrayOperations.testListMap();
+    let _ = ArrayOperations.testListFilter();
+    let _ = ArrayOperations.testListFold();
+    let _ = ArrayOperations.testListReverse();
+    let _ = ArrayOperations.testListFirst();
+    let _ = ArrayOperations.testListFind();
+    let _ = ArrayOperations.testListExists();
+    let _ = ArrayOperations.testListForAll();
+    let _ = ArrayOperations.testListAppend();
+  }
+}

@@ -1,5 +1,6 @@
 import { List } from std.list;
 import { AndOrInsideIf } from tests.AndOrInsideIf;
+import { ArrayOperations } from tests.ArrayOperations;
 import { Benchmark } from tests.Benchmark;
 import { BlockInIfElse } from tests.BlockInIfElse;
 import { BuiltinStringTest } from tests.BuiltinStringTest;
@@ -17,10 +18,14 @@ import { IntToString } from tests.IntToString;
 import { LoopOptimization } from tests.LoopOptimization;
 import { MapTests } from tests.MapTests;
 import { MathFunctions } from tests.MathFunctions;
+import { NestedDataStructures } from tests.NestedDataStructures;
+import { OptionResultTests } from tests.OptionResultTests;
+import { PatternMatching } from tests.PatternMatching;
 import { PrintHelloWorld } from tests.PrintHelloWorld;
 import { SetTests } from tests.SetTests;
 import { ShortCircuitAndOr } from tests.ShortCircuitAndOr;
 import { SortableListTest } from tests.SortableList;
+import { TupleOperations } from tests.TupleOperations;
 import { VariousSyntaxForms } from tests.VariousSyntaxForms;
 
 class TestCase(val name: Str, val runner: () -> unit) {
@@ -36,6 +41,7 @@ class Main {
   private function getTests(): List<TestCase> =
     List.nil<TestCase>()
       .cons(TestCase.init("AndOrInsideIf", AndOrInsideIf.run))
+      .cons(TestCase.init("ArrayOperations", ArrayOperations.run))
       .cons(TestCase.init("Benchmark", Benchmark.run))
       .cons(TestCase.init("BlockInIfElse", BlockInIfElse.run))
       .cons(TestCase.init("BuiltinStringTest", BuiltinStringTest.run))
@@ -53,10 +59,14 @@ class Main {
       .cons(TestCase.init("LoopOptimization", LoopOptimization.run))
       .cons(TestCase.init("MapTests", MapTests.run))
       .cons(TestCase.init("MathFunctions", MathFunctions.run))
+      .cons(TestCase.init("NestedDataStructures", NestedDataStructures.run))
+      .cons(TestCase.init("OptionResultTests", OptionResultTests.run))
+      .cons(TestCase.init("PatternMatching", PatternMatching.run))
       .cons(TestCase.init("PrintHelloWorld", PrintHelloWorld.run))
       .cons(TestCase.init("SetTests", SetTests.run))
       .cons(TestCase.init("ShortCircuitAndOr", ShortCircuitAndOr.run))
       .cons(TestCase.init("SortableList", SortableListTest.run))
+      .cons(TestCase.init("TupleOperations", TupleOperations.run))
       .cons(TestCase.init("VariousSyntaxForms", VariousSyntaxForms.run))
       .reverse()
 

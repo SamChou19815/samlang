@@ -1,0 +1,96 @@
+import { Int } from std.boxed;
+import { List } from std.list;
+import { Map } from std.map;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Person(val name: Str, val age: int) {
+  function create(name: Str, age: int): Person = Person.init(name, age)
+}
+
+class NestedDataStructures {
+  private function testListOfPairs(): unit = {
+    let pairs = List.of(Pair.init(1, 2)).cons(Pair.init(3, 4)).cons(Pair.init(5, 6));
+    let _ = ForTests.assertIntEquals(3, pairs.length());
+    let first = pairs.first();
+    let _ = match first {
+      Some(p) -> ForTests.assertIntEquals(5, p.e0),
+      None -> Process.panic<unit>("Should have first element"),
+    };
+  }
+
+  private function testListOfLists(): unit = {
+    let inner1 = List.of(1).cons(2).cons(3);
+    let inner2 = List.of(4).cons(5).cons(6);
+    let matrix = List.of(inner1).cons(inner2);
+    let _ = ForTests.assertIntEquals(2, matrix.length());
+    let firstRow = matrix.first();
+    let _ = match firstRow {
+      Some(row) -> ForTests.assertIntEquals(3, row.length()),
+      None -> Process.panic<unit>("Should have first row"),
+    };
+  }
+
+  private function testMapOfInts(): unit = {
+    let m = Map.empty<Int, int>()
+      .insert(Int.init(1), 10)
+      .insert(Int.init(2), 20)
+      .insert(Int.init(3), 30);
+    let _ = ForTests.assertIntEquals(3, m.size());
+    let value: Option<int> = m.get(Int.init(2));
+    let _ = match value {
+      Some(v) -> ForTests.assertIntEquals(20, v),
+      None -> Process.panic<unit>("Should find key 2"),
+    };
+  }
+
+  private function testListOfOptions(): unit = {
+    let opts = List.of(Option.Some(1)).cons(Option.None<int>()).cons(Option.Some(3));
+    let _ = ForTests.assertIntEquals(3, opts.length());
+    let hasValue = opts.exists((opt) -> opt.isSome());
+    let _ = ForTests.assertBool(hasValue, "Should have some values");
+  }
+
+  private function testListOfPersons(): unit = {
+    let people = List.of(Person.create("Alice", 30))
+      .cons(Person.create("Bob", 25))
+      .cons(Person.create("Charlie", 35));
+    let _ = ForTests.assertIntEquals(3, people.length());
+    let alice = people.find((p) -> p.name == "Alice");
+    let _ = match alice {
+      Some(p) -> ForTests.assertIntEquals(30, p.age),
+      None -> Process.panic<unit>("Should find Alice"),
+    };
+  }
+
+  private function testNestedPairs(): unit = {
+    let nested = Pair.init(Pair.init(1, 2), Pair.init(3, 4));
+    let first = nested.e0;
+    let second = nested.e1;
+    let _ = ForTests.assertIntEquals(1, first.e0);
+    let _ = ForTests.assertIntEquals(2, first.e1);
+    let _ = ForTests.assertIntEquals(3, second.e0);
+    let _ = ForTests.assertIntEquals(4, second.e1);
+  }
+
+  private function testMapIteration(): unit = {
+    let m = Map.empty<Int, int>().insert(Int.init(1), 10).insert(Int.init(2), 20);
+    let keys = m.keys();
+    let entries = m.entries();
+    let _ = ForTests.assertIntEquals(2, keys.length());
+    let _ = ForTests.assertIntEquals(2, entries.length());
+    let hasKey = m.containsKey(Int.init(1));
+    let _ = ForTests.assertBool(hasKey, "Map should contain key 1");
+  }
+
+  function run(): unit = {
+    let _ = NestedDataStructures.testListOfPairs();
+    let _ = NestedDataStructures.testListOfLists();
+    let _ = NestedDataStructures.testMapOfInts();
+    let _ = NestedDataStructures.testListOfOptions();
+    let _ = NestedDataStructures.testListOfPersons();
+    let _ = NestedDataStructures.testNestedPairs();
+    let _ = NestedDataStructures.testMapIteration();
+  }
+}
