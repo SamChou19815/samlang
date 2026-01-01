@@ -6,7 +6,7 @@ use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionType {
   pub argument_types: Vec<Type>,
   pub return_type: Box<Type>,
@@ -31,7 +31,7 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub enum Type {
   Int32,
   Int31,
