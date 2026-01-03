@@ -153,6 +153,8 @@ fn fn_type_application(
 
 pub(super) struct TypeLoweringManager {
   pub(super) generic_types: HashSet<PStr>,
+  /// Ordered type parameters (preserves declaration order)
+  pub(super) type_parameters_ordered: Vec<PStr>,
   pub(super) type_synthesizer: TypeSynthesizer,
 }
 
@@ -218,9 +220,7 @@ impl TypeLoweringManager {
     identifier: PStr,
     source_type_def: Option<&source::TypeDefinition>,
   ) -> TypeDefinition {
-    let type_parameters = Vec::from_iter(
-      self.generic_types.iter().cloned().sorted_by(|x, y| x.as_str(heap).cmp(y.as_str(heap))),
-    );
+    let type_parameters = self.type_parameters_ordered.clone();
     let name = TypeName { module_reference: Some(*module_reference), type_name: identifier };
     match source_type_def {
       Some(source::TypeDefinition::Struct {
@@ -489,8 +489,12 @@ mod tests {
   #[test]
   fn type_lowering_manager_lower_source_type_panic_test() {
     let heap = &mut Heap::new();
-    TypeLoweringManager { generic_types: HashSet::new(), type_synthesizer: TypeSynthesizer::new() }
-      .lower_source_type(heap, &type_::Type::Any(Reason::dummy(), true));
+    TypeLoweringManager {
+      generic_types: HashSet::new(),
+      type_parameters_ordered: Vec::new(),
+      type_synthesizer: TypeSynthesizer::new(),
+    }
+    .lower_source_type(heap, &type_::Type::Any(Reason::dummy(), true));
   }
 
   #[test]
@@ -498,6 +502,7 @@ mod tests {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::new(),
+      type_parameters_ordered: Vec::new(),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();
@@ -522,6 +527,7 @@ mod tests {
 
     let mut manager2 = TypeLoweringManager {
       generic_types: HashSet::from([heap.alloc_str_for_test("T")]),
+      type_parameters_ordered: vec![heap.alloc_str_for_test("T")],
       type_synthesizer: manager.type_synthesizer,
     };
     assert_eq!("_$SyntheticIDType0<T>", {
@@ -546,6 +552,7 @@ mod tests {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::from([PStr::UPPER_A]),
+      type_parameters_ordered: vec![PStr::UPPER_A],
       type_synthesizer: TypeSynthesizer::new(),
     };
     let annot_builder = test_builder::create();
@@ -605,6 +612,7 @@ mod tests {
 
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::from([PStr::UPPER_A]),
+      type_parameters_ordered: vec![PStr::UPPER_A],
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();

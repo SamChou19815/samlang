@@ -1183,15 +1183,20 @@ fn compile_sources_with_generics_preserved(
   heap: &mut Heap,
   sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
 ) -> hir::Sources {
-  let mut type_lowering_manager =
-    TypeLoweringManager { generic_types: HashSet::new(), type_synthesizer: TypeSynthesizer::new() };
+  let mut type_lowering_manager = TypeLoweringManager {
+    generic_types: HashSet::new(),
+    type_parameters_ordered: Vec::new(),
+    type_synthesizer: TypeSynthesizer::new(),
+  };
   let mut compiled_type_defs = Vec::new();
   let mut main_function_names = Vec::new();
   for (mod_ref, source_module) in sources.iter() {
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
-        type_lowering_manager.generic_types =
+        let tparams: Vec<_> =
           c.type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name).collect();
+        type_lowering_manager.generic_types = tparams.iter().cloned().collect();
+        type_lowering_manager.type_parameters_ordered = tparams;
         compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
           heap,
           mod_ref,
@@ -1248,6 +1253,7 @@ fn compile_sources_with_generics_preserved(
               .collect_vec();
             let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
             type_lowering_manager.generic_types = tparams_set;
+            type_lowering_manager.type_parameters_ordered = tparams.clone();
             let main_function_parameter_with_types = vec![(
               PStr::UNDERSCORE_THIS,
               hir::Type::Id(hir::IdType {
@@ -1302,10 +1308,10 @@ fn compile_sources_with_generics_preserved(
             });
             compiled_functions.append(&mut compiled_functions_to_add);
           } else {
-            let tparams_set: HashSet<_> =
-              lower_tparams(member.decl.type_parameters.as_ref()).into_iter().collect();
-            let tparams = tparams_set.iter().sorted().cloned().collect_vec();
+            let tparams = lower_tparams(member.decl.type_parameters.as_ref());
+            let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
             type_lowering_manager.generic_types = tparams_set;
+            type_lowering_manager.type_parameters_ordered = tparams.clone();
             let main_function_parameter_with_types = vec![(PStr::UNDERSCORE_THIS, hir::INT_TYPE)]
               .into_iter()
               .chain(member.decl.parameters.parameters.iter().map(|id| {
@@ -1433,6 +1439,7 @@ mod tests {
   ) {
     let mut type_lowering_manager = TypeLoweringManager {
       generic_types: HashSet::from_iter(vec![heap.alloc_str_for_test("GENERIC_TYPE")]),
+      type_parameters_ordered: vec![heap.alloc_str_for_test("GENERIC_TYPE")],
       type_synthesizer: TypeSynthesizer::new(),
     };
     let mut string_manager = StringManager::new();
