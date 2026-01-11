@@ -8,14 +8,12 @@ use super::{
   mir_type_deduplication,
 };
 use itertools::Itertools;
+use ordermap::OrderSet;
 use samlang_ast::{hir, mir, source};
 use samlang_checker::type_;
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::{
-  collections::{HashMap, HashSet},
-  rc::Rc,
-};
+use std::{collections::HashMap, rc::Rc};
 
 struct LoweringResult {
   statements: Vec<hir::Statement>,
@@ -1184,8 +1182,7 @@ fn compile_sources_with_generics_preserved(
   sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
 ) -> hir::Sources {
   let mut type_lowering_manager = TypeLoweringManager {
-    generic_types: HashSet::new(),
-    type_parameters_ordered: Vec::new(),
+    generic_types: OrderSet::new(),
     type_synthesizer: TypeSynthesizer::new(),
   };
   let mut compiled_type_defs = Vec::new();
@@ -1193,10 +1190,8 @@ fn compile_sources_with_generics_preserved(
   for (mod_ref, source_module) in sources.iter() {
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
-        let tparams: Vec<_> =
+        type_lowering_manager.generic_types =
           c.type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name).collect();
-        type_lowering_manager.generic_types = tparams.iter().cloned().collect();
-        type_lowering_manager.type_parameters_ordered = tparams;
         compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
           heap,
           mod_ref,
@@ -1246,14 +1241,12 @@ fn compile_sources_with_generics_preserved(
           };
           let class_tparams = lower_tparams(c.type_parameters.as_ref());
           if member.decl.is_method {
-            let tparams = class_tparams
+            let tparams: OrderSet<_> = class_tparams
               .iter()
               .cloned()
               .chain(lower_tparams(member.decl.type_parameters.as_ref()))
-              .collect_vec();
-            let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
-            type_lowering_manager.generic_types = tparams_set;
-            type_lowering_manager.type_parameters_ordered = tparams.clone();
+              .collect();
+            type_lowering_manager.generic_types = tparams.clone();
             let main_function_parameter_with_types = vec![(
               PStr::UNDERSCORE_THIS,
               hir::Type::Id(hir::IdType {
@@ -1301,17 +1294,16 @@ fn compile_sources_with_generics_preserved(
                 .into_iter()
                 .map(|(n, _)| n)
                 .collect_vec(),
-              type_parameters: tparams,
+              type_parameters: tparams.into_iter().collect(),
               type_: main_fn_type,
               body: statements,
               return_value: expression,
             });
             compiled_functions.append(&mut compiled_functions_to_add);
           } else {
-            let tparams = lower_tparams(member.decl.type_parameters.as_ref());
-            let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
-            type_lowering_manager.generic_types = tparams_set;
-            type_lowering_manager.type_parameters_ordered = tparams.clone();
+            let tparams: OrderSet<_> =
+              lower_tparams(member.decl.type_parameters.as_ref()).into_iter().collect();
+            type_lowering_manager.generic_types = tparams.clone();
             let main_function_parameter_with_types = vec![(PStr::UNDERSCORE_THIS, hir::INT_TYPE)]
               .into_iter()
               .chain(member.decl.parameters.parameters.iter().map(|id| {
@@ -1347,7 +1339,7 @@ fn compile_sources_with_generics_preserved(
                 .into_iter()
                 .map(|(n, _)| n)
                 .collect_vec(),
-              type_parameters: tparams,
+              type_parameters: tparams.into_iter().collect(),
               type_: main_fn_type,
               body: statements,
               return_value: expression,
@@ -1423,14 +1415,12 @@ mod tests {
     hir_type_conversion::{SynthesizedTypes, TypeLoweringManager, TypeSynthesizer},
   };
   use itertools::Itertools;
+  use ordermap::OrderSet;
   use pretty_assertions::assert_eq;
   use samlang_ast::{Location, Reason, hir, source};
   use samlang_checker::type_;
   use samlang_heap::{Heap, ModuleReference, PStr};
-  use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-  };
+  use std::{collections::HashMap, rc::Rc};
 
   fn assert_expr_correctly_lowered(
     source_expr: &source::expr::E<Rc<type_::Type>>,
@@ -1438,8 +1428,7 @@ mod tests {
     expected_str: &str,
   ) {
     let mut type_lowering_manager = TypeLoweringManager {
-      generic_types: HashSet::from_iter(vec![heap.alloc_str_for_test("GENERIC_TYPE")]),
-      type_parameters_ordered: vec![heap.alloc_str_for_test("GENERIC_TYPE")],
+      generic_types: OrderSet::from([heap.alloc_str_for_test("GENERIC_TYPE")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let mut string_manager = StringManager::new();

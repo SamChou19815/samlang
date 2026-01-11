@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use ordermap::OrderSet;
 use samlang_ast::{
   hir::{
     ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
@@ -9,7 +10,7 @@ use samlang_ast::{
 use samlang_checker::type_;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
-  collections::{BTreeMap, HashMap, HashSet},
+  collections::{BTreeMap, HashMap},
   rc::Rc,
 };
 
@@ -87,8 +88,8 @@ impl TypeSynthesizer {
 
 fn collect_used_generic_types_visitor(
   type_: &Type,
-  generic_types: &HashSet<PStr>,
-  collector: &mut HashSet<PStr>,
+  generic_types: &OrderSet<PStr>,
+  collector: &mut OrderSet<PStr>,
 ) {
   match type_ {
     Type::Int32 | Type::Int31 => {}
@@ -105,9 +106,9 @@ fn collect_used_generic_types_visitor(
 
 pub(super) fn collect_used_generic_types(
   function_type: &FunctionType,
-  generic_types: &HashSet<PStr>,
-) -> HashSet<PStr> {
-  let mut collector = HashSet::new();
+  generic_types: &OrderSet<PStr>,
+) -> OrderSet<PStr> {
+  let mut collector = OrderSet::new();
   for t in &function_type.argument_types {
     collect_used_generic_types_visitor(t, generic_types, &mut collector);
   }
@@ -152,9 +153,7 @@ fn fn_type_application(
 }
 
 pub(super) struct TypeLoweringManager {
-  pub(super) generic_types: HashSet<PStr>,
-  /// Ordered type parameters (preserves declaration order)
-  pub(super) type_parameters_ordered: Vec<PStr>,
+  pub(super) generic_types: OrderSet<PStr>,
   pub(super) type_synthesizer: TypeSynthesizer,
 }
 
@@ -220,7 +219,7 @@ impl TypeLoweringManager {
     identifier: PStr,
     source_type_def: Option<&source::TypeDefinition>,
   ) -> TypeDefinition {
-    let type_parameters = self.type_parameters_ordered.clone();
+    let type_parameters = self.generic_types.iter().cloned().collect();
     let name = TypeName { module_reference: Some(*module_reference), type_name: identifier };
     match source_type_def {
       Some(source::TypeDefinition::Struct {
@@ -379,7 +378,7 @@ mod tests {
 
   #[test]
   fn collect_used_generic_types_works() {
-    let generic_types: HashSet<PStr> = vec![PStr::UPPER_A, PStr::UPPER_B].into_iter().collect();
+    let generic_types: OrderSet<PStr> = vec![PStr::UPPER_A, PStr::UPPER_B].into_iter().collect();
 
     assert!(
       collect_used_generic_types(
@@ -490,8 +489,7 @@ mod tests {
   fn type_lowering_manager_lower_source_type_panic_test() {
     let heap = &mut Heap::new();
     TypeLoweringManager {
-      generic_types: HashSet::new(),
-      type_parameters_ordered: Vec::new(),
+      generic_types: OrderSet::new(),
       type_synthesizer: TypeSynthesizer::new(),
     }
     .lower_source_type(heap, &type_::Type::Any(Reason::dummy(), true));
@@ -501,8 +499,7 @@ mod tests {
   fn type_lowering_manager_lower_source_type_tests() {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::new(),
-      type_parameters_ordered: Vec::new(),
+      generic_types: OrderSet::new(),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();
@@ -526,8 +523,7 @@ mod tests {
     });
 
     let mut manager2 = TypeLoweringManager {
-      generic_types: HashSet::from([heap.alloc_str_for_test("T")]),
-      type_parameters_ordered: vec![heap.alloc_str_for_test("T")],
+      generic_types: OrderSet::from([heap.alloc_str_for_test("T")]),
       type_synthesizer: manager.type_synthesizer,
     };
     assert_eq!("_$SyntheticIDType0<T>", {
@@ -551,8 +547,7 @@ mod tests {
   fn type_lowering_manager_lower_type_definition_tests() {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([PStr::UPPER_A]),
-      type_parameters_ordered: vec![PStr::UPPER_A],
+      generic_types: OrderSet::from([PStr::UPPER_A]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let annot_builder = test_builder::create();
@@ -611,8 +606,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([PStr::UPPER_A]),
-      type_parameters_ordered: vec![PStr::UPPER_A],
+      generic_types: OrderSet::from([PStr::UPPER_A]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();
