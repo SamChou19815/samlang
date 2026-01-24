@@ -13,31 +13,22 @@ samlang is a statically-typed programming language with type inference, first-cl
 ```bash
 # Build all crates
 cargo build
-
 # Run all tests with nextest
 cargo t
-
 # Run tests with coverage (requires 100% coverage)
 cargo tc
-
 # Run tests and generate HTML coverage report
 cargo th
-
 # Format code
 cargo f
-
 # Lint with clippy
 cargo lint
-
 # Run end-to-end tests
 cargo e2e
-
 # Compile samlang code (requires sconfig.json)
 cargo run --package samlang-cli
-
 # Format samlang source files
 cargo run --package samlang-cli -- format
-
 # Start language server
 cargo run --package samlang-cli -- lsp
 ```
@@ -109,6 +100,7 @@ The Rust workspace is organized into focused crates:
 **Heap Management**: The `samlang_heap::Heap` manages string interning and allocation. Module references, identifiers, and strings are stored here to avoid duplication.
 
 **LSP Architecture**: The language server (`samlang-services`) maintains a `ServerState` containing the heap, parsed sources, and type-checked modules. It supports:
+
 - Diagnostics publishing
 - Hover for type queries
 - Go-to-definition
@@ -123,6 +115,7 @@ The Rust workspace is organized into focused crates:
 ### Optimization Passes
 
 MIR optimizations include:
+
 - Conditional constant propagation
 - Common subexpression elimination
 - Local value numbering
@@ -137,15 +130,3 @@ MIR optimizations include:
 - Test coverage must be 100% for all crates except samlang-cli and samlang-wasm
 - The `cargo e2e` command runs: format check → compile → verify TypeScript output → verify WASM output
 - Coverage reports ignore CLI and WASM crates via `--ignore-filename-regex`
-
-### JavaScript/TypeScript Packages
-
-- **packages/samlang-website**: Next.js-based documentation site and playground
-- **packages/samlang-vscode**: VSCode extension for samlang language support
-
-### Release Configuration
-
-The Cargo workspace uses aggressive release optimizations:
-- LTO enabled
-- Binary stripping enabled
-- Cross-compilation support for ARM64 Linux, Windows x64, and Windows ARM64
