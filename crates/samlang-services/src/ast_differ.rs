@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   Location,
@@ -35,7 +36,7 @@ mod list_differ {
     loop {
       match (old_list.get(x), new_list.get(y)) {
         (Some(e_x), Some(e_y)) if e_x.eq(e_y) => {
-          trace = Rc::new(Trace::Cons(x, y, Rc::clone(&trace)));
+          trace = Rc::new(Trace::Cons(x, y, trace.dupe()));
           x += 1;
           y += 1;
         }
@@ -72,9 +73,9 @@ mod list_differ {
       for (x, y) in frontier {
         let trace = visited.get(&(x, y)).unwrap();
         let (x_old, y_old, advance_in_old_list) =
-          follow_snake(old_list, new_list, x + 1, y, Rc::clone(trace));
+          follow_snake(old_list, new_list, x + 1, y, trace.dupe());
         let (x_new, y_new, advance_in_new_list) =
-          follow_snake(old_list, new_list, x, y + 1, Rc::clone(trace));
+          follow_snake(old_list, new_list, x, y + 1, trace.dupe());
         // If we have already visited this location, there is a shorter path to it,
         // so we don't store this trace.
         visited.entry((x_old, y_old)).or_insert_with(|| {

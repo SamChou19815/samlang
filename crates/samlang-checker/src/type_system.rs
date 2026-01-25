@@ -1,4 +1,5 @@
 use super::type_::{FunctionType, ISourceType, NominalType, Type, TypeParameterSignature};
+use dupe::Dupe;
 use samlang_ast::Reason;
 use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::PStr;
@@ -306,7 +307,7 @@ pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type
     }
     Type::Generic(_, id) => {
       if let Some(replaced) = mapping.get(id) {
-        replaced.clone()
+        replaced.dupe()
       } else {
         Rc::new((*t).clone())
       }

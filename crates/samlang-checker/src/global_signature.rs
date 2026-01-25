@@ -6,6 +6,7 @@ use super::{
   },
   type_system,
 };
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   Reason,
@@ -109,7 +110,7 @@ pub fn build_module_signature(
                   .flat_map(|it| &it.annotations)
                   .map(|annot| Rc::new(Type::from_annotation(annot)))
                   .collect(),
-                return_type: class_type.clone(),
+                return_type: class_type.dupe(),
               },
             };
             functions.insert(variant.name.name, ctor_fn);
@@ -247,7 +248,7 @@ fn resolve_all_transitive_super_types_recursive(
   {
     let mut subst_mapping = HashMap::new();
     for (tparam, targ) in interface_cx.type_parameters.iter().zip(&interface_type.type_arguments) {
-      subst_mapping.insert(tparam.name, targ.clone());
+      subst_mapping.insert(tparam.name, targ.dupe());
     }
     for super_type in &interface_cx.super_types {
       let instantiated_super_type = type_system::subst_nominal_type(super_type, &subst_mapping);
@@ -342,7 +343,7 @@ fn resolve_method_signature_recursive(
   {
     let mut subst_mapping = HashMap::new();
     for (tparam, targ) in interface_cx.type_parameters.iter().zip(&interface_type.type_arguments) {
-      subst_mapping.insert(tparam.name, targ.clone());
+      subst_mapping.insert(tparam.name, targ.dupe());
     }
     if let Some(info) = interface_cx.methods.get(&method_name) {
       collector.push(MemberSignature {

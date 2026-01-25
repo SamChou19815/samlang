@@ -17,6 +17,9 @@ members = [
 ]
 resolver = "2"
 
+[workspace.dependencies]
+dupe = "0.9"
+
 [profile.release]
 lto = true
 strip = true

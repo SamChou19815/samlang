@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::Description;
 use samlang_collections::list::{PersistentList, cons, list, one};
@@ -48,7 +49,7 @@ impl AbstractPatternNodeInner {
   }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Dupe, PartialEq, Eq)]
 pub(super) struct AbstractPatternNode(Rc<AbstractPatternNodeInner>);
 
 impl Debug for AbstractPatternNode {
@@ -135,7 +136,7 @@ pub(super) fn is_additional_pattern_useful<CX: PatternMatchingContext>(
 ) -> bool {
   useful_internal(
     cx,
-    &PatternMatrix(existing_patterns.iter().map(|p| PatternVector(one(p.clone()))).collect_vec()),
+    &PatternMatrix(existing_patterns.iter().map(|p| PatternVector(one(p.dupe()))).collect_vec()),
     PatternVector(one(pattern)),
   )
 }
@@ -146,7 +147,7 @@ pub(super) fn incomplete_counterexample<CX: PatternMatchingContext>(
 ) -> Option<Description> {
   incomplete_counterexample_internal(
     cx,
-    &PatternMatrix(existing_patterns.iter().map(|p| PatternVector(one(p.clone()))).collect_vec()),
+    &PatternMatrix(existing_patterns.iter().map(|p| PatternVector(one(p.dupe()))).collect_vec()),
     1,
   )
   .map(AbstractPatternNode::toplevel_elements_to_description)
@@ -198,7 +199,7 @@ fn useful_internal<CX: PatternMatchingContext>(
     }
     AbstractPatternNodeInner::Or(possibilities) => possibilities
       .iter()
-      .any(|r| useful_internal(cx, p, PatternVector(cons(r.clone(), q_rest.clone())))),
+      .any(|r| useful_internal(cx, p, PatternVector(cons(r.dupe(), q_rest.clone())))),
   }
 }
 
@@ -231,7 +232,7 @@ fn convert_into_specialized_matrix_row(
       for r in possibilities {
         convert_into_specialized_matrix_row(
           new_rows,
-          &PatternVector(cons(r.clone(), p_row.rest())),
+          &PatternVector(cons(r.dupe(), p_row.rest())),
           variant,
           rs_len,
         )
@@ -282,7 +283,7 @@ fn default_matrix(p: &PatternMatrix) -> PatternMatrix {
       }
       AbstractPatternNodeInner::Or(possibilities) => {
         for r in possibilities {
-          convert_to_default_matrix_queue.push_front(cons(r.clone(), p_row.rest()));
+          convert_to_default_matrix_queue.push_front(cons(r.dupe(), p_row.rest()));
         }
       }
     }

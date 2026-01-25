@@ -4,6 +4,7 @@ version = "0.10.1"
 edition = "2024"
 
 [dependencies]
+dupe = { workspace = true }
 enum-as-inner = "0.5.1"
 itertools = "0.14.0"
 ordermap = "1.0.0"

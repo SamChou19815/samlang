@@ -1,7 +1,8 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use std::{ops::Deref, rc::Rc};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq)]
 pub(super) struct Str(Rc<str>);
 
 impl Deref for Str {
@@ -72,7 +73,7 @@ impl Document {
       }
       Self::Nest(indentation, d) => d.flatten().map(|d| Self::Nest(*indentation, Rc::new(d))),
       Self::Text(s) => Some(Self::Text(s)),
-      Self::NonStaticText(s) => Some(Self::NonStaticText(s.clone())),
+      Self::NonStaticText(s) => Some(Self::NonStaticText(s.dupe())),
       Self::Line => Some(Self::Text(" ")),
       Self::LineFlattenToNil => Some(Self::Nil),
       Self::LineHard => None,
@@ -205,26 +206,26 @@ fn generate_best_doc(
       return true;
     };
     match document.as_ref() {
-      Document::Nil => list = rest.clone(),
+      Document::Nil => list = rest.dupe(),
       Document::Concat(d1, d2) => {
         list = Rc::new(DocumentList::Cons(
           *indentation,
-          d1.clone(),
-          Rc::new(DocumentList::Cons(*indentation, d2.clone(), rest.clone())),
+          d1.dupe(),
+          Rc::new(DocumentList::Cons(*indentation, d2.dupe(), rest.dupe())),
         ));
       }
       Document::Nest(i, d) => {
-        list = Rc::new(DocumentList::Cons(indentation + i, d.clone(), rest.clone()))
+        list = Rc::new(DocumentList::Cons(indentation + i, d.dupe(), rest.dupe()))
       }
       Document::Text(s) => {
         collector.push(IntermediateDocumentTokenForPrinting::Text(s));
         consumed += s.len();
-        list = rest.clone();
+        list = rest.dupe();
       }
       Document::NonStaticText(s) => {
-        collector.push(IntermediateDocumentTokenForPrinting::NonStaticText(s.clone()));
+        collector.push(IntermediateDocumentTokenForPrinting::NonStaticText(s.dupe()));
         consumed += s.len();
-        list = rest.clone();
+        list = rest.dupe();
       }
       Document::Line | Document::LineFlattenToNil | Document::LineHard => {
         collector.push(IntermediateDocumentTokenForPrinting::Line {
@@ -233,7 +234,7 @@ fn generate_best_doc(
         });
         consumed = *indentation;
         enforce_consumed = false;
-        list = rest.clone();
+        list = rest.dupe();
       }
       Document::Union(d1, d2) => {
         let prev_length = collector.len();
@@ -242,12 +243,12 @@ fn generate_best_doc(
           available_width,
           consumed,
           true,
-          Rc::new(DocumentList::Cons(*indentation, d1.clone(), rest.clone())),
+          Rc::new(DocumentList::Cons(*indentation, d1.dupe(), rest.dupe())),
         ) {
           return true;
         } else {
           collector.truncate(prev_length);
-          list = Rc::new(DocumentList::Cons(*indentation, d2.clone(), rest.clone()));
+          list = Rc::new(DocumentList::Cons(*indentation, d2.dupe(), rest.dupe()));
         }
       }
     }
