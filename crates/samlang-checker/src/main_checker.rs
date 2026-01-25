@@ -8,6 +8,7 @@ use super::{
   type_system,
   typing_context::{LocalTypingContext, TypingContext},
 };
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   Description, Location, Reason,
@@ -290,7 +291,7 @@ fn check_tuple(
   let mut checked_expressions = Vec::with_capacity(expressions.expressions.len());
   for e in &expressions.expressions {
     let checked = type_check_expression(cx, e, type_hint::MISSING);
-    type_arguments.push(checked.type_().clone());
+    type_arguments.push(checked.type_().dupe());
     checked_expressions.push(checked);
   }
   let id = match expressions.expressions.len() {
@@ -612,15 +613,15 @@ fn check_function_call_implicit_instantiation(
   for arg in function_arguments {
     if arguments_should_be_checked_without_hint(arg) {
       let checked = type_check_expression(cx, arg, type_hint::MISSING);
-      checked_argument_types.push(checked.type_().clone());
+      checked_argument_types.push(checked.type_().dupe());
       partially_checked_arguments.push(MaybeCheckedExpression::Checked(checked));
     } else {
       let (checked, produced_placeholders) =
         cx.run_in_synthesis_mode(|cx| type_check_expression(cx, arg, type_hint::MISSING));
-      checked_argument_types.push(checked.type_().clone());
+      checked_argument_types.push(checked.type_().dupe());
       if produced_placeholders {
         partially_checked_arguments
-          .push(MaybeCheckedExpression::Unchecked(arg, checked.type_().clone()));
+          .push(MaybeCheckedExpression::Unchecked(arg, checked.type_().dupe()));
       } else {
         partially_checked_arguments.push(MaybeCheckedExpression::Checked(checked));
       }
@@ -630,8 +631,8 @@ fn check_function_call_implicit_instantiation(
   let mut checked_arguments = Vec::new();
   for maybe_checked_expr in &partially_checked_arguments {
     checked_argument_types.push(match maybe_checked_expr {
-      MaybeCheckedExpression::Checked(e) => e.type_().clone(),
-      MaybeCheckedExpression::Unchecked(_, t) => t.clone(),
+      MaybeCheckedExpression::Checked(e) => e.type_().dupe(),
+      MaybeCheckedExpression::Unchecked(_, t) => t.dupe(),
     });
   }
   for (i, maybe_checked_expr) in partially_checked_arguments.into_iter().enumerate() {
@@ -651,7 +652,7 @@ fn check_function_call_implicit_instantiation(
             .ok();
         let fully_checked_expr =
           type_check_expression(cx, e, type_hint::from_option(hint.as_ref()));
-        checked_argument_types[i] = fully_checked_expr.type_().clone();
+        checked_argument_types[i] = fully_checked_expr.type_().dupe();
         checked_arguments.push(fully_checked_expr);
       }
     }
@@ -975,7 +976,7 @@ fn check_match(
     let checked_body = type_check_expression(cx, body, hint);
     match &matching_list_type {
       Some(expected) => assignability_check(cx, *loc, checked_body.type_(), expected),
-      None => matching_list_type = Some(checked_body.type_().clone()),
+      None => matching_list_type = Some(checked_body.type_().dupe()),
     }
     checked_cases.push(expr::VariantPatternToExpression {
       loc: *loc,
@@ -1020,7 +1021,7 @@ fn infer_lambda_parameter_types(
       Rc::new(cx.mk_underconstrained_any_type(Reason::new(name.loc, None)))
     };
     cx.validate_type_instantiation_strictly(&type_);
-    cx.local_typing_context.write(name.loc, type_.clone());
+    cx.local_typing_context.write(name.loc, type_.dupe());
     types_.push(type_);
   }
   (types_, underconstrained)
@@ -1041,7 +1042,7 @@ fn check_lambda(
       .zip(&argument_types)
       .map(|(param, t)| OptionallyAnnotatedId {
         name: param.name,
-        type_: t.clone(),
+        type_: t.dupe(),
         annotation: param.annotation.clone(),
       })
       .collect_vec(),
@@ -1061,7 +1062,7 @@ fn check_lambda(
   let type_ = Type::Fn(FunctionType {
     reason: Reason::new(expression.common.loc, None),
     argument_types,
-    return_type: body.type_().clone(),
+    return_type: body.type_().dupe(),
   });
   expr::E::Lambda(expr::Lambda {
     common: expression.common.with_new_type(Rc::new(type_)),
@@ -1159,7 +1160,7 @@ fn any_typed_invalid_matching_pattern(
     }),
     pattern::MatchingPattern::Id(id, ()) => {
       let type_ = Rc::new(Type::Any(Reason::new(id.loc, Some(id.loc)), false));
-      cx.local_typing_context.write(id.loc, type_.clone());
+      cx.local_typing_context.write(id.loc, type_.dupe());
       pattern::MatchingPattern::Id(*id, type_)
     }
     pattern::MatchingPattern::Wildcard { location, associated_comments } => {
@@ -1383,7 +1384,7 @@ fn check_matching_pattern(
                 check_matching_pattern(cx, p, wildcard_on_bad_pattern, resolved_pattern_type);
               checked_data_variables.push(pattern::TuplePatternElement {
                 pattern: Box::new(checked),
-                type_: resolved_pattern_type.clone(),
+                type_: resolved_pattern_type.dupe(),
               });
               abstract_pattern_nodes.push(abstract_node);
             } else {
@@ -1428,7 +1429,7 @@ fn check_matching_pattern(
           tag_order,
           tag: *tag,
           data_variables: checked_data_variables,
-          type_: pattern_type.clone(),
+          type_: pattern_type.dupe(),
         }),
         pattern_matching::AbstractPatternNode::variant(
           abstract_variant_constructor,
@@ -1437,9 +1438,9 @@ fn check_matching_pattern(
       )
     }
     pattern::MatchingPattern::Id(id, ()) => {
-      cx.local_typing_context.write(id.loc, pattern_type.clone());
+      cx.local_typing_context.write(id.loc, pattern_type.dupe());
       (
-        pattern::MatchingPattern::Id(*id, pattern_type.clone()),
+        pattern::MatchingPattern::Id(*id, pattern_type.dupe()),
         pattern_matching::AbstractPatternNode::wildcard(),
       )
     }

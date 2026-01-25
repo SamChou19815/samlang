@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_ast::{
@@ -270,7 +271,7 @@ impl Type {
       Self::Fn(FunctionType { reason, argument_types, return_type }) => Self::Fn(FunctionType {
         reason: reason.to_use_reason(use_loc),
         argument_types: argument_types.clone(),
-        return_type: return_type.clone(),
+        return_type: return_type.dupe(),
       }),
     }
   }

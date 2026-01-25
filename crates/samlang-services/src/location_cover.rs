@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use samlang_ast::{
   Location, Position, Reason,
   source::{Module, Toplevel, annotation, expr, pattern},
@@ -209,7 +210,7 @@ fn search_expression(
               class_name: nominal_type.id,
               fn_name: e.field_name.name,
               is_method: false,
-              type_: e.common.type_.clone(),
+              type_: e.common.type_.dupe(),
             }
           } else {
             LocationCoverSearchResult::PropertyName(
@@ -239,7 +240,7 @@ fn search_expression(
           class_name: nominal_type.id,
           fn_name: e.method_name.name,
           is_method: !nominal_type.is_class_statics,
-          type_: e.common.type_.clone(),
+          type_: e.common.type_.dupe(),
         })
         .or_else(|| search_optional_type_arguments(e.explicit_type_arguments.as_ref(), position));
       if found.is_some() {
