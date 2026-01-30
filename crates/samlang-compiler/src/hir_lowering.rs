@@ -160,7 +160,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         .sorted()
         .collect_vec();
     let type_arguments =
-      type_parameters.iter().cloned().map(hir::Type::new_generic_type).collect_vec();
+      type_parameters.iter().copied().map(hir::Type::new_generic_type).collect_vec();
     let name = self
       .type_lowering_manager
       .type_synthesizer
@@ -176,7 +176,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn resolve_struct_mapping_of_id_type(&mut self, hir_id_type: &hir::IdType) -> Vec<hir::Type> {
     let type_def = self.type_definition_mapping.get(&hir_id_type.name).unwrap().clone();
     let replacement_map: HashMap<_, _> =
-      type_def.type_parameters.iter().cloned().zip(hir_id_type.type_arguments.clone()).collect();
+      type_def.type_parameters.iter().copied().zip(hir_id_type.type_arguments.clone()).collect();
     type_def
       .mappings
       .as_struct()
