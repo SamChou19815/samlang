@@ -157,7 +157,7 @@ fn rewrite_function(
 
 pub(super) fn deduplicate(
   Sources {
-    symbol_table,
+    mut symbol_table,
     global_variables,
     closure_types,
     type_definitions,
@@ -224,6 +224,10 @@ pub(super) fn deduplicate(
     })
     .sorted_by_key(|d| d.name)
     .collect_vec();
+  let subtype_remap = symbol_table.remap_subtypes_for_deduplication(&state);
+  for (old_id, new_id) in subtype_remap {
+    state.insert(old_id, new_id);
+  }
   for f in &mut functions {
     rewrite_function(&state, f);
   }
@@ -333,6 +337,14 @@ mod tests {
             Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
           ]),
         },
+        {
+          let d_type = table.create_type_name_for_test(PStr::UPPER_D);
+          let d_subtype = table.derived_type_name_with_subtype_tag(d_type, 1);
+          TypeDefinition {
+            name: d_subtype,
+            mappings: TypeDefinitionMappings::Struct(vec![INT_32_TYPE]),
+          }
+        },
         TypeDefinition {
           name: table.create_type_name_for_test(PStr::UPPER_E),
           mappings: TypeDefinitionMappings::Enum(vec![
@@ -374,32 +386,42 @@ mod tests {
               index: 0,
             },
           ],
-          s2: vec![
-            Statement::Cast {
-              name: PStr::UNDERSCORE,
-              type_: INT_32_TYPE,
-              assigned_expression: ZERO,
-            },
-            Statement::LateInitDeclaration { name: PStr::UNDERSCORE, type_: INT_32_TYPE },
-            Statement::LateInitAssignment { name: PStr::UNDERSCORE, assigned_expression: ZERO },
-            Statement::StructInit {
-              struct_variable_name: PStr::UNDERSCORE,
-              type_name: table.create_type_name_for_test(PStr::UPPER_D),
-              expression_list: vec![ZERO],
-            },
-            Statement::ClosureInit {
-              closure_variable_name: PStr::UNDERSCORE,
-              closure_type_name: table.create_type_name_for_test(PStr::UPPER_C),
-              function_name: FunctionNameExpression {
-                name: FunctionName::new_for_test(PStr::LOWER_F),
-                type_: Type::new_fn_unwrapped(
-                  vec![Type::Id(table.create_type_name_for_test(PStr::UPPER_E))],
-                  INT_32_TYPE,
-                ),
+          s2: {
+            let d_type = table.create_type_name_for_test(PStr::UPPER_D);
+            let d_subtype = table.derived_type_name_with_subtype_tag(d_type, 1);
+            vec![
+              Statement::IndexedAccess {
+                name: PStr::UNDERSCORE,
+                type_: Type::Id(d_subtype),
+                pointer_expression: ZERO,
+                index: 0,
               },
-              context: Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
-            },
-          ],
+              Statement::Cast {
+                name: PStr::UNDERSCORE,
+                type_: INT_32_TYPE,
+                assigned_expression: ZERO,
+              },
+              Statement::LateInitDeclaration { name: PStr::UNDERSCORE, type_: INT_32_TYPE },
+              Statement::LateInitAssignment { name: PStr::UNDERSCORE, assigned_expression: ZERO },
+              Statement::StructInit {
+                struct_variable_name: PStr::UNDERSCORE,
+                type_name: table.create_type_name_for_test(PStr::UPPER_D),
+                expression_list: vec![ZERO],
+              },
+              Statement::ClosureInit {
+                closure_variable_name: PStr::UNDERSCORE,
+                closure_type_name: table.create_type_name_for_test(PStr::UPPER_C),
+                function_name: FunctionNameExpression {
+                  name: FunctionName::new_for_test(PStr::LOWER_F),
+                  type_: Type::new_fn_unwrapped(
+                    vec![Type::Id(table.create_type_name_for_test(PStr::UPPER_E))],
+                    INT_32_TYPE,
+                  ),
+                },
+                context: Expression::var_name(heap.alloc_str_for_test("v"), INT_32_TYPE),
+              },
+            ]
+          },
           final_assignments: vec![IfElseFinalAssignment {
             name: PStr::UNDERSCORE,
             type_: INT_32_TYPE,
@@ -416,6 +438,7 @@ mod tests {
       r#"closure type _A = () -> int
 closure type _C = () -> _C
 object type _C = [int, _Str]
+object type _D$_Sub1 = [int]
 variant type _E = [Boxed(int), Unboxed(_Str), i31]
 function __$main(): int {
   let _: int;
@@ -427,6 +450,7 @@ function __$main(): int {
     let _: _A = 0[0];
     _ = 0;
   } else {
+    let _: _C$_Sub1 = 0[0];
     let _ = 0 as int;
     let _: int;
     _ = 0;

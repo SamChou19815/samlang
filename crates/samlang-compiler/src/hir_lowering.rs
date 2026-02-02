@@ -992,7 +992,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let mut lowered_stmts = Vec::new();
     let closure_variable_name = self.allocate_temp_variable();
     let context = if captured.is_empty() {
-      hir::ZERO
+      hir::Expression::Int31Zero
     } else {
       let context_name = self.allocate_temp_variable();
       let context_type = self.get_synthetic_identifier_type_from_tuple(
@@ -2161,11 +2161,11 @@ return (_t1: _$SyntheticIDType1);"#,
       }),
       heap,
       r#"closure type _$SyntheticIDType0 = (int) -> DUMMY_Dummy
-function __GenFn$0(_this: int, a: int): DUMMY_Dummy {
+function __GenFn$0(_this: i31, a: int): DUMMY_Dummy {
   return (_this: DUMMY_Dummy);
 }
 
-let _t1: _$SyntheticIDType0 = Closure { fun: (__GenFn$0: (int, int) -> DUMMY_Dummy), context: 0 };
+let _t1: _$SyntheticIDType0 = Closure { fun: (__GenFn$0: (i31, int) -> DUMMY_Dummy), context: 0 as i31 };
 return (_t1: _$SyntheticIDType0);"#,
     );
   }

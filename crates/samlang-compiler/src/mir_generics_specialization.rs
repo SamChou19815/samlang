@@ -105,26 +105,30 @@ impl Rewriter {
       } => {
         let test_expr = self.rewrite_expr(heap, hir_test_expr, generics_replacement_map);
         let enum_type = *test_expr.as_variable().unwrap().type_.as_id().unwrap();
+        let has_int31_variants = self.enum_has_int31_variants(enum_type);
         match self.get_subtype(enum_type, *tag) {
           mir::EnumTypeDefinition::Boxed(_) => {
-            let subtype = mir::Type::Id(
-              self.symbol_table.derived_type_name_with_subtype_tag(enum_type, *tag as u32),
-            );
+            let subtype_name =
+              self.symbol_table.derived_type_name_with_subtype_tag(enum_type, *tag as u32);
+            let subtype = mir::Type::Id(subtype_name);
             let variable_for_tag = heap.alloc_temp_str();
             let comparison_temp = heap.alloc_temp_str();
             let casted_collector = heap.alloc_temp_str();
-            collector.push(mir::Statement::IndexedAccess {
+
+            let mut tag_check_stmts = Vec::new();
+            tag_check_stmts.push(mir::Statement::IndexedAccess {
               name: variable_for_tag,
               type_: mir::INT_32_TYPE,
               pointer_expression: test_expr,
               index: 0,
             });
-            collector.push(mir::Statement::binary(
+            tag_check_stmts.push(mir::Statement::binary(
               comparison_temp,
               hir::BinaryOperator::EQ,
               mir::Expression::var_name(variable_for_tag, mir::INT_32_TYPE),
               mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
             ));
+
             let mut nested_stmts = Vec::new();
             // Once we pass the check, we can cast the general enum type to a
             // more specific subtype.
@@ -144,36 +148,73 @@ impl Rewriter {
               }
             }
             nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
-            collector.push(mir::Statement::IfElse {
-              condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
-              s1: nested_stmts,
-              s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
-              final_assignments: self.rewrite_final_assignments(
-                final_assignments,
-                heap,
-                generics_replacement_map,
-              ),
-            });
+
+            let rewritten_s2 = self.rewrite_stmts(heap, s2, generics_replacement_map);
+            let rewritten_final_assignments =
+              self.rewrite_final_assignments(final_assignments, heap, generics_replacement_map);
+
+            if has_int31_variants {
+              // If the enum has Int31 variants, we need to first check if the value is a
+              // pointer (struct) before attempting to access its tag field.
+              // The inner IfElse (tag check) has the original final_assignments to properly
+              // propagate results from nested pattern matching.
+              tag_check_stmts.push(mir::Statement::IfElse {
+                condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
+                s1: nested_stmts,
+                s2: rewritten_s2.clone(),
+                final_assignments: rewritten_final_assignments.clone(),
+              });
+
+              // For the outer IfElse (IsPointer check):
+              // - s1 (pointer check passed) contains the inner IfElse which already set the results
+              // - s2 (pointer check failed) needs to set the failure values
+              // We create modified final_assignments where e1 = var(result) (identity)
+              // so that when s1 is taken, the result keeps its value from the inner IfElse.
+              let outer_final_assignments = rewritten_final_assignments
+                .iter()
+                .map(|fa| mir::IfElseFinalAssignment {
+                  name: fa.name,
+                  type_: fa.type_,
+                  e1: mir::Expression::var_name(fa.name, fa.type_),
+                  e2: fa.e2,
+                })
+                .collect();
+
+              let is_pointer_temp = heap.alloc_temp_str();
+              collector.push(mir::Statement::IsPointer {
+                name: is_pointer_temp,
+                pointer_type: subtype_name,
+                operand: test_expr,
+              });
+              collector.push(mir::Statement::IfElse {
+                condition: mir::Expression::var_name(is_pointer_temp, mir::INT_32_TYPE),
+                s1: tag_check_stmts,
+                s2: rewritten_s2,
+                final_assignments: outer_final_assignments,
+              });
+            } else {
+              // No Int31 variants, safe to directly access the tag
+              tag_check_stmts.push(mir::Statement::IfElse {
+                condition: mir::Expression::var_name(comparison_temp, mir::INT_32_TYPE),
+                s1: nested_stmts,
+                s2: rewritten_s2,
+                final_assignments: rewritten_final_assignments,
+              });
+              collector.append(&mut tag_check_stmts);
+            }
           }
           // If we are pattern matching on an unboxed case, it means that `unboxed_t` must be a
           // pointer type. Therefore, we only need to check whether the test expression is a pointer.
           mir::EnumTypeDefinition::Unboxed(unboxed_t) => {
             debug_assert!(bindings.len() == 1);
             let binded_name = bindings[0].as_ref().unwrap().0;
-            let casted_int_collector = heap.alloc_temp_str();
             let comparison_temp = heap.alloc_temp_str();
-            // We need to case the high level expression into int so we can
-            // do low-level bitwise is-pointer check.
-            collector.push(mir::Statement::Cast {
-              name: casted_int_collector,
-              type_: mir::INT_32_TYPE,
-              assigned_expression: test_expr,
-            });
-            // Here we test whether this is a pointer
+            // For WASM GC, we can do ref.test directly on the enum value (which is ref eq)
+            // without casting to INT_32_TYPE first.
             collector.push(mir::Statement::IsPointer {
               name: comparison_temp,
               pointer_type: *unboxed_t,
-              operand: mir::Expression::var_name(casted_int_collector, mir::INT_32_TYPE),
+              operand: test_expr,
             });
             let mut nested_stmts = Vec::new();
             // Once we pass the is-pointer check, we can cast the test expression to the underlying
@@ -196,19 +237,14 @@ impl Rewriter {
             });
           }
           mir::EnumTypeDefinition::Int31 => {
-            let casted_collector = heap.alloc_temp_str();
             let comparison_temp = heap.alloc_temp_str();
-            // We cast the test expression to int to perform the test.
-            // Once we have i31 type, the test should be performed on i31.
-            collector.push(mir::Statement::Cast {
-              name: casted_collector,
-              type_: mir::INT_31_TYPE,
-              assigned_expression: test_expr,
-            });
+            // For WASM GC, compare the enum value directly with Int31Literal using ref.eq
+            // The enum type (which becomes AnyPointer in LIR) is a subtype of ref eq,
+            // and Int31Literal is ref i31, so ref.eq can compare them directly.
             collector.push(mir::Statement::binary(
               comparison_temp,
               hir::BinaryOperator::EQ,
-              mir::Expression::var_name(casted_collector, mir::INT_32_TYPE),
+              test_expr,
               mir::Expression::Int31Literal(i32::try_from(*tag).unwrap()),
             ));
             collector.push(mir::Statement::IfElse {
@@ -471,6 +507,14 @@ impl Rewriter {
     tag: usize,
   ) -> &mir::EnumTypeDefinition {
     &self.specialized_type_definitions.get(&mir_enum_type).unwrap().mappings.as_enum().unwrap()[tag]
+  }
+
+  /// Check if an enum type has any Int31 variants.
+  /// This is used to determine if we need an IsPointer check before accessing struct fields.
+  fn enum_has_int31_variants(&self, mir_enum_type: mir::TypeNameId) -> bool {
+    let variants =
+      self.specialized_type_definitions.get(&mir_enum_type).unwrap().mappings.as_enum().unwrap();
+    variants.iter().any(|v| matches!(v, mir::EnumTypeDefinition::Int31))
   }
 
   fn rewrite_types(
@@ -1324,37 +1368,42 @@ function _DUMMY_I$main(): int {
     finalV = (v2: int);
   }
   let b = 0 as DUMMY_Enum;
-  let _t1 = (b: DUMMY_Enum) as int;
-  let _t2 = (_t1: int) is DUMMY_J;
-  if (_t2: int) {
+  let _t1 = (b: DUMMY_Enum) is DUMMY_J;
+  if (_t1: int) {
     let a = (b: DUMMY_Enum) as DUMMY_J;
   } else {
   }
-  let _t3 = (b: DUMMY_Enum) as i31;
-  let _t4 = (_t3: int) == 1 as i31;
-  if (_t4: int) {
+  let _t2 = (b: DUMMY_Enum) == 1 as i31;
+  if (_t2: int) {
   } else {
   }
-  let _t5: int = (b: DUMMY_Enum3)[0];
-  let _t6 = (_t5: int) == 3;
+  let _t6 = (b: DUMMY_Enum3) is DUMMY_Enum3$_Sub1;
   if (_t6: int) {
-    let _t7 = (b: DUMMY_Enum3) as DUMMY_Enum3$_Sub1;
-    let a: int = (_t7: DUMMY_Enum3$_Sub1)[1];
+    let _t3: int = (b: DUMMY_Enum3)[0];
+    let _t4 = (_t3: int) == 3;
+    if (_t4: int) {
+      let _t5 = (b: DUMMY_Enum3) as DUMMY_Enum3$_Sub1;
+      let a: int = (_t5: DUMMY_Enum3$_Sub1)[1];
+    } else {
+    }
   } else {
   }
-  let _t8: DUMMY_Enum2$_Sub0 = [1, 0];
-  let b = (_t8: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
-  let _t9: DUMMY_Enum3$_Sub0 = [1, 0];
-  let b = (_t9: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
-  let _t10: int = (b: DUMMY_Enum2)[0];
-  let _t11 = (_t10: int) == 1;
-  if (_t11: int) {
-    let _t12 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
+  let _t7: DUMMY_Enum2$_Sub0 = [1, 0];
+  let b = (_t7: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
+  let _t8: DUMMY_Enum3$_Sub0 = [1, 0];
+  let b = (_t8: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
+  let _t12 = (b: DUMMY_Enum2) is DUMMY_Enum2$_Sub0;
+  if (_t12: int) {
+    let _t9: int = (b: DUMMY_Enum2)[0];
+    let _t10 = (_t9: int) == 1;
+    if (_t10: int) {
+      let _t11 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
+    } else {
+    }
   } else {
   }
-  let _t13 = (b: DUMMY_Enum2) as i31;
-  let _t14 = (_t13: int) == 1 as i31;
-  if (_t14: int) {
+  let _t13 = (b: DUMMY_Enum2) == 1 as i31;
+  if (_t13: int) {
   } else {
   }
   let b = 1 as i31 as DUMMY_Enum2;

@@ -47,6 +47,21 @@ mod tests {
       Type::new_fn(vec![(INT_32_TYPE)], INT_32_TYPE)
         .is_the_same_type(&Type::new_fn(vec![(INT_32_TYPE)], INT_32_TYPE))
     );
+    assert_eq!(
+      false,
+      Type::new_fn(vec![INT_32_TYPE], INT_32_TYPE)
+        .is_the_same_type(&Type::new_fn(vec![INT_32_TYPE], INT_31_TYPE))
+    );
+    assert_eq!(
+      false,
+      Type::new_fn(vec![INT_32_TYPE], INT_32_TYPE)
+        .is_the_same_type(&Type::new_fn(vec![INT_32_TYPE, INT_32_TYPE], INT_32_TYPE))
+    );
+    assert_eq!(
+      false,
+      Type::new_fn(vec![INT_32_TYPE], INT_32_TYPE)
+        .is_the_same_type(&Type::new_fn(vec![INT_31_TYPE], INT_32_TYPE))
+    );
   }
 
   #[test]
@@ -62,10 +77,14 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
+          parent_type: None,
+          is_extensible: false,
           mappings: vec![INT_32_TYPE, INT_31_TYPE],
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
+          parent_type: None,
+          is_extensible: false,
           mappings: Vec::new(),
         },
       ],
@@ -81,7 +100,7 @@ mod tests {
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
           parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
-          type_: Type::new_fn_unwrapped(vec![INT_32_TYPE, INT_32_TYPE], INT_32_TYPE),
+          type_: Type::new_fn_unwrapped(vec![Type::AnyPointer, INT_32_TYPE], INT_32_TYPE),
           body: vec![
             Statement::UntypedIndexedAccess {
               name: PStr::LOWER_F,
@@ -141,6 +160,19 @@ mod tests {
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::EQ, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::NE, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
+              Statement::binary(
+                heap.alloc_str_for_test("dd"),
+                BinaryOperator::MINUS,
+                ZERO,
+                Expression::Int32Literal(5),
+              ),
+              Statement::binary(
+                heap.alloc_str_for_test("dd"),
+                BinaryOperator::MINUS,
+                ZERO,
+                Expression::Int32Literal(-2147483648),
+              ),
               Statement::While {
                 loop_variables: Vec::new(),
                 statements: vec![Statement::SingleIf {
@@ -271,7 +303,7 @@ type _Foo = [];
 function __$main(): number {{
   return 0;
 }}
-function __$Bar(f: number, g: number): number {{
+function __$Bar(f: any, g: number): number {{
   let f: number = big[0];
   let f: number = big[0];
   return 0;
@@ -290,6 +322,9 @@ function __$f(v1: (t0: number) => number): number {{
     let dd = Number(0 == 0);
     let dd = Number(0 != 0);
     let dd = 0 ^ 0;
+    let dd = 0 + 0;
+    let dd = 0 + -5;
+    let dd = 0 - -2147483648;
     while (true) {{
       if (0) {{
       }}

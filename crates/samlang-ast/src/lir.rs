@@ -97,14 +97,6 @@ impl Expression {
     Self::Int32Literal(value)
   }
 
-  pub fn ref_countable(&self) -> bool {
-    match self {
-      Self::Int32Literal(_) | Self::Int31Literal(_) | Self::FnName(_, _) => false,
-      Self::StringName(_) => true,
-      Self::Variable(_, t) => t.as_id().is_some(),
-    }
-  }
-
   fn pretty_print(
     &self,
     collector: &mut String,
@@ -567,6 +559,10 @@ impl Function {
 
 pub struct TypeDefinition {
   pub name: TypeNameId,
+  /// For enum subtypes, this is the parent enum type. Used for WASM GC subtyping.
+  pub parent_type: Option<TypeNameId>,
+  /// If true, this type can have subtypes (used for enum parent types in WASM GC).
+  pub is_extensible: bool,
   pub mappings: Vec<Type>,
 }
 
@@ -584,6 +580,7 @@ pub fn ts_prolog() -> String {
   let mut collector = String::new();
 
   collector.push_str("type i31 = number;\n");
+  collector.push_str("type _Str = [number, number];\n");
   collector.push_str("const ");
   FunctionName::STR_CONCAT.write_encoded(&mut collector, heap, table);
   collector.push_str(" = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];\n");
@@ -605,11 +602,6 @@ pub fn ts_prolog() -> String {
   collector
     .push_str(" = (_: number, [, v]: _Str): never => { throw Error(v as unknown as string); };\n");
 
-  collector.push_str("// empty the array to mess up program code that uses after free.\n");
-  collector.push_str("const ");
-  FunctionName::BUILTIN_FREE.write_encoded(&mut collector, heap, table);
-  collector.push_str(" = (v: any): number => { v.length = 0; return 0 };\n");
-
   collector
 }
 
@@ -627,6 +619,10 @@ impl Sources {
       str_lookup_table.insert(*s, i);
     }
     for d in &self.type_definitions {
+      // Skip STR type - it's a special built-in type handled in ts_prolog
+      if d.name == TypeNameId::STR {
+        continue;
+      }
       collector.push_str("type ");
       d.name.write_encoded(&mut collector, heap, &self.symbol_table);
       collector.push_str(" = [");
