@@ -173,23 +173,6 @@ impl<'a> LoweringManager<'a> {
           wasm::InlineInstruction::Binary { v1: i1, op: *operator, v2: i2, is_ref_comparison },
         ))]
       }
-      lir::Statement::UntypedIndexedAccess { name, type_: _, pointer_expression, index } => {
-        let pointer = Box::new(self.lower_expr(pointer_expression));
-        vec![wasm::Instruction::Inline(self.set(
-          *name,
-          wasm::Type::Int32,
-          wasm::InlineInstruction::Load { index: *index, pointer },
-        ))]
-      }
-      lir::Statement::UntypedIndexedAssign { assigned_expression, pointer_expression, index } => {
-        let pointer = Box::new(self.lower_expr(pointer_expression));
-        let assigned = Box::new(self.lower_expr(assigned_expression));
-        vec![wasm::Instruction::Inline(wasm::InlineInstruction::Store {
-          index: *index,
-          pointer,
-          assigned,
-        })]
-      }
       lir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         let (struct_ref, struct_type) = self.lower_expr_with_reference_type(pointer_expression);
         let result_type = self.type_cx.lower(type_);
@@ -1224,30 +1207,6 @@ mod tests {
             ),
             index: 3,
           },
-          Statement::UntypedIndexedAccess {
-            name: heap.alloc_str_for_test("v"),
-            type_: INT_32_TYPE,
-            pointer_expression: ZERO,
-            index: 3,
-          },
-          // Test UntypedIndexedAccess with index 0 for coverage (no offset)
-          Statement::UntypedIndexedAccess {
-            name: heap.alloc_str_for_test("v0"),
-            type_: INT_32_TYPE,
-            pointer_expression: ZERO,
-            index: 0,
-          },
-          Statement::UntypedIndexedAssign {
-            assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
-            pointer_expression: ZERO,
-            index: 3,
-          },
-          // Test UntypedIndexedAssign with index 0 for coverage (no offset)
-          Statement::UntypedIndexedAssign {
-            assigned_expression: Expression::Variable(heap.alloc_str_for_test("v0"), INT_32_TYPE),
-            pointer_expression: ZERO,
-            index: 0,
-          },
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test("s"),
             type_: lir::Type::Id(test_struct_type),
@@ -1306,7 +1265,6 @@ mod tests {
   (local $un1 i32)
   (local $un2 i32)
   (local $v i32)
-  (local $v0 i32)
   (if (i32.xor (i32.const 0) (i32.const 1)) (then
     (local.set $c (i32.const 0))
   ))
@@ -1361,10 +1319,6 @@ mod tests {
   (drop (call $__$main (i32.const 0)))
   (local.set $rc (call_indirect $0 (type $__t0) (i32.const 0) (local.get $f)))
   (local.set $v (struct.get $_TestStruct 3 (ref.as_non_null (local.get $struct_ptr))))
-  (local.set $v (i32.load offset=12 (i32.const 0)))
-  (local.set $v0 (i32.load (i32.const 0)))
-  (i32.store offset=12 (i32.const 0) (local.get $v))
-  (i32.store (i32.const 0) (local.get $v0))
   (local.set $s (struct.new $_TestStruct (i32.const 0) (local.get $v) (i32.const 0) (i32.const 0)))
   (local.set $rs (struct.new $_RefStruct (ref.i31 (i32.const 0))))
   (i32.const 0)

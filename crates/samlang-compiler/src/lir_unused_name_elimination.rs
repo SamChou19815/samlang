@@ -60,12 +60,7 @@ fn collect_used_names_from_statement(
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, e1);
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, e2);
     }
-    Statement::UntypedIndexedAssign { assigned_expression, pointer_expression, index: _ } => {
-      collect_used_names_from_expression(str_name_set, fn_name_set, type_set, assigned_expression);
-      collect_used_names_from_expression(str_name_set, fn_name_set, type_set, pointer_expression);
-    }
-    Statement::UntypedIndexedAccess { name: _, type_, pointer_expression, index: _ }
-    | Statement::IndexedAccess { name: _, type_, pointer_expression, index: _ } => {
+    Statement::IndexedAccess { name: _, type_, pointer_expression, index: _ } => {
       collect_used_names_from_expression(str_name_set, fn_name_set, type_set, pointer_expression);
       collect_for_type_set(type_, type_set);
     }
@@ -299,23 +294,6 @@ mod tests {
               )],
             },
             Statement::IndexedAccess {
-              name: PStr::LOWER_A,
-              type_: INT_32_TYPE,
-              pointer_expression: Expression::FnName(
-                FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
-              ),
-              index: 0,
-            },
-            Statement::UntypedIndexedAssign {
-              assigned_expression: ZERO,
-              pointer_expression: Expression::FnName(
-                FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
-                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
-              ),
-              index: 0,
-            },
-            Statement::UntypedIndexedAccess {
               name: PStr::LOWER_A,
               type_: INT_32_TYPE,
               pointer_expression: Expression::FnName(

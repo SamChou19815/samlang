@@ -92,19 +92,10 @@ pub enum InlineInstruction {
     v2: Box<InlineInstruction>,
     is_ref_comparison: bool,
   },
-  Load {
-    index: usize,
-    pointer: Box<InlineInstruction>,
-  },
   StructLoad {
     index: usize,
     struct_type: mir::TypeNameId,
     struct_ref: Box<InlineInstruction>,
-  },
-  Store {
-    index: usize,
-    pointer: Box<InlineInstruction>,
-    assigned: Box<InlineInstruction>,
   },
   StructStore {
     index: usize,
@@ -219,19 +210,6 @@ impl InlineInstruction {
           collector.push(')');
         }
       }
-      Self::Load { index, pointer } => {
-        if *index == 0 {
-          collector.push_str("(i32.load ");
-          pointer.pretty_print(collector, heap, table);
-          collector.push(')');
-        } else {
-          collector.push_str("(i32.load offset=");
-          collector.push_str(&(index * 4).to_string());
-          collector.push(' ');
-          pointer.pretty_print(collector, heap, table);
-          collector.push(')');
-        }
-      }
       Self::StructLoad { index, struct_type, struct_ref } => {
         collector.push_str("(struct.get $");
         struct_type.write_encoded(collector, heap, table);
@@ -240,23 +218,6 @@ impl InlineInstruction {
         collector.push(' ');
         struct_ref.pretty_print(collector, heap, table);
         collector.push(')');
-      }
-      Self::Store { index, pointer, assigned } => {
-        if *index == 0 {
-          collector.push_str("(i32.store ");
-          pointer.pretty_print(collector, heap, table);
-          collector.push(' ');
-          assigned.pretty_print(collector, heap, table);
-          collector.push(')');
-        } else {
-          collector.push_str("(i32.store offset=");
-          collector.push_str(&(index * 4).to_string());
-          collector.push(' ');
-          pointer.pretty_print(collector, heap, table);
-          collector.push(' ');
-          assigned.pretty_print(collector, heap, table);
-          collector.push(')');
-        }
       }
       Self::StructStore { index, struct_type, struct_ref, assigned } => {
         collector.push_str("(struct.set $");
@@ -816,24 +777,6 @@ mod tests {
               continue_label: LabelId(1),
               exit_label: LabelId(2),
               instructions: vec![
-                Instruction::Inline(InlineInstruction::Load {
-                  index: 0,
-                  pointer: Box::new(InlineInstruction::Const(0)),
-                }),
-                Instruction::Inline(InlineInstruction::Load {
-                  index: 3,
-                  pointer: Box::new(InlineInstruction::Const(0)),
-                }),
-                Instruction::Inline(InlineInstruction::Store {
-                  index: 0,
-                  pointer: Box::new(InlineInstruction::Const(0)),
-                  assigned: Box::new(InlineInstruction::Const(0)),
-                }),
-                Instruction::Inline(InlineInstruction::Store {
-                  index: 3,
-                  pointer: Box::new(InlineInstruction::Const(0)),
-                  assigned: Box::new(InlineInstruction::Const(0)),
-                }),
                 Instruction::Inline(InlineInstruction::DirectCall(
                   mir::FunctionName::new_for_test(PStr::MAIN_FN),
                   vec![InlineInstruction::Const(0)],
@@ -939,10 +882,6 @@ mod tests {
   (br $l0)
   (loop $l1
     (block $l2
-      (i32.load (i32.const 0))
-      (i32.load offset=12 (i32.const 0))
-      (i32.store (i32.const 0) (i32.const 0))
-      (i32.store offset=12 (i32.const 0) (i32.const 0))
       (call $__$main (i32.const 0))
       (call_indirect $0 (type $_F) (i32.const 0) (i32.const 0))
       (ref.eq (i32.const 0) (i32.const 0))

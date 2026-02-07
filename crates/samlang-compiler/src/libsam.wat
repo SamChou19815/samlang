@@ -1,4 +1,3 @@
-(import "env" "memory" (memory $env.memory 2))
 (import "builtins" "__Process$println" (func $__Process$println (param (ref eq)) (param (ref $_Str)) (result i32)))
 (import "builtins" "__Process$panic" (func $__Process$panic (param (ref eq)) (param (ref $_Str)) (result i32)))
 ;; Export helper functions for JavaScript to read GC string arrays

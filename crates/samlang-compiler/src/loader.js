@@ -1,5 +1,4 @@
 function samlangGeneratedWebAssemblyLoader(bytes, builtinsPatch = () => ({})) {
-  const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
   const codeModule = new WebAssembly.Module(bytes);
   let instance = null;
 
@@ -25,7 +24,7 @@ function samlangGeneratedWebAssemblyLoader(bytes, builtinsPatch = () => ({})) {
     ...builtinsPatch(gcArrayToString),
   };
 
-  instance = new WebAssembly.Instance(codeModule, { env: { memory }, builtins });
+  instance = new WebAssembly.Instance(codeModule, { builtins });
 
   return {
     ...builtins,
