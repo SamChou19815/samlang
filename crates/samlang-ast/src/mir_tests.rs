@@ -110,13 +110,27 @@ mod tests {
     type_name_id = table.create_type_name_with_suffix(
       ModuleReference::ROOT,
       PStr::UPPER_A,
-      vec![INT_31_TYPE, INT_32_TYPE],
+      vec![INT_31_TYPE, INT_32_TYPE, Type::Id(type_name_id)],
     );
     assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id = table.create_simple_type_name(ModuleReference::ROOT, PStr::UPPER_A);
     type_name_id = table.derived_type_name_with_subtype_tag(type_name_id, 1);
     assert_eq!(true, type_name_id <= type_name_id);
+    assert_eq!(false, type_name_id.encoded_for_test(heap, &table).is_empty());
     assert_eq!(type_name_id.cmp(&type_name_id), std::cmp::Ordering::Equal);
+
+    let mut table = SymbolTable::new();
+    let parent_a = table.create_type_name_for_test(PStr::UPPER_A);
+    let parent_b = table.create_type_name_for_test(PStr::UPPER_B);
+    let parent_c = table.create_type_name_for_test(PStr::UPPER_C);
+    let subtype_a1 = table.derived_type_name_with_subtype_tag(parent_a, 1);
+    let subtype_b1 = table.derived_type_name_with_subtype_tag(parent_b, 1);
+    let subtype_c1 = table.derived_type_name_with_subtype_tag(parent_c, 1);
+    let mut parent_remap = std::collections::HashMap::new();
+    parent_remap.insert(parent_b, parent_a);
+    let subtype_remap = table.remap_subtypes_for_deduplication(&parent_remap);
+    assert_eq!(Some(&subtype_a1), subtype_remap.get(&subtype_b1));
+    assert!(!subtype_remap.contains_key(&subtype_c1));
   }
 
   #[test]

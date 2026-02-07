@@ -1,28 +1,35 @@
 function samlangGeneratedWebAssemblyLoader(bytes, builtinsPatch = () => ({})) {
   const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
   const codeModule = new WebAssembly.Module(bytes);
+  let instance = null;
 
-  function pointerToString(p) {
-    const mem = new Uint8Array(memory.buffer);
-    const length = mem[p + 4] | (mem[p + 5] << 8) | (mem[p + 6] << 16) | (mem[p + 7] << 24);
-    const characterCodes = Array.from(mem.subarray(p + 8, p + 8 + length).values());
-    return String.fromCharCode(...characterCodes);
+  // Convert a WASM GC string array to a JavaScript string using exported helpers
+  function gcArrayToString(arr) {
+    if (!instance) throw new Error('Instance not initialized');
+    const len = instance.exports.__strLen(arr);
+    const codes = [];
+    for (let i = 0; i < len; i++) {
+      codes.push(instance.exports.__strGet(arr, i));
+    }
+    return String.fromCharCode(...codes);
   }
 
   const builtins = {
-    __Process$println(_, p) {
-      console.log(pointerToString(p));
+    __Process$println(_, strArr) {
+      console.log(gcArrayToString(strArr));
       return 0;
     },
-    __Process$panic(_, p) {
-      throw new Error(pointerToString(p));
+    __Process$panic(_, strArr) {
+      throw new Error(gcArrayToString(strArr));
     },
-    ...builtinsPatch(pointerToString),
+    ...builtinsPatch(gcArrayToString),
   };
+
+  instance = new WebAssembly.Instance(codeModule, { env: { memory }, builtins });
 
   return {
     ...builtins,
-    ...new WebAssembly.Instance(codeModule, { env: { memory }, builtins }).exports,
+    ...instance.exports,
   };
 }
 

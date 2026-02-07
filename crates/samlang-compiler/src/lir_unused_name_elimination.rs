@@ -203,7 +203,7 @@ fn analyze_used_function_names_and_type_names(
 }
 
 pub(super) fn optimize_lir_sources_by_eliminating_unused_ones(
-  Sources { symbol_table,global_variables, type_definitions, main_function_names, functions }: Sources,
+  Sources { symbol_table, global_variables, type_definitions, main_function_names, functions }: Sources,
 ) -> Sources {
   let (used_str_names, used_fn_names, used_types) =
     analyze_used_function_names_and_type_names(&functions, &main_function_names);
@@ -249,10 +249,14 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
+          parent_type: None,
+          is_extensible: false,
           mappings: vec![INT_32_TYPE],
         },
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Baz")),
+          parent_type: None,
+          is_extensible: false,
           mappings: vec![INT_32_TYPE],
         },
       ],
@@ -305,6 +309,15 @@ mod tests {
             },
             Statement::UntypedIndexedAssign {
               assigned_expression: ZERO,
+              pointer_expression: Expression::FnName(
+                FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
+                Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
+              ),
+              index: 0,
+            },
+            Statement::UntypedIndexedAccess {
+              name: PStr::LOWER_A,
+              type_: INT_32_TYPE,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
                 Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),

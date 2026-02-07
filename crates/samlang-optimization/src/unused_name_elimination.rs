@@ -236,12 +236,24 @@ fn analyze_all_used_names(
 }
 
 pub(super) fn optimize_sources(sources: &mut Sources) {
-  let (used_str_names, used_fn_names, used_types) = analyze_all_used_names(
+  let (used_str_names, used_fn_names, mut used_types) = analyze_all_used_names(
     &sources.functions,
     &sources.closure_types,
     &sources.type_definitions,
     &sources.main_function_names,
   );
+  // When a subtype is used, ensure its parent type is also marked as used.
+  // This is necessary because subtypes are created in LIR lowering from parent enum definitions.
+  // If the parent is eliminated here, the subtype definition won't be created.
+  let mut parent_types_to_add = Vec::new();
+  for type_id in &used_types {
+    if let Some(parent_id) = sources.symbol_table.get_parent_type_if_subtype(*type_id) {
+      parent_types_to_add.push(parent_id);
+    }
+  }
+  for parent_id in parent_types_to_add {
+    used_types.insert(parent_id);
+  }
   sources.global_variables.retain(|it| used_str_names.contains(&it.0));
   sources.closure_types.retain(|it| used_types.contains(&it.name));
   sources.type_definitions.retain(|it| used_types.contains(&it.name));

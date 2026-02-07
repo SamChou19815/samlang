@@ -4,23 +4,32 @@ export default async function interpretWebAssemblyModule(
   /** @type {ArrayBufferView | ArrayBuffer} */ emittedWasmBinary
 ) {
   const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
-  function pointerToString(/** @type {number} */ p) {
-    const mem = new Uint8Array(memory.buffer);
-    const length = mem[p + 4] | (mem[p + 5] << 8) | (mem[p + 6] << 16) | (mem[p + 7] << 24);
-    const characterCodes = Array.from(mem.subarray(p + 8, p + 8 + length).values());
-    return String.fromCharCode(...characterCodes);
-  }
 
   let printed = '';
 
+  /** @type {any} */
+  let exports;
+
+  /** @param {any} strRef */
+  function gcStringToJS(strRef) {
+    const len = exports.__strLen(strRef);
+    let result = '';
+    for (let i = 0; i < len; i++) {
+      result += String.fromCharCode(exports.__strGet(strRef, i));
+    }
+    return result;
+  }
+
   const builtins = {
-    __Process$println(_, p) {
-      printed += pointerToString(p);
+    /** @param {any} _ @param {any} strRef */
+    __Process$println(_, strRef) {
+      printed += gcStringToJS(strRef);
       printed += '\n';
       return 0;
     },
-    __Process$panic(_, p) {
-      throw new Error(pointerToString(p));
+    /** @param {any} _ @param {any} strRef */
+    __Process$panic(_, strRef) {
+      throw new Error(gcStringToJS(strRef));
     },
   };
 
@@ -29,8 +38,7 @@ export default async function interpretWebAssemblyModule(
     builtins,
   });
 
-  /** @type {any} */
-  const exports = codeModule.instance.exports;
+  exports = codeModule.instance.exports;
   exports['_Demo_Main$main']?.();
   return printed;
 }

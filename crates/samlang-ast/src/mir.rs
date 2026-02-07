@@ -89,7 +89,12 @@ impl TypeNameId {
   pub const PROCESS: TypeNameId = TypeNameId(2);
 
   pub(super) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
-    table.type_name_lookup_table.get(self).unwrap().encoded(collector, heap, table);
+    // STR is special - it's the builtin $_Str GC array type, not a generated struct
+    if *self == Self::STR {
+      collector.push_str("_Str");
+    } else {
+      table.type_name_lookup_table.get(self).unwrap().encoded(collector, heap, table);
+    }
   }
 
   pub fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
@@ -103,12 +108,16 @@ impl TypeNameId {
 pub struct SymbolTable {
   type_name_interning_table: HashMap<&'static TypeName, TypeNameId>,
   type_name_lookup_table: HashMap<TypeNameId, Box<TypeName>>,
+  subtype_to_parent: HashMap<TypeNameId, TypeNameId>,
 }
 
 impl Default for SymbolTable {
   fn default() -> Self {
-    let mut table =
-      Self { type_name_interning_table: HashMap::new(), type_name_lookup_table: HashMap::new() };
+    let mut table = Self {
+      type_name_interning_table: HashMap::new(),
+      type_name_lookup_table: HashMap::new(),
+      subtype_to_parent: HashMap::new(),
+    };
     table.create_type_name_internal(TypeName::EMPTY);
     table.create_type_name_internal(TypeName::STR);
     table.create_type_name_internal(TypeName::PROCESS);
@@ -173,12 +182,14 @@ impl SymbolTable {
 
   pub fn derived_type_name_with_subtype_tag(&mut self, id: TypeNameId, tag: u32) -> TypeNameId {
     let base = self.type_name_lookup_table.get(&id).unwrap();
-    self.create_type_name_internal(TypeName {
+    let subtype_id = self.create_type_name_internal(TypeName {
       module_reference: base.module_reference,
       type_name: base.type_name,
       suffix: base.suffix.clone(),
       sub_type_tag: Some(tag),
-    })
+    });
+    self.subtype_to_parent.insert(subtype_id, id);
+    subtype_id
   }
 
   pub fn derived_type_name_with_suffix(&mut self, id: TypeNameId, suffix: Vec<Type>) -> TypeNameId {
@@ -189,6 +200,64 @@ impl SymbolTable {
       suffix,
       sub_type_tag: base.sub_type_tag,
     })
+  }
+
+  /// If the given TypeNameId is a subtype (has a sub_type_tag), returns the parent TypeNameId.
+  /// Otherwise returns None.
+  pub fn get_parent_type_if_subtype(&self, id: TypeNameId) -> Option<TypeNameId> {
+    self.subtype_to_parent.get(&id).copied()
+  }
+
+  /// When parents are deduplicated, their subtypes must also be remapped.
+  /// This method builds a remap for subtypes and updates subtype_to_parent.
+  /// Returns the subtype remap that should be applied to functions.
+  pub fn remap_subtypes_for_deduplication(
+    &mut self,
+    parent_remap: &HashMap<TypeNameId, TypeNameId>,
+  ) -> HashMap<TypeNameId, TypeNameId> {
+    let mut subtype_remap = HashMap::new();
+
+    // Get the subtype tag from a TypeNameId
+    let get_subtype_tag = |id: TypeNameId| -> Option<u32> {
+      self.type_name_lookup_table.get(&id).and_then(|name| name.sub_type_tag)
+    };
+
+    // Collect subtypes that need remapping
+    let subtypes_to_remap: Vec<(TypeNameId, TypeNameId, u32)> = self
+      .subtype_to_parent
+      .iter()
+      .filter_map(|(&subtype_id, &parent_id)| {
+        // If the parent is being remapped to a different ID
+        if let Some(&canonical_parent) = parent_remap.get(&parent_id)
+          && canonical_parent != parent_id && // Get the subtype tag
+            let Some(tag) = get_subtype_tag(subtype_id)
+        {
+          return Some((subtype_id, canonical_parent, tag));
+        }
+        {}
+        None
+      })
+      .collect();
+
+    // Create canonical subtypes and build remap
+    for (old_subtype_id, canonical_parent, tag) in subtypes_to_remap {
+      let canonical_subtype = self.derived_type_name_with_subtype_tag(canonical_parent, tag);
+      // canonical_subtype will always differ from old_subtype_id because:
+      // - subtypes_to_remap only includes entries where canonical_parent != parent_id
+      // - Different parents have different TypeNames (due to interning)
+      // - Thus their derived subtypes have different TypeNames and IDs
+      debug_assert_ne!(canonical_subtype, old_subtype_id);
+      subtype_remap.insert(old_subtype_id, canonical_subtype);
+    }
+
+    // Update subtype_to_parent to use canonical parent IDs
+    for parent_id in self.subtype_to_parent.values_mut() {
+      if let Some(new_id) = parent_remap.get(parent_id) {
+        *parent_id = *new_id;
+      }
+    }
+
+    subtype_remap
   }
 }
 
@@ -317,8 +386,6 @@ impl FunctionName {
   pub const STR_CONCAT: FunctionName =
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::CONCAT };
 
-  pub const BUILTIN_MALLOC: FunctionName =
-    FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::MALLOC_FN };
   pub const BUILTIN_FREE: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::FREE_FN };
   pub const BUILTIN_INC_REF: FunctionName =

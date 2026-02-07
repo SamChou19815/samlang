@@ -207,7 +207,6 @@ impl PStr {
   pub const FROM_INT: PStr = Self::seven_letter_literal(b"fromInt");
   pub const PRINTLN: PStr = Self::seven_letter_literal(b"println");
   pub const PANIC: PStr = Self::five_letter_literal(b"panic");
-  pub const MALLOC_FN: PStr = Self::six_letter_literal(b"malloc");
   pub const FREE_FN: PStr = Self::four_letter_literal(b"free");
   pub const INC_REF_FN: PStr = Self::seven_letter_literal(b"inc_ref");
   pub const DEC_REF_FN: PStr = Self::seven_letter_literal(b"dec_ref");
