@@ -146,17 +146,6 @@ pub enum Statement {
     e1: Expression,
     e2: Expression,
   },
-  UntypedIndexedAccess {
-    name: PStr,
-    type_: Type,
-    pointer_expression: Expression,
-    index: usize,
-  },
-  UntypedIndexedAssign {
-    assigned_expression: Expression,
-    pointer_expression: Expression,
-    index: usize,
-  },
   IndexedAccess {
     name: PStr,
     type_: Type,
@@ -314,8 +303,7 @@ impl Statement {
         };
         collector.push_str(";\n");
       }
-      Self::UntypedIndexedAccess { name, type_, pointer_expression, index }
-      | Self::IndexedAccess { name, type_, pointer_expression, index } => {
+      Self::IndexedAccess { name, type_, pointer_expression, index } => {
         Self::append_spaces(collector, level);
         collector.push_str("let ");
         collector.push_str(name.as_str(heap));
@@ -326,15 +314,6 @@ impl Statement {
         collector.push('[');
         collector.push_str(&index.to_string());
         collector.push_str("];\n");
-      }
-      Self::UntypedIndexedAssign { assigned_expression, pointer_expression, index } => {
-        Self::append_spaces(collector, level);
-        pointer_expression.pretty_print(collector, heap, symbol_table, str_table);
-        collector.push('[');
-        collector.push_str(&index.to_string());
-        collector.push_str("] = ");
-        assigned_expression.pretty_print(collector, heap, symbol_table, str_table);
-        collector.push_str(";\n");
       }
       Self::Call { callee, arguments, return_type, return_collector } => {
         Self::append_spaces(collector, level);

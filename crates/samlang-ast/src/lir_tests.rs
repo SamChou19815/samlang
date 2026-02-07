@@ -101,26 +101,15 @@ mod tests {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
           parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
           type_: Type::new_fn_unwrapped(vec![Type::AnyPointer, INT_32_TYPE], INT_32_TYPE),
-          body: vec![
-            Statement::UntypedIndexedAccess {
-              name: PStr::LOWER_F,
-              type_: INT_32_TYPE,
-              pointer_expression: Expression::Variable(
-                heap.alloc_str_for_test("big"),
-                Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
-              ),
-              index: 0,
-            },
-            Statement::IndexedAccess {
-              name: PStr::LOWER_F,
-              type_: INT_32_TYPE,
-              pointer_expression: Expression::Variable(
-                heap.alloc_str_for_test("big"),
-                Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
-              ),
-              index: 0,
-            },
-          ],
+          body: vec![Statement::IndexedAccess {
+            name: PStr::LOWER_F,
+            type_: INT_32_TYPE,
+            pointer_expression: Expression::Variable(
+              heap.alloc_str_for_test("big"),
+              Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
+            ),
+            index: 0,
+          }],
           return_value: ZERO,
         },
         Function {
@@ -263,11 +252,6 @@ mod tests {
                 ),
                 index: 0,
               },
-              Statement::UntypedIndexedAssign {
-                assigned_expression: ZERO,
-                pointer_expression: ZERO,
-                index: 0,
-              },
               Statement::Cast {
                 name: PStr::LOWER_C,
                 type_: INT_32_TYPE,
@@ -304,7 +288,6 @@ function __$main(): number {{
   return 0;
 }}
 function __$Bar(f: any, g: number): number {{
-  let f: number = big[0];
   let f: number = big[0];
   return 0;
 }}
@@ -354,7 +337,6 @@ function __$f(v1: (t0: number) => number): number {{
     d(d, 0);
     d();
     let f: number = big[0];
-    0[0] = 0;
     let c = 0 as unknown as number;
     let c: number = undefined as any;
     c = 0;
