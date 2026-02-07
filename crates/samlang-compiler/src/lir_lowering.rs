@@ -848,7 +848,7 @@ function __$main(): number {{
   return 0;
 }}
 function __$compiled_program_main(): number {{
-  let finalV: _CC;
+  var finalV: _CC;
   if (1) {{
     __$main(0);
     let ccc: number = __$cc(0);
@@ -862,7 +862,7 @@ function __$compiled_program_main(): number {{
     let v2: _CC = [_t10, _t11];
     finalV = v2;
   }}
-  let finalV2: number;
+  var finalV2: number;
   if (1) {{
     let cast = 0 as unknown as number;
     finalV2 = 0;
