@@ -332,7 +332,7 @@ impl Statement {
       Self::IfElse { condition, s1, s2, final_assignments } => {
         for (n, t, _, _) in final_assignments {
           Self::append_spaces(collector, level);
-          collector.push_str("let ");
+          collector.push_str("var ");
           collector.push_str(n.as_str(heap));
           collector.push_str(": ");
           t.pretty_print(collector, heap, symbol_table);

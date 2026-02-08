@@ -295,7 +295,7 @@ function __$Bar2(f: (t0: number, t1: number) => number, g: () => number): number
   return 0;
 }}
 function __$f(v1: (t0: number) => number): number {{
-  let bar: number;
+  var bar: number;
   if (0) {{
     let baz: _FooBar = [GLOBAL_STRING_0];
     let dd = Number(0 < 0);
