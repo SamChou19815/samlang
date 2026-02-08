@@ -162,6 +162,12 @@ mod tests {
     expect_good_expr("(a, b: () -> unit) -> 3");
     expect_good_expr("(a, b, c.a)");
     expect_good_expr("(a, b, c)");
+    expect_good_expr("(a + b, c)");
+    expect_good_expr("(a + b, c, d)");
+    expect_good_expr("(a, b, c + d, e)");
+    expect_good_expr("(a, b, c + d)");
+    expect_good_expr("(a, b,)");
+    expect_good_expr("(a + b, c,)");
     expect_good_expr("() -> 3");
     expect_good_expr("(foo) -> 3");
     expect_good_expr("(foo: bool) -> 3");
