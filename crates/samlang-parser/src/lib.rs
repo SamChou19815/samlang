@@ -17,13 +17,9 @@ pub fn parse_source_module_from_text(
   error_set: &mut ErrorSet,
 ) -> source::Module<()> {
   let builtins = builtin_classes();
-  let parser = source_parser::SourceParser::new(
-    lexer::lex_source_program(text, module_reference, heap, error_set),
-    heap,
-    error_set,
-    module_reference,
-    builtins,
-  );
+  let token_producer = lexer::TokenProducer::new(text, module_reference);
+  let parser =
+    source_parser::SourceParser::new(token_producer, heap, error_set, module_reference, builtins);
   source_parser::parse_module(parser)
 }
 
@@ -34,13 +30,9 @@ pub fn parse_source_expression_from_text(
   error_set: &mut ErrorSet,
 ) -> (source::CommentStore, source::expr::E<()>) {
   let builtins = builtin_classes();
-  let parser = source_parser::SourceParser::new(
-    lexer::lex_source_program(text, module_reference, heap, error_set),
-    heap,
-    error_set,
-    module_reference,
-    builtins,
-  );
+  let token_producer = lexer::TokenProducer::new(text, module_reference);
+  let parser =
+    source_parser::SourceParser::new(token_producer, heap, error_set, module_reference, builtins);
   source_parser::parse_expression_with_comment_store(parser)
 }
 

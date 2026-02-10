@@ -155,47 +155,34 @@ enum LogosToken {
   Int,
 }
 
-struct WrappedLogosLexer<'a, 'b, 'c> {
+struct WrappedLogosLexer<'a> {
   lexer: logos::Lexer<'a, LogosToken>,
-  heap: &'b mut Heap,
-  error_set: &'c mut ErrorSet,
   module_reference: ModuleReference,
   position: Position,
 }
 
-impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
-  fn new(
-    source: &'a str,
-    module_reference: ModuleReference,
-    heap: &'b mut Heap,
-    error_set: &'c mut ErrorSet,
-  ) -> Self {
-    Self {
-      lexer: LogosToken::lexer(source),
-      module_reference,
-      heap,
-      error_set,
-      position: Position(0, 0),
-    }
+impl<'a> WrappedLogosLexer<'a> {
+  fn new(source: &'a str, module_reference: ModuleReference) -> Self {
+    Self { lexer: LogosToken::lexer(source), module_reference, position: Position(0, 0) }
   }
 
-  fn next(&mut self) -> Option<Token> {
+  fn next_token(&mut self, heap: &mut Heap, error_set: &mut ErrorSet) -> Option<Token> {
     self.skip_whitespace();
 
     if let Some((loc, s)) = self.lex_str_lit_opt() {
       if !string_has_valid_escape(&s) {
-        self.error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
+        error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
       }
-      return Some(Token(loc, TokenContent::StringLiteral(self.heap.alloc_string(s))));
+      return Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
     }
 
     if let Some((loc, s)) = self.lex_line_comment_opt() {
-      let comment_pstr = self.heap.alloc_string(s);
+      let comment_pstr = heap.alloc_string(s);
       return Some(Token(loc, TokenContent::LineComment(comment_pstr)));
     }
 
     if let Some((is_doc, loc, s)) = self.lex_block_comment_opt() {
-      let comment_pstr = self.heap.alloc_string(s);
+      let comment_pstr = heap.alloc_string(s);
       return Some(Token(
         loc,
         if is_doc {
@@ -222,9 +209,9 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
         content.push_str(&self.lexer.remainder()[..skip_count]);
         self.position.1 += skip_count as u32;
         self.lexer.bump(skip_count);
-        let p_str = self.heap.alloc_string(content.to_string());
+        let p_str = heap.alloc_string(content.to_string());
         let loc = Location { module_reference: self.module_reference, start, end: self.position };
-        self.error_set.report_invalid_syntax_error(loc, "Invalid token.".to_string());
+        error_set.report_invalid_syntax_error(loc, "Invalid token.".to_string());
         return Some(Token(loc, TokenContent::Error(p_str)));
       }
     };
@@ -300,17 +287,17 @@ impl<'a, 'b, 'c> WrappedLogosLexer<'a, 'b, 'c> {
       LogosToken::OpDotDotDot => Some(self.translate_op_token(TokenOp::DotDotDot)),
       LogosToken::UpperId => {
         let loc = self.loc_of_lexer_span();
-        let p_str = self.heap.alloc_string(self.lexer.slice().to_string());
+        let p_str = heap.alloc_string(self.lexer.slice().to_string());
         Some(Token(loc, TokenContent::UpperId(p_str)))
       }
       LogosToken::LowerId => {
         let loc = self.loc_of_lexer_span();
-        let p_str = self.heap.alloc_string(self.lexer.slice().to_string());
+        let p_str = heap.alloc_string(self.lexer.slice().to_string());
         Some(Token(loc, TokenContent::LowerId(p_str)))
       }
       LogosToken::Int => {
         let loc = self.loc_of_lexer_span();
-        let p_str = self.heap.alloc_string(self.lexer.slice().to_string());
+        let p_str = heap.alloc_string(self.lexer.slice().to_string());
         Some(Token(loc, TokenContent::IntLiteral(p_str)))
       }
     }
@@ -666,13 +653,6 @@ pub(super) enum TokenContent {
 }
 
 impl TokenContent {
-  pub(super) fn is_comment(&self) -> bool {
-    matches!(
-      self,
-      TokenContent::LineComment(_) | TokenContent::BlockComment(_) | TokenContent::DocComment(_)
-    )
-  }
-
   pub(super) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       TokenContent::Keyword(k) => k.as_str().to_string(),
@@ -720,56 +700,88 @@ fn string_has_valid_escape(s: &str) -> bool {
   true
 }
 
-pub(super) fn lex_source_program(
-  source: &str,
-  module_reference: ModuleReference,
-  heap: &mut Heap,
-  error_set: &mut ErrorSet,
-) -> Vec<Token> {
-  let mut lexer = WrappedLogosLexer::new(source, module_reference, heap, error_set);
-  let mut tokens = Vec::new();
+pub(super) struct TokenProducer<'a> {
+  lexer: WrappedLogosLexer<'a>,
+  pending: Option<Token>,
+  done: bool,
+}
 
-  loop {
-    let Some(token) = lexer.next() else {
-      return tokens;
-    };
+impl<'a> TokenProducer<'a> {
+  pub(super) fn new(source: &'a str, module_reference: ModuleReference) -> Self {
+    Self { lexer: WrappedLogosLexer::new(source, module_reference), pending: None, done: false }
+  }
+
+  pub(super) fn next_token(&mut self, heap: &mut Heap, error_set: &mut ErrorSet) -> Option<Token> {
+    if self.done {
+      return None;
+    }
+    loop {
+      let Some(raw) = self.lexer.next_token(heap, error_set) else {
+        self.done = true;
+        return self.pending.take();
+      };
+      if let Some(processed) = self.process_raw_token(raw, heap, error_set) {
+        let yielded = self.pending.replace(processed);
+        if yielded.is_some() {
+          return yielded;
+        }
+      }
+    }
+  }
+
+  fn process_raw_token(
+    &mut self,
+    token: Token,
+    heap: &mut Heap,
+    error_set: &mut ErrorSet,
+  ) -> Option<Token> {
     match token {
       Token(loc, TokenContent::IntLiteral(p_str)) => {
-        let s = p_str.as_str(lexer.heap);
+        let s = p_str.as_str(heap);
         match s.parse::<i64>() {
           Result::Err(_) => {
-            lexer.error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
+            error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
           }
           Result::Ok(i64) => {
             let maxi32_plus1 = (i32::MAX as i64) + 1;
-            if i64 > maxi32_plus1 || (i64 == maxi32_plus1 && tokens.is_empty()) {
-              lexer.error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
-            } else if i64 == maxi32_plus1 {
-              let prev_index = tokens.len() - 1;
-              if let Option::Some(Token(prev_loc, TokenContent::Operator(TokenOp::Minus))) =
-                tokens.get(prev_index)
-              {
-                // Merge - and MAX_INT_PLUS_ONE into MIN_INT
-                tokens[prev_index] = Token(
-                  prev_loc.union(&loc),
-                  TokenContent::IntLiteral(lexer.heap.alloc_string(format!("-{s}"))),
-                );
-                continue;
-              }
+            if i64 > maxi32_plus1 || (i64 == maxi32_plus1 && self.pending.is_none()) {
+              error_set.report_invalid_syntax_error(loc, "Not a 32-bit integer.".to_string());
+            } else if i64 == maxi32_plus1
+              && let Option::Some(Token(prev_loc, TokenContent::Operator(TokenOp::Minus))) =
+                &self.pending
+            {
+              // Merge - and MAX_INT_PLUS_ONE into MIN_INT
+              self.pending = Some(Token(
+                prev_loc.union(&loc),
+                TokenContent::IntLiteral(heap.alloc_string(format!("-{s}"))),
+              ));
+              return None;
             }
           }
         };
-        tokens.push(Token(loc, TokenContent::IntLiteral(p_str)));
+        Some(Token(loc, TokenContent::IntLiteral(p_str)))
       }
-      t => {
-        tokens.push(t);
-      }
+      t => Some(t),
     }
   }
 }
 
 #[cfg(test)]
 mod tests {
+  fn lex_source_program(
+    source: &str,
+    module_reference: ModuleReference,
+    heap: &mut Heap,
+    error_set: &mut ErrorSet,
+  ) -> Vec<Token> {
+    let mut producer = TokenProducer::new(source, module_reference);
+    let mut tokens = Vec::new();
+    while let Some(token) = producer.next_token(heap, error_set) {
+      tokens.push(token);
+    }
+    tokens
+  }
+
   use super::*;
   use pretty_assertions::assert_eq;
   use samlang_ast::Location;
@@ -850,9 +862,7 @@ mod tests {
 
   #[test]
   fn boilterplate_1() {
-    let mut heap = Heap::new();
-    let mut errors = ErrorSet::new();
-    let mut lexer = WrappedLogosLexer::new("", ModuleReference::DUMMY, &mut heap, &mut errors);
+    let mut lexer = WrappedLogosLexer::new("", ModuleReference::DUMMY);
 
     for keyword in KEYWORDS {
       assert_eq!(false, keyword.as_str().is_empty());

@@ -1,83 +1,86 @@
-use super::lexer::{Keyword, Token, TokenContent, TokenOp};
+use super::lexer::{Keyword, Token, TokenContent, TokenOp, TokenProducer};
 use samlang_ast::{Location, source::*};
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::{
-  cmp,
-  collections::{HashMap, HashSet},
-  vec,
-};
+use std::collections::{HashMap, HashSet};
 
 const MAX_STRUCT_SIZE: usize = 16;
 const MAX_VARIANT_SIZE: usize = 15;
 
 pub(super) struct SourceParser<'a> {
-  tokens: Vec<Token>,
+  token_producer: TokenProducer<'a>,
+  peeked: Option<Token>,
+  pending_comments: Vec<Comment>,
+  last_location: Location,
   comments_store: CommentStore,
   module_reference: ModuleReference,
   heap: &'a mut Heap,
   error_set: &'a mut ErrorSet,
   builtin_classes: HashSet<PStr>,
-  position: usize,
   class_source_map: HashMap<PStr, ModuleReference>,
   available_tparams: HashSet<PStr>,
 }
 
 impl<'a> SourceParser<'a> {
   pub(super) fn new(
-    tokens: Vec<Token>,
+    token_producer: TokenProducer<'a>,
     heap: &'a mut Heap,
     error_set: &'a mut ErrorSet,
     module_reference: ModuleReference,
     builtin_classes: HashSet<PStr>,
   ) -> SourceParser<'a> {
     SourceParser {
-      tokens,
+      token_producer,
+      peeked: None,
+      pending_comments: Vec::new(),
+      last_location: Location::dummy(),
       comments_store: CommentStore::new(),
       module_reference,
       heap,
       error_set,
       builtin_classes,
-      position: 0,
       class_source_map: HashMap::new(),
       available_tparams: HashSet::new(),
     }
   }
 
-  fn last_location(&self) -> Location {
-    if self.position == 0 {
-      return Location::dummy();
-    }
-    match self.tokens.get(self.position - 1) {
-      Option::None => Location::dummy(),
-      Option::Some(Token(loc, _)) => *loc,
-    }
-  }
-
-  fn simple_peek(&self) -> Token {
-    if let Some(peeked) = self.tokens.get(self.position) {
-      *peeked
-    } else {
-      Token(self.last_location(), TokenContent::EndOfFile)
-    }
-  }
-
   fn peek(&mut self) -> Token {
+    if let Some(token) = self.peeked {
+      return token;
+    }
     loop {
-      let peeked = self.simple_peek();
-      let Token(_, content) = &peeked;
-      if content.is_comment() {
-        self.position += 1;
-      } else {
-        return peeked;
+      match self.token_producer.next_token(self.heap, self.error_set) {
+        Some(Token(loc, TokenContent::LineComment(text))) => {
+          self.pending_comments.push(Comment { kind: CommentKind::LINE, text });
+          self.last_location = loc;
+        }
+        Some(Token(loc, TokenContent::BlockComment(text))) => {
+          self.pending_comments.push(Comment { kind: CommentKind::BLOCK, text });
+          self.last_location = loc;
+        }
+        Some(Token(loc, TokenContent::DocComment(text))) => {
+          self.pending_comments.push(Comment { kind: CommentKind::DOC, text });
+          self.last_location = loc;
+        }
+        Some(token) => {
+          self.peeked = Some(token);
+          return token;
+        }
+        None => {
+          let eof = Token(self.last_location, TokenContent::EndOfFile);
+          self.peeked = Some(eof);
+          return eof;
+        }
       }
     }
   }
 
   #[must_use]
   fn consume(&mut self) -> Vec<Comment> {
-    let comments = self.collect_preceding_comments();
-    self.position += 1;
+    self.peek();
+    let comments = std::mem::take(&mut self.pending_comments);
+    let Token(loc, _) = self.peeked.take().unwrap();
+    self.last_location = loc;
     comments
   }
 
@@ -223,41 +226,6 @@ impl<'a> SourceParser<'a> {
   fn parse_lower_id(&mut self) -> Id {
     self.parse_lower_id_with_comments(Vec::new())
   }
-
-  fn collect_preceding_comments(&mut self) -> Vec<Comment> {
-    {
-      // Reset comments
-      let mut i = cmp::min(self.position, self.tokens.len());
-      while i > 0 {
-        let content = &self.tokens[i - 1].1;
-        if content.is_comment() {
-          i -= 1;
-        } else {
-          break;
-        }
-      }
-      self.position = i;
-    };
-    let mut comments = Vec::new();
-    loop {
-      match self.simple_peek() {
-        Token(_location, TokenContent::LineComment(text)) => {
-          self.position += 1;
-          comments.push(Comment { kind: CommentKind::LINE, text });
-        }
-        Token(_location, TokenContent::BlockComment(text)) => {
-          self.position += 1;
-          comments.push(Comment { kind: CommentKind::BLOCK, text })
-        }
-        Token(_location, TokenContent::DocComment(text)) => {
-          self.position += 1;
-          comments.push(Comment { kind: CommentKind::DOC, text })
-        }
-        _ => break,
-      }
-    }
-    comments
-  }
 }
 
 pub fn parse_module(mut parser: SourceParser) -> Module<()> {
@@ -285,7 +253,7 @@ pub fn parse_module(mut parser: SourceParser) -> Module<()> {
       collector
     };
     let imported_module = parser.heap.alloc_module_reference(imported_module_parts);
-    let imported_module_loc = import_loc_start.union(&parser.last_location());
+    let imported_module_loc = import_loc_start.union(&parser.last_location);
     for variable in imported_members.iter() {
       parser.class_source_map.insert(variable.name, imported_module);
     }
@@ -331,7 +299,8 @@ pub fn parse_module(mut parser: SourceParser) -> Module<()> {
     toplevels.push(toplevel_parser::parse_toplevel(&mut parser));
   }
   let trailing_comments = {
-    let comments = parser.collect_preceding_comments();
+    parser.peek();
+    let comments = std::mem::take(&mut parser.pending_comments);
     parser.comments_store.create_comment_reference(comments)
   };
 
@@ -2167,9 +2136,8 @@ mod utils {
 
 #[cfg(test)]
 mod tests {
-  use super::super::lexer::{Token, TokenContent};
+  use super::super::lexer::TokenProducer;
   use super::SourceParser;
-  use samlang_ast::Location;
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashSet;
@@ -2178,74 +2146,79 @@ mod tests {
   fn base_tests_1() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
+    let token_producer = TokenProducer::new("", ModuleReference::DUMMY);
     let mut parser = SourceParser::new(
-      Vec::new(),
+      token_producer,
       &mut heap,
       &mut error_set,
       ModuleReference::DUMMY,
       HashSet::new(),
     );
 
+    // Empty stream: peek returns EOF, consume on exhausted stream works
     parser.assert_and_consume_identifier();
     let _ = parser.consume();
     parser.peek();
-
-    parser.position = 1;
+    // Repeated consume/peek on exhausted stream
     let _ = parser.consume();
-    parser.position = 100;
     let _ = parser.consume();
+    parser.peek();
   }
 
   #[test]
   fn base_tests_2() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
+    // Use an invalid token sequence to produce an error token
+    let token_producer = TokenProducer::new("#ouch", ModuleReference::DUMMY);
     let mut parser = SourceParser::new(
-      vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str_for_test("ouch")))],
+      token_producer,
       &mut heap,
       &mut error_set,
       ModuleReference::DUMMY,
       HashSet::new(),
     );
 
-    parser.simple_peek();
+    // Consume the error token, then exercise exhausted stream
+    parser.peek();
     let _ = parser.consume();
-    parser.position = 100;
-    parser.simple_peek();
-    let _ = parser.consume();
-    parser.simple_peek();
-    parser.position = 2;
-    parser.simple_peek();
+    parser.peek();
     let _ = parser.consume();
     let _ = parser.consume();
-    parser.position = 100;
-    let _ = parser.consume();
+    parser.peek();
   }
 
   #[test]
   fn base_tests_3() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
+    let token_producer = TokenProducer::new("let // comment\nlet", ModuleReference::DUMMY);
     let mut parser = SourceParser::new(
-      vec![
-        Token(Location::dummy(), TokenContent::Keyword(super::super::lexer::Keyword::Let)),
-        Token(Location::dummy(), TokenContent::LineComment(crate::PStr::EMPTY)),
-        Token(Location::dummy(), TokenContent::Keyword(super::super::lexer::Keyword::Let)),
-      ],
+      token_producer,
       &mut heap,
       &mut error_set,
       ModuleReference::DUMMY,
       HashSet::new(),
     );
 
-    parser.position = 100;
+    // Consume all tokens: first keyword, then second keyword (comment buffered automatically)
+    let _ = parser.consume();
+    let comments = parser.consume();
+    assert_eq!(comments.len(), 1);
+    // Now exhausted
     let _ = parser.consume();
   }
 
-  fn with_tokens_robustness_tests(heap: &mut Heap, tokens: Vec<Token>) {
+  fn with_source_robustness_tests(heap: &mut Heap, source: &str) {
     let mut error_set = ErrorSet::new();
-    let mut parser =
-      SourceParser::new(tokens, heap, &mut error_set, ModuleReference::DUMMY, HashSet::new());
+    let token_producer = TokenProducer::new(source, ModuleReference::DUMMY);
+    let mut parser = SourceParser::new(
+      token_producer,
+      heap,
+      &mut error_set,
+      ModuleReference::DUMMY,
+      HashSet::new(),
+    );
 
     super::pattern_parser::parse_matching_pattern(&mut parser, Vec::new());
     super::expression_parser::parse_expression(&mut parser);
@@ -2258,14 +2231,11 @@ mod tests {
 
   #[test]
   fn empty_robustness_tests() {
-    with_tokens_robustness_tests(&mut Heap::new(), Vec::new());
+    with_source_robustness_tests(&mut Heap::new(), "");
   }
 
   #[test]
   fn error_robustness_tests() {
-    let heap = &mut Heap::new();
-    let tokens =
-      vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str_for_test("ouch")))];
-    with_tokens_robustness_tests(heap, tokens);
+    with_source_robustness_tests(&mut Heap::new(), "#ouch");
   }
 }
