@@ -1,9 +1,10 @@
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_heap::{ModuleReference, PStr};
 use std::hash::Hash;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypeName {
   /// When it is None, it is a generic type
   pub module_reference: Option<ModuleReference>,
@@ -183,7 +184,7 @@ impl TypeDefinition {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum BinaryOperator {
   MUL,
   DIV,
@@ -250,7 +251,7 @@ impl VariableName {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FunctionName {
   pub type_name: TypeName,
   pub fn_name: PStr,
@@ -652,7 +653,7 @@ impl Function {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Dupe, Copy)]
 pub struct GlobalString(pub PStr);
 
 #[derive(Debug)]

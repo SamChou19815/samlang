@@ -1,8 +1,9 @@
 use super::{hir, lir, mir};
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumAsInner)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, Hash, EnumAsInner)]
 pub enum Type {
   Int32,
   Int31,
@@ -282,7 +283,7 @@ impl InlineInstruction {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Dupe, Copy)]
 pub struct LabelId(pub u32);
 
 pub enum Instruction {

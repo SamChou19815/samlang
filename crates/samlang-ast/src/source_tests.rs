@@ -5,6 +5,7 @@ mod tests {
   use super::super::loc::Location;
   use super::super::source::expr::*;
   use super::super::source::*;
+  use dupe::Dupe;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
@@ -20,8 +21,8 @@ mod tests {
       !format!(
         "{:?}{:?}{:?}",
         comment.text,
-        CommentStore::new().clone().create_comment_reference(Vec::new()).clone(),
-        CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
+        CommentStore::new().clone().create_comment_reference(Vec::new()).dupe(),
+        CommentStore::new().clone().create_comment_reference(vec![comment]).dupe()
       )
       .is_empty()
     );
@@ -33,8 +34,8 @@ mod tests {
     assert!(CommentsNode::Comments(vec![comment]).eq(&CommentsNode::Comments(vec![comment])));
     assert!(CommentStore::new().eq(&CommentStore::new()));
 
-    assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
-    assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
+    assert_eq!("!", expr::UnaryOperator::NOT.dupe().to_string());
+    assert_eq!("-", expr::UnaryOperator::NEG.dupe().to_string());
 
     let list = [
       expr::BinaryOperator::MUL,
@@ -54,7 +55,7 @@ mod tests {
     ];
     let mut p = -1;
     for op in list.iter() {
-      assert_ne!(0, op.clone().to_string().len());
+      assert_ne!(0, op.dupe().to_string().len());
       // Assert that the list above has precedence ordered.
       let new_p = op.precedence();
       assert!(p <= new_p);
@@ -270,10 +271,10 @@ mod tests {
     let mut heap = Heap::new();
     assert_eq!("true", Literal::true_literal().pretty_print(&heap));
     assert_eq!("false", Literal::false_literal().pretty_print(&heap));
-    assert_eq!("0", Literal::int_literal(0).clone().pretty_print(&heap));
+    assert_eq!("0", Literal::int_literal(0).dupe().pretty_print(&heap));
     assert_eq!(
       "\"hi\"",
-      Literal::string_literal(heap.alloc_str_for_test("hi")).clone().pretty_print(&heap)
+      Literal::string_literal(heap.alloc_str_for_test("hi")).dupe().pretty_print(&heap)
     );
   }
 

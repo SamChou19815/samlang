@@ -1,4 +1,5 @@
 use super::hir;
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -80,7 +81,7 @@ mod type_name_boilterplate_tests {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypeNameId(u32);
 
 impl TypeNameId {
@@ -261,7 +262,7 @@ impl SymbolTable {
   }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
+#[derive(Debug, Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
 pub enum Type {
   Int32,
   Int31,
@@ -351,7 +352,7 @@ impl TypeDefinition {
   }
 }
 
-#[derive(Debug, Clone, Copy, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, Hash)]
 pub struct VariableName {
   pub name: PStr,
   pub type_: Type,
@@ -367,7 +368,7 @@ impl VariableName {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionName {
   pub type_name: TypeNameId,
   pub fn_name: PStr,
@@ -417,7 +418,7 @@ pub struct FunctionNameExpression {
   pub type_: FunctionType,
 }
 
-#[derive(Debug, Clone, Copy, EnumAsInner)]
+#[derive(Debug, Clone, Dupe, Copy, EnumAsInner)]
 pub enum Expression {
   Int32Literal(i32),
   Int31Literal(i32),

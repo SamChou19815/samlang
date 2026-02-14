@@ -9,7 +9,7 @@ use std::{
   rc::Rc,
 };
 
-#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, Dupe, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub(super) struct VariantPatternConstructor {
   pub(super) module_reference: ModuleReference,
   pub(super) class_name: PStr,

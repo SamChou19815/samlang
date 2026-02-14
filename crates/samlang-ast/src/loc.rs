@@ -1,6 +1,7 @@
+use dupe::Dupe;
 use samlang_heap::{Heap, ModuleReference};
 
-#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, Dupe, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Position(pub u32, pub u32);
 
 pub const DUMMY_POSITION: Position = Position(u32::MAX, u32::MAX);
@@ -11,7 +12,7 @@ impl Position {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {
   pub module_reference: ModuleReference,
   pub start: Position,
@@ -75,12 +76,13 @@ impl Location {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use std::{cmp::Ordering, collections::HashSet};
 
   #[test]
   fn boilterplate() {
-    assert!(!format!("{:?} {:?}", DUMMY_POSITION.clone(), Location::dummy().clone()).is_empty());
+    assert!(!format!("{:?} {:?}", DUMMY_POSITION.dupe(), Location::dummy().dupe()).is_empty());
     HashSet::new().insert(DUMMY_POSITION);
     HashSet::new().insert(ModuleReference::DUMMY);
     HashSet::new().insert(Location::dummy());

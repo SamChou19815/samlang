@@ -6,6 +6,7 @@ use super::{
   },
   type_system,
 };
+use dupe::Dupe;
 use samlang_ast::{Description, Location, Position, Reason};
 use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};
@@ -52,7 +53,7 @@ impl LocalTypingContext {
   pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<PStr, Rc<Type>> {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
-      map.insert(*name, self.type_map.get(loc).unwrap().clone());
+      map.insert(*name, self.type_map.get(loc).unwrap().dupe());
     }
     map
   }
@@ -205,7 +206,7 @@ impl<'a> TypingContext<'a> {
       let subst_mapping = interface_type_parameters
         .iter()
         .zip(&nominal_type.type_arguments)
-        .map(|(tparam, targ)| (tparam.name, targ.clone()))
+        .map(|(tparam, targ)| (tparam.name, targ.dupe()))
         .collect::<HashMap<_, _>>();
       for (tparam, targ) in interface_type_parameters.into_iter().zip(&nominal_type.type_arguments)
       {
@@ -338,7 +339,7 @@ impl<'a> TypingContext<'a> {
     .iter()
     .zip(&nominal_type.type_arguments)
     {
-      subst_map.insert(tparam.name, targ.clone());
+      subst_map.insert(tparam.name, targ.dupe());
     }
     let mod_ref = nominal_type.module_reference;
     let t_id = nominal_type.id;

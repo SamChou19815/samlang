@@ -1,4 +1,5 @@
 use super::loc::Location;
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_heap::{Heap, PStr};
 
@@ -85,7 +86,7 @@ impl Description {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Reason {
   pub use_loc: Location,
   pub def_loc: Option<Location>,

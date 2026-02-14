@@ -2,6 +2,7 @@
 mod tests {
   use super::super::hir::{BinaryOperator, GlobalString};
   use super::super::mir::*;
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
@@ -140,7 +141,7 @@ mod tests {
 
     assert_eq!("int", INT_32_TYPE.pretty_print(heap, table));
     assert_eq!("i31", INT_31_TYPE.pretty_print(heap, table));
-    assert_eq!("0", ZERO.clone().debug_print(heap, table));
+    assert_eq!("0", ZERO.dupe().debug_print(heap, table));
     assert_eq!(
       "(a: int)",
       Expression::var_name(PStr::LOWER_A, INT_32_TYPE).debug_print(heap, table)
@@ -150,7 +151,7 @@ mod tests {
       Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
         .debug_print(heap, table)
     );
-    assert_eq!("\"a\"", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap, table));
+    assert_eq!("\"a\"", Expression::StringName(PStr::LOWER_A).dupe().debug_print(heap, table));
   }
 
   #[test]

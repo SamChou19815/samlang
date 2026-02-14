@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
   use super::super::hir::*;
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
@@ -37,10 +38,7 @@ mod tests {
       TypeName::new_for_test(PStr::UPPER_A).cmp(&TypeName::new_for_test(PStr::UPPER_A)),
       std::cmp::Ordering::Equal
     );
-    assert_eq!(
-      TypeName::new_for_test(PStr::UPPER_A).clone(),
-      TypeName::new_for_test(PStr::UPPER_A)
-    );
+    assert_eq!(TypeName::new_for_test(PStr::UPPER_A).dupe(), TypeName::new_for_test(PStr::UPPER_A));
     assert!(
       FunctionName { type_name: TypeName::new_for_test(PStr::UPPER_A), fn_name: PStr::LOWER_A }
         <= FunctionName {

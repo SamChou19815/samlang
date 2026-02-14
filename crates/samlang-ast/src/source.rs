@@ -1,16 +1,17 @@
 use super::loc::Location;
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::rc::Rc;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
 pub enum CommentKind {
   LINE,
   BLOCK,
   DOC,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
 pub struct Comment {
   pub kind: CommentKind,
   pub text: PStr,
@@ -37,7 +38,7 @@ impl CommentsNode {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq)]
 pub struct CommentReference(usize);
 
 pub const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
@@ -82,7 +83,7 @@ impl Default for CommentStore {
   }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
 pub enum Literal {
   Bool(bool),
   Int(i32),
@@ -118,9 +119,10 @@ impl Literal {
 pub mod annotation {
   use super::super::Location;
   use super::CommentReference;
+  use dupe::Dupe;
   use samlang_heap::ModuleReference;
 
-  #[derive(Copy, Clone, PartialEq, Eq)]
+  #[derive(Copy, Clone, Dupe, PartialEq, Eq)]
   pub enum PrimitiveTypeKind {
     Unit,
     Bool,
@@ -221,7 +223,7 @@ pub mod annotation {
   }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
 pub struct Id {
   pub loc: Location,
   pub associated_comments: CommentReference,
@@ -376,6 +378,7 @@ pub struct AnnotatedId<T: Clone> {
 pub mod expr {
   use super::super::loc::Location;
   use super::{CommentReference, Id, Literal, annotation, pattern};
+  use dupe::Dupe;
   use samlang_heap::{ModuleReference, PStr};
   use std::collections::HashMap;
 
@@ -427,7 +430,7 @@ pub mod expr {
     pub method_name: Id,
   }
 
-  #[derive(Copy, Clone, PartialEq, Eq)]
+  #[derive(Copy, Clone, Dupe, PartialEq, Eq)]
   pub enum UnaryOperator {
     NOT,
     NEG,
@@ -462,7 +465,7 @@ pub mod expr {
     pub arguments: ParenthesizedExpressionList<T>,
   }
 
-  #[derive(Copy, Clone, PartialEq, Eq)]
+  #[derive(Copy, Clone, Dupe, PartialEq, Eq)]
   pub enum BinaryOperator {
     MUL,
     DIV,
