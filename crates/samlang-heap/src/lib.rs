@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet},
@@ -111,7 +112,9 @@ impl PartialOrd for PStrPrivateRepr {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+impl Dupe for PStrPrivateRepr {}
+
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// A string pointer free to be copied. However, we have to do GC manually.
 pub struct PStr(PStrPrivateRepr);
 
@@ -293,7 +296,7 @@ impl PStr {
   pub const LOWER_Z: PStr = Self::one_letter_literal('z');
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ModuleReference(usize);
 
 impl ModuleReference {
@@ -629,6 +632,7 @@ mod tests {
   use super::{
     Heap, ModuleReference, PStr, PStrPrivateRepr, PStrPrivateReprInline, StringStoredInHeap,
   };
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use std::{cmp::Ordering, ops::Deref};
 
@@ -639,7 +643,7 @@ mod tests {
       !format!(
         "{:?} {:?}",
         PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } })
-          .clone(),
+          .dupe(),
         PStr::INVALID_PSTR
       )
       .is_empty()
@@ -657,17 +661,17 @@ mod tests {
     let b = PStr::LOWER_B;
     let a2 = heap.alloc_string("aaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string());
     heap.alloc_string("aa".to_string());
-    assert!(PStrPrivateRepr { heap_id: 0 }.clone().eq(&PStrPrivateRepr { heap_id: 0 }));
+    assert!(PStrPrivateRepr { heap_id: 0 }.dupe().eq(&PStrPrivateRepr { heap_id: 0 }));
     assert!(heap.get_allocated_str_opt("aaaaaaaaaaaaaaaaaaaaaaaaaaa").is_some());
     assert!(heap.get_allocated_str_opt("dddddddddddddddddddddddddddddddddddddddd").is_none());
-    assert!(a1.clone().eq(&a2.clone()));
+    assert!(a1.dupe().eq(&a2.dupe()));
     assert!(a1.ne(&b));
     assert!(a2.ne(&b));
     assert_eq!(Ordering::Equal, a1.cmp(&a2));
     assert_eq!(Some(Ordering::Equal), a1.partial_cmp(&a2));
     a1.as_str(&heap);
     a2.as_str(&heap);
-    b.clone().as_str(&heap);
+    b.dupe().as_str(&heap);
 
     let ma1 = heap.alloc_module_reference_from_string_vec(vec!["a".to_string()]);
     let mb = heap.alloc_module_reference_from_string_vec(vec!["b".to_string(), "d-c".to_string()]);
@@ -686,7 +690,7 @@ mod tests {
         .is_none()
     );
     assert!(!format!("{mb:?}").is_empty());
-    assert_eq!(ma1.clone(), ma2.clone());
+    assert_eq!(ma1.dupe(), ma2.dupe());
     assert_ne!(ma1, mb);
     assert_ne!(ma2, mb);
     assert_eq!(Ordering::Equal, ma1.cmp(&ma2));
@@ -695,7 +699,7 @@ mod tests {
     assert_eq!("b/d-c.sam", mb.to_filename(&heap));
     assert_eq!("b$d_c", mb.encoded(&heap));
     assert_eq!("DUMMY", m_dummy.pretty_print(&heap));
-    mb.clone().pretty_print(&heap);
+    mb.dupe().pretty_print(&heap);
   }
 
   #[test]

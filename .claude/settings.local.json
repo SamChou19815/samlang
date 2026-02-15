@@ -1,10 +1,8 @@
 {
   "permissions": {
-    "allow": [
-      "Bash",
-      "Grep",
-      "mcp__ide__getDiagnostics",
-      "WebSearch"
-    ]
+    "allow": ["Bash", "Grep", "mcp__ide__getDiagnostics", "WebSearch"]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }

@@ -1,10 +1,11 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use logos::Logos;
 use samlang_ast::{Location, Position};
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
 
-#[derive(Clone, Copy, Logos)]
+#[derive(Clone, Dupe, Copy, Logos)]
 enum LogosToken {
   // Keywords: Imports
   #[token("import")]
@@ -473,7 +474,7 @@ impl<'a> WrappedLogosLexer<'a> {
   }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Dupe, PartialEq, Eq)]
 pub(super) enum Keyword {
   // Imports
   Import,
@@ -561,7 +562,7 @@ impl Keyword {
   }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Dupe, PartialEq, Eq)]
 pub(super) enum TokenOp {
   Underscore,
   // Parentheses
@@ -637,7 +638,7 @@ impl TokenOp {
   }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
 pub(super) enum TokenContent {
   Keyword(Keyword),
   Operator(TokenOp),
@@ -670,7 +671,7 @@ impl TokenContent {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Dupe, Copy)]
 pub(super) struct Token(pub(super) Location, pub(super) TokenContent);
 
 impl Token {
@@ -883,7 +884,7 @@ mod tests {
     assert!(TokenOp::Equal == TokenOp::Equal);
     assert_eq!(
       "DUMMY.sam:DUMMY: as",
-      Token(Location::dummy(), TokenContent::Keyword(Keyword::As)).clone().pretty_print(&heap)
+      Token(Location::dummy(), TokenContent::Keyword(Keyword::As)).dupe().pretty_print(&heap)
     );
   }
 

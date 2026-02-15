@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::mir::{
   Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
@@ -6,7 +7,7 @@ use samlang_ast::mir::{
 use samlang_heap::PStr;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq)]
 enum ParamUsageAnalysisState {
   Unused,
   Referenced,
@@ -411,6 +412,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
 
 #[cfg(test)]
 mod tests {
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     hir::BinaryOperator,
@@ -424,7 +426,7 @@ mod tests {
 
   #[test]
   fn boilerplate() {
-    assert!(!format!("{:?}", super::ParamUsageAnalysisState::Unoptimizable.clone()).is_empty());
+    assert!(!format!("{:?}", super::ParamUsageAnalysisState::Unoptimizable.dupe()).is_empty());
     assert_eq!(
       super::ParamUsageAnalysisState::Int32Constant(1),
       super::meet_param_state(

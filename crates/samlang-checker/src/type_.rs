@@ -8,7 +8,7 @@ use samlang_ast::{
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Dupe, PartialEq, Eq)]
 pub enum PrimitiveTypeKind {
   Unit,
   Bool,
@@ -698,13 +698,13 @@ mod type_tests {
 
     assert_eq!("any", Type::Any(Reason::dummy(), false).clone().pretty_print(&heap));
     assert_eq!("placeholder", Type::Any(Reason::dummy(), true).clone().pretty_print(&heap));
-    assert_eq!("unit", builder.unit_type().clone().pretty_print(&heap));
+    assert_eq!("unit", builder.unit_type().dupe().pretty_print(&heap));
     assert_eq!("int", builder.int_type().pretty_print(&heap));
     assert_eq!("bool", builder.bool_type().pretty_print(&heap));
     assert_eq!("Str", builder.string_type().pretty_print(&heap));
     assert_eq!(
       "I",
-      builder.simple_nominal_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap)
+      builder.simple_nominal_type(heap.alloc_str_for_test("I")).dupe().pretty_print(&heap)
     );
     assert_eq!(
       "class I",
@@ -717,7 +717,7 @@ mod type_tests {
       }
       .pretty_print(&heap)
     );
-    assert_eq!("I", builder.generic_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap));
+    assert_eq!("I", builder.generic_type(heap.alloc_str_for_test("I")).dupe().pretty_print(&heap));
     assert_eq!(
       "I",
       builder
@@ -733,7 +733,7 @@ mod type_tests {
           heap.alloc_str_for_test("Foo"),
           vec![builder.unit_type(), builder.simple_nominal_type(heap.alloc_str_for_test("Bar"))]
         )
-        .clone()
+        .dupe()
         .pretty_print(&heap)
     );
     assert_eq!("() -> unit", builder.fun_type(Vec::new(), builder.unit_type()).pretty_print(&heap));
@@ -756,7 +756,7 @@ mod type_tests {
       "(int, bool) -> unit",
       builder
         .fun_type(vec![builder.int_type(), builder.bool_type()], builder.unit_type())
-        .clone()
+        .dupe()
         .pretty_print(&heap)
     );
 

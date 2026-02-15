@@ -29,8 +29,9 @@ use std::{
 mod type_hint {
   use super::super::type_::{FunctionType, Type};
   use super::super::type_system;
+  use dupe::Dupe;
 
-  #[derive(Clone, Copy)]
+  #[derive(Clone, Dupe, Copy)]
   pub(super) struct Hint<'a>(Option<&'a Type>);
 
   pub(super) const MISSING: Hint<'static> = Hint(None);
@@ -67,9 +68,11 @@ mod type_hint {
 
   #[cfg(test)]
   mod tests {
+    use dupe::Dupe;
+
     #[test]
     fn boilterplate() {
-      super::MISSING.clone().get_valid_hint();
+      super::MISSING.dupe().get_valid_hint();
     }
   }
 }

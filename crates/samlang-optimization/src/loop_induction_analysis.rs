@@ -1,4 +1,5 @@
 use super::dead_code_elimination;
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_ast::{
@@ -34,7 +35,7 @@ impl PotentialLoopInvariantExpression {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Dupe, Copy)]
 pub(super) enum GuardOperator {
   LT,
   LE,
@@ -672,14 +673,14 @@ mod tests {
     let heap = &mut samlang_heap::Heap::new();
     let table = &SymbolTable::new();
 
-    get_guard_operator(BinaryOperator::LT, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::LE, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::GE, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::GT, false).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::LT, true).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::LE, true).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::GE, true).unwrap().invert().clone().invert().to_op();
-    get_guard_operator(BinaryOperator::GT, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(BinaryOperator::LT, false).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::LE, false).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::GE, false).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::GT, false).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::LT, true).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::LE, true).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::GE, true).unwrap().invert().dupe().invert().to_op();
+    get_guard_operator(BinaryOperator::GT, true).unwrap().invert().dupe().invert().to_op();
     assert!(get_guard_operator(BinaryOperator::EQ, true).is_none());
 
     BasicInductionVariableWithLoopGuard {

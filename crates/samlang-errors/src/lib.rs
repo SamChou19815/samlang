@@ -1,9 +1,10 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{Description, Location, Reason};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{BTreeSet, HashMap};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq)]
 pub enum ErrorPrinterStyle {
   Text,
   Terminal,

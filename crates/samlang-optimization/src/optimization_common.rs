@@ -1,23 +1,24 @@
+use dupe::Dupe;
 use samlang_ast::{hir::BinaryOperator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct IndexAccessBindedValue {
   pub(super) type_: Type,
   pub(super) pointer_expression: Expression,
   pub(super) index: usize,
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct BinaryBindedValue {
   pub(super) operator: BinaryOperator,
   pub(super) e1: Expression,
   pub(super) e2: Expression,
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum BindedValue {
   IndexedAccess(IndexAccessBindedValue),
   Binary(BinaryBindedValue),
