@@ -153,7 +153,7 @@ impl<'a> LoweringManager<'a> {
             statements.push(lir::Statement::Call {
               callee: lir::Expression::FnName(fn_name.name, self.lower_fn_type(fn_name.type_)),
               arguments: arguments.into_iter().map(|e| self.lower_expression(e)).collect(),
-              return_type: lowered_return_type.clone(),
+              return_type: lowered_return_type,
               return_collector,
             });
           }
@@ -185,7 +185,7 @@ impl<'a> LoweringManager<'a> {
                 .into_iter()
                 .chain(arguments.into_iter().map(|e| self.lower_expression(e)))
                 .collect(),
-              return_type: lowered_return_type.clone(),
+              return_type: lowered_return_type,
               return_collector,
             });
           }
@@ -350,7 +350,7 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
     match &type_def.mappings {
       mir::TypeDefinitionMappings::Struct(types) => {
         let lir_mappings =
-          types.iter().cloned().map(|t| lower_type(t, &types_needing_any_pointer)).collect_vec();
+          types.iter().copied().map(|t| lower_type(t, &types_needing_any_pointer)).collect_vec();
         type_defs.push(lir::TypeDefinition {
           name: type_def.name,
           parent_type: None,

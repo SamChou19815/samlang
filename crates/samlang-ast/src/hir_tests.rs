@@ -164,7 +164,7 @@ mod tests {
     assert_eq!("int", INT_TYPE.pretty_print(heap));
     assert_eq!("i31", INT31_TYPE.pretty_print(heap));
     assert_eq!("_Str", STRING_TYPE.pretty_print(heap));
-    assert_eq!("0", ZERO.clone().debug_print(heap));
+    assert_eq!("0", ZERO.dupe().debug_print(heap));
     assert_eq!("0 as i31", Expression::Int31Zero.debug_print(heap));
     assert_eq!("(a: int)", Expression::var_name(PStr::LOWER_A, INT_TYPE).debug_print(heap));
     assert_eq!(
@@ -173,7 +173,7 @@ mod tests {
         PStr::LOWER_A,
         Type::new_id(PStr::UPPER_A, vec![INT_TYPE, (Type::new_id_no_targs(PStr::UPPER_B))])
       )
-      .clone()
+      .dupe()
       .debug_print(heap)
     );
     assert_eq!(
@@ -181,7 +181,7 @@ mod tests {
       Expression::var_name(PStr::LOWER_A, Type::new_id(PStr::UPPER_A, vec![(INT_TYPE)]))
         .debug_print(heap)
     );
-    assert_eq!("\"a\"", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap));
+    assert_eq!("\"a\"", Expression::StringName(PStr::LOWER_A).dupe().debug_print(heap));
   }
 
   #[test]
@@ -420,7 +420,7 @@ mod tests {
         Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
       )],
     };
-    assert!(!format!("{:?}", stmt.clone()).is_empty());
+    assert!(!format!("{stmt:?}").is_empty());
     let expected = r#"let bar: int;
 if 0 {
   let baz: DUMMY_FooBar = ["meggo"];

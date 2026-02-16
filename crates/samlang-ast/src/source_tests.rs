@@ -237,7 +237,7 @@ mod tests {
     });
     matching_pattern.bindings();
     assert_eq!(false, matching_pattern.always_matching());
-    assert_eq!(*matching_pattern.clone().loc(), Location::dummy());
+    assert_eq!(*matching_pattern.loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A), ());
     matching_pattern.bindings();
     assert!(matching_pattern.always_matching());
@@ -307,9 +307,9 @@ mod tests {
     builder.simple_id_annot(heap.alloc_str_for_test("str")).associated_comments();
   }
 
-  fn coverage_hack_for_expr(expr: expr::E<()>) {
+  fn coverage_hack_for_expr(mut expr: expr::E<()>) {
     expr.precedence();
-    expr.clone().common_mut();
+    expr.common_mut();
     assert_eq!(expr.common().loc, expr.common().loc);
     assert!(expr.eq(&expr));
   }
@@ -449,7 +449,7 @@ mod tests {
       body: Box::new(zero_expr.clone()),
     }));
     coverage_hack_for_expr(E::Block(Block {
-      common: common.clone(),
+      common,
       statements: vec![
         expr::DeclarationStatement {
           loc: Location::dummy(),
@@ -557,7 +557,7 @@ mod tests {
           assigned_expression: Box::new(zero_expr.clone()),
         },
       ],
-      expression: Some(Box::new(zero_expr.clone())),
+      expression: Some(Box::new(zero_expr)),
       ending_associated_comments: NO_COMMENT_REFERENCE,
     }));
   }
@@ -572,7 +572,6 @@ mod tests {
         name: Id::from(heap.alloc_str_for_test("name")),
         bound: None
       }
-      .clone()
       .name
       .name
       .as_str(&heap)
@@ -638,7 +637,6 @@ mod tests {
           ending_associated_comments: NO_COMMENT_REFERENCE
         }
       }
-      .clone()
       .type_parameters
       .is_none()
     );
@@ -650,7 +648,6 @@ mod tests {
         imported_module: ModuleReference::DUMMY,
         imported_module_loc: Location::dummy(),
       }
-      .clone()
       .imported_members
       .is_empty()
     );
@@ -679,7 +676,7 @@ mod tests {
         }),
       }],
     };
-    assert!(enum_type_def.clone().eq(&enum_type_def));
+    assert!(enum_type_def.eq(&enum_type_def));
 
     assert!(
       AnnotatedId { name: Id::from(PStr::LOWER_A), type_: (), annotation: builder.int_annot() }.eq(
@@ -757,7 +754,7 @@ mod tests {
     class.loc();
     class.associated_comments();
     assert!(class.is_class());
-    assert!(class.clone().eq(&class));
+    assert!(class.eq(&class));
     let interface: Toplevel<()> = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
@@ -800,7 +797,7 @@ mod tests {
         ending_associated_comments: NO_COMMENT_REFERENCE,
       },
     });
-    assert!(interface.clone().eq(&interface));
+    assert!(interface.eq(&interface));
     interface.members_iter().next();
     interface.loc();
     interface.associated_comments();
@@ -813,7 +810,7 @@ mod tests {
       imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
     };
-    assert!(one_import.clone().eq(&one_import));
+    assert!(one_import.eq(&one_import));
 
     Module {
       comment_store: CommentStore::new(),

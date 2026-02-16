@@ -1,3 +1,4 @@
+use dupe::OptionDupedExt;
 use itertools::Itertools;
 use ordermap::OrderSet;
 use samlang_ast::{
@@ -12,6 +13,7 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{BTreeMap, HashMap},
   rc::Rc,
+  sync::Arc,
 };
 
 pub(crate) struct SynthesizedTypes {
@@ -97,7 +99,7 @@ fn collect_used_generic_types_visitor(
       if name.module_reference.is_none() && generic_types.contains(&name.type_name) {
         collector.insert(name.type_name);
       }
-      for t in type_arguments {
+      for t in type_arguments.iter() {
         collect_used_generic_types_visitor(t, generic_types, collector);
       }
     }
@@ -122,7 +124,7 @@ pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Typ
     Type::Int31 => Type::Int31,
     Type::Id(id) => {
       if id.name.module_reference.is_none() {
-        replacement_map.get(&id.name.type_name).cloned().unwrap()
+        replacement_map.get(&id.name.type_name).duped().unwrap()
       } else {
         Type::Id(IdType {
           name: id.name,
@@ -130,7 +132,7 @@ pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Typ
             .type_arguments
             .iter()
             .map(|it| type_application(it, replacement_map))
-            .collect_vec(),
+            .collect(),
         })
       }
     }
@@ -189,7 +191,8 @@ impl TypeLoweringManager {
             .into_iter()
             .sorted(),
         );
-        let type_args = type_parameters.iter().map(|it| Type::new_generic_type(*it)).collect_vec();
+        let type_args: Arc<[_]> =
+          type_parameters.iter().map(|it| Type::new_generic_type(*it)).collect();
         let closure_type_definition = self.type_synthesizer.synthesize_closure_type(
           heap,
           rewritten_function_type,
@@ -219,7 +222,7 @@ impl TypeLoweringManager {
     identifier: PStr,
     source_type_def: Option<&source::TypeDefinition>,
   ) -> TypeDefinition {
-    let type_parameters = self.generic_types.iter().cloned().collect();
+    let type_parameters = self.generic_types.iter().copied().collect();
     let name = TypeName { module_reference: Some(*module_reference), type_name: identifier };
     match source_type_def {
       Some(source::TypeDefinition::Struct {

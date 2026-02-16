@@ -489,7 +489,7 @@ impl Rewriter {
           &existing_fn,
           encoded_specialized_fn_name,
           function_type,
-          &existing_fn.type_parameters.iter().cloned().zip(function_type_arguments).collect(),
+          &existing_fn.type_parameters.iter().copied().zip(function_type_arguments).collect(),
         );
         self.specialized_functions.push(rewritten_fn);
       }
@@ -562,7 +562,7 @@ impl Rewriter {
       self.specialized_type_definition_names.insert(mir_type_name);
       if let Some(type_def) = self.original_type_defs.get(&id_type.name).cloned() {
         let solved_targs_replacement_map: HashMap<PStr, mir::Type> =
-          type_def.type_parameters.iter().cloned().zip(concrete_type_mir_targs).collect();
+          type_def.type_parameters.iter().copied().zip(concrete_type_mir_targs).collect();
         let rewritten_mappings = match &type_def.mappings {
           hir::TypeDefinitionMappings::Struct(types) => mir::TypeDefinitionMappings::Struct(
             types
@@ -611,7 +611,7 @@ impl Rewriter {
       } else {
         let closure_def = self.original_closure_defs.get(&id_type.name).unwrap();
         let solved_targs_replacement_map: HashMap<PStr, mir::Type> =
-          closure_def.type_parameters.iter().cloned().zip(concrete_type_mir_targs).collect();
+          closure_def.type_parameters.iter().copied().zip(concrete_type_mir_targs).collect();
         let original_fn_type = closure_def.function_type.clone();
         let rewritten_fn_type =
           self.rewrite_fn_type(heap, &original_fn_type, &solved_targs_replacement_map);
@@ -757,6 +757,7 @@ pub(super) fn perform_generics_specialization(
 #[cfg(test)]
 mod tests {
   use super::*;
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_ast::hir::{BinaryOperator, GlobalString};
   use samlang_heap::{Heap, ModuleReference, PStr};
@@ -838,7 +839,7 @@ sources.mains = [_DUMMY_I$main]
         global_variables: vec![GlobalString(heap.alloc_str_for_test("G1"))],
         closure_types: Vec::new(),
         type_definitions: vec![hir::TypeDefinition {
-          name: hir::STRING_TYPE.into_id().unwrap().name,
+          name: hir::STRING_TYPE.dupe().as_id().unwrap().name,
           type_parameters: Vec::new(),
           mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
         }],
@@ -863,7 +864,7 @@ sources.mains = [_DUMMY_I$main]
                 },
                 fn_name: PStr::PRINTLN,
               },
-              type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], hir::INT_TYPE),
+              type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE.dupe()], hir::INT_TYPE),
               type_arguments: Vec::new(),
             }),
             arguments: vec![hir::Expression::StringName(heap.alloc_str_for_test("G1"))],
@@ -894,13 +895,13 @@ sources.mains = [_DUMMY_I$main]
     let type_j = hir::Type::new_id_no_targs(PStr::UPPER_J);
     let type_ia = hir::Type::new_id(
       PStr::UPPER_I,
-      vec![hir::Type::new_generic_type(PStr::UPPER_A), hir::STRING_TYPE],
+      vec![hir::Type::new_generic_type(PStr::UPPER_A), hir::STRING_TYPE.dupe()],
     );
     let type_ib = hir::Type::new_id(
       PStr::UPPER_I,
       vec![hir::INT_TYPE, hir::Type::new_generic_type(PStr::UPPER_B)],
     );
-    let type_i = hir::Type::new_id(PStr::UPPER_I, vec![hir::INT_TYPE, hir::STRING_TYPE]);
+    let type_i = hir::Type::new_id(PStr::UPPER_I, vec![hir::INT_TYPE, hir::STRING_TYPE.dupe()]);
     let g1 = hir::Expression::StringName(heap.alloc_str_for_test("G1"));
     assert_specialized(
       hir::Sources {
@@ -941,7 +942,7 @@ sources.mains = [_DUMMY_I$main]
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE]),
           },
           hir::TypeDefinition {
-            name: hir::STRING_TYPE.into_id().unwrap().name,
+            name: hir::STRING_TYPE.dupe().as_id().unwrap().name,
             type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
           },
@@ -1036,11 +1037,11 @@ sources.mains = [_DUMMY_I$main]
             type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(
               vec![hir::Type::new_generic_type(PStr::UPPER_A)],
-              type_ia.clone(),
+              type_ia.dupe(),
             ),
             body: vec![hir::Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v"),
-              type_: type_ia.clone().into_id().unwrap(),
+              type_: type_ia.dupe().into_id().unwrap(),
               expression_list: vec![
                 hir::Expression::int(0),
                 hir::Expression::var_name(
@@ -1060,11 +1061,11 @@ sources.mains = [_DUMMY_I$main]
             type_parameters: vec![PStr::UPPER_B],
             type_: hir::Type::new_fn_unwrapped(
               vec![hir::Type::new_generic_type(PStr::UPPER_B)],
-              type_ib.clone(),
+              type_ib.dupe(),
             ),
             body: vec![hir::Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v"),
-              type_: type_ib.clone().into_id().unwrap(),
+              type_: type_ib.dupe().into_id().unwrap(),
               expression_list: vec![
                 hir::Expression::int(1),
                 hir::Expression::var_name(
@@ -1093,11 +1094,11 @@ sources.mains = [_DUMMY_I$main]
                         type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
-                      type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], type_i.clone()),
+                      type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], type_i.dupe()),
                       type_arguments: vec![hir::INT_TYPE],
                     }),
                     arguments: vec![hir::ZERO],
-                    return_type: type_i.clone(),
+                    return_type: type_i.dupe(),
                     return_collector: Some(PStr::LOWER_A),
                   },
                   hir::Statement::Call {
@@ -1107,13 +1108,16 @@ sources.mains = [_DUMMY_I$main]
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(
-                        vec![hir::STRING_TYPE],
-                        hir::Type::new_id(PStr::UPPER_I, vec![hir::STRING_TYPE, hir::STRING_TYPE]),
+                        vec![hir::STRING_TYPE.dupe()],
+                        hir::Type::new_id(
+                          PStr::UPPER_I,
+                          vec![hir::STRING_TYPE.dupe(), hir::STRING_TYPE.dupe()],
+                        ),
                       ),
-                      type_arguments: vec![hir::STRING_TYPE],
+                      type_arguments: vec![hir::STRING_TYPE.dupe()],
                     }),
-                    arguments: vec![g1.clone()],
-                    return_type: type_i.clone(),
+                    arguments: vec![g1.dupe()],
+                    return_type: type_i.dupe(),
                     return_collector: Some(heap.alloc_str_for_test("a2")),
                   },
                   hir::Statement::Call {
@@ -1122,11 +1126,14 @@ sources.mains = [_DUMMY_I$main]
                         type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIB"),
                       },
-                      type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], type_i.clone()),
-                      type_arguments: vec![hir::STRING_TYPE],
+                      type_: hir::Type::new_fn_unwrapped(
+                        vec![hir::STRING_TYPE.dupe()],
+                        type_i.dupe(),
+                      ),
+                      type_arguments: vec![hir::STRING_TYPE.dupe()],
                     }),
-                    arguments: vec![g1.clone()],
-                    return_type: type_i.clone(),
+                    arguments: vec![g1.dupe()],
+                    return_type: type_i.dupe(),
                     return_collector: Some(PStr::LOWER_B),
                   },
                   hir::Statement::Call {
@@ -1135,11 +1142,11 @@ sources.mains = [_DUMMY_I$main]
                         type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("functor_fun"),
                       },
-                      type_: hir::Type::new_fn_unwrapped(vec![type_i.clone()], hir::INT_TYPE),
-                      type_arguments: vec![type_i.clone()],
+                      type_: hir::Type::new_fn_unwrapped(vec![type_i.dupe()], hir::INT_TYPE),
+                      type_arguments: vec![type_i.dupe()],
                     }),
-                    arguments: vec![g1.clone()],
-                    return_type: type_i.clone(),
+                    arguments: vec![g1.dupe()],
+                    return_type: type_i.dupe(),
                     return_collector: None,
                   },
                   hir::Statement::Call {
@@ -1148,11 +1155,11 @@ sources.mains = [_DUMMY_I$main]
                         type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("functor_fun"),
                       },
-                      type_: hir::Type::new_fn_unwrapped(vec![type_j.clone()], hir::INT_TYPE),
-                      type_arguments: vec![type_j.clone()],
+                      type_: hir::Type::new_fn_unwrapped(vec![type_j.dupe()], hir::INT_TYPE),
+                      type_arguments: vec![type_j.dupe()],
                     }),
-                    arguments: vec![g1.clone()],
-                    return_type: type_j.clone(),
+                    arguments: vec![g1.dupe()],
+                    return_type: type_j.dupe(),
                     return_collector: None,
                   },
                   hir::Statement::IndexedAccess {
@@ -1193,7 +1200,7 @@ sources.mains = [_DUMMY_I$main]
                   },
                   hir::Statement::StructInit {
                     struct_variable_name: PStr::LOWER_J,
-                    type_: type_j.clone().into_id().unwrap(),
+                    type_: type_j.dupe().into_id().unwrap(),
                     expression_list: vec![hir::Expression::int(0)],
                   },
                   hir::Statement::IndexedAccess {
@@ -1206,7 +1213,7 @@ sources.mains = [_DUMMY_I$main]
                     closure_variable_name: heap.alloc_str_for_test("c1"),
                     closure_type: hir::Type::new_id_unwrapped(
                       heap.alloc_str_for_test("CC"),
-                      vec![hir::STRING_TYPE, hir::STRING_TYPE],
+                      vec![hir::STRING_TYPE.dupe(), hir::STRING_TYPE.dupe()],
                     ),
                     function_name: hir::FunctionNameExpression {
                       name: hir::FunctionName {
@@ -1214,18 +1221,21 @@ sources.mains = [_DUMMY_I$main]
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(
-                        vec![hir::STRING_TYPE],
-                        hir::Type::new_id(PStr::UPPER_I, vec![hir::STRING_TYPE, hir::STRING_TYPE]),
+                        vec![hir::STRING_TYPE.dupe()],
+                        hir::Type::new_id(
+                          PStr::UPPER_I,
+                          vec![hir::STRING_TYPE.dupe(), hir::STRING_TYPE.dupe()],
+                        ),
                       ),
-                      type_arguments: vec![hir::STRING_TYPE],
+                      type_arguments: vec![hir::STRING_TYPE.dupe()],
                     },
-                    context: g1.clone(),
+                    context: g1.dupe(),
                   },
                   hir::Statement::ClosureInit {
                     closure_variable_name: heap.alloc_str_for_test("c2"),
                     closure_type: hir::Type::new_id_unwrapped(
                       heap.alloc_str_for_test("CC"),
-                      vec![hir::INT_TYPE, hir::STRING_TYPE],
+                      vec![hir::INT_TYPE, hir::STRING_TYPE.dupe()],
                     ),
                     function_name: hir::FunctionNameExpression {
                       name: hir::FunctionName {
@@ -1233,10 +1243,13 @@ sources.mains = [_DUMMY_I$main]
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(
-                        vec![hir::STRING_TYPE],
-                        hir::Type::new_id(PStr::UPPER_I, vec![hir::STRING_TYPE, hir::STRING_TYPE]),
+                        vec![hir::STRING_TYPE.dupe()],
+                        hir::Type::new_id(
+                          PStr::UPPER_I,
+                          vec![hir::STRING_TYPE.dupe(), hir::STRING_TYPE.dupe()],
+                        ),
                       ),
-                      type_arguments: vec![hir::STRING_TYPE],
+                      type_arguments: vec![hir::STRING_TYPE.dupe()],
                     },
                     context: g1,
                   },

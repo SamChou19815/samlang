@@ -696,8 +696,8 @@ mod type_tests {
     let builder = test_type_builder::create();
     let mut heap = Heap::new();
 
-    assert_eq!("any", Type::Any(Reason::dummy(), false).clone().pretty_print(&heap));
-    assert_eq!("placeholder", Type::Any(Reason::dummy(), true).clone().pretty_print(&heap));
+    assert_eq!("any", Type::Any(Reason::dummy(), false).pretty_print(&heap));
+    assert_eq!("placeholder", Type::Any(Reason::dummy(), true).pretty_print(&heap));
     assert_eq!("unit", builder.unit_type().dupe().pretty_print(&heap));
     assert_eq!("int", builder.int_type().pretty_print(&heap));
     assert_eq!("bool", builder.bool_type().pretty_print(&heap));
@@ -723,7 +723,6 @@ mod type_tests {
       builder
         .simple_nominal_type_unwrapped(heap.alloc_str_for_test("I"))
         .reposition(Location::dummy())
-        .clone()
         .pretty_print(&heap)
     );
     assert_eq!(
@@ -744,7 +743,6 @@ mod type_tests {
         argument_types: Vec::new(),
         return_type: builder.unit_type()
       }
-      .clone()
       .reposition(Location::dummy())
       .pretty_print(&heap)
     );

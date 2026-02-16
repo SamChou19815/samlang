@@ -7,13 +7,14 @@ use super::{
   mir_constant_param_elimination, mir_generics_specialization, mir_tail_recursion_rewrite,
   mir_type_deduplication,
 };
+use dupe::{Dupe, OptionDupedExt};
 use itertools::Itertools;
 use ordermap::OrderSet;
 use samlang_ast::{hir, mir, source};
 use samlang_checker::type_;
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, sync::Arc};
 
 struct LoweringResult {
   statements: Vec<hir::Statement>,
@@ -34,7 +35,7 @@ fn bind_value(cx: &mut LoweringContext, name: PStr, value: hir::Expression) {
       cx.insert(name, value);
     }
     hir::Expression::StringName(n) => {
-      let value_to_insert = cx.get(n).cloned().unwrap_or(value);
+      let value_to_insert = cx.get(n).duped().unwrap_or(value);
       cx.insert(name, value_to_insert);
     }
   }
@@ -90,7 +91,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   ) -> ExpressionLoweringManager<'a> {
     let mut variable_cx = LoweringContext::new();
     for (n, t) in &defined_variables {
-      bind_value(&mut variable_cx, *n, hir::Expression::var_name(*n, t.clone()));
+      bind_value(&mut variable_cx, *n, hir::Expression::var_name(*n, t.dupe()));
     }
     ExpressionLoweringManager {
       heap,
@@ -140,8 +141,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     .into_iter()
     .sorted()
     .collect_vec();
-    let type_arguments =
-      type_parameters.iter().cloned().map(hir::Type::new_generic_type).collect_vec();
+    let type_arguments: Arc<[_]> =
+      type_parameters.iter().copied().map(hir::Type::new_generic_type).collect();
     let name = self
       .type_lowering_manager
       .type_synthesizer
@@ -159,8 +160,8 @@ impl<'a> ExpressionLoweringManager<'a> {
         .into_iter()
         .sorted()
         .collect_vec();
-    let type_arguments =
-      type_parameters.iter().copied().map(hir::Type::new_generic_type).collect_vec();
+    let type_arguments: Arc<[_]> =
+      type_parameters.iter().copied().map(hir::Type::new_generic_type).collect();
     let name = self
       .type_lowering_manager
       .type_synthesizer
@@ -170,13 +171,17 @@ impl<'a> ExpressionLoweringManager<'a> {
   }
 
   fn resolve_variable(&mut self, variable_name: &PStr) -> hir::Expression {
-    self.variable_cx.get(variable_name).unwrap().clone()
+    self.variable_cx.get(variable_name).unwrap().dupe()
   }
 
   fn resolve_struct_mapping_of_id_type(&mut self, hir_id_type: &hir::IdType) -> Vec<hir::Type> {
-    let type_def = self.type_definition_mapping.get(&hir_id_type.name).unwrap().clone();
-    let replacement_map: HashMap<_, _> =
-      type_def.type_parameters.iter().copied().zip(hir_id_type.type_arguments.clone()).collect();
+    let type_def = self.type_definition_mapping.get(&hir_id_type.name).unwrap();
+    let replacement_map: HashMap<_, _> = type_def
+      .type_parameters
+      .iter()
+      .copied()
+      .zip(hir_id_type.type_arguments.iter().cloned())
+      .collect();
     type_def
       .mappings
       .as_struct()
@@ -254,7 +259,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let value_name = self.allocate_temp_variable();
     statements.push(hir::Statement::IndexedAccess {
       name: value_name,
-      type_: extracted_field_type.clone(),
+      type_: extracted_field_type.dupe(),
       pointer_expression: result_expr,
       index,
     });
@@ -262,11 +267,11 @@ impl<'a> ExpressionLoweringManager<'a> {
     bind_value(
       &mut self.variable_cx,
       value_name,
-      hir::Expression::var_name(value_name, extracted_field_type.clone()),
+      hir::Expression::var_name(value_name, extracted_field_type.dupe()),
     );
     LoweringResult {
       statements,
-      expression: hir::Expression::var_name(value_name, extracted_field_type.clone()),
+      expression: hir::Expression::var_name(value_name, extracted_field_type.dupe()),
     }
   }
 
@@ -279,7 +284,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let LoweringResult { mut statements, expression: result_expr } = self.lower(&expression.object);
     let original_function_type = self.get_function_type_without_context(&expression.common.type_);
     let method_type = hir::FunctionType {
-      argument_types: vec![result_expr.type_().clone()]
+      argument_types: vec![result_expr.type_().dupe()]
         .into_iter()
         .chain(original_function_type.argument_types.iter().cloned())
         .collect_vec(),
@@ -290,11 +295,11 @@ impl<'a> ExpressionLoweringManager<'a> {
     bind_value(
       &mut self.variable_cx,
       closure_variable_name,
-      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
+      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.dupe())),
     );
     statements.push(hir::Statement::ClosureInit {
       closure_variable_name,
-      closure_type: closure_type.clone(),
+      closure_type: closure_type.dupe(),
       function_name: hir::FunctionNameExpression {
         name: function_name,
         type_: method_type,
@@ -345,8 +350,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     parameter_types.push(hir::INT_TYPE);
     for e in expressions {
       let lowered = self.lowered_and_add_statements(e, &mut lowered_stmts);
-      parameter_types.push(lowered.type_().clone());
-      type_arguments.push(lowered.type_().clone());
+      parameter_types.push(lowered.type_().dupe());
+      type_arguments.push(lowered.type_().dupe());
       lowered_arguments.push(lowered);
     }
     lowered_stmts.push(hir::Statement::Call {
@@ -354,12 +359,12 @@ impl<'a> ExpressionLoweringManager<'a> {
         name: fn_name,
         type_: hir::FunctionType {
           argument_types: parameter_types,
-          return_type: Box::new(return_type.clone()),
+          return_type: Box::new(return_type.dupe()),
         },
         type_arguments,
       }),
       arguments: lowered_arguments,
-      return_type: return_type.clone(),
+      return_type: return_type.dupe(),
       return_collector: Some(return_collector_name),
     });
     LoweringResult {
@@ -394,12 +399,12 @@ impl<'a> ExpressionLoweringManager<'a> {
           inferred_targs
         };
         (
-          fn_type_without_cx.return_type.as_ref().clone(),
+          fn_type_without_cx.return_type.as_ref().dupe(),
           hir::Statement::Call {
             callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
               name: fn_name,
               type_: hir::FunctionType {
-                argument_types: vec![hir_target.type_().clone()]
+                argument_types: vec![hir_target.type_().dupe()]
                   .into_iter()
                   .chain(fn_type_without_cx.argument_types.iter().cloned())
                   .collect_vec(),
@@ -417,7 +422,7 @@ impl<'a> ExpressionLoweringManager<'a> {
                   .map(|a| self.lowered_and_add_statements(a, &mut lowered_stmts)),
               )
               .collect_vec(),
-            return_type: fn_type_without_cx.return_type.as_ref().clone(),
+            return_type: fn_type_without_cx.return_type.as_ref().dupe(),
             return_collector: if is_void_return { None } else { Some(return_collector_name) },
           },
         )
@@ -426,7 +431,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let lowered_fn_expr = self
           .lowered_and_add_statements(source_callee, &mut lowered_stmts)
           .as_variable()
-          .cloned()
+          .duped()
           .unwrap();
         let source_callee_type = source_callee.type_();
         let source_callee_fn_type = source_callee_type.as_fn().unwrap();
@@ -440,7 +445,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           .map(|a| self.lowered_and_add_statements(a, &mut lowered_stmts))
           .collect_vec();
         (
-          return_type.clone(),
+          return_type.dupe(),
           hir::Statement::Call {
             callee: hir::Callee::Variable(lowered_fn_expr),
             arguments: lowered_args,
@@ -541,18 +546,18 @@ impl<'a> ExpressionLoweringManager<'a> {
               fn_name: PStr::CONCAT,
             },
             type_: hir::Type::new_fn_unwrapped(
-              vec![hir::STRING_TYPE, hir::STRING_TYPE],
-              hir::STRING_TYPE,
+              vec![hir::STRING_TYPE.dupe(), hir::STRING_TYPE.dupe()],
+              hir::STRING_TYPE.dupe(),
             ),
             type_arguments: Vec::new(),
           }),
           arguments: vec![e1, e2],
-          return_type: hir::STRING_TYPE,
+          return_type: hir::STRING_TYPE.dupe(),
           return_collector: Some(return_collector_name),
         });
         return LoweringResult {
           statements: lowered_stmts,
-          expression: hir::Expression::var_name(return_collector_name, hir::STRING_TYPE),
+          expression: hir::Expression::var_name(return_collector_name, hir::STRING_TYPE.dupe()),
         };
       }
       source::expr::BinaryOperator::MUL => hir::BinaryOperator::MUL,
@@ -595,7 +600,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           let name = self.allocate_temp_variable();
           binding_names.insert(n, name);
           let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-          bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.clone()));
+          bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
           lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
         }
         let LoweringResult { statements: mut stmts, expression: condition } =
@@ -619,18 +624,18 @@ impl<'a> ExpressionLoweringManager<'a> {
     let LoweringResult { statements: s1, expression: e1 } = self.lower_block(&expression.e1);
     let LoweringResult { statements: s2, expression: e2 } =
       self.lower_if_else_or_block(&expression.e2);
-    let lowered_return_type = e1.type_().clone();
+    let lowered_return_type = e1.type_().dupe();
     lowered_stmts.push(hir::Statement::IfElse {
       condition,
       s1,
       s2,
-      final_assignments: vec![(final_var_name, lowered_return_type.clone(), e1, e2)],
+      final_assignments: vec![(final_var_name, lowered_return_type.dupe(), e1, e2)],
     });
     self.variable_cx.pop_scope();
     bind_value(
       &mut self.variable_cx,
       final_var_name,
-      hir::Expression::var_name(final_var_name, lowered_return_type.clone()),
+      hir::Expression::var_name(final_var_name, lowered_return_type.dupe()),
     );
     LoweringResult {
       statements: lowered_stmts,
@@ -670,14 +675,14 @@ impl<'a> ExpressionLoweringManager<'a> {
           } = self.lower_matching_pattern(
             &nested.pattern,
             binding_names,
-            hir::Expression::var_name(name, field_type.clone()),
+            hir::Expression::var_name(name, field_type.dupe()),
           );
           nested_pattern_lowering_stmts.insert(
             0,
             hir::Statement::IndexedAccess {
               name,
-              type_: field_type.clone(),
-              pointer_expression: lowered_expression.clone(),
+              type_: field_type.dupe(),
+              pointer_expression: lowered_expression.dupe(),
               index,
             },
           );
@@ -716,14 +721,14 @@ impl<'a> ExpressionLoweringManager<'a> {
           } = self.lower_matching_pattern(
             &nested.pattern,
             binding_names,
-            hir::Expression::var_name(name, field_type.clone()),
+            hir::Expression::var_name(name, field_type.dupe()),
           );
           nested_pattern_lowering_stmts.insert(
             0,
             hir::Statement::IndexedAccess {
               name,
-              type_: field_type.clone(),
-              pointer_expression: lowered_expression.clone(),
+              type_: field_type.dupe(),
+              pointer_expression: lowered_expression.dupe(),
               index,
             },
           );
@@ -763,7 +768,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         {
           let data_var_type = self.type_lowering_manager.lower_source_type(self.heap, nested_type);
           let name = self.allocate_temp_variable();
-          non_optional_bindings.push((name, data_var_type.clone()));
+          non_optional_bindings.push((name, data_var_type.dupe()));
           optional_bindings.push(Some((name, data_var_type)));
         }
         let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
@@ -779,7 +784,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             } = self.lower_matching_pattern(
               nested_pattern,
               binding_names,
-              hir::Expression::var_name(name, data_var_type.clone()),
+              hir::Expression::var_name(name, data_var_type.dupe()),
             );
             if nested_pattern_condition == hir::ONE {
               nested_pattern_lowering_stmts.append(&mut acc.statements);
@@ -856,16 +861,16 @@ impl<'a> ExpressionLoweringManager<'a> {
             fn_name: PStr::PANIC,
           },
           type_: hir::FunctionType {
-            argument_types: vec![hir::INT_TYPE, hir::STRING_TYPE],
-            return_type: Box::new(final_return_type.clone()),
+            argument_types: vec![hir::INT_TYPE, hir::STRING_TYPE.dupe()],
+            return_type: Box::new(final_return_type.dupe()),
           },
-          type_arguments: vec![final_return_type.clone()],
+          type_arguments: vec![final_return_type.dupe()],
         }),
         arguments: vec![
           hir::ZERO,
           hir::Expression::StringName(self.string_manager.allocate(PStr::EMPTY).0),
         ],
-        return_type: final_return_type.clone(),
+        return_type: final_return_type.dupe(),
         return_collector: Some(unreachable_branch_collector),
       }],
       hir::Expression::var_name(unreachable_branch_collector, final_return_type),
@@ -878,7 +883,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     } in expression.cases.iter().rev()
     {
       let final_assignment_temp = self.allocate_temp_variable();
-      let lowered_return_type = acc.1.type_().clone();
+      let lowered_return_type = acc.1.type_().dupe();
       let (acc_stmts, acc_e) = acc;
       let mut new_stmts = Vec::new();
       self.variable_cx.push_scope();
@@ -887,11 +892,11 @@ impl<'a> ExpressionLoweringManager<'a> {
         let name = self.allocate_temp_variable();
         binding_names.insert(n, name);
         let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.clone()));
+        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
         new_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
       }
       let LoweringResult { statements: mut binding_stmts, expression: match_success_condition } =
-        self.lower_matching_pattern(pattern, &binding_names, matched_expr.clone());
+        self.lower_matching_pattern(pattern, &binding_names, matched_expr.dupe());
       new_stmts.append(&mut binding_stmts);
       let body_lowering_result = self.lower(body);
       self.variable_cx.pop_scope();
@@ -901,7 +906,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         s2: acc_stmts,
         final_assignments: vec![(
           final_assignment_temp,
-          lowered_return_type.clone(),
+          lowered_return_type.dupe(),
           body_lowering_result.expression,
           acc_e,
         )],
@@ -923,8 +928,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     for (index, (name, e)) in captured.iter().enumerate() {
       lambda_stmts.push(hir::Statement::IndexedAccess {
         name: *name,
-        type_: e.type_().clone(),
-        pointer_expression: hir::Expression::var_name(PStr::UNDERSCORE_THIS, context_type.clone()),
+        type_: e.type_().dupe(),
+        pointer_expression: hir::Expression::var_name(PStr::UNDERSCORE_THIS, context_type.dupe()),
         index,
       });
     }
@@ -954,7 +959,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           .into_iter()
           .zip(fun_type_without_cx_argument_types.iter().cloned())
           .chain(self.defined_variables.iter().cloned())
-          .chain(captured.iter().map(|(n, e)| (*n, e.type_().clone())))
+          .chain(captured.iter().map(|(n, e)| (*n, e.type_().dupe())))
           .collect_vec(),
         self.type_definition_mapping,
         self.heap,
@@ -975,7 +980,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         .collect_vec(),
       type_parameters,
       type_: hir::FunctionType {
-        argument_types: vec![context_type.clone()]
+        argument_types: vec![context_type.dupe()]
           .into_iter()
           .chain(fun_type_without_cx_argument_types)
           .collect_vec(),
@@ -996,17 +1001,17 @@ impl<'a> ExpressionLoweringManager<'a> {
     } else {
       let context_name = self.allocate_temp_variable();
       let context_type = self.get_synthetic_identifier_type_from_tuple(
-        captured.iter().map(|(_, v)| v.type_().clone()).collect_vec(),
+        captured.iter().map(|(_, v)| v.type_().dupe()).collect_vec(),
       );
       lowered_stmts.push(hir::Statement::StructInit {
         struct_variable_name: context_name,
-        type_: context_type.clone(),
-        expression_list: captured.iter().map(|(_, v)| v.clone()).collect_vec(),
+        type_: context_type.dupe(),
+        expression_list: captured.iter().map(|(_, v)| v.dupe()).collect_vec(),
       });
       bind_value(
         &mut self.variable_cx,
         context_name,
-        hir::Expression::var_name(context_name, hir::Type::Id(context_type.clone())),
+        hir::Expression::var_name(context_name, hir::Type::Id(context_type.dupe())),
       );
       hir::Expression::var_name(context_name, hir::Type::Id(context_type))
     };
@@ -1018,14 +1023,14 @@ impl<'a> ExpressionLoweringManager<'a> {
     });
     lowered_stmts.push(hir::Statement::ClosureInit {
       closure_variable_name,
-      closure_type: closure_type.clone(),
+      closure_type: closure_type.dupe(),
       function_name: hir::FunctionNameExpression {
         name: synthetic_lambda.name,
         type_: synthetic_lambda.type_.clone(),
         type_arguments: synthetic_lambda
           .type_parameters
           .iter()
-          .cloned()
+          .copied()
           .map(hir::Type::new_generic_type)
           .collect_vec(),
       },
@@ -1035,7 +1040,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     bind_value(
       &mut self.variable_cx,
       closure_variable_name,
-      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
+      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.dupe())),
     );
     LoweringResult {
       statements: lowered_stmts,
@@ -1054,7 +1059,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let name = self.allocate_temp_variable();
         binding_names.insert(n, name);
         let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.clone()));
+        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
         lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
       }
       let LoweringResult { statements: mut stmts, expression: _ } =
@@ -1099,7 +1104,7 @@ fn lower_constructors(
       .type_parameters
       .iter()
       .map(|n| hir::Type::new_generic_type(*n))
-      .collect_vec(),
+      .collect(),
   };
   let mut functions = Vec::new();
   match &type_def.mappings {
@@ -1113,16 +1118,16 @@ fn lower_constructors(
         type_parameters: type_def.type_parameters.clone(),
         type_: hir::Type::new_fn_unwrapped(
           vec![hir::INT_TYPE].into_iter().chain(types.iter().cloned()).collect_vec(),
-          hir::Type::Id(struct_type.clone()),
+          hir::Type::Id(struct_type.dupe()),
         ),
         body: vec![hir::Statement::StructInit {
           struct_variable_name: struct_var_name,
-          type_: struct_type.clone(),
+          type_: struct_type.dupe(),
           expression_list: types
             .iter()
             .enumerate()
             .map(|(order, t)| {
-              hir::Expression::var_name(heap.alloc_string(format!("_f{order}")), t.clone())
+              hir::Expression::var_name(heap.alloc_string(format!("_f{order}")), t.dupe())
             })
             .collect_vec(),
         }],
@@ -1147,23 +1152,23 @@ fn lower_constructors(
           type_parameters: type_def.type_parameters.clone(),
           type_: hir::Type::new_fn_unwrapped(
             vec![hir::INT_TYPE].into_iter().chain(data_types.iter().cloned()).collect(),
-            hir::Type::Id(struct_type.clone()),
+            hir::Type::Id(struct_type.dupe()),
           ),
           body: vec![hir::Statement::EnumInit {
             enum_variable_name: struct_var_name,
-            enum_type: struct_type.clone(),
+            enum_type: struct_type.dupe(),
             tag: tag_order,
             associated_data_list: data_types
               .iter()
               .enumerate()
               .map(|(i, data_type)| {
-                hir::Expression::var_name(heap.alloc_string(format!("_data{i}")), data_type.clone())
+                hir::Expression::var_name(heap.alloc_string(format!("_data{i}")), data_type.dupe())
               })
               .collect(),
           }],
           return_value: hir::Expression::var_name(
             struct_var_name,
-            hir::Type::Id(struct_type.clone()),
+            hir::Type::Id(struct_type.dupe()),
           ),
         };
         functions.push(f);
@@ -1243,7 +1248,7 @@ fn compile_sources_with_generics_preserved(
           if member.decl.is_method {
             let tparams: OrderSet<_> = class_tparams
               .iter()
-              .cloned()
+              .copied()
               .chain(lower_tparams(member.decl.type_parameters.as_ref()))
               .collect();
             type_lowering_manager.generic_types = tparams.clone();
@@ -1257,7 +1262,7 @@ fn compile_sources_with_generics_preserved(
                 type_arguments: class_tparams
                   .into_iter()
                   .map(hir::Type::new_generic_type)
-                  .collect(),
+                  .collect::<Arc<[_]>>(),
               }),
             )]
             .into_iter()
@@ -1284,7 +1289,7 @@ fn compile_sources_with_generics_preserved(
               synthetic_functions: mut compiled_functions_to_add,
             } = lower_source_expression(manager, &member.body);
             let main_fn_type = hir::Type::new_fn_unwrapped(
-              main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
+              main_function_parameter_with_types.iter().map(|(_, t)| t.dupe()).collect_vec(),
               type_lowering_manager
                 .lower_source_type(heap, &type_::Type::from_annotation(&member.decl.return_type)),
             );
@@ -1329,7 +1334,7 @@ fn compile_sources_with_generics_preserved(
               synthetic_functions: mut compiled_functions_to_add,
             } = lower_source_expression(manager, &member.body);
             let main_fn_type = hir::Type::new_fn_unwrapped(
-              main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
+              main_function_parameter_with_types.iter().map(|(_, t)| t.dupe()).collect_vec(),
               type_lowering_manager
                 .lower_source_type(heap, &type_::Type::from_annotation(&member.decl.return_type)),
             );
@@ -1420,7 +1425,7 @@ mod tests {
   use samlang_ast::{Location, Reason, hir, source};
   use samlang_checker::type_;
   use samlang_heap::{Heap, ModuleReference, PStr};
-  use std::{collections::HashMap, rc::Rc};
+  use std::{collections::HashMap, rc::Rc, sync::Arc};
 
   fn assert_expr_correctly_lowered(
     source_expr: &source::expr::E<Rc<type_::Type>>,
@@ -1474,7 +1479,7 @@ mod tests {
               module_reference: Some(ModuleReference::DUMMY),
               type_name: heap.alloc_str_for_test("Dummy"),
             },
-            type_arguments: Vec::new(),
+            type_arguments: Arc::from([]),
           }),
         ),
         (heap.alloc_str_for_test("foo"), hir::INT_TYPE),
@@ -1486,7 +1491,7 @@ mod tests {
               module_reference: Some(ModuleReference::DUMMY),
               type_name: heap.alloc_str_for_test("Closure"),
             },
-            type_arguments: Vec::new(),
+            type_arguments: Arc::from([]),
           }),
         ),
         (
@@ -1496,7 +1501,7 @@ mod tests {
               module_reference: Some(ModuleReference::DUMMY),
               type_name: heap.alloc_str_for_test("Closure"),
             },
-            type_arguments: Vec::new(),
+            type_arguments: Arc::from([]),
           }),
         ),
         (heap.alloc_str_for_test("captured_a"), hir::INT_TYPE),
