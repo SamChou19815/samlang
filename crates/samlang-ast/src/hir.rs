@@ -2,7 +2,7 @@ use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_heap::{ModuleReference, PStr};
-use std::hash::Hash;
+use std::{hash::Hash, sync::Arc, sync::LazyLock};
 
 #[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypeName {
@@ -25,10 +25,10 @@ impl TypeName {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, PartialOrd, Ord)]
 pub struct IdType {
   pub name: TypeName,
-  pub type_arguments: Vec<Type>,
+  pub type_arguments: Arc<[Type]>,
 }
 
 impl IdType {
@@ -61,7 +61,7 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
 pub enum Type {
   Int32,
   Int31,
@@ -69,21 +69,21 @@ pub enum Type {
 }
 
 impl Type {
-  pub const fn new_generic_type(name: PStr) -> Self {
+  pub fn new_generic_type(name: PStr) -> Self {
     Self::Id(IdType {
       name: TypeName { module_reference: None, type_name: name },
-      type_arguments: Vec::new(),
+      type_arguments: Arc::from([]),
     })
   }
 
-  pub const fn new_id_unwrapped(name: PStr, type_arguments: Vec<Type>) -> IdType {
+  pub fn new_id_unwrapped(name: PStr, type_arguments: Vec<Type>) -> IdType {
     IdType {
       name: TypeName { module_reference: Some(ModuleReference::DUMMY), type_name: name },
-      type_arguments,
+      type_arguments: Arc::from(type_arguments),
     }
   }
 
-  pub const fn new_id_no_targs_unwrapped(name: PStr) -> IdType {
+  pub fn new_id_no_targs_unwrapped(name: PStr) -> IdType {
     Self::new_id_unwrapped(name, Vec::new())
   }
 
@@ -91,7 +91,7 @@ impl Type {
     Type::Id(Self::new_id_unwrapped(name, type_arguments))
   }
 
-  pub const fn new_id_no_targs(name: PStr) -> Type {
+  pub fn new_id_no_targs(name: PStr) -> Type {
     Type::Id(Self::new_id_no_targs_unwrapped(name))
   }
 
@@ -110,13 +110,11 @@ impl Type {
 
 pub const INT_TYPE: Type = Type::Int32;
 pub const INT31_TYPE: Type = Type::Int31;
-pub const STRING_TYPE: Type = Type::Id(IdType {
-  name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
-  type_arguments: Vec::new(),
-});
-pub const STRING_TYPE_REF: &Type = &Type::Id(IdType {
-  name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
-  type_arguments: Vec::new(),
+pub static STRING_TYPE: LazyLock<Type> = LazyLock::new(|| {
+  Type::Id(IdType {
+    name: TypeName { module_reference: Some(ModuleReference::ROOT), type_name: PStr::STR_TYPE },
+    type_arguments: Arc::from([]),
+  })
 });
 
 #[derive(Debug, Clone)]
@@ -227,7 +225,7 @@ impl BinaryOperator {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Dupe)]
 pub struct VariableName {
   pub name: PStr,
   pub type_: Type,
@@ -289,7 +287,7 @@ impl FunctionNameExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, EnumAsInner)]
 pub enum Expression {
   IntLiteral(i32),
   Int31Zero,
@@ -310,7 +308,7 @@ impl Expression {
     match self {
       Self::IntLiteral(_) => &INT_TYPE,
       Self::Int31Zero => &INT31_TYPE,
-      Self::StringName(_) => STRING_TYPE_REF,
+      Self::StringName(_) => &STRING_TYPE,
       Self::Variable(v) => &v.type_,
     }
   }

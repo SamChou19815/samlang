@@ -45,7 +45,7 @@ impl<'a> TypeLoweringContext<'a> {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct LoopContext {
   break_collector: Option<PStr>,
   break_collector_type: Option<wasm::Type>,
@@ -309,7 +309,7 @@ impl<'a> LoweringManager<'a> {
         }
       }
       lir::Statement::While { loop_variables, statements, break_collector } => {
-        let saved_current_loop_cx = self.loop_cx.clone();
+        let saved_current_loop_cx = self.loop_cx;
         let continue_label = self.alloc_label_with_annot();
         let exit_label = self.alloc_label_with_annot();
         self.loop_cx = Some(LoopContext {
@@ -372,7 +372,7 @@ impl<'a> LoweringManager<'a> {
         // For late init, the type was already declared, so we just get it from the expression
         let assigned = self.lower_expr(assigned_expression);
         // The type should already be in local_variables from LateInitDeclaration
-        let t = self.local_variables.get(name).cloned().unwrap_or(wasm::Type::Int32);
+        let t = self.local_variables.get(name).copied().unwrap_or(wasm::Type::Int32);
         vec![wasm::Instruction::Inline(self.set(*name, t, assigned))]
       }
       lir::Statement::LateInitDeclaration { name, type_ } => {
@@ -462,7 +462,7 @@ impl<'a> LoweringManager<'a> {
         let ref_type =
           lowered_type.into_reference().expect("The given expression doesn't have reference type.");
         // Get the stored type (parameter or local) to check if we need a cast
-        let stored_type = self.local_variables.get(n).cloned();
+        let stored_type = self.local_variables.get(n).copied();
         let local_get = if stored_type.is_some() {
           self.get_without_type_update(*n)
         } else {
@@ -526,6 +526,14 @@ impl<'a> LoweringManager<'a> {
 }
 
 pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> wasm::Module {
+  let lir::Sources {
+    symbol_table: source_symbol_table,
+    global_variables: source_global_variables,
+    type_definitions: source_type_definitions,
+    main_function_names: exported_functions,
+    functions: source_functions,
+  } = sources;
+
   // Build a single data segment containing all string bytes, then create GC globals
   // that use array.new_data to reference portions of this segment.
   let mut string_name_mapping = HashMap::new();
@@ -534,7 +542,7 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
 
   // Collect all string bytes into a single data segment
   let mut data_segment_bytes = Vec::new();
-  for (idx, hir::GlobalString(content)) in sources.global_variables.iter().enumerate() {
+  for (idx, hir::GlobalString(content)) in source_global_variables.iter().enumerate() {
     let content_str = content.as_str(heap);
     let offset = data_segment_bytes.len();
     let length = content_str.len();
@@ -556,15 +564,13 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
   } else {
     vec![wasm::GlobalData { constant_pointer: 4096, bytes: data_segment_bytes }]
   };
-  for (i, f) in sources.functions.iter().enumerate() {
+  for (i, f) in source_functions.iter().enumerate() {
     function_index_mapping.insert(f.name, i);
   }
-  let exported_functions = sources.main_function_names.clone();
-  let mut type_cx = TypeLoweringContext::new(heap, sources.symbol_table);
-  let mut type_definitions = Vec::with_capacity(sources.type_definitions.len());
+  let mut type_cx = TypeLoweringContext::new(heap, source_symbol_table);
+  let mut type_definitions = Vec::with_capacity(source_type_definitions.len());
   let mut type_field_mappings: HashMap<mir::TypeNameId, Vec<wasm::Type>> = HashMap::new();
-  for lir::TypeDefinition { name, parent_type, is_extensible, mappings } in
-    &sources.type_definitions
+  for lir::TypeDefinition { name, parent_type, is_extensible, mappings } in &source_type_definitions
   {
     // Skip the STR type - it's the builtin $_Str GC array, not a struct
     if *name == mir::TypeNameId::STR {
@@ -580,7 +586,7 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
     });
   }
   let mut functions = Vec::new();
-  for f in &sources.functions {
+  for f in &source_functions {
     let (f, new_type_cx) = LoweringManager::lower_fn(
       type_cx,
       &string_name_mapping,
@@ -628,7 +634,6 @@ mod tests {
         break_collector_type: None,
         exit_label: wasm::LabelId(1)
       }
-      .clone()
       .break_collector
       .is_none()
     );

@@ -77,7 +77,7 @@ impl TypeName {
 mod type_name_boilterplate_tests {
   #[test]
   fn test() {
-    assert_eq!(super::TypeName::EMPTY.clone().module_reference, super::ModuleReference::ROOT);
+    assert_eq!(super::TypeName::EMPTY.module_reference, super::ModuleReference::ROOT);
   }
 }
 

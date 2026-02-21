@@ -394,8 +394,12 @@ fn try_merge_into_derived_induction_variable(
     BinaryOperator::PLUS | BinaryOperator::MUL => {}
     _ => return,
   }
-  let Binary { name, operator, e1, e2 } = binary_statement.clone();
-  let swapped = Binary { name, operator, e1: e2, e2: e1 };
+  let swapped = Binary {
+    name: binary_statement.name,
+    operator: binary_statement.operator,
+    e1: binary_statement.e2,
+    e2: binary_statement.e1,
+  };
   try_merge_into_derived_induction_variable_without_swap(
     existing_set,
     non_loop_invariant_variables,

@@ -153,7 +153,6 @@ mod tests {
     assert_eq!(
       "A<int>",
       Description::NominalType { name: PStr::UPPER_A, type_args: vec![Description::IntType] }
-        .clone()
         .pretty_print(heap)
     );
     assert_eq!(

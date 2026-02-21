@@ -62,9 +62,7 @@ mod tests {
     ZERO.convert_to_callee();
     Statement::Break(ZERO).as_binary();
     assert!(Statement::Break(ZERO).into_break().is_ok());
-    Statement::binary(heap.alloc_str_for_test("name"), BinaryOperator::DIV, ZERO, ZERO)
-      .clone()
-      .as_binary();
+    Statement::binary(heap.alloc_str_for_test("name"), BinaryOperator::DIV, ZERO, ZERO).as_binary();
     let call = Statement::Call {
       callee: Callee::FunctionName(FunctionNameExpression {
         name: FunctionName::new_for_test(PStr::LOWER_A),
@@ -171,7 +169,7 @@ mod tests {
     assert!(ed3.eq(&ed3));
     let d2 = TypeDefinition {
       name: table.create_type_name_for_test(PStr::UPPER_B),
-      mappings: TypeDefinitionMappings::Enum(vec![ed1, ed2, ed3.clone()]),
+      mappings: TypeDefinitionMappings::Enum(vec![ed1, ed2, ed3]),
     };
     assert_eq!("object type _A = [int, int]", d1.pretty_print(heap, table));
     assert_eq!(
@@ -314,7 +312,7 @@ mod tests {
         e2: Expression::var_name(heap.alloc_str_for_test("b2"), INT_32_TYPE),
       }],
     };
-    assert!(!format!("{:?}", stmt.clone()).is_empty());
+    assert!(!format!("{stmt:?}").is_empty());
     let expected = r#"let bar: int;
 if 0 {
   let baz: _FooBar = ["meggo"];

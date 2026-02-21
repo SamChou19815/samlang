@@ -490,8 +490,8 @@ fn perform_inline_rewrite_on_function(
   );
   Function {
     name: function.name,
-    parameters: function.parameters.clone(),
-    type_: function.type_.clone(),
+    parameters: function.parameters,
+    type_: function.type_,
     body,
     return_value: function.return_value,
   }
