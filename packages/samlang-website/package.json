@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@types/mdx": "^2.0.13",
     "@types/node": "24.9.1",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
@@ -15,6 +16,7 @@
     "dev-sam-theme": "^0.0.1",
     "monaco-editor": "^0.55.1",
     "next": "16.1.5",
+    "next-mdx-remote": "^6.0.0",
     "postcss": "8.5.3",
     "react": "19.2.1",
     "react-dom": "19.2.1",

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-samlang is a statically-typed programming language with type inference, first-class functions, pattern matching, and WebAssembly code generation. The repository contains both the Rust-based compiler toolchain and web-based playground.
+samlang is a statically-typed programming language with bidirectional type inference and functional programming features. The repository contains both a Rust-based compiler toolchain and web-based playground.
 
 ## Common Commands
 
@@ -13,24 +13,21 @@ samlang is a statically-typed programming language with type inference, first-cl
 ```bash
 # Build all crates
 cargo build
+
 # Run all tests with nextest
 cargo t
+
 # Run tests with coverage (requires 100% coverage)
 cargo tc
+
 # Run tests and generate HTML coverage report
 cargo th
+
 # Format code
 cargo f
+
 # Lint with clippy
 cargo lint
-# Run end-to-end tests
-cargo e2e
-# Compile samlang code (requires sconfig.json)
-cargo run --package samlang-cli
-# Format samlang source files
-cargo run --package samlang-cli -- format
-# Start language server
-cargo run --package samlang-cli -- lsp
 ```
 
 ### Website Development
@@ -67,12 +64,10 @@ make
 The compiler follows a multi-stage IR lowering approach:
 
 1. **Source** → Parse samlang source files (.sam)
-2. **HIR** (High-level IR) → Direct lowering from source, generics preserved
-3. **MIR** (Mid-level IR) → Generics specialized, enum representations optimized, primary optimization target
-4. **LIR** (Low-level IR) → Types abstracted away, GC-specific instructions introduced
-5. **WASM** → Final WebAssembly code generation
-
-The pipeline can also emit TypeScript code as an alternative backend.
+2. **HIR** (High-Level IR) → Direct lowering from source, generics preserved
+3. **MIR** (Mid-Level IR) → Generics specialized, enum representations optimized
+4. **LIR** (Low-Level IR) → Types abstracted, GC-specific instructions
+5. **Output** → WebAssembly or TypeScript
 
 ### Crate Structure
 
@@ -97,32 +92,9 @@ The Rust workspace is organized into focused crates:
 
 **Module References**: All module names are interned in the `Heap` as `ModuleReference` values. File paths map to module references (e.g., `tests/AllTests.sam` → `tests.AllTests`).
 
-**Heap Management**: The `samlang_heap::Heap` manages string interning and allocation. Module references, identifiers, and strings are stored here to avoid duplication.
+**LSP Architecture**: The language server (`samlang-services`) maintains a `ServerState` containing heap, parsed sources, and type-checked modules.
 
-**LSP Architecture**: The language server (`samlang-services`) maintains a `ServerState` containing the heap, parsed sources, and type-checked modules. It supports:
-
-- Diagnostics publishing
-- Hover for type queries
-- Go-to-definition
-- Autocompletion
-- Rename refactoring
-- Code actions (quick fixes)
-- Document formatting
-- Folding ranges
-
-**Standard Library**: The `std/` directory contains built-in samlang modules (boxed, list, map, set, option, result, tuples, interfaces) that are automatically included unless shadowing is explicitly enabled.
-
-### Optimization Passes
-
-MIR optimizations include:
-
-- Conditional constant propagation
-- Common subexpression elimination
-- Local value numbering
-- Loop optimizations (induction variable elimination, invariant code motion, strength reduction)
-- Function inlining
-- Dead code elimination
-- Unused name elimination
+**Optimization Passes**: MIR optimizations include conditional constant propagation (CCP), loop optimizations (induction variable analysis), common subexpression elimination (CSE), local value numbering (LVN), dead code elimination (DCE), and function inlining.
 
 ### Testing
 
@@ -130,3 +102,31 @@ MIR optimizations include:
 - Test coverage must be 100% for all crates except samlang-cli and samlang-wasm
 - The `cargo e2e` command runs: format check → compile → verify TypeScript output → verify WASM output
 - Coverage reports ignore CLI and WASM crates via `--ignore-filename-regex`
+
+## Language Specification
+
+The full language specification is available in [`packages/samlang-website/spec.md`](spec.md). This document describes:
+
+- Complete language syntax and semantics
+- Type system rules and type inference
+- Built-in types and standard library methods
+- Compilation pipeline details (HIR/MIR/LIR design, optimization passes)
+- Language constraints and intentional omissions
+
+## For Claude Code (claude.ai/code)
+
+When working with samlang, refer to [`spec.md`](spec.md) for:
+
+- Complete language syntax and semantics
+- Type system rules and type inference
+- Built-in types and standard library methods
+- Compilation pipeline details
+- Language constraints and intentional omissions
+
+The website spec file is formatted for documentation rendering with syntax highlighting. It may have different examples than the compiler-focused spec file.
+
+## Important Notes
+
+- The website spec is for documentation rendering and may use different conventions than the source spec
+- Language changes should be reflected in both spec.md and the website spec
+- When updating language syntax, ensure website examples are consistent
