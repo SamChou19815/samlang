@@ -37,6 +37,12 @@ export default function Home(): JSX.Element {
             >
               Demo
             </Link>
+            <Link
+              href="/spec"
+              className="rounded-md m-4 p-2 w-32 text-xl text-center text-gray-800 bg-gray-100 hover:bg-slate-200"
+            >
+              Spec
+            </Link>
             <a
               href="https://github.com/SamChou19815/samlang"
               target="_blank"
