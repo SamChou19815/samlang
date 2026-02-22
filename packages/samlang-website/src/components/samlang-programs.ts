@@ -40,6 +40,38 @@ export const TYPE_INFERENCE: string = `class TypeInference {
   }
 }`;
 
+export const TUPLE_DESTRUCTURING: string = `import {Pair, Triple} from std.tuples;
+
+class Tuples {
+  function first(p: Pair<int, Str>): int = {
+    let (x, _) = p;
+    x
+  }
+
+  function sumTriple(
+    t: Triple<int, int, int>
+  ): int = {
+    let (a, b, c) = t;
+    a + b + c
+  }
+}`;
+
+export const RESULT_TYPE: string = `class Result<T, E>(
+  Ok(T), Err(E)
+) {
+  function <T, E> ok(v: T): Result<T, E> =
+    Result.Ok(v)
+
+  function <T, E> err(e: E): Result<T, E> =
+    Result.Err(e)
+
+  method isOk(): bool =
+    match this {
+      Ok(_) -> true,
+      Err(_) -> false,
+    }
+}`;
+
 export const PRINT_HELLO_WORLD: string = `/**
  * This is a hello-world example.
  *

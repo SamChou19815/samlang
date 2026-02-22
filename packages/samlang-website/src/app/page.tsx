@@ -4,10 +4,13 @@ import {
   FOURTY_TWO,
   HELLO_WORLD_STRING,
   PATTERN_MATCHING,
+  RESULT_TYPE,
+  TUPLE_DESTRUCTURING,
   TYPE_INFERENCE,
 } from '../components/samlang-programs';
+import React from 'react';
 
-export default function Home(): JSX.Element {
+export default function Home(): React.JSX.Element {
   return (
     <div>
       <main className="w-full overflow-hidden">
@@ -83,6 +86,18 @@ export default function Home(): JSX.Element {
               <h3>42</h3>
               <div className="pr-2">
                 <StaticSamlangCodeBlock>{FOURTY_TWO}</StaticSamlangCodeBlock>
+              </div>
+            </div>
+            <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
+              <h3>Tuple Destructuring</h3>
+              <div className="pr-2">
+                <StaticSamlangCodeBlock>{TUPLE_DESTRUCTURING}</StaticSamlangCodeBlock>
+              </div>
+            </div>
+            <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
+              <h3>Result Type</h3>
+              <div className="pr-2">
+                <StaticSamlangCodeBlock>{RESULT_TYPE}</StaticSamlangCodeBlock>
               </div>
             </div>
             <div className="flex-grow-0 flex-shrink-0 flex-[100%] lg:flex-[50%] lg:max-w-[50%]">
