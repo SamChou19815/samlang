@@ -26,6 +26,8 @@ Test Name: DifferentModulesDemo
 ========================================
 Test Name: Empty
 ========================================
+Test Name: EnumLimitsRemoved
+========================================
 Test Name: EvaluationOrder
 0
 1
