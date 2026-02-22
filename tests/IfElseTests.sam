@@ -4,8 +4,8 @@ class IfElseTests {
   private function consistencyTest(): unit = {
     let a = if true { if false { 10000 } else { 3 } } else { 4 };
     let b = if false { 4 } else if true { 3 } else { 20000 };
-    let _ = ForTests.assertIntEquals(3, a);
-    let _ = ForTests.assertIntEquals(3, a);
+    ForTests.assertIntEquals(3, a);
+    ForTests.assertIntEquals(3, a);
     if a != b { Process.panic("Not OK") } else {  }
   }
 
@@ -36,8 +36,8 @@ class IfElseTests {
   }
 
   function run(): unit = {
-    let _ = IfElseTests.consistencyTest();
-    let _ = IfElseTests.unreachableTest1();
-    let _ = IfElseTests.unreachableTest2();
+    IfElseTests.consistencyTest();
+    IfElseTests.unreachableTest1();
+    IfElseTests.unreachableTest2();
   }
 }

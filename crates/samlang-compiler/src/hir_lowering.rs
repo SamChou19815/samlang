@@ -1052,19 +1052,26 @@ impl<'a> ExpressionLoweringManager<'a> {
     let mut lowered_stmts = Vec::new();
     self.variable_cx.push_scope();
     for s in &expression.statements {
-      let assigned_expr =
-        self.lowered_and_add_statements(&s.assigned_expression, &mut lowered_stmts);
-      let mut binding_names = HashMap::new();
-      for (n, t) in s.pattern.bindings() {
-        let name = self.allocate_temp_variable();
-        binding_names.insert(n, name);
-        let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
-        lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
+      match s {
+        source::expr::Statement::Declaration(decl_stmt) => {
+          let assigned_expr =
+            self.lowered_and_add_statements(&decl_stmt.assigned_expression, &mut lowered_stmts);
+          let mut binding_names = HashMap::new();
+          for (n, t) in decl_stmt.pattern.bindings() {
+            let name = self.allocate_temp_variable();
+            binding_names.insert(n, name);
+            let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
+            bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
+            lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
+          }
+          let LoweringResult { statements: mut stmts, expression: _ } =
+            self.lower_matching_pattern(&decl_stmt.pattern, &binding_names, assigned_expr);
+          lowered_stmts.append(&mut stmts);
+        }
+        source::expr::Statement::Expression(expr) => {
+          self.lowered_and_add_statements(expr, &mut lowered_stmts);
+        }
       }
-      let LoweringResult { statements: mut stmts, expression: _ } =
-        self.lower_matching_pattern(&s.pattern, &binding_names, assigned_expr);
-      lowered_stmts.append(&mut stmts);
     }
     let final_expr = if let Some(e) = &expression.expression {
       self.lowered_and_add_statements(e, &mut lowered_stmts)
@@ -3132,67 +3139,73 @@ return (_t10: int);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-        statements: vec![source::expr::DeclarationStatement {
-          loc: Location::dummy(),
-          associated_comments: source::NO_COMMENT_REFERENCE,
-          pattern: source::pattern::MatchingPattern::Id(
-            source::Id::from(PStr::LOWER_A),
-            builder.unit_type(),
-          ),
-          annotation: Some(annot_builder.unit_annot()),
-          assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-            statements: vec![
-              source::expr::DeclarationStatement {
-                loc: Location::dummy(),
-                associated_comments: source::NO_COMMENT_REFERENCE,
-                pattern: source::pattern::MatchingPattern::Object {
-                  location: Location::dummy(),
-                  start_associated_comments: source::NO_COMMENT_REFERENCE,
-                  ending_associated_comments: source::NO_COMMENT_REFERENCE,
-                  elements: vec![
-                    source::pattern::ObjectPatternElement {
-                      loc: Location::dummy(),
-                      field_order: 0,
-                      field_name: source::Id::from(PStr::LOWER_A),
-                      pattern: Box::new(source::pattern::MatchingPattern::Id(
-                        source::Id::from(PStr::LOWER_A),
-                        builder.int_type(),
-                      )),
-                      shorthand: true,
-                      type_: builder.int_type(),
+        statements: vec![source::expr::Statement::Declaration(Box::new(
+          source::expr::DeclarationStatement {
+            loc: Location::dummy(),
+            associated_comments: source::NO_COMMENT_REFERENCE,
+            pattern: source::pattern::MatchingPattern::Id(
+              source::Id::from(PStr::LOWER_A),
+              builder.unit_type(),
+            ),
+            annotation: Some(annot_builder.unit_annot()),
+            assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
+              statements: vec![
+                source::expr::Statement::Declaration(Box::new(
+                  source::expr::DeclarationStatement {
+                    loc: Location::dummy(),
+                    associated_comments: source::NO_COMMENT_REFERENCE,
+                    pattern: source::pattern::MatchingPattern::Object {
+                      location: Location::dummy(),
+                      start_associated_comments: source::NO_COMMENT_REFERENCE,
+                      ending_associated_comments: source::NO_COMMENT_REFERENCE,
+                      elements: vec![
+                        source::pattern::ObjectPatternElement {
+                          loc: Location::dummy(),
+                          field_order: 0,
+                          field_name: source::Id::from(PStr::LOWER_A),
+                          pattern: Box::new(source::pattern::MatchingPattern::Id(
+                            source::Id::from(PStr::LOWER_A),
+                            builder.int_type(),
+                          )),
+                          shorthand: true,
+                          type_: builder.int_type(),
+                        },
+                        source::pattern::ObjectPatternElement {
+                          loc: Location::dummy(),
+                          field_order: 1,
+                          field_name: source::Id::from(PStr::LOWER_B),
+                          pattern: Box::new(source::pattern::MatchingPattern::Id(
+                            source::Id::from(PStr::LOWER_C),
+                            builder.int_type(),
+                          )),
+                          shorthand: false,
+                          type_: builder.int_type(),
+                        },
+                      ],
                     },
-                    source::pattern::ObjectPatternElement {
-                      loc: Location::dummy(),
-                      field_order: 1,
-                      field_name: source::Id::from(PStr::LOWER_B),
-                      pattern: Box::new(source::pattern::MatchingPattern::Id(
-                        source::Id::from(PStr::LOWER_C),
-                        builder.int_type(),
-                      )),
-                      shorthand: false,
-                      type_: builder.int_type(),
+                    annotation: Some(dummy_source_id_annot(heap)),
+                    assigned_expression: Box::new(dummy_source_this(heap)),
+                  },
+                )),
+                source::expr::Statement::Declaration(Box::new(
+                  source::expr::DeclarationStatement {
+                    loc: Location::dummy(),
+                    associated_comments: source::NO_COMMENT_REFERENCE,
+                    pattern: source::pattern::MatchingPattern::Wildcard {
+                      location: Location::dummy(),
+                      associated_comments: source::NO_COMMENT_REFERENCE,
                     },
-                  ],
-                },
-                annotation: Some(dummy_source_id_annot(heap)),
-                assigned_expression: Box::new(dummy_source_this(heap)),
-              },
-              source::expr::DeclarationStatement {
-                loc: Location::dummy(),
-                associated_comments: source::NO_COMMENT_REFERENCE,
-                pattern: source::pattern::MatchingPattern::Wildcard {
-                  location: Location::dummy(),
-                  associated_comments: source::NO_COMMENT_REFERENCE,
-                },
-                annotation: Some(dummy_source_id_annot(heap)),
-                assigned_expression: Box::new(dummy_source_this(heap)),
-              },
-            ],
-            expression: None,
-            ending_associated_comments: source::NO_COMMENT_REFERENCE,
-          })),
-        }],
+                    annotation: Some(dummy_source_id_annot(heap)),
+                    assigned_expression: Box::new(dummy_source_this(heap)),
+                  },
+                )),
+              ],
+              expression: None,
+              ending_associated_comments: source::NO_COMMENT_REFERENCE,
+            })),
+          },
+        ))],
         expression: None,
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
@@ -3213,7 +3226,7 @@ return 0;"#,
       &source::expr::E::Block(source::expr::Block {
         common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![
-          source::expr::DeclarationStatement {
+          source::expr::Statement::Declaration(Box::new(source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: source::NO_COMMENT_REFERENCE,
             pattern: source::pattern::MatchingPattern::Object {
@@ -3247,8 +3260,8 @@ return 0;"#,
             },
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
-          },
-          source::expr::DeclarationStatement {
+          })),
+          source::expr::Statement::Declaration(Box::new(source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: source::NO_COMMENT_REFERENCE,
             pattern: source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
@@ -3274,8 +3287,8 @@ return 0;"#,
             }),
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
-          },
-          source::expr::DeclarationStatement {
+          })),
+          source::expr::Statement::Declaration(Box::new(source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: source::NO_COMMENT_REFERENCE,
             pattern: source::pattern::MatchingPattern::Wildcard {
@@ -3284,7 +3297,7 @@ return 0;"#,
             },
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
-          },
+          })),
         ],
         expression: None,
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -3307,46 +3320,48 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-        statements: vec![source::expr::DeclarationStatement {
-          loc: Location::dummy(),
-          associated_comments: source::NO_COMMENT_REFERENCE,
-          pattern: source::pattern::MatchingPattern::Id(
-            source::Id::from(PStr::LOWER_A),
-            builder.int_type(),
-          ),
-          annotation: Some(annot_builder.int_annot()),
-          assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
-            common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-            callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
-              common: source::expr::ExpressionCommon::dummy(
-                builder.fun_type(vec![builder.int_type()], builder.int_type()),
-              ),
-              explicit_type_arguments: None,
-              inferred_type_arguments: Vec::new(),
-              object: Box::new(source::expr::E::ClassId(
-                source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
-                  type_::NominalType {
-                    reason: Reason::dummy(),
-                    is_class_statics: true,
-                    module_reference: heap
-                      .alloc_module_reference_from_string_vec(vec!["ModuleModule".to_string()]),
-                    id: heap.alloc_str_for_test("ImportedClass"),
-                    type_arguments: Vec::new(),
-                  },
-                ))),
-                heap.alloc_module_reference_from_string_vec(vec!["ModuleModule".to_string()]),
-                source::Id::from(heap.alloc_str_for_test("ImportedClass")),
-              )),
-              method_name: source::Id::from(heap.alloc_str_for_test("bar")),
+        statements: vec![source::expr::Statement::Declaration(Box::new(
+          source::expr::DeclarationStatement {
+            loc: Location::dummy(),
+            associated_comments: source::NO_COMMENT_REFERENCE,
+            pattern: source::pattern::MatchingPattern::Id(
+              source::Id::from(PStr::LOWER_A),
+              builder.int_type(),
+            ),
+            annotation: Some(annot_builder.int_annot()),
+            assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
+              common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+              callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
+                common: source::expr::ExpressionCommon::dummy(
+                  builder.fun_type(vec![builder.int_type()], builder.int_type()),
+                ),
+                explicit_type_arguments: None,
+                inferred_type_arguments: Vec::new(),
+                object: Box::new(source::expr::E::ClassId(
+                  source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                    type_::NominalType {
+                      reason: Reason::dummy(),
+                      is_class_statics: true,
+                      module_reference: heap
+                        .alloc_module_reference_from_string_vec(vec!["ModuleModule".to_string()]),
+                      id: heap.alloc_str_for_test("ImportedClass"),
+                      type_arguments: Vec::new(),
+                    },
+                  ))),
+                  heap.alloc_module_reference_from_string_vec(vec!["ModuleModule".to_string()]),
+                  source::Id::from(heap.alloc_str_for_test("ImportedClass")),
+                )),
+                method_name: source::Id::from(heap.alloc_str_for_test("bar")),
+              })),
+              arguments: source::expr::ParenthesizedExpressionList {
+                loc: Location::dummy(),
+                start_associated_comments: source::NO_COMMENT_REFERENCE,
+                ending_associated_comments: source::NO_COMMENT_REFERENCE,
+                expressions: vec![dummy_source_this(heap), dummy_source_this(heap)],
+              },
             })),
-            arguments: source::expr::ParenthesizedExpressionList {
-              loc: Location::dummy(),
-              start_associated_comments: source::NO_COMMENT_REFERENCE,
-              ending_associated_comments: source::NO_COMMENT_REFERENCE,
-              expressions: vec![dummy_source_this(heap), dummy_source_this(heap)],
-            },
-          })),
-        }],
+          },
+        ))],
         expression: Some(Box::new(id_expr(PStr::LOWER_A, builder.string_type()))),
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
@@ -3362,7 +3377,7 @@ return (_t2: int);"#,
       &source::expr::E::Block(source::expr::Block {
         common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![
-          source::expr::DeclarationStatement {
+          source::expr::Statement::Declaration(Box::new(source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: source::NO_COMMENT_REFERENCE,
             pattern: source::pattern::MatchingPattern::Id(
@@ -3374,8 +3389,8 @@ return (_t2: int);"#,
               source::expr::ExpressionCommon::dummy(builder.string_type()),
               source::Literal::String(heap.alloc_str_for_test("foo")),
             )),
-          },
-          source::expr::DeclarationStatement {
+          })),
+          source::expr::Statement::Declaration(Box::new(source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: source::NO_COMMENT_REFERENCE,
             pattern: source::pattern::MatchingPattern::Id(
@@ -3384,7 +3399,7 @@ return (_t2: int);"#,
             ),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(id_expr(PStr::LOWER_A, builder.string_type())),
-          },
+          })),
         ],
         expression: Some(Box::new(id_expr(PStr::LOWER_B, builder.string_type()))),
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -3403,30 +3418,34 @@ return (_t2: int);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-        statements: vec![source::expr::DeclarationStatement {
-          loc: Location::dummy(),
-          associated_comments: source::NO_COMMENT_REFERENCE,
-          pattern: source::pattern::MatchingPattern::Id(
-            source::Id::from(PStr::LOWER_A),
-            builder.unit_type(),
-          ),
-          annotation: Some(annot_builder.unit_annot()),
-          assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
-            statements: vec![source::expr::DeclarationStatement {
-              loc: Location::dummy(),
-              associated_comments: source::NO_COMMENT_REFERENCE,
-              pattern: source::pattern::MatchingPattern::Id(
-                source::Id::from(PStr::LOWER_A),
-                builder.unit_type(),
-              ),
-              annotation: Some(annot_builder.int_annot()),
-              assigned_expression: Box::new(dummy_source_this(heap)),
-            }],
-            expression: Some(Box::new(id_expr(PStr::LOWER_A, builder.string_type()))),
-            ending_associated_comments: source::NO_COMMENT_REFERENCE,
-          })),
-        }],
+        statements: vec![source::expr::Statement::Declaration(Box::new(
+          source::expr::DeclarationStatement {
+            loc: Location::dummy(),
+            associated_comments: source::NO_COMMENT_REFERENCE,
+            pattern: source::pattern::MatchingPattern::Id(
+              source::Id::from(PStr::LOWER_A),
+              builder.unit_type(),
+            ),
+            annotation: Some(annot_builder.unit_annot()),
+            assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
+              common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
+              statements: vec![source::expr::Statement::Declaration(Box::new(
+                source::expr::DeclarationStatement {
+                  loc: Location::dummy(),
+                  associated_comments: source::NO_COMMENT_REFERENCE,
+                  pattern: source::pattern::MatchingPattern::Id(
+                    source::Id::from(PStr::LOWER_A),
+                    builder.unit_type(),
+                  ),
+                  annotation: Some(annot_builder.int_annot()),
+                  assigned_expression: Box::new(dummy_source_this(heap)),
+                },
+              ))],
+              expression: Some(Box::new(id_expr(PStr::LOWER_A, builder.string_type()))),
+              ending_associated_comments: source::NO_COMMENT_REFERENCE,
+            })),
+          },
+        ))],
         expression: Some(Box::new(id_expr(PStr::LOWER_A, builder.string_type()))),
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
@@ -3436,6 +3455,22 @@ _t1 = (_this: DUMMY_Dummy);
 let _t2: int;
 _t2 = (_t1: int);
 return (_t2: int);"#,
+    );
+
+    let heap = &mut Heap::new();
+    let builder = type_::test_type_builder::create();
+    assert_expr_correctly_lowered(
+      &source::expr::E::Block(source::expr::Block {
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
+        statements: vec![
+          source::expr::Statement::Expression(Box::new(dummy_source_this(heap))),
+          source::expr::Statement::Expression(Box::new(dummy_source_this(heap))),
+        ],
+        expression: None,
+        ending_associated_comments: source::NO_COMMENT_REFERENCE,
+      }),
+      heap,
+      "return 0;",
     );
   }
 

@@ -128,9 +128,16 @@ fn mark_if_else(heap: &mut Heap, if_else: &expr::IfElse<Rc<Type>>) {
 
 fn mark_block(heap: &mut Heap, block: &expr::Block<Rc<Type>>) {
   for stmt in &block.statements {
-    mark_expression(heap, &stmt.assigned_expression);
-    mark_annot_opt(heap, &stmt.annotation);
-    mark_matching_pattern(heap, &stmt.pattern);
+    match stmt {
+      expr::Statement::Declaration(decl_stmt) => {
+        mark_expression(heap, &decl_stmt.assigned_expression);
+        mark_annot_opt(heap, &decl_stmt.annotation);
+        mark_matching_pattern(heap, &decl_stmt.pattern);
+      }
+      expr::Statement::Expression(expr) => {
+        mark_expression(heap, expr);
+      }
+    }
   }
   if let Some(e) = &block.expression {
     mark_expression(heap, e);
@@ -377,6 +384,12 @@ mod tests {
             c
           };
           a + -1
+        }
+
+        function expressionStatementTest(): unit = {
+          Process.println("hello");
+          let x = 42;
+          Process.println("world");
         }
 
         function main(): unit = Process.println(Str.fromInt(Main.identity(

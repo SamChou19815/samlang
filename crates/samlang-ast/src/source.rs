@@ -600,9 +600,24 @@ pub mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub enum Statement<T: Clone> {
+    Declaration(Box<DeclarationStatement<T>>),
+    Expression(Box<E<T>>),
+  }
+
+  impl<T: Clone> Statement<T> {
+    pub fn loc(&self) -> Location {
+      match self {
+        Self::Declaration(s) => s.loc,
+        Self::Expression(e) => e.loc(),
+      }
+    }
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub struct Block<T: Clone> {
     pub common: ExpressionCommon<T>,
-    pub statements: Vec<DeclarationStatement<T>>,
+    pub statements: Vec<Statement<T>>,
     pub expression: Option<Box<E<T>>>,
     pub ending_associated_comments: CommentReference,
   }

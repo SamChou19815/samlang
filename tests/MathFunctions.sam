@@ -24,9 +24,9 @@ class MathFunctions {
     if !MathFunctions.isEven(3) && MathFunctions.isOdd(3) {  } else { Process.panic("BAD") }
 
   function run(): unit = {
-    let _ = ForTests.assertIntEquals(24, MathFunctions.factorial(4));
-    let _ = ForTests.assertIntEquals(55, MathFunctions.fib(10));
-    let _ = MathFunctions.uselessRecursion(20);
-    let _ = MathFunctions.mutuallyRecursiveTest();
+    ForTests.assertIntEquals(24, MathFunctions.factorial(4));
+    ForTests.assertIntEquals(55, MathFunctions.fib(10));
+    MathFunctions.uselessRecursion(20);
+    MathFunctions.mutuallyRecursiveTest();
   }
 }

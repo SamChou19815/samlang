@@ -233,7 +233,7 @@ mod list_differ {
 enum DiffNode<'a> {
   Annotation(&'a annotation::T),
   Expression(&'a expr::E<()>),
-  Statement(&'a expr::DeclarationStatement<()>),
+  Statement(&'a expr::Statement<()>),
   Import(&'a ModuleMembersImport),
   Toplevel(&'a Toplevel<()>),
 }
@@ -243,7 +243,7 @@ impl DiffNode<'_> {
     match self {
       DiffNode::Annotation(n) => n.location(),
       DiffNode::Expression(n) => n.loc(),
-      DiffNode::Statement(n) => n.loc,
+      DiffNode::Statement(n) => n.loc(),
       DiffNode::Import(n) => n.loc,
       DiffNode::Toplevel(n) => n.loc(),
     }
@@ -492,7 +492,7 @@ mod tests {
         .1
     );
 
-    let stmt = expr::DeclarationStatement {
+    let stmt = expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
       pattern: samlang_ast::source::pattern::MatchingPattern::Id(
@@ -504,7 +504,7 @@ mod tests {
         expr::ExpressionCommon::dummy(()),
         Id::from(heap.alloc_str_for_test("s")),
       )),
-    };
+    }));
     assert_eq!(
       "let v: bool = s;",
       Change::Replace(DiffNode::Statement(&stmt), DiffNode::Statement(&stmt))

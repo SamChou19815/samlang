@@ -56,6 +56,24 @@ Test Name: EvaluationOrder
 24
 25
 ========================================
+Test Name: ExpressionStatementTests
+Hello
+Before
+x
+After
+Nested
+z
+x is greater than 3
+Done
+x is greater than 5
+First
+Second
+Third
+Before let
+x
+y
+Computing result
+========================================
 Test Name: GC
 ========================================
 Test Name: IfElseTests

@@ -1657,45 +1657,112 @@ mod expression_parser {
     };
 
     let mut statements = Vec::new();
-    while let Token(_, TokenContent::Keyword(Keyword::Let)) = parser.peek() {
-      statements.push(parse_statement(parser));
-    }
 
-    if let Token(end_loc, TokenContent::Operator(TokenOp::RightBrace)) = parser.peek() {
-      // No final expression
-      let ending_comments = parser.consume();
-      let loc = start_loc.union(&end_loc);
-      expr::Block {
-        common: expr::ExpressionCommon {
-          loc,
-          associated_comments: parser.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        statements,
-        expression: None,
-        ending_associated_comments: parser.comments_store.create_comment_reference(ending_comments),
-      }
-    } else {
-      // Has final expression
-      let expression = parse_expression(parser);
-      let (end_loc, ending_comments) = parser.assert_and_consume_operator(TokenOp::RightBrace);
-      let loc = start_loc.union(&end_loc);
-      expr::Block {
-        common: expr::ExpressionCommon {
-          loc,
-          associated_comments: parser.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        statements,
-        expression: Some(Box::new(expression)),
-        ending_associated_comments: parser.comments_store.create_comment_reference(ending_comments),
+    loop {
+      match parser.peek() {
+        Token(_, TokenContent::Keyword(Keyword::Let)) => {
+          statements.push(parse_statement(parser));
+        }
+        Token(_, TokenContent::Operator(TokenOp::RightBrace)) => {
+          // Empty block - no final expression
+          let (end_loc, ending_comments) = parser.assert_and_consume_operator(TokenOp::RightBrace);
+          let loc = start_loc.union(&end_loc);
+          return expr::Block {
+            common: expr::ExpressionCommon {
+              loc,
+              associated_comments: parser
+                .comments_store
+                .create_comment_reference(associated_comments),
+              type_: (),
+            },
+            statements,
+            expression: None,
+            ending_associated_comments: parser
+              .comments_store
+              .create_comment_reference(ending_comments),
+          };
+        }
+        Token(_, TokenContent::Operator(TokenOp::Semicolon)) => {
+          // Empty statement, skip it
+          let (_, ending_comments) = parser.assert_and_consume_operator(TokenOp::Semicolon);
+          associated_comments.extend(ending_comments);
+        }
+        Token(loc, TokenContent::EndOfFile) => {
+          // Unexpected end of file inside block
+          parser.report(loc, "Expected: }, actual: EOF.".to_string());
+          return expr::Block {
+            common: expr::ExpressionCommon {
+              loc: start_loc.union(&loc),
+              associated_comments: parser
+                .comments_store
+                .create_comment_reference(associated_comments),
+              type_: (),
+            },
+            statements,
+            expression: None,
+            ending_associated_comments: NO_COMMENT_REFERENCE,
+          };
+        }
+        _ => {
+          // Try to parse as an expression statement: parse expression, expect semicolon
+          let expr = parse_expression(parser);
+          let peeked_after_expr = parser.peek();
+          if let Token(_, TokenContent::Operator(TokenOp::Semicolon)) = peeked_after_expr {
+            // This is an expression statement
+            let (_, ending_comments) = parser.assert_and_consume_operator(TokenOp::Semicolon);
+            statements.push(expr::Statement::Expression(Box::new(expr)));
+            associated_comments.extend(ending_comments);
+          } else if let Token(end_loc, TokenContent::Operator(TokenOp::RightBrace)) =
+            peeked_after_expr
+          {
+            // This is the final expression (no semicolon)
+            let (_, ending_comments) = parser.assert_and_consume_operator(TokenOp::RightBrace);
+            let loc = start_loc.union(&end_loc);
+            return expr::Block {
+              common: expr::ExpressionCommon {
+                loc,
+                associated_comments: parser
+                  .comments_store
+                  .create_comment_reference(associated_comments),
+                type_: (),
+              },
+              statements,
+              expression: Some(Box::new(expr)),
+              ending_associated_comments: parser
+                .comments_store
+                .create_comment_reference(ending_comments),
+            };
+          } else if let Token(loc, TokenContent::EndOfFile) = peeked_after_expr {
+            // Unexpected end of file - expression without closing brace
+            parser.report(loc, "Expected: ; or }, actual: EOF.".to_string());
+            return expr::Block {
+              common: expr::ExpressionCommon {
+                loc: start_loc.union(&loc),
+                associated_comments: parser
+                  .comments_store
+                  .create_comment_reference(associated_comments),
+                type_: (),
+              },
+              statements,
+              expression: Some(Box::new(expr)),
+              ending_associated_comments: NO_COMMENT_REFERENCE,
+            };
+          } else {
+            // Error: expected semicolon or closing brace
+            let Token(loc, content) = parser.peek();
+            parser.report(
+              loc,
+              format!("Expected: ; or }}, actual: {}", content.pretty_print(parser.heap)),
+            );
+            associated_comments.extend(parser.consume());
+            // Continue parsing to find more errors
+          }
+        }
       }
     }
   }
 
-  pub(super) fn parse_statement(
-    parser: &mut super::SourceParser,
-  ) -> expr::DeclarationStatement<()> {
+  pub(super) fn parse_statement(parser: &mut super::SourceParser) -> expr::Statement<()> {
     let (start_loc, mut concrete_comments) = parser.assert_and_consume_keyword(Keyword::Let);
     let pattern = super::pattern_parser::parse_matching_pattern(parser, Vec::new());
     let annotation = if let Token(_, TokenContent::Operator(TokenOp::Colon)) = parser.peek() {
@@ -1709,13 +1776,13 @@ mod expression_parser {
     concrete_comments.append(&mut additional_comments);
     let loc = start_loc.union(&end_loc);
     let associated_comments = parser.comments_store.create_comment_reference(concrete_comments);
-    expr::DeclarationStatement {
+    expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
       loc,
       associated_comments,
       pattern,
       annotation,
       assigned_expression,
-    }
+    }))
   }
 }
 

@@ -1,0 +1,75 @@
+// Test expression statements work correctly
+class ExpressionStatementTests {
+  function simpleExpressionStatement(): unit = {
+    Process.println("Hello");
+  }
+
+  function mixedStatements(): int = {
+    Process.println("Before");
+    let x = 42;
+    Process.println("x");
+    let y = x + 1;
+    Process.println("After");
+    y
+  }
+
+  function expressionStatementInBlock(): int = {
+    {
+      Process.println("Nested");
+      let z = 10;
+      Process.println("z");
+      z
+    }
+  }
+
+  function expressionStatementAfterIf(): unit = {
+    let x = 5;
+    if x > 3 {
+      Process.println("x is greater than 3");
+    } else {
+      Process.println("x is not greater than 3");
+    };
+    Process.println("Done");
+  }
+
+  function expressionStatementInIfBranches(): unit = {
+    let x = 10;
+    if x > 5 {
+      Process.println("x is greater than 5");
+    } else {
+      Process.println("x is not greater than 5");
+    }
+  }
+
+  function expressionStatementChain(): unit = {
+    Process.println("First");
+    Process.println("Second");
+    Process.println("Third");
+  }
+
+  function expressionStatementWithLet(): unit = {
+    Process.println("Before let");
+    let x = 100;
+    Process.println("x");
+    let y = x * 2;
+    Process.println("y");
+  }
+
+  function expressionStatementReturningValue(): int = {
+    Process.println("Computing result");
+    let x = 5;
+    let y = 10;
+    x + y
+  }
+
+  function run(): unit = {
+    ExpressionStatementTests.simpleExpressionStatement();
+    ExpressionStatementTests.mixedStatements();
+    ExpressionStatementTests.expressionStatementInBlock();
+    ExpressionStatementTests.expressionStatementAfterIf();
+    ExpressionStatementTests.expressionStatementInIfBranches();
+    ExpressionStatementTests.expressionStatementChain();
+    ExpressionStatementTests.expressionStatementWithLet();
+    ExpressionStatementTests.expressionStatementReturningValue();
+  }
+}

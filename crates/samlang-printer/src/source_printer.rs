@@ -850,6 +850,21 @@ fn matching_pattern_to_document(
 pub(super) fn statement_to_document(
   heap: &Heap,
   comment_store: &CommentStore,
+  stmt: &expr::Statement<()>,
+) -> Document {
+  match stmt {
+    expr::Statement::Declaration(decl_stmt) => {
+      declaration_statement_to_document(heap, comment_store, decl_stmt)
+    }
+    expr::Statement::Expression(expr) => {
+      Document::concat(vec![create_doc(heap, comment_store, expr), Document::Text(";")])
+    }
+  }
+}
+
+pub(super) fn declaration_statement_to_document(
+  heap: &Heap,
+  comment_store: &CommentStore,
   stmt: &expr::DeclarationStatement<()>,
 ) -> Document {
   let mut segments = Vec::new();
@@ -1695,6 +1710,14 @@ ClassName /* b */ /* c */.classMember<
       };
     };
   };
+}"#,
+    );
+    assert_reprint_expr(
+      "{ Process.println(\"hello\"); let a = 3; Process.println(\"world\"); }",
+      r#"{
+  Process.println("hello");
+  let a = 3;
+  Process.println("world");
 }"#,
     );
   }

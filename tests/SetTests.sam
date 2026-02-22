@@ -16,7 +16,7 @@ class SetTests {
     if n == 0 {
       ForTests.assertBool(!set.contains(Int.init(n)), "Should be none!")
     } else {
-      let _ = ForTests.assertBool(set.contains(Int.init(n)), "Missing key");
+      ForTests.assertBool(set.contains(Int.init(n)), "Missing key");
       SetTests.validateSetHelper(set, n - 1)
     }
 
@@ -24,34 +24,34 @@ class SetTests {
     if n == 0 {
       ForTests.assertBool(!set.contains(Int.init(1)), "Should be none!")
     } else {
-      let _ = ForTests.assertBool(set.contains(Int.init(n + 1)), "Missing key");
+      ForTests.assertBool(set.contains(Int.init(n + 1)), "Missing key");
       SetTests.validatePlusOneIntSetHelper(set, n - 1)
     }
 
   function run(): unit = {
     let set = SetTests.createSetHelper(Set.empty(), 100);
-    let _ = SetTests.validateSetHelper(set, 100);
-    let _ = SetTests.validatePlusOneIntSetHelper(set.map((v) -> Int.init(v.value + 1)), 100);
-    let _ = ForTests.assertBool(set.diff(set).isEmpty(), "Not empty");
-    let _ = ForTests.assertBool(!set.disjoint(set), "Disjoint");
+    SetTests.validateSetHelper(set, 100);
+    SetTests.validatePlusOneIntSetHelper(set.map((v) -> Int.init(v.value + 1)), 100);
+    ForTests.assertBool(set.diff(set).isEmpty(), "Not empty");
+    ForTests.assertBool(!set.disjoint(set), "Disjoint");
     let union = set.union(set);
     let inter = set.intersection(set);
-    let _ = ForTests.assertBool(
+    ForTests.assertBool(
       union.equal(set, (v1, v2) -> v1.compare(v2) == 0),
       "Not equal with union result"
     );
-    let _ = ForTests.assertBool(
+    ForTests.assertBool(
       inter.equal(set, (v1, v2) -> v1.compare(v2) == 0),
       "Not equal with intersetion result"
     );
-    let _ = ForTests.assertBool(
+    ForTests.assertBool(
       union.compare(set, (v1, v2) -> v1.compare(v2)) == 0,
       "Compare with union != 0"
     );
-    let _ = ForTests.assertBool(
+    ForTests.assertBool(
       inter.compare(set, (v1, v2) -> v1.compare(v2)) == 0,
       "Compare with intersection != 0"
     );
-    let _ = ForTests.assertIntEquals(set.fold(0, (acc, v) -> acc + v.value), (1 + 100) * 100 / 2);
+    ForTests.assertIntEquals(set.fold(0, (acc, v) -> acc + v.value), (1 + 100) * 100 / 2);
   }
 }

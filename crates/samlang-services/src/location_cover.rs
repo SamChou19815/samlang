@@ -159,14 +159,25 @@ fn search_block(
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
   for stmt in &block.statements {
-    if let Some(found) = search_optional_annotation(stmt.annotation.as_ref(), position) {
-      return Some(found);
-    }
-    if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
-      return Some(found);
-    }
-    if let Some(found) = search_matching_pattern(&stmt.pattern, position) {
-      return Some(found);
+    match stmt {
+      expr::Statement::Declaration(decl_stmt) => {
+        if let Some(found) = search_optional_annotation(decl_stmt.annotation.as_ref(), position) {
+          return Some(found);
+        }
+        if let Some(found) =
+          search_expression(&decl_stmt.assigned_expression, position, stop_at_call)
+        {
+          return Some(found);
+        }
+        if let Some(found) = search_matching_pattern(&decl_stmt.pattern, position) {
+          return Some(found);
+        }
+      }
+      expr::Statement::Expression(expr) => {
+        if let Some(found) = search_expression(expr, position, stop_at_call) {
+          return Some(found);
+        }
+      }
     }
   }
   if let Some(e) = &block.expression {
@@ -494,6 +505,12 @@ mod tests {
           c
         };
         a + -1
+      }
+
+      function expressionStatementTest(): unit = {
+        Process.println("hello");
+        let x = 42;
+        Process.println("world");
       }
 
       function main(): unit = Process.println(Str.fromInt(Main.identity(

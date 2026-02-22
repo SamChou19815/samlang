@@ -116,11 +116,23 @@ fn search_block(
   collector: &mut Vec<Location>,
 ) {
   for stmt in &block.statements {
-    if let Some(annot) = &stmt.annotation {
-      search_annot(annot, request, collector);
+    match stmt {
+      expr::Statement::Declaration(decl_stmt) => {
+        if let Some(annot) = &decl_stmt.annotation {
+          search_annot(annot, request, collector);
+        }
+        search_matching_pattern(
+          &decl_stmt.pattern,
+          decl_stmt.assigned_expression.type_(),
+          request,
+          collector,
+        );
+        search_expression(&decl_stmt.assigned_expression, request, collector);
+      }
+      expr::Statement::Expression(expr) => {
+        search_expression(expr, request, collector);
+      }
     }
-    search_matching_pattern(&stmt.pattern, stmt.assigned_expression.type_(), request, collector);
-    search_expression(&stmt.assigned_expression, request, collector);
   }
   if let Some(e) = &block.expression {
     search_expression(e, request, collector);
@@ -356,6 +368,12 @@ mod tests {
           c
         };
         a + -1
+      }
+
+      function expressionStatementTest(): unit = {
+        Process.println("hello");
+        let x = 42;
+        Process.println("world");
       }
 
       function main(): unit = {

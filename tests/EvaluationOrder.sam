@@ -3,36 +3,36 @@ import { ForTests } from tests.StdLib;
 class EvaluationOrder {
   // return a random number, print order
   function intIdentity(order: int): int = {
-    let _ = Process.println(Str.fromInt(order));
+    Process.println(Str.fromInt(order));
     2
   }
 
   // return a random bool, print order
   function boolIdentity(item: bool, order: int): bool = {
-    let _ = Process.println(Str.fromInt(order));
+    Process.println(Str.fromInt(order));
     item
   }
 
   // return the string back, print str
   function stringIdentity(str: Str): Str = {
-    let _ = Process.println("surprise!");
+    Process.println("surprise!");
     str
   }
 
   function binaryExpressionTest(): unit = {
-    let _ = EvaluationOrder.intIdentity(0) + EvaluationOrder.intIdentity(1);
-    let _ = EvaluationOrder.intIdentity(2) - EvaluationOrder.intIdentity(3);
-    let _ = EvaluationOrder.intIdentity(4) * EvaluationOrder.intIdentity(5);
-    let _ = EvaluationOrder.intIdentity(6) / EvaluationOrder.intIdentity(7);
-    let _ = EvaluationOrder.intIdentity(8) % EvaluationOrder.intIdentity(9);
-    let _ = EvaluationOrder.intIdentity(10) < EvaluationOrder.intIdentity(11);
-    let _ = EvaluationOrder.intIdentity(12) <= EvaluationOrder.intIdentity(13);
-    let _ = EvaluationOrder.intIdentity(14) > EvaluationOrder.intIdentity(15);
-    let _ = EvaluationOrder.intIdentity(16) >= EvaluationOrder.intIdentity(17);
-    let _ = EvaluationOrder.intIdentity(18) == EvaluationOrder.intIdentity(19);
-    let _ = EvaluationOrder.intIdentity(20) != EvaluationOrder.intIdentity(21);
-    let _ = EvaluationOrder.boolIdentity(false, 22) || EvaluationOrder.boolIdentity(false, 23);
-    let _ = EvaluationOrder.boolIdentity(true, 24) && EvaluationOrder.boolIdentity(true, 25);
+    EvaluationOrder.intIdentity(0) + EvaluationOrder.intIdentity(1);
+    EvaluationOrder.intIdentity(2) - EvaluationOrder.intIdentity(3);
+    EvaluationOrder.intIdentity(4) * EvaluationOrder.intIdentity(5);
+    EvaluationOrder.intIdentity(6) / EvaluationOrder.intIdentity(7);
+    EvaluationOrder.intIdentity(8) % EvaluationOrder.intIdentity(9);
+    EvaluationOrder.intIdentity(10) < EvaluationOrder.intIdentity(11);
+    EvaluationOrder.intIdentity(12) <= EvaluationOrder.intIdentity(13);
+    EvaluationOrder.intIdentity(14) > EvaluationOrder.intIdentity(15);
+    EvaluationOrder.intIdentity(16) >= EvaluationOrder.intIdentity(17);
+    EvaluationOrder.intIdentity(18) == EvaluationOrder.intIdentity(19);
+    EvaluationOrder.intIdentity(20) != EvaluationOrder.intIdentity(21);
+    EvaluationOrder.boolIdentity(false, 22) || EvaluationOrder.boolIdentity(false, 23);
+    EvaluationOrder.boolIdentity(true, 24) && EvaluationOrder.boolIdentity(true, 25);
   }
 
   function run(): unit = EvaluationOrder.binaryExpressionTest()

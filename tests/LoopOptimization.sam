@@ -5,11 +5,11 @@ class LoopOptimization {
     if i >= 10 {
       0
     } else {
-      let _ = ForTests.printlnInt(i * 3 + 100);
+      ForTests.printlnInt(i * 3 + 100);
       LoopOptimization.loopy(i + 2)
     }
 
   function run(): unit = {
-    let _ = LoopOptimization.loopy(0);
+    LoopOptimization.loopy(0);
   }
 }

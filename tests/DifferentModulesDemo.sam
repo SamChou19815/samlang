@@ -70,18 +70,18 @@ class DifferentModulesDemo {
     if !condition {  } else { Process.panic(message) }
 
   function run(): unit = {
-    let _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
-    let _ = ForTests.assertIntEquals(
+    ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
+    ForTests.assertIntEquals(
       Option.deepForceValue(Option.getSome(Option.getSome(Option.getSome(Box.init(42))))),
       42
     );
-    let _ = ForTests.assertIntEquals(Box.init(42).getContent(), 42);
-    let _ = ForTests.assertIntEquals(FunctionExample.getIdentityFunction<int>()(42), 42);
-    let _ = ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
-    let _ = ForTests.assertIntEquals(Math.plus(2, 2), 4);
-    let _ = DifferentModulesDemo.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
-    let _ = DifferentModulesDemo.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
-    let _ = DifferentModulesDemo.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
-    let _ = DifferentModulesDemo.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
+    ForTests.assertIntEquals(Box.init(42).getContent(), 42);
+    ForTests.assertIntEquals(FunctionExample.getIdentityFunction<int>()(42), 42);
+    ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
+    ForTests.assertIntEquals(Math.plus(2, 2), 4);
+    DifferentModulesDemo.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
+    DifferentModulesDemo.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
+    DifferentModulesDemo.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
+    DifferentModulesDemo.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
   }
 }

@@ -51,9 +51,9 @@ class PatternMatching {
     let red = Color.Red();
     let green = Color.Green();
     let custom = Color.Custom(128, 64, 32);
-    let _ = ForTests.assertBool(red.isRed(), "Red should be red");
-    let _ = ForTests.assertBool(!green.isRed(), "Green should not be red");
-    let _ = ForTests.assertBool(!custom.isRed(), "Custom should not be red");
+    ForTests.assertBool(red.isRed(), "Red should be red");
+    ForTests.assertBool(!green.isRed(), "Green should not be red");
+    ForTests.assertBool(!custom.isRed(), "Custom should not be red");
   }
 
   private function testVariantWithData(): unit = {
@@ -61,12 +61,12 @@ class PatternMatching {
     let custom = Color.Custom(100, 150, 200);
     let (r1, g1, b1) = red.toRGB();
     let (r2, g2, b2) = custom.toRGB();
-    let _ = ForTests.assertIntEquals(255, r1);
-    let _ = ForTests.assertIntEquals(0, g1);
-    let _ = ForTests.assertIntEquals(0, b1);
-    let _ = ForTests.assertIntEquals(100, r2);
-    let _ = ForTests.assertIntEquals(150, g2);
-    let _ = ForTests.assertIntEquals(200, b2);
+    ForTests.assertIntEquals(255, r1);
+    ForTests.assertIntEquals(0, g1);
+    ForTests.assertIntEquals(0, b1);
+    ForTests.assertIntEquals(100, r2);
+    ForTests.assertIntEquals(150, g2);
+    ForTests.assertIntEquals(200, b2);
   }
 
   private function testOptionMatch(): unit = {
@@ -80,8 +80,8 @@ class PatternMatching {
       Some(v) -> v,
       None -> -1,
     };
-    let _ = ForTests.assertIntEquals(42, someValue);
-    let _ = ForTests.assertIntEquals(-1, noneValue);
+    ForTests.assertIntEquals(42, someValue);
+    ForTests.assertIntEquals(-1, noneValue);
   }
 
   private function testResultMatch(): unit = {
@@ -95,8 +95,8 @@ class PatternMatching {
       Ok(v) -> v,
       Error(_) -> -1,
     };
-    let _ = ForTests.assertIntEquals(42, okValue);
-    let _ = ForTests.assertIntEquals(-1, errValue);
+    ForTests.assertIntEquals(42, okValue);
+    ForTests.assertIntEquals(-1, errValue);
   }
 
   private function testNestedMatch(): unit = {
@@ -108,17 +108,17 @@ class PatternMatching {
       },
       None -> -2,
     };
-    let _ = ForTests.assertIntEquals(100, value);
+    ForTests.assertIntEquals(100, value);
   }
 
   private function testTupleMatch(): unit = {
     let pair = (42, "hello");
     let (num, str) = pair;
-    let _ = ForTests.assertIntEquals(42, num);
+    ForTests.assertIntEquals(42, num);
     let triple = (1, true, "world");
     let (a, b, c) = triple;
-    let _ = ForTests.assertIntEquals(1, a);
-    let _ = ForTests.assertBool(b, "Second element should be true");
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertBool(b, "Second element should be true");
   }
 
   private function testTreeDepth(): unit = {
@@ -128,9 +128,9 @@ class PatternMatching {
       Tree.node(Tree.leaf(1), Tree.leaf(2)),
       Tree.node(Tree.leaf(3), Tree.leaf(4))
     );
-    let _ = ForTests.assertIntEquals(1, leaf.depth());
-    let _ = ForTests.assertIntEquals(2, smallTree.depth());
-    let _ = ForTests.assertIntEquals(3, bigTree.depth());
+    ForTests.assertIntEquals(1, leaf.depth());
+    ForTests.assertIntEquals(2, smallTree.depth());
+    ForTests.assertIntEquals(3, bigTree.depth());
   }
 
   private function testTreeSum(): unit = {
@@ -139,7 +139,7 @@ class PatternMatching {
       Tree.node(Tree.leaf(3), Tree.leaf(4))
     );
     let sum = tree.sum(0, (acc, v) -> acc + v);
-    let _ = ForTests.assertIntEquals(10, sum);
+    ForTests.assertIntEquals(10, sum);
   }
 
   private function testWildcardPattern(): unit = {
@@ -148,18 +148,18 @@ class PatternMatching {
       Red -> 1,
       _ -> 2,
     };
-    let _ = ForTests.assertIntEquals(2, result);
+    ForTests.assertIntEquals(2, result);
   }
 
   function run(): unit = {
-    let _ = PatternMatching.testSimpleVariantMatch();
-    let _ = PatternMatching.testVariantWithData();
-    let _ = PatternMatching.testOptionMatch();
-    let _ = PatternMatching.testResultMatch();
-    let _ = PatternMatching.testNestedMatch();
-    let _ = PatternMatching.testTupleMatch();
-    let _ = PatternMatching.testTreeDepth();
-    let _ = PatternMatching.testTreeSum();
-    let _ = PatternMatching.testWildcardPattern();
+    PatternMatching.testSimpleVariantMatch();
+    PatternMatching.testVariantWithData();
+    PatternMatching.testOptionMatch();
+    PatternMatching.testResultMatch();
+    PatternMatching.testNestedMatch();
+    PatternMatching.testTupleMatch();
+    PatternMatching.testTreeDepth();
+    PatternMatching.testTreeSum();
+    PatternMatching.testWildcardPattern();
   }
 }

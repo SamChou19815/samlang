@@ -29,7 +29,7 @@ pub fn pretty_print_statement(
   heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &samlang_ast::source::CommentStore,
-  statement: &samlang_ast::source::expr::DeclarationStatement<()>,
+  statement: &samlang_ast::source::expr::Statement<()>,
 ) -> String {
   prettier::pretty_print(
     available_width,

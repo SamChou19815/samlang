@@ -6,10 +6,10 @@ class OptionResultTests {
   private function testOptionCreation(): unit = {
     let some = Option.Some(42);
     let none = Option.None<int>();
-    let _ = ForTests.assertBool(some.isSome(), "Some should be some");
-    let _ = ForTests.assertBool(!some.isNone(), "Some should not be none");
-    let _ = ForTests.assertBool(none.isNone(), "None should be none");
-    let _ = ForTests.assertBool(!none.isSome(), "None should not be some");
+    ForTests.assertBool(some.isSome(), "Some should be some");
+    ForTests.assertBool(!some.isNone(), "Some should not be none");
+    ForTests.assertBool(none.isNone(), "None should be none");
+    ForTests.assertBool(!none.isSome(), "None should not be some");
   }
 
   private function testOptionMap(): unit = {
@@ -17,11 +17,11 @@ class OptionResultTests {
     let none = Option.None<int>();
     let mappedSome = some.map((x) -> x * 2);
     let mappedNone = none.map((x) -> x * 2);
-    let _ = match mappedSome {
+    match mappedSome {
       Some(v) -> ForTests.assertIntEquals(20, v),
       None -> Process.panic<unit>("Mapped some should be some"),
     };
-    let _ = ForTests.assertBool(mappedNone.isNone(), "Mapped none should be none");
+    ForTests.assertBool(mappedNone.isNone(), "Mapped none should be none");
   }
 
   private function testOptionBind(): unit = {
@@ -29,35 +29,35 @@ class OptionResultTests {
     let none = Option.None<int>();
     let bound = some.bind((x) -> if x > 0 { Option.Some(x * 2) } else { Option.None<int>() });
     let boundNone: Option<int> = none.bind((x) -> Option.Some(x * 2));
-    let _ = match bound {
+    match bound {
       Some(v) -> ForTests.assertIntEquals(10, v),
       None -> Process.panic<unit>("Bound should be some"),
     };
-    let _ = ForTests.assertBool(boundNone.isNone(), "Bound none should be none");
+    ForTests.assertBool(boundNone.isNone(), "Bound none should be none");
   }
 
   private function testOptionValueMap(): unit = {
     let some = Option.Some(42);
     let none = Option.None<int>();
-    let _ = ForTests.assertIntEquals(42, some.valueMap(0, (x) -> x));
-    let _ = ForTests.assertIntEquals(0, none.valueMap(0, (x) -> x));
+    ForTests.assertIntEquals(42, some.valueMap(0, (x) -> x));
+    ForTests.assertIntEquals(0, none.valueMap(0, (x) -> x));
   }
 
   private function testOptionFilter(): unit = {
     let some = Option.Some(10);
     let filtered = some.filter((x) -> x > 5);
     let filteredOut = some.filter((x) -> x > 100);
-    let _ = ForTests.assertBool(filtered.isSome(), "Filtered should be some");
-    let _ = ForTests.assertBool(filteredOut.isNone(), "Filtered out should be none");
+    ForTests.assertBool(filtered.isSome(), "Filtered should be some");
+    ForTests.assertBool(filteredOut.isNone(), "Filtered out should be none");
   }
 
   private function testResultCreation(): unit = {
     let ok = Result.Ok<int, Str>(42);
     let err = Result.Error<int, Str>("error message");
-    let _ = ForTests.assertBool(ok.isOk(), "Ok should be ok");
-    let _ = ForTests.assertBool(!ok.isError(), "Ok should not be error");
-    let _ = ForTests.assertBool(err.isError(), "Error should be error");
-    let _ = ForTests.assertBool(!err.isOk(), "Error should not be ok");
+    ForTests.assertBool(ok.isOk(), "Ok should be ok");
+    ForTests.assertBool(!ok.isError(), "Ok should not be error");
+    ForTests.assertBool(err.isError(), "Error should be error");
+    ForTests.assertBool(!err.isOk(), "Error should not be ok");
   }
 
   private function testResultMap(): unit = {
@@ -65,11 +65,11 @@ class OptionResultTests {
     let err = Result.Error<int, Str>("error");
     let mappedOk = ok.map((x) -> x * 2);
     let mappedErr = err.map((x) -> x * 2);
-    let _ = match mappedOk {
+    match mappedOk {
       Ok(v) -> ForTests.assertIntEquals(20, v),
       Error(_) -> Process.panic<unit>("Mapped ok should be ok"),
     };
-    let _ = ForTests.assertBool(mappedErr.isError(), "Mapped error should be error");
+    ForTests.assertBool(mappedErr.isError(), "Mapped error should be error");
   }
 
   private function testResultMapError(): unit = {
@@ -77,8 +77,8 @@ class OptionResultTests {
     let err = Result.Error<int, Str>("error");
     let mappedOk = ok.mapError((e) -> e :: "!");
     let mappedErr = err.mapError((e) -> e :: "!");
-    let _ = ForTests.assertBool(mappedOk.isOk(), "Mapped ok should be ok");
-    let _ = ForTests.assertBool(mappedErr.isError(), "Mapped error should be error");
+    ForTests.assertBool(mappedOk.isOk(), "Mapped ok should be ok");
+    ForTests.assertBool(mappedErr.isError(), "Mapped error should be error");
   }
 
   private function testResultToOption(): unit = {
@@ -86,8 +86,8 @@ class OptionResultTests {
     let err = Result.Error<int, Str>("error");
     let optionFromOk = ok.ok();
     let optionFromErr = err.ok();
-    let _ = ForTests.assertBool(optionFromOk.isSome(), "Option from ok should be some");
-    let _ = ForTests.assertBool(optionFromErr.isNone(), "Option from error should be none");
+    ForTests.assertBool(optionFromOk.isSome(), "Option from ok should be some");
+    ForTests.assertBool(optionFromErr.isNone(), "Option from error should be none");
   }
 
   private function testOptionFromResult(): unit = {
@@ -95,8 +95,8 @@ class OptionResultTests {
     let none = Option.None<int>();
     let resultFromSome = Result.fromOption(some, "error");
     let resultFromNone = Result.fromOption(none, "error");
-    let _ = ForTests.assertBool(resultFromSome.isOk(), "Result from some should be ok");
-    let _ = ForTests.assertBool(resultFromNone.isError(), "Result from none should be error");
+    ForTests.assertBool(resultFromSome.isOk(), "Result from some should be ok");
+    ForTests.assertBool(resultFromNone.isError(), "Result from none should be error");
   }
 
   private function testChainedOperations(): unit = {
@@ -105,34 +105,34 @@ class OptionResultTests {
       .filter((x) -> x > 5)
       .map((x) -> x + 10)
       .valueMap(0, (x) -> x);
-    let _ = ForTests.assertIntEquals(20, result);
+    ForTests.assertIntEquals(20, result);
   }
 
   private function testOptionUnwrap(): unit = {
     let some = Option.Some(42);
     let value = some.unwrap();
-    let _ = ForTests.assertIntEquals(42, value);
+    ForTests.assertIntEquals(42, value);
   }
 
   private function testResultUnwrap(): unit = {
     let ok = Result.Ok<int, Str>(42);
     let value = ok.unwrap("should not fail");
-    let _ = ForTests.assertIntEquals(42, value);
+    ForTests.assertIntEquals(42, value);
   }
 
   function run(): unit = {
-    let _ = OptionResultTests.testOptionCreation();
-    let _ = OptionResultTests.testOptionMap();
-    let _ = OptionResultTests.testOptionBind();
-    let _ = OptionResultTests.testOptionValueMap();
-    let _ = OptionResultTests.testOptionFilter();
-    let _ = OptionResultTests.testResultCreation();
-    let _ = OptionResultTests.testResultMap();
-    let _ = OptionResultTests.testResultMapError();
-    let _ = OptionResultTests.testResultToOption();
-    let _ = OptionResultTests.testOptionFromResult();
-    let _ = OptionResultTests.testChainedOperations();
-    let _ = OptionResultTests.testOptionUnwrap();
-    let _ = OptionResultTests.testResultUnwrap();
+    OptionResultTests.testOptionCreation();
+    OptionResultTests.testOptionMap();
+    OptionResultTests.testOptionBind();
+    OptionResultTests.testOptionValueMap();
+    OptionResultTests.testOptionFilter();
+    OptionResultTests.testResultCreation();
+    OptionResultTests.testResultMap();
+    OptionResultTests.testResultMapError();
+    OptionResultTests.testResultToOption();
+    OptionResultTests.testOptionFromResult();
+    OptionResultTests.testChainedOperations();
+    OptionResultTests.testOptionUnwrap();
+    OptionResultTests.testResultUnwrap();
   }
 }

@@ -3,7 +3,7 @@ class BlockInIfElse {
     if true {
       let _: int = BlockInIfElse.main2();
       let _: unit = BlockInIfElse.main3();
-      let _: int = 3;
+      3;
       {  }
     } else {
       {  }
@@ -17,5 +17,5 @@ class BlockInIfElse {
       2
     }
 
-  private function main3(): unit = if true { let _: int = 3; } else {  }
+  private function main3(): unit = if true { 3; } else {  }
 }

@@ -230,25 +230,24 @@ fn apply_block_renaming(
     statements: block
       .statements
       .iter()
-      .map(
-        |expr::DeclarationStatement {
-           loc,
-           associated_comments,
-           pattern,
-           annotation,
-           assigned_expression,
-         }| expr::DeclarationStatement {
-          loc: *loc,
-          associated_comments: *associated_comments,
-          pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
-          annotation: annotation.clone(),
-          assigned_expression: Box::new(apply_expr_renaming(
-            assigned_expression,
-            definition_and_uses,
-            new_name,
-          )),
-        },
-      )
+      .map(|stmt| match stmt {
+        expr::Statement::Declaration(decl) => {
+          expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
+            loc: decl.loc,
+            associated_comments: decl.associated_comments,
+            pattern: apply_matching_pattern_renaming(&decl.pattern, definition_and_uses, new_name),
+            annotation: decl.annotation.clone(),
+            assigned_expression: Box::new(apply_expr_renaming(
+              &decl.assigned_expression,
+              definition_and_uses,
+              new_name,
+            )),
+          }))
+        }
+        expr::Statement::Expression(expr) => expr::Statement::Expression(Box::new(
+          apply_expr_renaming(expr, definition_and_uses, new_name),
+        )),
+      })
       .collect(),
     expression: block
       .expression
@@ -977,6 +976,33 @@ class Main {
       None(_) -> 1.d,
       Some(renAmeD) -> renAmeD,
     }
+  }
+}
+"#,
+    );
+  }
+
+  #[test]
+  fn expression_statement_test() {
+    let source = r#"
+class Main {
+  function test(): unit = {
+    Process.println("hello");
+    let x = 42;
+    Process.println("world");
+  }
+}
+"#;
+    let (_, lookup) = prepare_lookup(source);
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(4, 8, 4, 9),
+      r#"class Main {
+  function test(): unit = {
+    Process.println("hello");
+    let renAmeD = 42;
+    Process.println("world");
   }
 }
 "#,
