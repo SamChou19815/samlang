@@ -42,6 +42,9 @@ fn search_matching_pattern(
       Some(LocationCoverSearchResult::TypedName(id.loc, type_.as_ref().clone(), true))
     }
     pattern::MatchingPattern::Id(_, _) | pattern::MatchingPattern::Wildcard { .. } => None,
+    pattern::MatchingPattern::Or { patterns, .. } => {
+      patterns.iter().find_map(|p| search_matching_pattern(p, position))
+    }
   }
 }
 
@@ -283,6 +286,10 @@ fn search_expression(
         if Option::is_some(&found) {
           return found;
         }
+        found = search_matching_pattern(&case.pattern, position);
+        if Option::is_some(&found) {
+          return found;
+        }
         found = search_expression(&case.body, position, stop_at_call);
       }
       found
@@ -455,6 +462,11 @@ mod tests {
         match (this) {
           None(_) -> {},
           Some(a) -> {},
+        }
+
+      method orPatternExample(): unit =
+        match (this) {
+          None(_) | Some(_) -> {},
         }
     }
 

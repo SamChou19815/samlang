@@ -19,6 +19,8 @@ class Color(Red, Green, Blue, Custom(int, int, int)) {
     }
 }
 
+class Status(Ok(int), Warning(int), Error(Str)) {}
+
 class Tree<T>(Leaf(T), Node(Tree<T>, Tree<T>)) {
   function <T> leaf(value: T): Tree<T> = Tree.Leaf(value)
 
@@ -151,6 +153,27 @@ class PatternMatching {
     ForTests.assertIntEquals(2, result);
   }
 
+  private function testOrPattern(): unit = {
+    let ok = Status.Ok(10);
+    let warning = Status.Warning(20);
+    let error = Status.Error("bad");
+    let result1 = match ok {
+      Ok(v) | Warning(v) -> v,
+      Error(_) -> -1,
+    };
+    let result2 = match warning {
+      Ok(v) | Warning(v) -> v,
+      Error(_) -> -1,
+    };
+    let result3 = match error {
+      Ok(v) | Warning(v) -> v,
+      Error(_) -> -1,
+    };
+    ForTests.assertIntEquals(10, result1);
+    ForTests.assertIntEquals(20, result2);
+    ForTests.assertIntEquals(-1, result3);
+  }
+
   function run(): unit = {
     PatternMatching.testSimpleVariantMatch();
     PatternMatching.testVariantWithData();
@@ -161,5 +184,6 @@ class PatternMatching {
     PatternMatching.testTreeDepth();
     PatternMatching.testTreeSum();
     PatternMatching.testWildcardPattern();
+    PatternMatching.testOrPattern();
   }
 }

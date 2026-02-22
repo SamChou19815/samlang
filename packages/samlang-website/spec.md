@@ -1376,7 +1376,40 @@ Pattern matching in `match` expressions is checked for exhaustiveness. The compi
 
 ### 8.9 Or-Patterns
 
-samlang does not support or-patterns (e.g., `A(x) | B(x)`). Multiple variant patterns must be written as separate match arms.
+Or-patterns allow multiple patterns to share the same match arm. All alternatives must bind the same variable names with compatible types.
+
+```text
+OrPattern ::= Pattern ('|' Pattern)+
+```
+
+```samlang
+match result {
+  Ok(x) | Err(x) -> x,  // Both variants bind 'x' with the same type
+}
+
+match color {
+  Red | Green | Blue -> "primary",
+  _ -> "other",
+}
+```
+
+**Binding Constraints:**
+- All alternatives in an or-pattern must bind exactly the same variable names
+- Each variable must have a compatible type across all alternatives
+- The first matching alternative determines the runtime bindings
+
+**Invalid examples:**
+```samlang
+// Error: different bindings
+match x {
+  Some(a) | None -> a,  // 'None' doesn't bind 'a'
+}
+
+// Error: incompatible types
+match pair {
+  (a, _) | (_, a) -> a,  // 'a' has different types in each branch
+}
+```
 
 ### 8.10 As-Patterns
 

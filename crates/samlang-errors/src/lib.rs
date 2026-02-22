@@ -593,6 +593,7 @@ pub enum ErrorDetail {
   NonExhaustiveMatch { counter_example: Description },
   NotAnEnum { description: Description },
   NotAStruct { description: Description },
+  OrPatternInconsistentBindings { expected: Vec<PStr>, actual: Vec<PStr> },
   Stacked(StackableError),
   TypeParameterNameMismatch { expected: Vec<Description> },
   Underconstrained,
@@ -714,6 +715,24 @@ impl ErrorDetail {
         printable_stream.push_text("`");
         printable_stream.push_description(description);
         printable_stream.push_text("` is not an instance of a struct class.");
+      }
+      ErrorDetail::OrPatternInconsistentBindings { expected, actual } => {
+        printable_stream
+          .push_text("Or-pattern alternatives must bind the same variables. Expected bindings: [");
+        for (i, name) in expected.iter().enumerate() {
+          if i > 0 {
+            printable_stream.push_text(", ");
+          }
+          printable_stream.push_pstr(name);
+        }
+        printable_stream.push_text("], actual bindings: [");
+        for (i, name) in actual.iter().enumerate() {
+          if i > 0 {
+            printable_stream.push_text(", ");
+          }
+          printable_stream.push_pstr(name);
+        }
+        printable_stream.push_text("].");
       }
       ErrorDetail::Stacked(s) => {
         for (i, e) in s.rev_stack.iter().rev().enumerate() {
@@ -1061,6 +1080,15 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NotAStruct { description })
   }
 
+  pub fn report_or_pattern_inconsistent_bindings_error(
+    &mut self,
+    loc: Location,
+    expected: Vec<PStr>,
+    actual: Vec<PStr>,
+  ) {
+    self.report_error(loc, ErrorDetail::OrPatternInconsistentBindings { expected, actual })
+  }
+
   pub fn report_stackable_error(&mut self, loc: Location, stackable: StackableError) {
     self.report_error(loc, ErrorDetail::Stacked(stackable))
   }
@@ -1278,6 +1306,11 @@ Found 2 errors."#
       Location::dummy(),
       vec![Description::IntType, Description::IntType],
     );
+    error_set.report_or_pattern_inconsistent_bindings_error(
+      Location::dummy(),
+      vec![heap.alloc_str_for_test("x"), heap.alloc_str_for_test("y")],
+      vec![heap.alloc_str_for_test("x"), heap.alloc_str_for_test("z")],
+    );
     error_set.report_underconstrained_error(Location::dummy());
     error_set.report_useless_pattern_error(Location::dummy(), false);
     error_set.report_useless_pattern_error(Location::dummy(), true);
@@ -1375,6 +1408,11 @@ Error -------------------------------------- DUMMY.sam:DUMMY
 
 Error -------------------------------------- DUMMY.sam:DUMMY
 
+Or-pattern alternatives must bind the same variables. Expected bindings: [x, y], actual bindings: [x, z].
+
+
+Error -------------------------------------- DUMMY.sam:DUMMY
+
 Type parameter arity of 1 is incompatible with type parameter arity of 2.
 - `any` is incompatible with `any`.
   - Function parameter arity of 0 is incompatible with function parameter arity of 0.
@@ -1418,7 +1456,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Cannot resolve name `global`.
 
 
-Found 25 errors.
+Found 26 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

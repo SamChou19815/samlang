@@ -104,9 +104,14 @@ impl AbstractPatternNode {
     Self(Rc::new(AbstractPatternNodeInner::Or(Vec::with_capacity(0))))
   }
 
-  #[cfg(test)]
   pub(super) fn or(possibilities: Vec<AbstractPatternNode>) -> Self {
-    Self(Rc::new(AbstractPatternNodeInner::Or(possibilities)))
+    if possibilities.is_empty() {
+      Self::nothing()
+    } else if possibilities.len() == 1 {
+      possibilities.into_iter().next().unwrap()
+    } else {
+      Self(Rc::new(AbstractPatternNodeInner::Or(possibilities)))
+    }
   }
 }
 
@@ -376,6 +381,7 @@ mod tests {
   use super::{
     AbstractPatternNode as P, PatternMatchingContext, PatternVector, VariantPatternConstructor,
   };
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_heap::{ModuleReference, PStr};
 
@@ -700,5 +706,16 @@ mod tests {
         P::wildcard()
       )
     );
+  }
+
+  #[test]
+  fn or_pattern_edge_cases_test() {
+    let single = P::wildcard();
+    let single_or = P::or(vec![single.dupe()]);
+    assert_eq!(single.0, single_or.0);
+
+    let empty_or = P::or(Vec::new());
+    let nothing = P::nothing();
+    assert_eq!(nothing.0, empty_or.0);
   }
 }

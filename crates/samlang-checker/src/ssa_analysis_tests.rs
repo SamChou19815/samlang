@@ -47,13 +47,19 @@ mod tests {
   let c = a;
   let _ = if a && b {
     match (!c) {
-      Foo(d) -> d + a,
-      Bar(_) -> b
+      Foo(d) | Bar(d) -> d + a,
+      Baz(_) -> b
     }
   } else {
     (p1: Foo, p2) -> Baz.ouch<Foo>(p2).ahha<Foo>(p1) + a
   };
   let _ = if let {pat1 as {pat2 as (Fizz(pat3), Buzz, _), pat4}} = true {1} else {2};
+  let _ = match (a) {
+    (e, _) | (_, e) -> e,
+  };
+  let _ = match (a) {
+    {f as g} | {f as g} -> g,
+  };
   let a = 3;
   let {o1, o2 as o3} = {};
   o1 + o3
@@ -67,16 +73,18 @@ mod tests {
     assert_eq!(false, error_set.has_errors());
     let expected = r#"
 Unbound names: [Foo]
-Invalid defines: [14:7-14:8]
+Invalid defines: [20:7-20:8]
 Locally Scoped Defs:
 10:10-12:4: []
 11:5-11:57: [p1, p2]
 13:73-13:76: []
 13:82-13:85: []
-15:24-15:26: []
-1:1-17:2: [a, b, c, o1, o3]
+15:5-15:26: [e]
+18:5-18:30: [g]
+1:1-23:2: [a, b, c, o1, o3]
+21:24-21:26: []
 5:21-10:4: []
-7:7-7:23: [d]
+7:7-7:32: [d]
 8:7-8:18: []
 Lambda Capture Locs: [11:5-11:57]
 def_to_use_map:
@@ -84,13 +92,15 @@ def_to_use_map:
 11:6-11:8 -> [11:50-11:52, 11:6-11:8]
 13:42-13:46 -> [13:42-13:46]
 13:59-13:63 -> [13:59-13:63]
-14:7-14:8 -> [14:7-14:8]
-15:18-15:20 -> [15:18-15:20, 16:8-16:10]
-15:8-15:10 -> [15:8-15:10, 16:3-16:5]
-2:7-2:8 -> [11:56-11:57, 2:7-2:8, 4:11-4:12, 5:14-5:15, 7:21-7:22]
+15:6-15:7 -> [15:18-15:19, 15:24-15:25, 15:6-15:7]
+18:11-18:12 -> [18:11-18:12, 18:22-18:23, 18:28-18:29]
+20:7-20:8 -> [20:7-20:8]
+21:18-21:20 -> [21:18-21:20, 22:8-22:10]
+21:8-21:10 -> [21:8-21:10, 22:3-22:5]
+2:7-2:8 -> [11:56-11:57, 14:18-14:19, 17:18-17:19, 2:7-2:8, 4:11-4:12, 5:14-5:15, 7:30-7:31]
 3:7-3:8 -> [3:7-3:8, 5:19-5:20, 8:17-8:18]
 4:7-4:8 -> [4:7-4:8, 6:13-6:14]
-7:11-7:12 -> [7:11-7:12, 7:17-7:18]
+7:11-7:12 -> [7:11-7:12, 7:20-7:21, 7:26-7:27]
 "#
     .trim();
     let analysis_result = ssa_analysis::perform_ssa_analysis_on_expression(
@@ -212,5 +222,27 @@ def_to_use_map:
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(13, 6, 13, 10), builder.bool_type());
     assert!(cx.get_captured(&Location::from_pos(17, 39, 17, 54)).is_empty());
+  }
+
+  #[test]
+  fn or_pattern_test() {
+    let mut heap = Heap::new();
+    let mut error_set = ErrorSet::new();
+    let module = samlang_parser::parse_source_module_from_text(
+      r#"class Status(Ok(int), Warning(int), Error(Str)) {
+  function test(s: Status): int =
+    match s {
+      Ok(x) | Warning(x) -> x,
+      Error(_) -> -1,
+    }
+}
+"#,
+      ModuleReference::DUMMY,
+      &mut heap,
+      &mut error_set,
+    );
+    let analysis_result =
+      ssa_analysis::perform_ssa_analysis_on_module(ModuleReference::DUMMY, &module, &mut error_set);
+    assert!(analysis_result.unbound_names.is_empty());
   }
 }

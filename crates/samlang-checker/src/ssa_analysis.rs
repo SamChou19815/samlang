@@ -388,6 +388,40 @@ impl<'a> SsaAnalysisState<'a> {
       }
       pattern::MatchingPattern::Id(id, ()) => self.define_id(id.name, id.loc),
       pattern::MatchingPattern::Wildcard { .. } => {}
+      pattern::MatchingPattern::Or { patterns, .. } => {
+        let mut iter = patterns.iter();
+        self.visit_matching_pattern(iter.next().unwrap());
+        for p in iter {
+          self.visit_matching_pattern_bindings_as_uses(p);
+        }
+      }
+    }
+  }
+
+  /// Visit a matching pattern treating all Id bindings as uses (not definitions).
+  /// Used for subsequent alternatives in or-patterns, where the first alternative
+  /// defines the bindings and later ones reference them.
+  fn visit_matching_pattern_bindings_as_uses(&mut self, pattern: &pattern::MatchingPattern<()>) {
+    match pattern {
+      pattern::MatchingPattern::Tuple(p) => {
+        for pattern::TuplePatternElement { pattern, type_: _ } in &p.elements {
+          self.visit_matching_pattern_bindings_as_uses(pattern);
+        }
+      }
+      pattern::MatchingPattern::Object { elements, .. } => {
+        for elem in elements {
+          self.visit_matching_pattern_bindings_as_uses(&elem.pattern);
+        }
+      }
+      pattern::MatchingPattern::Variant(pattern::VariantPattern { data_variables, .. }) => {
+        if let Some(p) = data_variables {
+          for pattern::TuplePatternElement { pattern, type_: _ } in &p.elements {
+            self.visit_matching_pattern_bindings_as_uses(pattern);
+          }
+        }
+      }
+      pattern::MatchingPattern::Id(id, ()) => self.use_id(&id.name, id.loc, false),
+      pattern::MatchingPattern::Wildcard { .. } | pattern::MatchingPattern::Or { .. } => {}
     }
   }
 
