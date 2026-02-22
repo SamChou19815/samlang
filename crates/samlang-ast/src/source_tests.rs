@@ -451,7 +451,7 @@ mod tests {
     coverage_hack_for_expr(E::Block(Block {
       common,
       statements: vec![
-        expr::DeclarationStatement {
+        expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::MatchingPattern::Object {
@@ -476,8 +476,8 @@ mod tests {
             annotation::PrimitiveTypeKind::Int,
           )),
           assigned_expression: Box::new(zero_expr.clone()),
-        },
-        expr::DeclarationStatement {
+        })),
+        expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::MatchingPattern::Tuple(pattern::TuplePattern {
@@ -498,8 +498,8 @@ mod tests {
             annotation::PrimitiveTypeKind::Int,
           )),
           assigned_expression: Box::new(zero_expr.clone()),
-        },
-        expr::DeclarationStatement {
+        })),
+        expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::MatchingPattern::Wildcard {
@@ -512,8 +512,8 @@ mod tests {
             annotation::PrimitiveTypeKind::Int,
           )),
           assigned_expression: Box::new(zero_expr.clone()),
-        },
-        expr::DeclarationStatement {
+        })),
+        expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::MatchingPattern::Id(Id::from(heap.alloc_str_for_test("s")), ()),
@@ -555,11 +555,25 @@ mod tests {
             )),
           })),
           assigned_expression: Box::new(zero_expr.clone()),
-        },
+        })),
+        expr::Statement::Expression(Box::new(zero_expr.clone())),
       ],
-      expression: Some(Box::new(zero_expr)),
+      expression: Some(Box::new(zero_expr.clone())),
       ending_associated_comments: NO_COMMENT_REFERENCE,
     }));
+    let stmt = expr::Statement::Expression(Box::new(zero_expr));
+    let _ = stmt.loc();
+    let decl_stmt = expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
+      loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
+      pattern: pattern::MatchingPattern::Wildcard {
+        location: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+      },
+      annotation: None,
+      assigned_expression: Box::new(E::Literal(ExpressionCommon::dummy(()), Literal::Int(0))),
+    }));
+    let _ = decl_stmt.loc();
   }
 
   #[test]

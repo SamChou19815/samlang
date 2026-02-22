@@ -28,6 +28,9 @@ cargo f
 
 # Lint with clippy
 cargo lint
+
+# Run e2e tests
+cargo e2e
 ```
 
 ### Website Development

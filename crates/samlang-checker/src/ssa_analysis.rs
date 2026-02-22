@@ -346,19 +346,19 @@ impl<'a> SsaAnalysisState<'a> {
 
   fn visit_block(&mut self, block: &expr::Block<()>) {
     self.context.push_scope();
-    for expr::DeclarationStatement {
-      loc: _,
-      associated_comments: _,
-      pattern,
-      annotation,
-      assigned_expression,
-    } in &block.statements
-    {
-      self.visit_expression(assigned_expression);
-      if let Some(annot) = annotation {
-        self.visit_annot(annot);
+    for stmt in &block.statements {
+      match stmt {
+        expr::Statement::Declaration(decl) => {
+          self.visit_expression(&decl.assigned_expression);
+          if let Some(annot) = &decl.annotation {
+            self.visit_annot(annot);
+          }
+          self.visit_matching_pattern(&decl.pattern);
+        }
+        expr::Statement::Expression(expr) => {
+          self.visit_expression(expr);
+        }
       }
-      self.visit_matching_pattern(pattern);
     }
     if let Some(final_expr) = &block.expression {
       self.visit_expression(final_expr);

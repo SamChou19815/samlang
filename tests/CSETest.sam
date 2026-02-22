@@ -2,9 +2,9 @@ import { ForTests } from tests.StdLib;
 
 class CSETest {
   private function test1(a: int, b: int, c: int, d: int, e: int): unit = {
-    let _ = ForTests.assertIntEquals(c, a * b + a + (a * b + a));
-    let _ = ForTests.assertIntEquals(d, a * b);
-    let _ = ForTests.assertIntEquals(e, a * b + a);
+    ForTests.assertIntEquals(c, a * b + a + (a * b + a));
+    ForTests.assertIntEquals(d, a * b);
+    ForTests.assertIntEquals(e, a * b + a);
   }
 
   private function test2(first: bool, a: int, b: int, aTimesB: int): unit = {
@@ -72,18 +72,18 @@ class CSETest {
   }
 
   private function test6(first: bool, a: int, b: int, aTimesB: int): unit = {
-    let _ = if first { let _ = a * b; } else {  };
-    let _ = ForTests.assertIntEquals(aTimesB, a * b);
+    if first { a * b; } else {  };
+    ForTests.assertIntEquals(aTimesB, a * b);
   }
 
   function run(): unit = {
-    let _ = CSETest.test1(3, 4, 30, 12, 15);
-    let _ = CSETest.test2(true, 3, 4, 12);
-    let _ = CSETest.test2(false, 3, 4, 12);
-    let _ = ForTests.assertIntEquals(2181, CSETest.test3(0, 0));
-    let _ = ForTests.assertIntEquals(92325, CSETest.test4(0, 0));
-    let _ = ForTests.assertIntEquals(150, CSETest.test5(0, 0));
-    let _ = CSETest.test6(true, 3, 4, 12);
-    let _ = CSETest.test6(false, 3, 4, 12);
+    CSETest.test1(3, 4, 30, 12, 15);
+    CSETest.test2(true, 3, 4, 12);
+    CSETest.test2(false, 3, 4, 12);
+    ForTests.assertIntEquals(2181, CSETest.test3(0, 0));
+    ForTests.assertIntEquals(92325, CSETest.test4(0, 0));
+    ForTests.assertIntEquals(150, CSETest.test5(0, 0));
+    CSETest.test6(true, 3, 4, 12);
+    CSETest.test6(false, 3, 4, 12);
   }
 }

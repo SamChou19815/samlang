@@ -1,10 +1,10 @@
 class BuiltinStringTest {
   function run(): unit = {
     let value = Str.fromInt("42".toInt()) :: "!";
-    let _ = Process.println(value);
+    Process.println(value);
     let a1 = "a";
     let a2 = "a";
-    let _ = if a1 == a2 {  } else { Process.panic("BAD") };
+    if a1 == a2 {  } else { Process.panic("BAD") };
     Process.println("Hello " :: "World!")
   }
 }

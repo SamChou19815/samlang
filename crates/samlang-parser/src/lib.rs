@@ -175,6 +175,10 @@ mod tests {
     expect_good_expr("{ let _: HAHAHA = 3; }");
     expect_good_expr("{ let _: (int, bool) -> Str = 3; }");
     expect_good_expr("{ }");
+    expect_good_expr("{ ; }");
+    expect_good_expr("{ 42; }");
+    expect_good_expr("{ 42; 43; }");
+    expect_good_expr("{ 42; 43 }");
   }
 
   fn expect_bad_expr(text: &str) {

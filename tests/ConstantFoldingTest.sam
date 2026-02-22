@@ -43,15 +43,15 @@ class ConstantFoldingTest {
     1 + 34 * 34 + 4 + 1 + 1231 / 28 + 100 / 100 - 2000 * 2000 / (10 * 10 * 10 * 4000)
 
   function run(): unit = {
-    let _ = ForTests.assertIntEquals(
+    ForTests.assertIntEquals(
       /* expected */ 361200,
       ConstantFoldingTest /* a */
       /* b */
       // c
       .testI(0, 0)
     );
-    let _ = ForTests.assertIntEquals(7000, ConstantFoldingTest.test2(0, 0));
-    let _ = ForTests.assertIntEquals(1400, ConstantFoldingTest.test3(0, 0));
-    let _ = ForTests.assertIntEquals(1205, ConstantFoldingTest.test4());
+    ForTests.assertIntEquals(7000, ConstantFoldingTest.test2(0, 0));
+    ForTests.assertIntEquals(1400, ConstantFoldingTest.test3(0, 0));
+    ForTests.assertIntEquals(1205, ConstantFoldingTest.test4());
   }
 }

@@ -164,16 +164,16 @@ class TwentyFiveVariants(
 
 class EnumLimitsRemoved {
   private function testTwentyVariants(): unit = {
-    let _ = ForTests.assertIntEquals(1, TwentyVariants.Va().getIndex());
-    let _ = ForTests.assertIntEquals(5, TwentyVariants.Ve().getIndex());
-    let _ = ForTests.assertIntEquals(10, TwentyVariants.Vj().getIndex());
-    let _ = ForTests.assertIntEquals(15, TwentyVariants.Vo().getIndex());
-    let _ = ForTests.assertIntEquals(20, TwentyVariants.Vt().getIndex());
+    ForTests.assertIntEquals(1, TwentyVariants.Va().getIndex());
+    ForTests.assertIntEquals(5, TwentyVariants.Ve().getIndex());
+    ForTests.assertIntEquals(10, TwentyVariants.Vj().getIndex());
+    ForTests.assertIntEquals(15, TwentyVariants.Vo().getIndex());
+    ForTests.assertIntEquals(20, TwentyVariants.Vt().getIndex());
   }
 
   private function testManyFields(): unit = {
     let simple = ManyFields.Simple();
-    let _ = ForTests.assertIntEquals(0, simple.sum());
+    ForTests.assertIntEquals(0, simple.sum());
     let complex = ManyFields.Complex(
       1,
       2,
@@ -196,21 +196,21 @@ class EnumLimitsRemoved {
       19,
       20
     );
-    let _ = ForTests.assertIntEquals(210, complex.sum());
+    ForTests.assertIntEquals(210, complex.sum());
   }
 
   private function testTwentyFiveVariants(): unit = {
-    let _ = ForTests.assertBool(!TwentyFiveVariants.Wa().isEven(), "Wa should be odd");
-    let _ = ForTests.assertBool(TwentyFiveVariants.Wb().isEven(), "Wb should be even");
-    let _ = ForTests.assertBool(!TwentyFiveVariants.Wk().isEven(), "Wk should be odd");
-    let _ = ForTests.assertBool(TwentyFiveVariants.Wl().isEven(), "Wl should be even");
-    let _ = ForTests.assertBool(!TwentyFiveVariants.Wu().isEven(), "Wu should be odd");
-    let _ = ForTests.assertBool(TwentyFiveVariants.Wv().isEven(), "Wv should be even");
+    ForTests.assertBool(!TwentyFiveVariants.Wa().isEven(), "Wa should be odd");
+    ForTests.assertBool(TwentyFiveVariants.Wb().isEven(), "Wb should be even");
+    ForTests.assertBool(!TwentyFiveVariants.Wk().isEven(), "Wk should be odd");
+    ForTests.assertBool(TwentyFiveVariants.Wl().isEven(), "Wl should be even");
+    ForTests.assertBool(!TwentyFiveVariants.Wu().isEven(), "Wu should be odd");
+    ForTests.assertBool(TwentyFiveVariants.Wv().isEven(), "Wv should be even");
   }
 
   function run(): unit = {
-    let _ = EnumLimitsRemoved.testTwentyVariants();
-    let _ = EnumLimitsRemoved.testManyFields();
-    let _ = EnumLimitsRemoved.testTwentyFiveVariants();
+    EnumLimitsRemoved.testTwentyVariants();
+    EnumLimitsRemoved.testManyFields();
+    EnumLimitsRemoved.testTwentyFiveVariants();
   }
 }

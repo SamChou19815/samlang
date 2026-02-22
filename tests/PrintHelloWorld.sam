@@ -12,7 +12,7 @@ class PrintHelloWorld {
   }
 
   function run(): unit = {
-    let _ = PrintHelloWorld.globalConstantTest();
-    let _ = PrintHelloWorld.printTest();
+    PrintHelloWorld.globalConstantTest();
+    PrintHelloWorld.printTest();
   }
 }

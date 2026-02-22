@@ -13,6 +13,7 @@ import { DifferentModulesDemo } from tests.DifferentModulesDemo;
 import { Empty } from tests.Empty;
 import { EnumLimitsRemoved } from tests.EnumLimitsRemoved;
 import { EvaluationOrder } from tests.EvaluationOrder;
+import { ExpressionStatementTests } from tests.ExpressionStatementTests;
 import { GC } from tests.GC;
 import { IfElseTests } from tests.IfElseTests;
 import { IntToString } from tests.IntToString;
@@ -32,9 +33,9 @@ import { VariousSyntaxForms } from tests.VariousSyntaxForms;
 class TestCase(val name: Str, val runner: () -> unit) {
   method run(): unit = {
     let { name, runner } = this;
-    let _ = Process.println("========================================");
-    let _ = Process.println("Test Name: " :: name);
-    let _ = runner();
+    Process.println("========================================");
+    Process.println("Test Name: " :: name);
+    runner();
   }
 }
 
@@ -55,6 +56,7 @@ class Main {
       .cons(TestCase.init("Empty", Empty.run))
       .cons(TestCase.init("EnumLimitsRemoved", EnumLimitsRemoved.run))
       .cons(TestCase.init("EvaluationOrder", EvaluationOrder.run))
+      .cons(TestCase.init("ExpressionStatementTests", ExpressionStatementTests.run))
       .cons(TestCase.init("GC", GC.run))
       .cons(TestCase.init("IfElseTests", IfElseTests.run))
       .cons(TestCase.init("IntToString", IntToString.run))
@@ -73,7 +75,7 @@ class Main {
       .reverse()
 
   function main(): unit = {
-    let _ = Main.getTests().iter((test) -> test.run());
+    Main.getTests().iter((test) -> test.run());
     Process.println("========================================")
   }
 }

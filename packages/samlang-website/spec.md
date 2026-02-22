@@ -184,7 +184,7 @@ Tokens are minimal lexical units. The lexer processes source text sequentially, 
 
 Each `.sam` source file corresponds to exactly one module. The module name is derived from the file path by replacing directory separators with dots and removing the `.sam` extension.
 
-```
+```text
 tests/AllTests.sam       → tests.AllTests
 std/option.sam          → std.option
 std/tuples.sam          → std.tuples
@@ -509,7 +509,7 @@ The `unit` type is the return type of functions that perform side effects withou
 
 All non-primitive, non-function types in samlang are **nominal types** -- they are identified by their declared class or interface name, not by their structure. A nominal type is written as an upper-case identifier optionally followed by type arguments in angle brackets.
 
-```
+```text
 NominalType ::= UpperId
               | UpperId '<' Type (',' Type)* '>'
 ```
@@ -529,7 +529,7 @@ Two nominal types are considered the same type if and only if they have the same
 
 Function types describe the signature of callable values (lambdas, function references, method references). A function type lists parameter types and return type.
 
-```
+```text
 FunctionType ::= '(' [Type (',' Type)*] ')' '->' Type
 ```
 
@@ -749,7 +749,7 @@ Expression ::= Literal
 
 Literal expressions represent constant values.
 
-```
+```text
 IntLiteral      ::= '-'? ('0' | [1-9][0-9]*)
 BoolLiteral     ::= 'true' | 'false'
 StringLiteral   ::= '"' (character | escape)* '"'
@@ -765,7 +765,7 @@ UnitLiteral     ::= '{' '}'
 
 A variable reference produces a value bound to that variable in the nearest enclosing `let` binding or parameter.
 
-```
+```text
 Variable ::= lowerId
 ```
 
@@ -775,7 +775,7 @@ Referencing an undefined variable produces a compile-time error.
 
 The keyword `this` is a special expression that is only valid within a method body. It refers to the instance on which the method was invoked.
 
-```
+```text
 This ::= 'this'
 ```
 
@@ -785,7 +785,7 @@ Using `this` outside of a method (i.e., in a static function or top-level expres
 
 A class name used as an expression produces a value representing the class itself. Class references are used for static function calls.
 
-```
+```text
 ClassReference ::= UpperId
 ```
 
@@ -795,7 +795,7 @@ Example: `MathUtils.max(1, 2)` calls the static function `max` on the class `Mat
 
 A tuple is an ordered collection of values. Tuple construction uses parenthesized, comma-separated expressions.
 
-```
+```text
 Tuple ::= '(' Expression (',' Expression)+ ')'
 ```
 
@@ -812,7 +812,7 @@ See Section 5.5 for the mapping of tuple sizes to underlying struct types.
 
 Field access retrieves a field from a value of a nominal type (class) or tuple type.
 
-```
+```text
 FieldAccess ::= Expression '.' lowerId
 ```
 
@@ -836,7 +836,7 @@ Function calls invoke a callable value with arguments. There are several forms o
 
 A static function is called on a class reference.
 
-```
+```text
 StaticCall ::= UpperId '.' lowerId '(' [ArgumentList] ')'
 ```
 
@@ -848,7 +848,7 @@ let p = Point.init(3, 4);
 
 An instance method is called on an object expression using dot notation.
 
-```
+```text
 MethodCall ::= Expression '.' lowerId '(' [ArgumentList] ')'
 ```
 
@@ -867,7 +867,7 @@ instance.method<T1, T2>(args)
 
 A callable expression (variable, function reference, or lambda) is invoked directly.
 
-```
+```text
 DirectCall ::= Expression '(' [ArgumentList] ')'
 ```
 
@@ -915,7 +915,7 @@ The operand must have the expected type; otherwise, a type error is reported.
 
 Binary operators combine two operand expressions. They are left-associative with standard precedence rules.
 
-```
+```text
 BinaryExpression ::= Expression BinaryOperator Expression
 BinaryOperator  ::= '*' | '/' | '%' | '+' | '-' | '::' | '<' | '<=' | '>' | '>=' | '==' | '!=' | '&&' | '||'
 ```
@@ -983,15 +983,14 @@ true || panic()      // true (panic() NOT evaluated)
 
 If-else expressions conditionally evaluate one of two branches based on a boolean condition.
 
-```
+```text
 IfElseExpression ::=
   'if' Condition Expression 'else' Expression
-```
 
 Condition ::= Expression | PatternGuard
 PatternGuard ::= 'let' Pattern '=' Expression
 
-````
+```
 
 #### 6.10.1 Simple If-Else
 
@@ -1003,7 +1002,7 @@ if x > 0 {
 } else {
   -x
 }
-````
+```
 
 Single-line form:
 
@@ -1043,13 +1042,12 @@ if x < 0 {
 
 Match expressions provide exhaustive pattern matching on a value.
 
-```
+```text
 MatchExpression ::=
   'match' Expression '{' [VariantPatternToExpression (',' VariantPatternToExpression)* [',']] '}'
 ```
 
-```
-samlang
+```samlang
 match option {
   None -> -1,
   Some(x) -> x
@@ -1062,12 +1060,12 @@ Match expressions must be **exhaustive**: all possible values of the matched typ
 
 Lambda expressions create anonymous function values.
 
-```
+```text
 LambdaExpression ::=
   '(' [ParameterList] ')' '->' Expression
 ```
 
-```
+```text
 ParameterList ::= OptionallyAnnotatedId (',' OptionallyAnnotatedId)*
 OptionallyAnnotatedId ::= lowerId [':' Type]
 ```
@@ -1099,14 +1097,14 @@ function makeAdder(n: int): (int) -> int = (x) -> x + n
 
 ### 6.13 Block Expressions
 
-Blocks are sequences of declarations followed by an optional final expression. The block's value is the value of the final expression, or `unit` if there is no final expression.
+Blocks are sequences of statements followed by an optional final expression. Statements and final expressions can be freely mixed within a block. The block's value is the value of the final expression, or `unit` if there is no final expression.
 
-```
+```text
 BlockExpression ::=
   '{' [DeclarationStatement (';' DeclarationStatement)* [';' [Expression]]] '}'
 ```
 
-```
+```text
 samlang
 {
   let x = 42;
@@ -1189,13 +1187,13 @@ Expression evaluation follows these rules:
 
 ## 7. Statements
 
-samlang has exactly one statement form: the `let` binding statement.
+samlang has two statement forms: `let` binding statements and expression statements.
 
 ### 7.1 Let Bindings
 
 A `let` binding introduces a new variable in the current scope.
 
-```
+```text
 LetStatement ::= 'let' Pattern [':' Type] '=' Expression ';'
 ```
 
@@ -1226,6 +1224,29 @@ let count: int = 10;
 
 All bindings are immutable. Once bound, a variable cannot be reassigned.
 
+### 7.2 Expression Statements
+
+An expression statement evaluates an expression for its side effects and discards the result.
+
+```text
+ExpressionStatement ::= Expression ';'
+```
+
+The expression is evaluated, but its value is not bound to any variable. This is useful for calling functions with side effects.
+
+```samlang
+// Function call for side effects
+Process.println("Hello, world!");
+
+// Method call for side effects
+list.push(42);
+
+// Complex expression with side effects
+if condition { Process.println("yes") } else { Process.println("no") };
+```
+
+Note: Expression statements can have any return type. The value is simply discarded.
+
 ---
 
 ## 8. Patterns
@@ -1236,7 +1257,7 @@ Patterns are used in `let` bindings, `if let` expressions, and `match` expressio
 
 The wildcard pattern `_` matches any value and binds no variables.
 
-```
+```text
 WildcardPattern ::= '_'
 ```
 
@@ -1250,7 +1271,7 @@ match value {
 
 A variable pattern matches any value and binds that value to a variable.
 
-```
+```text
 VariablePattern ::= lowerId
 ```
 
@@ -1262,7 +1283,7 @@ let x = value;
 
 Literal patterns match against specific constant values.
 
-```
+```text
 LiteralPattern ::= IntLiteral | BoolLiteral
 ```
 
@@ -1280,7 +1301,7 @@ String literals cannot be used as patterns.
 
 Tuple patterns match tuple values by position.
 
-```
+```text
 TuplePattern ::= '(' Pattern (',' Pattern)+ ')'
 ```
 
@@ -1298,7 +1319,7 @@ match triple {
 
 Struct patterns match values of struct class types by field name.
 
-```
+```text
 StructPattern ::= '{' FieldPattern (',' FieldPattern)* '}'
 FieldPattern ::= lowerId | lowerId 'as' lowerId
 ```
@@ -1317,7 +1338,7 @@ Fields are matched by name, not position. Omitted fields are not matched (they r
 
 Variant patterns match enum values by variant name and optionally destructure the associated data.
 
-```
+```text
 VariantPattern ::= UpperId ['(' Pattern (',' Pattern)* ')']
 ```
 

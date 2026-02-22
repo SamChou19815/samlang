@@ -87,10 +87,10 @@ class DifferentExpressionDemo {
 
   function run(): unit = {
     let c = DifferentExpressionDemo.lambdaTest;
-    let _ = c(3);
+    c(3);
     let v = DifferentExpressionDemo.methodAndFunctionReference();
-    let _ = ForTests.assertIntEquals(84, v);
-    let _ = ForTests.assertIntEquals(
+    ForTests.assertIntEquals(84, v);
+    ForTests.assertIntEquals(
       42,
       DifferentExpressionDemo.identity(
         Foo.bar() * DifferentExpressionDemo.oof() * Obj.valExample() / DifferentExpressionDemo.div(

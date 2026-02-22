@@ -1457,7 +1457,7 @@ fn check_matching_pattern(
   }
 }
 
-fn check_statement(
+fn check_declaration_statement(
   cx: &mut TypingContext,
   statement: &expr::DeclarationStatement<()>,
 ) -> expr::DeclarationStatement<Rc<Type>> {
@@ -1494,6 +1494,21 @@ fn check_statement(
     pattern: checked_pattern,
     annotation: annotation.clone(),
     assigned_expression: Box::new(checked_assigned_expr),
+  }
+}
+
+fn check_statement(
+  cx: &mut TypingContext,
+  statement: &expr::Statement<()>,
+) -> expr::Statement<Rc<Type>> {
+  match statement {
+    expr::Statement::Declaration(decl_stmt) => {
+      expr::Statement::Declaration(Box::new(check_declaration_statement(cx, decl_stmt)))
+    }
+    expr::Statement::Expression(expr) => {
+      let checked_expr = type_check_expression(cx, expr, type_hint::MISSING);
+      expr::Statement::Expression(Box::new(checked_expr))
+    }
   }
 }
 
