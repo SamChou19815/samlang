@@ -11,6 +11,7 @@ import { DevMeggo } from tests.DevMeggo;
 import { DifferentExpressionDemo } from tests.DifferentExpressionDemo;
 import { DifferentModulesDemo } from tests.DifferentModulesDemo;
 import { Empty } from tests.Empty;
+import { EnumLimitsRemoved } from tests.EnumLimitsRemoved;
 import { EvaluationOrder } from tests.EvaluationOrder;
 import { GC } from tests.GC;
 import { IfElseTests } from tests.IfElseTests;
@@ -52,6 +53,7 @@ class Main {
       .cons(TestCase.init("DifferentExpressionDemo", DifferentExpressionDemo.run))
       .cons(TestCase.init("DifferentModulesDemo", DifferentModulesDemo.run))
       .cons(TestCase.init("Empty", Empty.run))
+      .cons(TestCase.init("EnumLimitsRemoved", EnumLimitsRemoved.run))
       .cons(TestCase.init("EvaluationOrder", EvaluationOrder.run))
       .cons(TestCase.init("GC", GC.run))
       .cons(TestCase.init("IfElseTests", IfElseTests.run))

@@ -2093,20 +2093,11 @@ The TypeScript prolog provides runtime functions:
 
 Struct definitions may contain at most 16 fields. This limit applies to the total number of field declarations within a single struct type definition.
 
-### 13.2 Enum Limits
-
-Enum definitions are subject to the following limits:
-
-- Maximum number of enum variants: 15
-- Maximum number of data fields per variant: 15
-
-These limits apply to the total count of variants within an enum definition and to the total number of data fields within any single variant declaration.
-
-### 13.3 Tuple Limits
+### 13.2 Tuple Limits
 
 Tuple types and tuple literals may contain at most 16 elements. This limit applies to both type declarations and value expressions.
 
-### 13.4 Integer Range
+### 13.3 Integer Range
 
 Integer values must be within the signed 32-bit range:
 
@@ -2115,7 +2106,7 @@ Integer values must be within the signed 32-bit range:
 
 Integer literals outside this range result in a compilation error. Integer arithmetic operations that overflow are not guaranteed to wrap or trap; behavior is implementation-defined.
 
-### 13.5 String Limits
+### 13.4 String Limits
 
 String literals cannot span multiple lines. Multi-line strings must be constructed through string concatenation or other runtime operations.
 

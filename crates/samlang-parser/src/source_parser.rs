@@ -5,7 +5,6 @@ use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{HashMap, HashSet};
 
 const MAX_STRUCT_SIZE: usize = 16;
-const MAX_VARIANT_SIZE: usize = 15;
 
 pub(super) struct SourceParser<'a> {
   token_producer: TokenProducer<'a>,
@@ -317,7 +316,7 @@ pub(super) fn parse_expression_with_comment_store(
 mod toplevel_parser {
   use super::{
     super::lexer::{Keyword, Token, TokenContent, TokenOp},
-    MAX_STRUCT_SIZE, MAX_VARIANT_SIZE,
+    MAX_STRUCT_SIZE,
   };
   use samlang_ast::{Location, source::*};
   use std::collections::HashSet;
@@ -496,11 +495,10 @@ mod toplevel_parser {
   fn parse_type_definition_inner(parser: &mut super::SourceParser) -> TypeDefinition {
     let (loc_start, start_comments) = parser.assert_and_consume_operator(TokenOp::LeftParenthesis);
     if let Token(_, TokenContent::UpperId(_)) = parser.peek() {
-      let mut variants = parser.parse_comma_separated_list_with_end_token(
+      let variants = parser.parse_comma_separated_list_with_end_token(
         TokenOp::RightParenthesis,
         &mut parse_variant_definition,
       );
-      variants.truncate(MAX_VARIANT_SIZE);
       let (loc_end, end_comments) = parser.assert_and_consume_operator(TokenOp::RightParenthesis);
       TypeDefinition::Enum {
         loc: loc_start.union(&loc_end),
@@ -556,13 +554,6 @@ mod toplevel_parser {
         TokenOp::RightParenthesis,
         &mut super::type_parser::parse_annotation_with_additional_comments,
       );
-
-      if let Some(node) = annotations.get(MAX_VARIANT_SIZE) {
-        parser.error_set.report_invalid_syntax_error(
-          node.location(),
-          format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
-        );
-      }
       let (right_paren_loc, end_comments) =
         parser.assert_and_consume_operator(TokenOp::RightParenthesis);
       VariantDefinition {
