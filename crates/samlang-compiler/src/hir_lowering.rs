@@ -840,6 +840,35 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::pattern::MatchingPattern::Wildcard { .. } => {
         LoweringResult { statements: Vec::with_capacity(0), expression: hir::ONE }
       }
+      source::pattern::MatchingPattern::Or { patterns, .. } => {
+        if patterns.is_empty() {
+          return LoweringResult { statements: Vec::new(), expression: hir::ZERO };
+        }
+        if patterns.len() == 1 {
+          return self.lower_matching_pattern(&patterns[0], binding_names, lowered_expression);
+        }
+        // Build short-circuit evaluation right-to-left using nested if-else.
+        // If the first pattern matches, later patterns are not evaluated.
+        let mut iter = patterns.iter().rev();
+        let last = iter.next().unwrap();
+        let LoweringResult { statements: last_stmts, expression: last_expr } =
+          self.lower_matching_pattern(last, binding_names, lowered_expression.dupe());
+        let mut acc = (last_stmts, last_expr);
+        for pattern in iter {
+          let LoweringResult { statements: mut pattern_stmts, expression: cond } =
+            self.lower_matching_pattern(pattern, binding_names, lowered_expression.dupe());
+          let result_var = self.allocate_temp_variable();
+          let (prev_stmts, prev_expr) = acc;
+          pattern_stmts.push(hir::Statement::IfElse {
+            condition: cond,
+            s1: vec![],
+            s2: prev_stmts,
+            final_assignments: vec![(result_var, hir::INT_TYPE, hir::ONE, prev_expr)],
+          });
+          acc = (pattern_stmts, hir::Expression::var_name(result_var, hir::INT_TYPE));
+        }
+        LoweringResult { statements: acc.0, expression: acc.1 }
+      }
     }
   }
 
@@ -3127,6 +3156,407 @@ if (_t9: int) {
   _t10 = (_this: DUMMY_Dummy);
 }
 return (_t10: int);"#,
+    );
+  }
+
+  #[test]
+  fn or_pattern_lowering_test() {
+    let builder = type_::test_type_builder::create();
+    let heap = &mut Heap::new();
+
+    let dummy_type = Rc::new(dummy_source_id_type(heap));
+
+    assert_expr_correctly_lowered(
+      &source::expr::E::Match(source::expr::Match {
+        common: source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+        matched: Box::new(dummy_source_this(heap)),
+        cases: vec![
+          source::expr::VariantPatternToExpression {
+            loc: Location::dummy(),
+            pattern: source::pattern::MatchingPattern::Or {
+              location: Location::dummy(),
+              patterns: vec![
+                source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                  loc: Location::dummy(),
+                  tag_order: 0,
+                  tag: source::Id::from(heap.alloc_str_for_test("Foo")),
+                  data_variables: Some(source::pattern::TuplePattern {
+                    location: Location::dummy(),
+                    start_associated_comments: source::NO_COMMENT_REFERENCE,
+                    ending_associated_comments: source::NO_COMMENT_REFERENCE,
+                    elements: vec![source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("x")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    }],
+                  }),
+                  type_: dummy_type.clone(),
+                }),
+                source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                  loc: Location::dummy(),
+                  tag_order: 1,
+                  tag: source::Id::from(heap.alloc_str_for_test("Bar")),
+                  data_variables: Some(source::pattern::TuplePattern {
+                    location: Location::dummy(),
+                    start_associated_comments: source::NO_COMMENT_REFERENCE,
+                    ending_associated_comments: source::NO_COMMENT_REFERENCE,
+                    elements: vec![source::pattern::TuplePatternElement {
+                      pattern: Box::new(source::pattern::MatchingPattern::Id(
+                        source::Id::from(heap.alloc_str_for_test("x")),
+                        builder.int_type(),
+                      )),
+                      type_: builder.int_type(),
+                    }],
+                  }),
+                  type_: dummy_type.clone(),
+                }),
+              ],
+            },
+            body: Box::new(source::expr::E::LocalId(
+              source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+              source::Id::from(heap.alloc_str_for_test("x")),
+            )),
+            ending_associated_comments: source::NO_COMMENT_REFERENCE,
+          },
+          source::expr::VariantPatternToExpression {
+            loc: Location::dummy(),
+            pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+              loc: Location::dummy(),
+              tag_order: 2,
+              tag: source::Id::from(heap.alloc_str_for_test("Baz")),
+              data_variables: None,
+              type_: dummy_type.clone(),
+            }),
+            body: Box::new(dummy_source_this(heap)),
+            ending_associated_comments: source::NO_COMMENT_REFERENCE,
+          },
+        ],
+      }),
+      heap,
+      r#"const GLOBAL_STRING_0 = '';
+
+let _t5: int;
+let [_t8: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t5 = (_t8: int);
+  _t9 = 1;
+} else {
+  _t9 = 0;
+}
+let _t10: int;
+if (_t9: int) {
+  _t10 = 1;
+} else {
+  let [_t6: int] if tagof((_this: DUMMY_Dummy))==1 {
+    _t5 = (_t6: int);
+    _t7 = 1;
+  } else {
+    _t7 = 0;
+  }
+  _t10 = (_t7: int);
+}
+let _t4: DUMMY_Dummy;
+if (_t10: int) {
+  _t4 = (_t5: int);
+} else {
+  let [] if tagof((_this: DUMMY_Dummy))==2 {
+    _t3 = 1;
+  } else {
+    _t3 = 0;
+  }
+  let _t2: DUMMY_Dummy;
+  if (_t3: int) {
+    _t2 = (_this: DUMMY_Dummy);
+  } else {
+    let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+    _t2 = (_t1: DUMMY_Dummy);
+  }
+  _t4 = (_t2: DUMMY_Dummy);
+}
+return (_t4: DUMMY_Dummy);"#,
+    );
+  }
+
+  #[test]
+  fn or_pattern_with_three_alternatives_test() {
+    let _builder = type_::test_type_builder::create();
+    let heap = &mut Heap::new();
+
+    let dummy_type = Rc::new(dummy_source_id_type(heap));
+
+    assert_expr_correctly_lowered(
+      &source::expr::E::Match(source::expr::Match {
+        common: source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+        matched: Box::new(dummy_source_this(heap)),
+        cases: vec![source::expr::VariantPatternToExpression {
+          loc: Location::dummy(),
+          pattern: source::pattern::MatchingPattern::Or {
+            location: Location::dummy(),
+            patterns: vec![
+              source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 0,
+                tag: source::Id::from(heap.alloc_str_for_test("A")),
+                data_variables: None,
+                type_: dummy_type.clone(),
+              }),
+              source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 1,
+                tag: source::Id::from(heap.alloc_str_for_test("B")),
+                data_variables: None,
+                type_: dummy_type.clone(),
+              }),
+              source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 2,
+                tag: source::Id::from(heap.alloc_str_for_test("C")),
+                data_variables: None,
+                type_: dummy_type.clone(),
+              }),
+            ],
+          },
+          body: Box::new(dummy_source_this(heap)),
+          ending_associated_comments: source::NO_COMMENT_REFERENCE,
+        }],
+      }),
+      heap,
+      r#"const GLOBAL_STRING_0 = '';
+
+let [] if tagof((_this: DUMMY_Dummy))==0 {
+  _t6 = 1;
+} else {
+  _t6 = 0;
+}
+let _t7: int;
+if (_t6: int) {
+  _t7 = 1;
+} else {
+  let [] if tagof((_this: DUMMY_Dummy))==1 {
+    _t4 = 1;
+  } else {
+    _t4 = 0;
+  }
+  let _t5: int;
+  if (_t4: int) {
+    _t5 = 1;
+  } else {
+    let [] if tagof((_this: DUMMY_Dummy))==2 {
+      _t3 = 1;
+    } else {
+      _t3 = 0;
+    }
+    _t5 = (_t3: int);
+  }
+  _t7 = (_t5: int);
+}
+let _t2: DUMMY_Dummy;
+if (_t7: int) {
+  _t2 = (_this: DUMMY_Dummy);
+} else {
+  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t2 = (_t1: DUMMY_Dummy);
+}
+return (_t2: DUMMY_Dummy);"#,
+    );
+  }
+
+  #[test]
+  fn or_pattern_empty_test() {
+    let heap = &mut Heap::new();
+    let dummy_type = Rc::new(dummy_source_id_type(heap));
+
+    assert_expr_correctly_lowered(
+      &source::expr::E::Match(source::expr::Match {
+        common: source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+        matched: Box::new(dummy_source_this(heap)),
+        cases: vec![source::expr::VariantPatternToExpression {
+          loc: Location::dummy(),
+          pattern: source::pattern::MatchingPattern::Or {
+            location: Location::dummy(),
+            patterns: vec![],
+          },
+          body: Box::new(dummy_source_this(heap)),
+          ending_associated_comments: source::NO_COMMENT_REFERENCE,
+        }],
+      }),
+      heap,
+      r#"const GLOBAL_STRING_0 = '';
+
+let _t2: DUMMY_Dummy;
+if 0 {
+  _t2 = (_this: DUMMY_Dummy);
+} else {
+  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t2 = (_t1: DUMMY_Dummy);
+}
+return (_t2: DUMMY_Dummy);"#,
+    );
+  }
+
+  #[test]
+  fn or_pattern_single_test() {
+    let heap = &mut Heap::new();
+    let dummy_type = Rc::new(dummy_source_id_type(heap));
+
+    assert_expr_correctly_lowered(
+      &source::expr::E::Match(source::expr::Match {
+        common: source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+        matched: Box::new(dummy_source_this(heap)),
+        cases: vec![source::expr::VariantPatternToExpression {
+          loc: Location::dummy(),
+          pattern: source::pattern::MatchingPattern::Or {
+            location: Location::dummy(),
+            patterns: vec![source::pattern::MatchingPattern::Variant(
+              source::pattern::VariantPattern {
+                loc: Location::dummy(),
+                tag_order: 0,
+                tag: source::Id::from(heap.alloc_str_for_test("Foo")),
+                data_variables: None,
+                type_: dummy_type.clone(),
+              },
+            )],
+          },
+          body: Box::new(dummy_source_this(heap)),
+          ending_associated_comments: source::NO_COMMENT_REFERENCE,
+        }],
+      }),
+      heap,
+      r#"const GLOBAL_STRING_0 = '';
+
+let [] if tagof((_this: DUMMY_Dummy))==0 {
+  _t3 = 1;
+} else {
+  _t3 = 0;
+}
+let _t2: DUMMY_Dummy;
+if (_t3: int) {
+  _t2 = (_this: DUMMY_Dummy);
+} else {
+  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t2 = (_t1: DUMMY_Dummy);
+}
+return (_t2: DUMMY_Dummy);"#,
+    );
+  }
+
+  #[test]
+  fn or_pattern_nested_in_variant_test() {
+    let builder = type_::test_type_builder::create();
+    let heap = &mut Heap::new();
+    let dummy_type = Rc::new(dummy_source_id_type(heap));
+
+    // match this { Wrap(Foo(x) | Bar(x)) -> x }
+    assert_expr_correctly_lowered(
+      &source::expr::E::Match(source::expr::Match {
+        common: source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+        matched: Box::new(dummy_source_this(heap)),
+        cases: vec![source::expr::VariantPatternToExpression {
+          loc: Location::dummy(),
+          pattern: source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+            loc: Location::dummy(),
+            tag_order: 0,
+            tag: source::Id::from(heap.alloc_str_for_test("Wrap")),
+            data_variables: Some(source::pattern::TuplePattern {
+              location: Location::dummy(),
+              start_associated_comments: source::NO_COMMENT_REFERENCE,
+              ending_associated_comments: source::NO_COMMENT_REFERENCE,
+              elements: vec![source::pattern::TuplePatternElement {
+                pattern: Box::new(source::pattern::MatchingPattern::Or {
+                  location: Location::dummy(),
+                  patterns: vec![
+                    source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                      loc: Location::dummy(),
+                      tag_order: 0,
+                      tag: source::Id::from(heap.alloc_str_for_test("Foo")),
+                      data_variables: Some(source::pattern::TuplePattern {
+                        location: Location::dummy(),
+                        start_associated_comments: source::NO_COMMENT_REFERENCE,
+                        ending_associated_comments: source::NO_COMMENT_REFERENCE,
+                        elements: vec![source::pattern::TuplePatternElement {
+                          pattern: Box::new(source::pattern::MatchingPattern::Id(
+                            source::Id::from(heap.alloc_str_for_test("x")),
+                            builder.int_type(),
+                          )),
+                          type_: builder.int_type(),
+                        }],
+                      }),
+                      type_: dummy_type.clone(),
+                    }),
+                    source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+                      loc: Location::dummy(),
+                      tag_order: 1,
+                      tag: source::Id::from(heap.alloc_str_for_test("Bar")),
+                      data_variables: Some(source::pattern::TuplePattern {
+                        location: Location::dummy(),
+                        start_associated_comments: source::NO_COMMENT_REFERENCE,
+                        ending_associated_comments: source::NO_COMMENT_REFERENCE,
+                        elements: vec![source::pattern::TuplePatternElement {
+                          pattern: Box::new(source::pattern::MatchingPattern::Id(
+                            source::Id::from(heap.alloc_str_for_test("x")),
+                            builder.int_type(),
+                          )),
+                          type_: builder.int_type(),
+                        }],
+                      }),
+                      type_: dummy_type.clone(),
+                    }),
+                  ],
+                }),
+                type_: dummy_type.clone(),
+              }],
+            }),
+            type_: dummy_type.clone(),
+          }),
+          body: Box::new(source::expr::E::LocalId(
+            source::expr::ExpressionCommon::dummy(dummy_type.clone()),
+            source::Id::from(heap.alloc_str_for_test("x")),
+          )),
+          ending_associated_comments: source::NO_COMMENT_REFERENCE,
+        }],
+      }),
+      heap,
+      r#"const GLOBAL_STRING_0 = '';
+
+let _t3: int;
+let [_t4: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==0 {
+  let [_t7: int] if tagof((_t4: DUMMY_Dummy))==0 {
+    _t3 = (_t7: int);
+    _t8 = 1;
+  } else {
+    _t8 = 0;
+  }
+  let _t9: int;
+  if (_t8: int) {
+    _t9 = 1;
+  } else {
+    let [_t5: int] if tagof((_t4: DUMMY_Dummy))==1 {
+      _t3 = (_t5: int);
+      _t6 = 1;
+    } else {
+      _t6 = 0;
+    }
+    _t9 = (_t6: int);
+  }
+  let _t10: int;
+  if (_t9: int) {
+    _t10 = 1;
+  } else {
+    _t10 = 0;
+  }
+  _t11 = (_t10: int);
+} else {
+  _t11 = 0;
+}
+let _t2: DUMMY_Dummy;
+if (_t11: int) {
+  _t2 = (_t3: int);
+} else {
+  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t2 = (_t1: DUMMY_Dummy);
+}
+return (_t2: DUMMY_Dummy);"#,
     );
   }
 

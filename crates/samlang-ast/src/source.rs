@@ -297,6 +297,10 @@ pub mod pattern {
       location: Location,
       associated_comments: super::CommentReference,
     },
+    Or {
+      location: Location,
+      patterns: Vec<MatchingPattern<T>>,
+    },
   }
 
   impl<T: Clone> MatchingPattern<T> {
@@ -306,7 +310,8 @@ pub mod pattern {
         | Self::Object { location, .. }
         | Self::Variant(VariantPattern { loc: location, .. })
         | Self::Id(Id { loc: location, .. }, _)
-        | Self::Wildcard { location, .. } => location,
+        | Self::Wildcard { location, .. }
+        | Self::Or { location, .. } => location,
       }
     }
 
@@ -330,6 +335,7 @@ pub mod pattern {
         }
         Self::Variant(_) => false,
         Self::Id(_, _) | Self::Wildcard { .. } => true,
+        Self::Or { patterns, .. } => patterns.iter().any(|p| p.always_matching()),
       }
     }
 
@@ -356,6 +362,11 @@ pub mod pattern {
           collector.insert(*name, t);
         }
         Self::Wildcard { .. } => {}
+        Self::Or { patterns, .. } => {
+          if let Some(first) = patterns.first() {
+            first.collect_bindings(collector)
+          }
+        }
       }
     }
   }

@@ -1792,6 +1792,25 @@ mod pattern_parser {
 
   pub(super) fn parse_matching_pattern(
     parser: &mut super::SourceParser,
+    starting_comments: Vec<Comment>,
+  ) -> pattern::MatchingPattern<()> {
+    let first_pattern = parse_single_matching_pattern(parser, starting_comments);
+    if let Token(_, TokenContent::Operator(TokenOp::Bar)) = parser.peek() {
+      let mut patterns = vec![first_pattern];
+      while let Token(_, TokenContent::Operator(TokenOp::Bar)) = parser.peek() {
+        drop(parser.consume());
+        let next_pattern = parse_single_matching_pattern(parser, Vec::new());
+        patterns.push(next_pattern);
+      }
+      let location = patterns.first().unwrap().loc().union(patterns.last().unwrap().loc());
+      pattern::MatchingPattern::Or { location, patterns }
+    } else {
+      first_pattern
+    }
+  }
+
+  fn parse_single_matching_pattern(
+    parser: &mut super::SourceParser,
     mut starting_comments: Vec<Comment>,
   ) -> pattern::MatchingPattern<()> {
     let peeked = parser.peek();

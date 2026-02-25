@@ -108,6 +108,11 @@ fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<
       mark_type(heap, type_);
     }
     pattern::MatchingPattern::Wildcard { .. } => {}
+    pattern::MatchingPattern::Or { patterns, .. } => {
+      for p in patterns {
+        mark_matching_pattern(heap, p);
+      }
+    }
   }
 }
 
@@ -330,6 +335,11 @@ mod tests {
           match (this) {
             None(_) -> {}
             Some(a) -> {}
+          }
+
+        method orPatternTest(): unit =
+          match (this) {
+            None(_) | Some(_) -> {}
           }
       }
 

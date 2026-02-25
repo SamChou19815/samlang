@@ -844,6 +844,16 @@ fn matching_pattern_to_document(
         Document::Text("_"),
       )
     }
+    pattern::MatchingPattern::Or { patterns, .. } => {
+      let mut pattern_docs: Vec<Document> = Vec::with_capacity(patterns.len() * 2 - 1);
+      for (i, p) in patterns.iter().enumerate() {
+        if i > 0 {
+          pattern_docs.push(Document::Text(" | "));
+        }
+        pattern_docs.push(matching_pattern_to_document(heap, comment_store, p));
+      }
+      Document::concat(pattern_docs)
+    }
   }
 }
 
@@ -1593,6 +1603,22 @@ ClassName /* b */ /* c */.classMember<
       r#"match v {
   None(_) -> fooBar,
   Some(bazBaz) -> bazBaz,
+}"#,
+    );
+
+    assert_reprint_expr(
+      "match (v) { A | B -> 1, _ -> 2 }",
+      r#"match v {
+  A | B -> 1,
+  _ -> 2,
+}"#,
+    );
+
+    assert_reprint_expr(
+      "match (v) { A(x) | B(x) -> x, _ -> 0 }",
+      r#"match v {
+  A(x) | B(x) -> x,
+  _ -> 0,
 }"#,
     );
 

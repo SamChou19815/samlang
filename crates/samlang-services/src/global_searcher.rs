@@ -79,7 +79,8 @@ fn search_matching_pattern(
     }
     pattern::MatchingPattern::Variant(_)
     | pattern::MatchingPattern::Id(_, _)
-    | pattern::MatchingPattern::Wildcard { .. } => {}
+    | pattern::MatchingPattern::Wildcard { .. }
+    | pattern::MatchingPattern::Or { .. } => {}
   }
 }
 

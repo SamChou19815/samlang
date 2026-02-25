@@ -160,14 +160,22 @@ fn apply_matching_pattern_renaming(
       type_: (),
     }),
     pattern::MatchingPattern::Id(id, ()) => {
-      let name =
-        if id.loc.eq(&definition_and_uses.definition_location) { new_name } else { id.name };
+      let is_def = id.loc.eq(&definition_and_uses.definition_location);
+      let is_use = definition_and_uses.use_locations.iter().any(|l| l.eq(&id.loc));
+      let name = if is_def || is_use { new_name } else { id.name };
       pattern::MatchingPattern::Id(
         Id { loc: id.loc, associated_comments: id.associated_comments, name },
         (),
       )
     }
     pattern::MatchingPattern::Wildcard { .. } => pattern.clone(),
+    pattern::MatchingPattern::Or { location, patterns } => pattern::MatchingPattern::Or {
+      location: *location,
+      patterns: patterns
+        .iter()
+        .map(|p| apply_matching_pattern_renaming(p, definition_and_uses, new_name))
+        .collect(),
+    },
   }
 }
 
@@ -977,6 +985,30 @@ class Main {
       Some(renAmeD) -> renAmeD,
     }
   }
+}
+"#,
+    );
+  }
+
+  #[test]
+  fn or_pattern_rename_test() {
+    let source = r#"
+class Obj(A(int), B(int)) {
+  function test(o: Obj): int =
+    match o {
+      A(x) | B(x) -> x,
+    }
+}"#;
+    let (_, lookup) = prepare_lookup(source);
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(4, 8, 4, 9),
+      r#"class Obj(A(int), B(int)) {
+  function test(o: Obj): int =
+    match o {
+      A(renAmeD) | B(renAmeD) -> renAmeD,
+    }
 }
 "#,
     );

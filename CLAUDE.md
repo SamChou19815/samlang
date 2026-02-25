@@ -20,7 +20,7 @@ cargo t
 # Run tests with coverage (requires 100% coverage)
 cargo tc
 
-# Run tests and generate HTML coverage report
+# Run tests and generate HTML coverage report (has detailed coverage report to debug)
 cargo th
 
 # Format code

@@ -35,7 +35,7 @@ mod tests {
     source_code: &'a str,
   }
 
-  static SOURCES: [CheckerTestSource; 31] = [
+  static SOURCES: [CheckerTestSource; 72] = [
     CheckerTestSource {
       test_name: "access-builtin",
       source_code: r#"
@@ -490,6 +490,473 @@ class Main {
       source_code: r#"
 class Main {
   function main(): Str = helloWorld
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-inconsistent-bindings",
+      source_code: r#"
+class Status(Ok(int), Warning(int), Error(Str)) {
+  method getValue(): int =
+    match this {
+      Ok(v) | Error(_) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-type-mismatch",
+      source_code: r#"
+class Mixed(A(int), B(Str)) {
+  method getValue(): int =
+    match this {
+      A(v) | B(v) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-multi-binding-mismatch",
+      source_code: r#"
+class Triple(A(int, int), B(int, int)) {
+  method test(): int =
+    match this {
+      A(a, b) | B(c, d) -> a,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-same-bindings-ok",
+      source_code: r#"
+class Status(Ok(int), Warn(int)) {
+  method getValue(): int =
+    match this {
+      Ok(v) | Warn(v) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-on-non-enum",
+      source_code: r#"
+class Point(val x: int, val y: int) {
+  method test(): int =
+    match this {
+      A | B -> 1,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-in-tuple-error",
+      source_code: r#"
+class Container(val x: int) {
+  method test(): int =
+    match this {
+      Foo(A | B) -> 1,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-exhaustive-ok",
+      source_code: r#"
+class Color(Red, Green, Blue) {
+  method isPrimary(): bool =
+    match this {
+      Red | Green | Blue -> true,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-not-exhaustive",
+      source_code: r#"
+class Option<T>(Some(T), None) {
+  method getOrDefault(default: int): int =
+    match this {
+      Some(x) | None -> x,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-exhaustive-partial",
+      source_code: r#"
+class Result<T, E>(Ok(T), Err(E)) {
+  method isOk(): bool =
+    match this {
+      Ok(_) | Err(_) -> true,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-not-exhaustive-multi-variant",
+      source_code: r#"
+class Status(Pending, Approved, Rejected, Cancelled) {
+  method isTerminal(): bool =
+    match this {
+      Approved | Rejected -> true,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-with-wildcard-exhaustive",
+      source_code: r#"
+class Expr(Num(int), Var(Str), Add(Expr, Expr), Mul(Expr, Expr)) {
+  method isSimple(): bool =
+    match this {
+      Num(_) | Var(_) -> true,
+      _ -> false,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-exhaustive",
+      source_code: r#"
+class Triple(A(int), B(int), C(int)) {
+  method getValue(): int =
+    match this {
+      A(x) | B(x) | C(x) -> x,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-multi-column-exhaustive",
+      source_code: r#"
+class Pair<A, B>(val a: A, val b: B) {}
+class TwoInts(Both(int, int), First(int), Second(int), Neither) {
+  method hasValue(): bool =
+    match this {
+      Both(_, _) | First(_) | Second(_) -> true,
+      Neither -> false,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-mixed-arms-exhaustive",
+      source_code: r#"
+class Direction(North, South, East, West) {
+  method isVertical(): bool =
+    match this {
+      North | South -> true,
+      East | West -> false,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-mixed-arms-not-exhaustive",
+      source_code: r#"
+class Direction(North, South, East, West) {
+  method isVertical(): bool =
+    match this {
+      North | South -> true,
+      East -> false,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-overlapping-variants",
+      source_code: r#"
+class Color(Red, Green, Blue) {
+  method test(): int =
+    match this {
+      Red | Green -> 1,
+      Green | Blue -> 2,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-single-plus-or-exhaustive",
+      source_code: r#"
+class Light(On, Off, Dim, Bright) {
+  method intensity(): int =
+    match this {
+      On -> 100,
+      Off -> 0,
+      Dim | Bright -> 50,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-all-in-one-arm",
+      source_code: r#"
+class Suit(Hearts, Diamonds, Clubs, Spades) {
+  method value(): int =
+    match this {
+      Hearts | Diamonds | Clubs | Spades -> 1,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-with-data-not-exhaustive",
+      source_code: r#"
+class Expr(Num(int), Var(Str), Add(Expr, Expr), Mul(Expr, Expr)) {
+  method isLeaf(): bool =
+    match this {
+      Num(_) | Var(_) -> true,
+      Add(_, _) -> false,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-binding-vs-wildcard",
+      source_code: r#"
+class Opt(A(int), B(int)) {
+  method test(): int =
+    match this {
+      A(x) | B(_) -> x,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-different-binding-count",
+      source_code: r#"
+class Pair(A(int, int), B(int)) {
+  method test(): int =
+    match this {
+      A(x, y) | B(x) -> x,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-three-way-inconsistent",
+      source_code: r#"
+class Tri(A(int), B(int), C(int)) {
+  method test(): int =
+    match this {
+      A(x) | B(y) | C(z) -> 0,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-wildcard-with-variant",
+      source_code: r#"
+class AB(A, B) {
+  method test(): int =
+    match this {
+      _ | A -> 1,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-id-with-variant",
+      source_code: r#"
+class AB(A, B) {
+  method test(): int =
+    match this {
+      x | A -> 1,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-if-let",
+      source_code: r#"
+class Option<T>(Some(T), None) {
+  method getOrZero(): int =
+    if let Some(x) | None = this { x } else { 0 }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-return-type-from-binding",
+      source_code: r#"
+class Result(Ok(int), Err(int)) {
+  method unwrap(): int =
+    match this {
+      Ok(v) | Err(v) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-generic-data-mismatch",
+      source_code: r#"
+class Either<A, B>(Left(A), Right(B)) {
+  method collapse(): int =
+    match this {
+      Left(v) | Right(v) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-useless-overlap",
+      source_code: r#"
+class ABC(A, B, C) {
+  method test(): int =
+    match this {
+      A | B | A -> 1,
+      C -> 2,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-wrong-variant-name",
+      source_code: r#"
+class AB(A, B) {
+  method test(): int =
+    match this {
+      A | C -> 1,
+      B -> 2,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-tuple-ok",
+      source_code: r#"
+class AB(A(int), B(int)) {
+  function test(x: AB, y: AB): int =
+    match (x, y) {
+      (A(v) | B(v), _) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-tuple-no-binding-ok",
+      source_code: r#"
+class AB(A, B) {
+  function test(x: AB, y: AB): int =
+    match (x, y) {
+      (A | B, A) -> 1,
+      (A | B, B) -> 2,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-tuple-inconsistent",
+      source_code: r#"
+class AB(A(int), B) {
+  function test(x: AB, y: AB): int =
+    match (x, y) {
+      (A(v) | B, _) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-variant-ok",
+      source_code: r#"
+class Inner(X(int), Y(int)) {}
+class Outer(Wrap(Inner)) {
+  method test(): int =
+    match this {
+      Wrap(X(v) | Y(v)) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-variant-inconsistent",
+      source_code: r#"
+class Inner(X(int), Y) {}
+class Outer(Wrap(Inner)) {
+  method test(): int =
+    match this {
+      Wrap(X(v) | Y) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-object-ok",
+      source_code: r#"
+class Inner(X(int), Y(int)) {}
+class Wrapper(val inner: Inner) {
+  method test(): int =
+    match this {
+      {inner as X(v) | Y(v)} -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-object-inconsistent",
+      source_code: r#"
+class Inner(X(int), Y) {}
+class Wrapper(val inner: Inner) {
+  method test(): int =
+    match this {
+      {inner as X(v) | Y} -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-variant-in-or-ok",
+      source_code: r#"
+class Inner(X(int), Y(int)) {}
+class Outer(A(Inner), B(Inner)) {
+  method test(): int =
+    match this {
+      A(X(v) | Y(v)) | B(X(v) | Y(v)) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-variant-in-or-inconsistent",
+      source_code: r#"
+class Inner(X(int), Y) {}
+class Outer(A(Inner), B(Inner)) {
+  method test(): int =
+    match this {
+      A(X(v) | Y) | B(X(v) | Y) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-in-tuple-type-mismatch",
+      source_code: r#"
+class AB(A(int), B(Str)) {
+  function test(x: AB, y: AB): int =
+    match (x, y) {
+      (A(v) | B(v), _) -> v,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-exhaustive-in-tuple",
+      source_code: r#"
+class ABC(A, B, C) {
+  function test(x: ABC, y: ABC): bool =
+    match (x, y) {
+      (A | B | C, A | B | C) -> true,
+    }
+}
+"#,
+    },
+    CheckerTestSource {
+      test_name: "or-pattern-nested-not-exhaustive-in-tuple",
+      source_code: r#"
+class ABC(A, B, C) {
+  function test(x: ABC, y: ABC): bool =
+    match (x, y) {
+      (A | B, A | B | C) -> true,
+    }
 }
 "#,
     },
@@ -1153,6 +1620,378 @@ Cannot resolve name `helloWorld`.
                               ^^^^^^^^^^
 
 
-Found 51 errors.
+Error ------- or-pattern-inconsistent-bindings.sam:5:15-5:23
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [v], actual bindings: [].
+
+  5|       Ok(v) | Error(_) -> v,
+                   ^^^^^^^^
+
+
+Error --------------- or-pattern-type-mismatch.sam:5:14-5:18
+
+`Str` [1] is incompatible with `int` [2].
+
+  5|       A(v) | B(v) -> v,
+                  ^^^^
+
+  [1] or-pattern-type-mismatch.sam:2:23-2:26
+  ------------------------------------------
+  2| class Mixed(A(int), B(Str)) {
+                           ^^^
+
+  [2] or-pattern-type-mismatch.sam:2:15-2:18
+  ------------------------------------------
+  2| class Mixed(A(int), B(Str)) {
+                   ^^^
+
+
+Error ------ or-pattern-multi-binding-mismatch.sam:5:17-5:24
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [a, b], actual bindings: [c, d].
+
+  5|       A(a, b) | B(c, d) -> a,
+                     ^^^^^^^
+
+
+Error ------ or-pattern-multi-binding-mismatch.sam:5:19-5:20
+
+Cannot resolve name `c`.
+
+  5|       A(a, b) | B(c, d) -> a,
+                       ^
+
+
+Error ------ or-pattern-multi-binding-mismatch.sam:5:22-5:23
+
+Cannot resolve name `d`.
+
+  5|       A(a, b) | B(c, d) -> a,
+                          ^
+
+
+Error ------------------- or-pattern-on-non-enum.sam:5:7-5:8
+
+`Point` is not an instance of an enum class.
+
+  5|       A | B -> 1,
+           ^
+
+
+Error ----------------- or-pattern-on-non-enum.sam:5:11-5:12
+
+`Point` is not an instance of an enum class.
+
+  5|       A | B -> 1,
+               ^
+
+
+Error --------------- or-pattern-in-tuple-error.sam:5:7-5:10
+
+`Container` is not an instance of an enum class.
+
+  5|       Foo(A | B) -> 1,
+           ^^^
+
+
+Error ---------------- or-pattern-not-exhaustive.sam:4:5-6:6
+
+`T` [1] is incompatible with `int` [2].
+
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       Some(x) | None -> x,
+  6|     }
+     ^^^^^
+
+  [1] or-pattern-not-exhaustive.sam:4:5-6:6
+  -----------------------------------------
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       Some(x) | None -> x,
+  6|     }
+     ^^^^^
+
+  [2] or-pattern-not-exhaustive.sam:3:38-3:41
+  -------------------------------------------
+  3|   method getOrDefault(default: int): int =
+                                          ^^^
+
+
+Error -------------- or-pattern-not-exhaustive.sam:5:17-5:21
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x], actual bindings: [].
+
+  5|       Some(x) | None -> x,
+                     ^^^^
+
+
+Error ------------------------------------------------------
+or-pattern-not-exhaustive-multi-variant.sam:4:5-6:6
+
+This pattern-matching is not exhaustive.
+Here is an example of a non-matching value: `Cancelled`.
+
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       Approved | Rejected -> true,
+  6|     }
+     ^^^^^
+
+
+Error ----- or-pattern-mixed-arms-not-exhaustive.sam:4:5-7:6
+
+This pattern-matching is not exhaustive.
+Here is an example of a non-matching value: `West`.
+
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       North | South -> true,
+  6|       East -> false,
+  7|     }
+     ^^^^^
+
+
+Error ------ or-pattern-with-data-not-exhaustive.sam:4:5-7:6
+
+This pattern-matching is not exhaustive.
+Here is an example of a non-matching value: `Mul(_, _)`.
+
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       Num(_) | Var(_) -> true,
+  6|       Add(_, _) -> false,
+  7|     }
+     ^^^^^
+
+
+Error --------- or-pattern-binding-vs-wildcard.sam:5:14-5:18
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x], actual bindings: [].
+
+  5|       A(x) | B(_) -> x,
+                  ^^^^
+
+
+Error ----- or-pattern-different-binding-count.sam:5:17-5:21
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x, y], actual bindings: [x].
+
+  5|       A(x, y) | B(x) -> x,
+                     ^^^^
+
+
+Error ------ or-pattern-three-way-inconsistent.sam:5:14-5:18
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x], actual bindings: [y].
+
+  5|       A(x) | B(y) | C(z) -> 0,
+                  ^^^^
+
+
+Error ------ or-pattern-three-way-inconsistent.sam:5:16-5:17
+
+Cannot resolve name `y`.
+
+  5|       A(x) | B(y) | C(z) -> 0,
+                    ^
+
+
+Error ------ or-pattern-three-way-inconsistent.sam:5:21-5:25
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x], actual bindings: [z].
+
+  5|       A(x) | B(y) | C(z) -> 0,
+                         ^^^^
+
+
+Error ------ or-pattern-three-way-inconsistent.sam:5:23-5:24
+
+Cannot resolve name `z`.
+
+  5|       A(x) | B(y) | C(z) -> 0,
+                           ^
+
+
+Error ------------- or-pattern-id-with-variant.sam:5:11-5:12
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x], actual bindings: [].
+
+  5|       x | A -> 1,
+               ^
+
+
+Error ----------------------- or-pattern-if-let.sam:4:5-4:50
+
+`T` [1] is incompatible with `int` [2].
+
+  4|     if let Some(x) | None = this { x } else { 0 }
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] or-pattern-if-let.sam:4:5-4:50
+  ----------------------------------
+  4|     if let Some(x) | None = this { x } else { 0 }
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [2] or-pattern-if-let.sam:3:23-3:26
+  -----------------------------------
+  3|   method getOrZero(): int =
+                           ^^^
+
+
+Error ---------------------- or-pattern-if-let.sam:4:22-4:26
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [x], actual bindings: [].
+
+  4|     if let Some(x) | None = this { x } else { 0 }
+                          ^^^^
+
+
+Error ---------------------- or-pattern-if-let.sam:4:45-4:50
+
+`int` [1] is incompatible with `T` [2].
+
+  4|     if let Some(x) | None = this { x } else { 0 }
+                                                 ^^^^^
+
+  [1] or-pattern-if-let.sam:4:45-4:50
+  -----------------------------------
+  4|     if let Some(x) | None = this { x } else { 0 }
+                                                 ^^^^^
+
+  [2] or-pattern-if-let.sam:4:34-4:39
+  -----------------------------------
+  4|     if let Some(x) | None = this { x } else { 0 }
+                                      ^^^^^
+
+
+Error --------- or-pattern-generic-data-mismatch.sam:4:5-6:6
+
+`A` [1] is incompatible with `int` [2].
+
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       Left(v) | Right(v) -> v,
+  6|     }
+     ^^^^^
+
+  [1] or-pattern-generic-data-mismatch.sam:4:5-6:6
+  ------------------------------------------------
+         vvvvvvvvvvvv
+  4|     match this {
+  5|       Left(v) | Right(v) -> v,
+  6|     }
+     ^^^^^
+
+  [2] or-pattern-generic-data-mismatch.sam:3:22-3:25
+  --------------------------------------------------
+  3|   method collapse(): int =
+                          ^^^
+
+
+Error ------- or-pattern-generic-data-mismatch.sam:5:17-5:25
+
+`B` [1] is incompatible with `A` [2].
+
+  5|       Left(v) | Right(v) -> v,
+                     ^^^^^^^^
+
+  [1] or-pattern-generic-data-mismatch.sam:2:17-2:18
+  --------------------------------------------------
+  2| class Either<A, B>(Left(A), Right(B)) {
+                     ^
+
+  [2] or-pattern-generic-data-mismatch.sam:2:14-2:15
+  --------------------------------------------------
+  2| class Either<A, B>(Left(A), Right(B)) {
+                  ^
+
+
+Error ---------- or-pattern-wrong-variant-name.sam:5:11-5:12
+
+Cannot resolve member `C` on `AB`.
+
+  5|       A | C -> 1,
+               ^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-in-tuple-inconsistent.sam:5:15-5:16
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [v], actual bindings: [].
+
+  5|       (A(v) | B, _) -> v,
+                   ^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-in-variant-inconsistent.sam:6:19-6:20
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [v], actual bindings: [].
+
+  6|       Wrap(X(v) | Y) -> v,
+                       ^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-in-object-inconsistent.sam:6:24-6:25
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [v], actual bindings: [].
+
+  6|       {inner as X(v) | Y} -> v,
+                            ^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-in-variant-in-or-inconsistent.sam:6:16-6:17
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [v], actual bindings: [].
+
+  6|       A(X(v) | Y) | B(X(v) | Y) -> v,
+                    ^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-in-variant-in-or-inconsistent.sam:6:30-6:31
+
+Or-pattern alternatives must bind the same variables. Expected bindings: [v], actual bindings: [].
+
+  6|       A(X(v) | Y) | B(X(v) | Y) -> v,
+                                  ^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-in-tuple-type-mismatch.sam:5:15-5:19
+
+`Str` [1] is incompatible with `int` [2].
+
+  5|       (A(v) | B(v), _) -> v,
+                   ^^^^
+
+  [1] or-pattern-nested-in-tuple-type-mismatch.sam:2:20-2:23
+  ----------------------------------------------------------
+  2| class AB(A(int), B(Str)) {
+                        ^^^
+
+  [2] or-pattern-nested-in-tuple-type-mismatch.sam:2:12-2:15
+  ----------------------------------------------------------
+  2| class AB(A(int), B(Str)) {
+                ^^^
+
+
+Error ------------------------------------------------------
+or-pattern-nested-not-exhaustive-in-tuple.sam:4:5-6:6
+
+This pattern-matching is not exhaustive.
+Here is an example of a non-matching value: `(C, _)`.
+
+         vvvvvvvvvvvvvv
+  4|     match (x, y) {
+  5|       (A | B, A | B | C) -> true,
+  6|     }
+     ^^^^^
+
+
+Found 84 errors.
 "#;
 }

@@ -21,7 +21,7 @@ use samlang_ast::{
 use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};
 use std::{
-  collections::{BTreeSet, HashMap},
+  collections::{BTreeMap, BTreeSet, HashMap},
   ops::Deref,
   rc::Rc,
 };
@@ -1172,6 +1172,11 @@ fn any_typed_invalid_matching_pattern(
         associated_comments: *associated_comments,
       }
     }
+    pattern::MatchingPattern::Or { location, patterns } => {
+      let checked_patterns =
+        patterns.iter().map(|p| any_typed_invalid_matching_pattern(cx, p)).collect();
+      pattern::MatchingPattern::Or { location: *location, patterns: checked_patterns }
+    }
   }
 }
 
@@ -1454,6 +1459,51 @@ fn check_matching_pattern(
       },
       pattern_matching::AbstractPatternNode::wildcard(),
     ),
+    pattern::MatchingPattern::Or { location, patterns } => {
+      let first_pattern = patterns.first().unwrap();
+      let (first_checked, first_abstract) =
+        check_matching_pattern(cx, first_pattern, wildcard_on_bad_pattern, pattern_type);
+      let expected_bindings: BTreeMap<PStr, Rc<Type>> =
+        first_checked.bindings().into_iter().map(|(k, v)| (k, v.clone())).collect();
+      let mut checked_patterns = vec![first_checked];
+      let mut abstract_nodes = vec![first_abstract];
+      let mut has_error = false;
+      for pattern in patterns.iter().skip(1) {
+        let (checked, abstract_node) =
+          check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, pattern_type);
+        let actual_bindings: BTreeMap<PStr, Rc<Type>> =
+          checked.bindings().into_iter().map(|(k, v)| (k, v.clone())).collect();
+        let expected_names: BTreeSet<PStr> = expected_bindings.keys().copied().collect();
+        let actual_names: BTreeSet<PStr> = actual_bindings.keys().copied().collect();
+        if expected_names != actual_names {
+          cx.error_set.report_or_pattern_inconsistent_bindings_error(
+            *pattern.loc(),
+            expected_names.iter().copied().collect(),
+            actual_names.iter().copied().collect(),
+          );
+          has_error = true;
+        } else {
+          for (name, expected_type) in &expected_bindings {
+            let actual_type = &actual_bindings[name];
+            if let Some(e) = type_system::assignability_check(actual_type, expected_type) {
+              cx.error_set.report_stackable_error(*pattern.loc(), e);
+              has_error = true;
+            }
+          }
+        }
+        checked_patterns.push(checked);
+        abstract_nodes.push(abstract_node);
+      }
+      let abstract_pattern = if has_error {
+        bad_pattern_default(wildcard_on_bad_pattern)
+      } else {
+        pattern_matching::AbstractPatternNode::or(abstract_nodes)
+      };
+      (
+        pattern::MatchingPattern::Or { location: *location, patterns: checked_patterns },
+        abstract_pattern,
+      )
+    }
   }
 }
 

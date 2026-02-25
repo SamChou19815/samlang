@@ -264,6 +264,57 @@ mod tests {
         type_: (),
       })
     );
+    matching_pattern = pattern::MatchingPattern::Or {
+      location: Location::dummy(),
+      patterns: vec![
+        pattern::MatchingPattern::Wildcard {
+          location: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+        },
+        pattern::MatchingPattern::Variant(pattern::VariantPattern {
+          loc: Location::dummy(),
+          tag_order: 0,
+          tag: Id::from(PStr::UPPER_A),
+          data_variables: None,
+          type_: (),
+        }),
+      ],
+    };
+    assert!(matching_pattern.always_matching());
+    matching_pattern.bindings();
+    assert_eq!(*matching_pattern.loc(), Location::dummy());
+    matching_pattern = pattern::MatchingPattern::Or {
+      location: Location::dummy(),
+      patterns: vec![
+        pattern::MatchingPattern::Variant(pattern::VariantPattern {
+          loc: Location::dummy(),
+          tag_order: 0,
+          tag: Id::from(PStr::UPPER_A),
+          data_variables: None,
+          type_: (),
+        }),
+        pattern::MatchingPattern::Variant(pattern::VariantPattern {
+          loc: Location::dummy(),
+          tag_order: 0,
+          tag: Id::from(PStr::UPPER_B),
+          data_variables: None,
+          type_: (),
+        }),
+      ],
+    };
+    assert_eq!(false, matching_pattern.always_matching());
+    matching_pattern = pattern::MatchingPattern::Or {
+      location: Location::dummy(),
+      patterns: vec![
+        pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A), ()),
+        pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A), ()),
+      ],
+    };
+    assert_eq!(1, matching_pattern.bindings().len());
+    matching_pattern =
+      pattern::MatchingPattern::Or { location: Location::dummy(), patterns: vec![] };
+    assert_eq!(0, matching_pattern.bindings().len());
+    assert_eq!(false, matching_pattern.always_matching());
   }
 
   #[test]
