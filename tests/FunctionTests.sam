@@ -1,0 +1,127 @@
+import { ForTests } from tests.StdLib;
+
+class FunctionTests {
+  private function add(a: int, b: int): int = a + b
+
+  private function subtract(a: int, b: int): int = a - b
+
+  private function multiply(a: int, b: int): int = a * b
+
+  private function divide(a: int, b: int): int = a / b
+
+  private function modulo(a: int, b: int): int = a % b
+
+  private function testBasicFunctions(): unit = {
+    ForTests.assertIntEquals(5, FunctionTests.add(2, 3));
+    ForTests.assertIntEquals(3, FunctionTests.subtract(5, 2));
+    ForTests.assertIntEquals(12, FunctionTests.multiply(3, 4));
+    ForTests.assertIntEquals(2, FunctionTests.divide(7, 3));
+    ForTests.assertIntEquals(1, FunctionTests.modulo(7, 3));
+  }
+
+  private function negate(x: int): int = 0 - x
+
+  private function testNegate(): unit = {
+    ForTests.assertIntEquals(-5, FunctionTests.negate(5));
+    ForTests.assertIntEquals(5, FunctionTests.negate(-5));
+    ForTests.assertIntEquals(0, FunctionTests.negate(0));
+  }
+
+  private function abs(x: int): int = if x < 0 { FunctionTests.negate(x) } else { x }
+
+  private function testAbs(): unit = {
+    ForTests.assertIntEquals(5, FunctionTests.abs(5));
+    ForTests.assertIntEquals(5, FunctionTests.abs(-5));
+    ForTests.assertIntEquals(0, FunctionTests.abs(0));
+  }
+
+  private function max(a: int, b: int): int = if a > b { a } else { b }
+
+  private function min(a: int, b: int): int = if a < b { a } else { b }
+
+  private function testMinMax(): unit = {
+    ForTests.assertIntEquals(5, FunctionTests.max(3, 5));
+    ForTests.assertIntEquals(5, FunctionTests.max(5, 3));
+    ForTests.assertIntEquals(3, FunctionTests.min(3, 5));
+    ForTests.assertIntEquals(3, FunctionTests.min(5, 3));
+  }
+
+  private function clamp(value: int, low: int, high: int): int =
+    FunctionTests.max(low, FunctionTests.min(value, high))
+
+  private function testClamp(): unit = {
+    ForTests.assertIntEquals(5, FunctionTests.clamp(5, 0, 10));
+    ForTests.assertIntEquals(0, FunctionTests.clamp(-5, 0, 10));
+    ForTests.assertIntEquals(10, FunctionTests.clamp(15, 0, 10));
+  }
+
+  private function inRange(value: int, low: int, high: int): bool = value >= low && value <= high
+
+  private function testInRange(): unit = {
+    ForTests.assertBool(FunctionTests.inRange(5, 0, 10), "5 in 0-10");
+    ForTests.assertBool(!FunctionTests.inRange(-1, 0, 10), "-1 not in 0-10");
+    ForTests.assertBool(!FunctionTests.inRange(11, 0, 10), "11 not in 0-10");
+    ForTests.assertBool(FunctionTests.inRange(0, 0, 10), "0 in 0-10");
+    ForTests.assertBool(FunctionTests.inRange(10, 0, 10), "10 in 0-10");
+  }
+
+  private function square(x: int): int = x * x
+
+  private function cube(x: int): int = x * x * x
+
+  private function testPowerFunctions(): unit = {
+    ForTests.assertIntEquals(9, FunctionTests.square(3));
+    ForTests.assertIntEquals(0, FunctionTests.square(0));
+    ForTests.assertIntEquals(27, FunctionTests.cube(3));
+    ForTests.assertIntEquals(0, FunctionTests.cube(0));
+  }
+
+  private function isEven(x: int): bool = x % 2 == 0
+
+  private function isOdd(x: int): bool = x % 2 != 0
+
+  private function testEvenOdd(): unit = {
+    ForTests.assertBool(FunctionTests.isEven(4), "4 is even");
+    ForTests.assertBool(!FunctionTests.isEven(3), "3 is not even");
+    ForTests.assertBool(FunctionTests.isOdd(3), "3 is odd");
+    ForTests.assertBool(!FunctionTests.isOdd(4), "4 is not odd");
+    ForTests.assertBool(FunctionTests.isEven(0), "0 is even");
+  }
+
+  private function isPositive(x: int): bool = x > 0
+
+  private function isNegative(x: int): bool = x < 0
+
+  private function isZero(x: int): bool = x == 0
+
+  private function testSignCheck(): unit = {
+    ForTests.assertBool(FunctionTests.isPositive(5), "5 is positive");
+    ForTests.assertBool(!FunctionTests.isPositive(-5), "-5 is not positive");
+    ForTests.assertBool(FunctionTests.isNegative(-5), "-5 is negative");
+    ForTests.assertBool(!FunctionTests.isNegative(5), "5 is not negative");
+    ForTests.assertBool(FunctionTests.isZero(0), "0 is zero");
+    ForTests.assertBool(!FunctionTests.isZero(1), "1 is not zero");
+  }
+
+  private function compose(f: (int) -> int, g: (int) -> int, x: int): int = f(g(x))
+
+  private function testCompose(): unit = {
+    let double = (x: int) -> x * 2;
+    let inc = (x: int) -> x + 1;
+    ForTests.assertIntEquals(11, FunctionTests.compose(inc, double, 5));
+    ForTests.assertIntEquals(12, FunctionTests.compose(double, inc, 5));
+  }
+
+  function run(): unit = {
+    FunctionTests.testBasicFunctions();
+    FunctionTests.testNegate();
+    FunctionTests.testAbs();
+    FunctionTests.testMinMax();
+    FunctionTests.testClamp();
+    FunctionTests.testInRange();
+    FunctionTests.testPowerFunctions();
+    FunctionTests.testEvenOdd();
+    FunctionTests.testSignCheck();
+    FunctionTests.testCompose();
+  }
+}

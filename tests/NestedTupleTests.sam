@@ -1,0 +1,74 @@
+import { Option } from std.option;
+import { Pair, Triple } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class NestedTupleTests {
+  private function testPairInPair(): unit = {
+    let outer = (Pair.init(1, 2), Pair.init(3, 4));
+    let (p1, p2) = outer;
+    ForTests.assertIntEquals(1, p1.e0);
+    ForTests.assertIntEquals(2, p1.e1);
+    ForTests.assertIntEquals(3, p2.e0);
+    ForTests.assertIntEquals(4, p2.e1);
+  }
+
+  private function testTripleInPair(): unit = {
+    let pair = (Triple.init(1, 2, 3), Triple.init(4, 5, 6));
+    let (t1, t2) = pair;
+    ForTests.assertIntEquals(1, t1.e0);
+    ForTests.assertIntEquals(6, t2.e2);
+  }
+
+  private function testDeeplyNested(): unit = {
+    let nested = ((1, 2), (3, 4));
+    let ((a, b), (c, d)) = nested;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+    ForTests.assertIntEquals(3, c);
+    ForTests.assertIntEquals(4, d);
+  }
+
+  private function testTripleNested(): unit = {
+    let nested = ((1, 2, 3), (4, 5, 6));
+    let ((a, b, c), (d, e, f)) = nested;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(6, f);
+  }
+
+  private function testMixedNesting(): unit = {
+    let data = (1, (2, 3));
+    let (a, (b, c)) = data;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+    ForTests.assertIntEquals(3, c);
+  }
+
+  private function testTripleWithPairs(): unit = {
+    let data = (Pair.init(1, 2), Pair.init(3, 4), Pair.init(5, 6));
+    let (p1, p2, p3) = data;
+    ForTests.assertIntEquals(1, p1.e0);
+    ForTests.assertIntEquals(4, p2.e1);
+    ForTests.assertIntEquals(5, p3.e0);
+  }
+
+  private function testNestedInIf(): unit = {
+    let result = if true {
+      let p = (1, 2);
+      let (a, b) = p;
+      a + b
+    } else {
+      0
+    };
+    ForTests.assertIntEquals(3, result);
+  }
+
+  function run(): unit = {
+    NestedTupleTests.testPairInPair();
+    NestedTupleTests.testTripleInPair();
+    NestedTupleTests.testDeeplyNested();
+    NestedTupleTests.testTripleNested();
+    NestedTupleTests.testMixedNesting();
+    NestedTupleTests.testTripleWithPairs();
+    NestedTupleTests.testNestedInIf();
+  }
+}

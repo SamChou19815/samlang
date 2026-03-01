@@ -1,0 +1,142 @@
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class LetExpressionTests {
+  private function testSimpleLet(): unit = {
+    let x = 5;
+    ForTests.assertIntEquals(5, x);
+  }
+
+  private function testLetWithExpression(): unit = {
+    let x = 2 + 3;
+    ForTests.assertIntEquals(5, x);
+  }
+
+  private function testNestedLet(): unit = {
+    let a = 1;
+    let b = a + 1;
+    let c = b + 1;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+    ForTests.assertIntEquals(3, c);
+  }
+
+  private function testLetWithTuple(): unit = {
+    let pair = (1, 2);
+    let (a, b) = pair;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+  }
+
+  private function testLetWithTriple(): unit = {
+    let triple = (1, 2, 3);
+    let (a, b, c) = triple;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+    ForTests.assertIntEquals(3, c);
+  }
+
+  private function testLetWithNestedTuple(): unit = {
+    let nested = ((1, 2), (3, 4));
+    let ((a, b), (c, d)) = nested;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+    ForTests.assertIntEquals(3, c);
+    ForTests.assertIntEquals(4, d);
+  }
+
+  private function testLetWithObjectDestructure(): unit = {
+    let pair = Pair.init(10, 20);
+    let { e0, e1 } = pair;
+    ForTests.assertIntEquals(10, e0);
+    ForTests.assertIntEquals(20, e1);
+  }
+
+  private function testLetInIf(): unit = {
+    let result = if true {
+      let x = 5;
+      x * 2
+    } else {
+      0
+    };
+    ForTests.assertIntEquals(10, result);
+  }
+
+  private function testLetInMatch(): unit = {
+    let opt = Option.Some(5);
+    let result = match opt {
+      Some(v) -> {
+        let doubled = v * 2;
+        doubled + 1
+      },
+      None -> 0,
+    };
+    ForTests.assertIntEquals(11, result);
+  }
+
+  private function testChainedLet(): unit = {
+    let a = 1;
+    let b = a + 1;
+    let c = b + a;
+    let d = c + b;
+    let e = d + c;
+    ForTests.assertIntEquals(7, e);
+  }
+
+  private function testLetWithFunctionCall(): unit = {
+    let add = (a: int, b: int) -> a + b;
+    let result = add(2, 3);
+    ForTests.assertIntEquals(5, result);
+  }
+
+  private function testLetWithMethodCall(): unit = {
+    let pair = Pair.init(100, 200);
+    let first = pair.e0;
+    let second = pair.e1;
+    ForTests.assertIntEquals(100, first);
+    ForTests.assertIntEquals(200, second);
+  }
+
+  private function testLetWithLambda(): unit = {
+    let f = (x: int) -> x * 2;
+    let g = (x: int) -> x + 1;
+    let composed = (x: int) -> f(g(x));
+    ForTests.assertIntEquals(12, composed(5));
+  }
+
+  private function testLetWithIf(): unit = {
+    let x = if 5 > 3 { 10 } else { 20 };
+    let y = if 3 > 5 { 10 } else { 20 };
+    ForTests.assertIntEquals(10, x);
+    ForTests.assertIntEquals(20, y);
+  }
+
+  private function testMultipleDestructure(): unit = {
+    let pair = (1, 2);
+    let (a, b) = pair;
+    let sum = a + b;
+    let otherPair = (sum, sum * 2);
+    let (c, d) = otherPair;
+    ForTests.assertIntEquals(3, c);
+    ForTests.assertIntEquals(6, d);
+  }
+
+  function run(): unit = {
+    LetExpressionTests.testSimpleLet();
+    LetExpressionTests.testLetWithExpression();
+    LetExpressionTests.testNestedLet();
+    LetExpressionTests.testLetWithTuple();
+    LetExpressionTests.testLetWithTriple();
+    LetExpressionTests.testLetWithNestedTuple();
+    LetExpressionTests.testLetWithObjectDestructure();
+    LetExpressionTests.testLetInIf();
+    LetExpressionTests.testLetInMatch();
+    LetExpressionTests.testChainedLet();
+    LetExpressionTests.testLetWithFunctionCall();
+    LetExpressionTests.testLetWithMethodCall();
+    LetExpressionTests.testLetWithLambda();
+    LetExpressionTests.testLetWithIf();
+    LetExpressionTests.testMultipleDestructure();
+  }
+}

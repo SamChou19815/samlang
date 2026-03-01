@@ -1,0 +1,111 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Result } from std.result;
+import { ForTests } from tests.StdLib;
+
+class ChainedOperationsTests {
+  private function testOptionChaining(): unit = {
+    let result = Option.Some(5)
+      .map((x: int) -> x * 2)
+      .map((x: int) -> x + 1)
+      .map((x: int) -> x * 3);
+    match result {
+      Some(v) -> ForTests.assertIntEquals(33, v),
+      None -> Process.panic<unit>("Should be some"),
+    };
+  }
+
+  private function testOptionFilter(): unit = {
+    let filtered = Option.Some(10).filter((x: int) -> x > 5);
+    ForTests.assertBool(filtered.isSome(), "10 > 5");
+    let filtered2 = Option.Some(3).filter((x: int) -> x > 5);
+    ForTests.assertBool(filtered2.isNone(), "3 not > 5");
+  }
+
+  private function testOptionBind(): unit = {
+    let result = Option.Some(5).bind((x: int) -> Option.Some(x * 2));
+    match result {
+      Some(v) -> ForTests.assertIntEquals(10, v),
+      None -> Process.panic<unit>("Should be some"),
+    };
+    let result2 = Option.Some(5)
+      .bind((x: int) -> if x > 10 { Option.Some(x) } else { Option.None<int>() });
+    ForTests.assertBool(result2.isNone(), "5 not > 10");
+  }
+
+  private function testResultChaining(): unit = {
+    let result = Result.Ok<int, Str>(5).map((x: int) -> x * 2).map((x: int) -> x + 1);
+    match result {
+      Ok(v) -> ForTests.assertIntEquals(11, v),
+      Error(_) -> Process.panic<unit>("Should be ok"),
+    };
+  }
+
+  private function testResultMapError(): unit = {
+    let err = Result.Error<int, Str>("error");
+    let mapped = err.mapError((e: Str) -> e :: "!");
+    ForTests.assertBool(mapped.isError(), "Should be error");
+  }
+
+  private function testListChaining(): unit = {
+    let result = List.of(1)
+      .cons(2)
+      .cons(3)
+      .cons(4)
+      .cons(5)
+      .filter((x: int) -> x % 2 == 0)
+      .map((x: int) -> x * 10)
+      .fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(60, result);
+  }
+
+  private function testListFilterMap(): unit = {
+    let result = List.of(1)
+      .cons(2)
+      .cons(3)
+      .cons(4)
+      .filter((x: int) -> x > 2)
+      .map((x: int) -> x * x);
+    ForTests.assertIntEquals(2, result.length());
+    let sum = result.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(25, sum);
+  }
+
+  private function testListReverseChain(): unit = {
+    let result = List.of(1).cons(2).cons(3).reverse().map((x: int) -> x * 10);
+    let head = match result {
+      Nil -> -1,
+      Cons(h, _) -> h,
+    };
+    ForTests.assertIntEquals(10, head);
+  }
+
+  private function testListAppendChain(): unit = {
+    let result = List.of(1).cons(2).append(List.of(3).cons(4)).append(List.of(5).cons(6));
+    ForTests.assertIntEquals(6, result.length());
+    let sum = result.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(21, sum);
+  }
+
+  private function testMixedChaining(): unit = {
+    let opt = Option.Some(List.of(1).cons(2).cons(3));
+    let result = match opt {
+      Some(list) -> list.map((x: int) -> x * 2).fold((acc: int, x: int) -> acc + x, 0),
+      None -> 0,
+    };
+    ForTests.assertIntEquals(12, result);
+  }
+
+  function run(): unit = {
+    ChainedOperationsTests.testOptionChaining();
+    ChainedOperationsTests.testOptionFilter();
+    ChainedOperationsTests.testOptionBind();
+    ChainedOperationsTests.testResultChaining();
+    ChainedOperationsTests.testResultMapError();
+    ChainedOperationsTests.testListChaining();
+    ChainedOperationsTests.testListFilterMap();
+    ChainedOperationsTests.testListReverseChain();
+    ChainedOperationsTests.testListAppendChain();
+    ChainedOperationsTests.testMixedChaining();
+  }
+}

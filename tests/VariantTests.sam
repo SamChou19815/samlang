@@ -1,0 +1,117 @@
+import { Option } from std.option;
+import { Result } from std.result;
+import { ForTests } from tests.StdLib;
+
+class VariantTests {
+  private function testOptionCreation(): unit = {
+    let some = Option.Some(42);
+    let none = Option.None<int>();
+    ForTests.assertBool(some.isSome(), "Some is some");
+    ForTests.assertBool(none.isNone(), "None is none");
+  }
+
+  private function testOptionMap(): unit = {
+    let some = Option.Some(5);
+    let mapped = some.map((x: int) -> x * 2);
+    match mapped {
+      Some(v) -> ForTests.assertIntEquals(10, v),
+      None -> Process.panic<unit>("Should be some"),
+    };
+  }
+
+  private function testOptionBind(): unit = {
+    let some = Option.Some(5);
+    let bound = some.bind((x: int) -> if x > 0 { Option.Some(x * 2) } else { Option.None<int>() });
+    match bound {
+      Some(v) -> ForTests.assertIntEquals(10, v),
+      None -> Process.panic<unit>("Should be some"),
+    };
+  }
+
+  private function testOptionFilter(): unit = {
+    let some = Option.Some(10);
+    let filtered = some.filter((x: int) -> x > 5);
+    ForTests.assertBool(filtered.isSome(), "10 > 5");
+    let filtered2 = Option.Some(3).filter((x: int) -> x > 5);
+    ForTests.assertBool(filtered2.isNone(), "3 not > 5");
+  }
+
+  private function testOptionChaining(): unit = {
+    let result = Option.Some(5)
+      .map((x: int) -> x * 2)
+      .map((x: int) -> x + 1)
+      .map((x: int) -> x * 3);
+    match result {
+      Some(v) -> ForTests.assertIntEquals(33, v),
+      None -> Process.panic<unit>("Should be some"),
+    };
+  }
+
+  private function testOptionValueMap(): unit = {
+    let some = Option.Some(42);
+    let none = Option.None<int>();
+    ForTests.assertIntEquals(42, some.valueMap(0, (x: int) -> x));
+    ForTests.assertIntEquals(0, none.valueMap(0, (x: int) -> x));
+  }
+
+  private function testResultCreation(): unit = {
+    let ok = Result.Ok<int, Str>(42);
+    let err = Result.Error<int, Str>("error");
+    ForTests.assertBool(ok.isOk(), "Ok is ok");
+    ForTests.assertBool(err.isError(), "Error is error");
+  }
+
+  private function testResultMap(): unit = {
+    let ok = Result.Ok<int, Str>(5);
+    let mapped = ok.map((x: int) -> x * 2);
+    match mapped {
+      Ok(v) -> ForTests.assertIntEquals(10, v),
+      Error(_) -> Process.panic<unit>("Should be ok"),
+    };
+  }
+
+  private function testResultMapError(): unit = {
+    let err = Result.Error<int, Str>("error");
+    let mapped = err.mapError((e: Str) -> e :: "!");
+    ForTests.assertBool(mapped.isError(), "Should be error");
+  }
+
+  private function testResultChaining(): unit = {
+    let result = Result.Ok<int, Str>(5).map((x: int) -> x * 2).map((x: int) -> x + 1);
+    match result {
+      Ok(v) -> ForTests.assertIntEquals(11, v),
+      Error(_) -> Process.panic<unit>("Should be ok"),
+    };
+  }
+
+  private function testResultToOption(): unit = {
+    let ok = Result.Ok<int, Str>(42);
+    let err = Result.Error<int, Str>("error");
+    ForTests.assertBool(ok.ok().isSome(), "Ok to Some");
+    ForTests.assertBool(err.ok().isNone(), "Error to None");
+  }
+
+  private function testMixedOptionResult(): unit = {
+    let opt = Option.Some(5);
+    let result = Result.fromOption(opt, "error");
+    ForTests.assertBool(result.isOk(), "Some to Ok");
+    let none = Option.None<int>();
+    let result2 = Result.fromOption(none, "error");
+    ForTests.assertBool(result2.isError(), "None to Error");
+  }
+
+  function run(): unit = {
+    VariantTests.testOptionCreation();
+    VariantTests.testOptionMap();
+    VariantTests.testOptionBind();
+    VariantTests.testOptionFilter();
+    VariantTests.testOptionChaining();
+    VariantTests.testOptionValueMap();
+    VariantTests.testResultCreation();
+    VariantTests.testResultMap();
+    VariantTests.testResultMapError();
+    VariantTests.testResultChaining();
+    VariantTests.testResultToOption();
+    VariantTests.testMixedOptionResult();
+  }
+}

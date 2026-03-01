@@ -1,0 +1,76 @@
+import { ForTests } from tests.StdLib;
+
+class StringOperations {
+  private function testStringConcat(): unit = {
+    let hello = "Hello";
+    let world = "World";
+    let combined = hello :: " " :: world;
+    Process.println(combined);
+    ForTests.assertBool("Hello World" == combined, "String concat should work");
+  }
+
+  private function testStringToInt(): unit = {
+    let num1 = "42".toInt();
+    let num2 = "0".toInt();
+    let num3 = "-10".toInt();
+    ForTests.assertIntEquals(42, num1);
+    ForTests.assertIntEquals(0, num2);
+    ForTests.assertIntEquals(-10, num3);
+  }
+
+  private function testIntToString(): unit = {
+    let str1 = Str.fromInt(42);
+    let str2 = Str.fromInt(0);
+    let str3 = Str.fromInt(-10);
+    ForTests.assertBool("42" == str1, "42 to string");
+    ForTests.assertBool("0" == str2, "0 to string");
+    ForTests.assertBool("-10" == str3, "-10 to string");
+  }
+
+  private function testStringEquality(): unit = {
+    let a1 = "test";
+    let a2 = "test";
+    let b = "other";
+    ForTests.assertBool(a1 == a2, "Same strings should be equal");
+    ForTests.assertBool(!(a1 == b), "Different strings should not be equal");
+    ForTests.assertBool(!(a1 != a2), "Same strings should not be unequal");
+    ForTests.assertBool(a1 != b, "Different strings should be unequal");
+  }
+
+  private function testEmptyString(): unit = {
+    let empty = "";
+    let nonEmpty = "x";
+    ForTests.assertBool("" == empty, "Empty string equals empty");
+    ForTests.assertBool(!("" == nonEmpty), "Empty not equals non-empty");
+  }
+
+  private function testStringConcatChaining(): unit = {
+    let result = "a" :: "b" :: "c" :: "d" :: "e";
+    ForTests.assertBool("abcde" == result, "Chained concat");
+  }
+
+  private function testRoundTrip(): unit = {
+    let original = 12345;
+    let asString = Str.fromInt(original);
+    let backToInt = asString.toInt();
+    ForTests.assertIntEquals(original, backToInt);
+  }
+
+  private function testNegativeRoundTrip(): unit = {
+    let original = -9999;
+    let asString = Str.fromInt(original);
+    let backToInt = asString.toInt();
+    ForTests.assertIntEquals(original, backToInt);
+  }
+
+  function run(): unit = {
+    StringOperations.testStringConcat();
+    StringOperations.testStringToInt();
+    StringOperations.testIntToString();
+    StringOperations.testStringEquality();
+    StringOperations.testEmptyString();
+    StringOperations.testStringConcatChaining();
+    StringOperations.testRoundTrip();
+    StringOperations.testNegativeRoundTrip();
+  }
+}

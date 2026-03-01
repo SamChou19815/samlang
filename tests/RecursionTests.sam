@@ -1,0 +1,86 @@
+import { ForTests } from tests.StdLib;
+
+class RecursionTests {
+  private function sumToN(n: int): int = if n <= 0 { 0 } else { n + RecursionTests.sumToN(n - 1) }
+
+  private function gcd(a: int, b: int): int = if b == 0 { a } else { RecursionTests.gcd(b, a % b) }
+
+  private function power(base: int, exp: int): int =
+    if exp == 0 {
+      1
+    } else if exp % 2 == 0 {
+      let halfPower = RecursionTests.power(base, exp / 2);
+      halfPower * halfPower
+    } else {
+      base * RecursionTests.power(base, exp - 1)
+    }
+
+  private function binarySearch(low: int, high: int, target: int): bool =
+    if low > high {
+      false
+    } else {
+      let mid = (low + high) / 2;
+      if mid == target {
+        true
+      } else if mid < target {
+        RecursionTests.binarySearch(mid + 1, high, target)
+      } else {
+        RecursionTests.binarySearch(low, mid - 1, target)
+      }
+    }
+
+  private function collatzSteps(n: int, steps: int): int =
+    if n == 1 {
+      steps
+    } else if n % 2 == 0 {
+      RecursionTests.collatzSteps(n / 2, steps + 1)
+    } else {
+      RecursionTests.collatzSteps(3 * n + 1, steps + 1)
+    }
+
+  private function testSumToN(): unit = {
+    ForTests.assertIntEquals(0, RecursionTests.sumToN(0));
+    ForTests.assertIntEquals(1, RecursionTests.sumToN(1));
+    ForTests.assertIntEquals(55, RecursionTests.sumToN(10));
+    ForTests.assertIntEquals(5050, RecursionTests.sumToN(100));
+  }
+
+  private function testGCD(): unit = {
+    ForTests.assertIntEquals(6, RecursionTests.gcd(48, 18));
+    ForTests.assertIntEquals(1, RecursionTests.gcd(17, 13));
+    ForTests.assertIntEquals(12, RecursionTests.gcd(60, 24));
+    ForTests.assertIntEquals(100, RecursionTests.gcd(100, 100));
+    ForTests.assertIntEquals(5, RecursionTests.gcd(25, 15));
+  }
+
+  private function testPower(): unit = {
+    ForTests.assertIntEquals(1, RecursionTests.power(2, 0));
+    ForTests.assertIntEquals(2, RecursionTests.power(2, 1));
+    ForTests.assertIntEquals(8, RecursionTests.power(2, 3));
+    ForTests.assertIntEquals(16, RecursionTests.power(2, 4));
+    ForTests.assertIntEquals(1024, RecursionTests.power(2, 10));
+    ForTests.assertIntEquals(1, RecursionTests.power(1, 1000));
+  }
+
+  private function testBinarySearch(): unit = {
+    ForTests.assertBool(RecursionTests.binarySearch(0, 100, 50), "Should find 50");
+    ForTests.assertBool(RecursionTests.binarySearch(0, 100, 0), "Should find 0");
+    ForTests.assertBool(RecursionTests.binarySearch(0, 100, 100), "Should find 100");
+    ForTests.assertBool(!RecursionTests.binarySearch(0, 100, 150), "Should not find 150");
+    ForTests.assertBool(!RecursionTests.binarySearch(0, 100, -5), "Should not find -5");
+  }
+
+  private function testCollatz(): unit = {
+    ForTests.assertIntEquals(0, RecursionTests.collatzSteps(1, 0));
+    ForTests.assertIntEquals(6, RecursionTests.collatzSteps(10, 0));
+    ForTests.assertIntEquals(19, RecursionTests.collatzSteps(27, 0));
+  }
+
+  function run(): unit = {
+    RecursionTests.testSumToN();
+    RecursionTests.testGCD();
+    RecursionTests.testPower();
+    RecursionTests.testBinarySearch();
+    RecursionTests.testCollatz();
+  }
+}
