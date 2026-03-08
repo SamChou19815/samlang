@@ -1,0 +1,86 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { ForTests } from tests.StdLib;
+
+class MutuallyRecursiveTests {
+  private function isEven(n: int): bool =
+    if n == 0 { true } else { MutuallyRecursiveTests.isOdd(n - 1) }
+
+  private function isOdd(n: int): bool =
+    if n == 0 { false } else { MutuallyRecursiveTests.isEven(n - 1) }
+
+  private function testEvenOdd(): unit = {
+    ForTests.assertBool(MutuallyRecursiveTests.isEven(0), "0 is even");
+    ForTests.assertBool(!MutuallyRecursiveTests.isEven(1), "1 is not even");
+    ForTests.assertBool(MutuallyRecursiveTests.isEven(2), "2 is even");
+    ForTests.assertBool(!MutuallyRecursiveTests.isEven(3), "3 is not even");
+    ForTests.assertBool(MutuallyRecursiveTests.isEven(100), "100 is even");
+    ForTests.assertBool(!MutuallyRecursiveTests.isOdd(0), "0 is not odd");
+    ForTests.assertBool(MutuallyRecursiveTests.isOdd(1), "1 is odd");
+    ForTests.assertBool(!MutuallyRecursiveTests.isOdd(2), "2 is not odd");
+    ForTests.assertBool(MutuallyRecursiveTests.isOdd(3), "3 is odd");
+  }
+
+  private function ping(n: int): int =
+    if n <= 0 { 0 } else { MutuallyRecursiveTests.pong(n - 1) + 1 }
+
+  private function pong(n: int): int =
+    if n <= 0 { 0 } else { MutuallyRecursiveTests.ping(n - 1) + 1 }
+
+  private function testPingPong(): unit = {
+    ForTests.assertIntEquals(0, MutuallyRecursiveTests.ping(0));
+    ForTests.assertIntEquals(1, MutuallyRecursiveTests.ping(1));
+    ForTests.assertIntEquals(2, MutuallyRecursiveTests.ping(2));
+    ForTests.assertIntEquals(10, MutuallyRecursiveTests.ping(10));
+    ForTests.assertIntEquals(0, MutuallyRecursiveTests.pong(0));
+    ForTests.assertIntEquals(1, MutuallyRecursiveTests.pong(1));
+    ForTests.assertIntEquals(10, MutuallyRecursiveTests.pong(10));
+  }
+
+  private function a(n: int): int = if n <= 0 { 0 } else { MutuallyRecursiveTests.b(n - 1) + 1 }
+
+  private function b(n: int): int = if n <= 0 { 0 } else { MutuallyRecursiveTests.c(n - 1) + 1 }
+
+  private function c(n: int): int = if n <= 0 { 0 } else { MutuallyRecursiveTests.a(n - 1) + 1 }
+
+  private function testABC(): unit = {
+    ForTests.assertIntEquals(0, MutuallyRecursiveTests.a(0));
+    ForTests.assertIntEquals(3, MutuallyRecursiveTests.a(3));
+    ForTests.assertIntEquals(9, MutuallyRecursiveTests.a(9));
+    ForTests.assertIntEquals(3, MutuallyRecursiveTests.b(4));
+    ForTests.assertIntEquals(3, MutuallyRecursiveTests.c(5));
+  }
+
+  private function fibA(n: int): int =
+    if n <= 1 { n } else { MutuallyRecursiveTests.fibA(n - 1) + MutuallyRecursiveTests.fibB(n - 2) }
+
+  private function fibB(n: int): int = MutuallyRecursiveTests.fibA(n)
+
+  private function testFib(): unit = {
+    ForTests.assertIntEquals(0, MutuallyRecursiveTests.fibA(0));
+    ForTests.assertIntEquals(1, MutuallyRecursiveTests.fibA(1));
+    ForTests.assertIntEquals(1, MutuallyRecursiveTests.fibA(2));
+    ForTests.assertIntEquals(2, MutuallyRecursiveTests.fibA(3));
+    ForTests.assertIntEquals(55, MutuallyRecursiveTests.fibA(10));
+  }
+
+  private function sumToLimitA(n: int, limit: int): int =
+    if n > limit { 0 } else { n + MutuallyRecursiveTests.sumToLimitB(n + 1, limit) }
+
+  private function sumToLimitB(n: int, limit: int): int =
+    if n > limit { 0 } else { n + MutuallyRecursiveTests.sumToLimitA(n + 1, limit) }
+
+  private function testSumToLimit(): unit = {
+    ForTests.assertIntEquals(15, MutuallyRecursiveTests.sumToLimitA(1, 5));
+    ForTests.assertIntEquals(0, MutuallyRecursiveTests.sumToLimitA(10, 5));
+    ForTests.assertIntEquals(55, MutuallyRecursiveTests.sumToLimitA(1, 10));
+  }
+
+  function run(): unit = {
+    MutuallyRecursiveTests.testEvenOdd();
+    MutuallyRecursiveTests.testPingPong();
+    MutuallyRecursiveTests.testABC();
+    MutuallyRecursiveTests.testFib();
+    MutuallyRecursiveTests.testSumToLimit();
+  }
+}

@@ -1,0 +1,123 @@
+import { List } from std.list;
+import { ForTests } from tests.StdLib;
+
+class ListTransformTests {
+  private function testMapDouble(): unit = {
+    let list = List.of(1).cons(2).cons(3);
+    let doubled = list.map((x: int) -> x * 2);
+    ForTests.assertIntEquals(3, doubled.length());
+    let sum = doubled.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(12, sum);
+  }
+
+  private function testMapIncrement(): unit = {
+    let list = List.of(10).cons(20).cons(30);
+    let incremented = list.map((x: int) -> x + 1);
+    ForTests.assertIntEquals(3, incremented.length());
+    let sum = incremented.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(63, sum);
+  }
+
+  private function testFilterEven(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4).cons(5).cons(6);
+    let evens = list.filter((x: int) -> x % 2 == 0);
+    ForTests.assertIntEquals(3, evens.length());
+  }
+
+  private function testFilterPositive(): unit = {
+    let list = List.of(-2).cons(-1).cons(0).cons(1).cons(2);
+    let positive = list.filter((x: int) -> x > 0);
+    ForTests.assertIntEquals(2, positive.length());
+  }
+
+  private function testFilterGreaterThan(): unit = {
+    let list = List.of(1).cons(5).cons(10).cons(15).cons(20);
+    let filtered = list.filter((x: int) -> x >= 10);
+    ForTests.assertIntEquals(3, filtered.length());
+  }
+
+  private function testFoldSum(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4).cons(5);
+    let sum = list.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(15, sum);
+  }
+
+  private function testFoldProduct(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4);
+    let product = list.fold((acc: int, x: int) -> acc * x, 1);
+    ForTests.assertIntEquals(24, product);
+  }
+
+  private function testFoldConcat(): unit = {
+    let list = List.of("a").cons("b").cons("c");
+    let combined = list.fold((acc: Str, s: Str) -> acc :: s, "");
+    Process.println(combined);
+  }
+
+  private function testChainedMapFilter(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4).cons(5).cons(6);
+    let result = list.filter((x: int) -> x % 2 == 0).map((x: int) -> x * 10);
+    ForTests.assertIntEquals(3, result.length());
+    let sum = result.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(120, sum);
+  }
+
+  private function testChainedFilterFold(): unit = {
+    let list = List.of(1).cons(2).cons(3).cons(4).cons(5);
+    let sumOfEvens = list.filter((x: int) -> x % 2 == 0).fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(6, sumOfEvens);
+  }
+
+  private function testMapChained(): unit = {
+    let list = List.of(1).cons(2).cons(3);
+    let result = list.map((x: int) -> x + 1).map((x: int) -> x * 2).map((x: int) -> x - 1);
+    let sum = result.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(15, sum);
+  }
+
+  private function testEmptyListTransform(): unit = {
+    let empty = List.nil<int>();
+    let mapped = empty.map((x: int) -> x * 2);
+    ForTests.assertIntEquals(0, mapped.length());
+    let filtered = empty.filter((x: int) -> x > 0);
+    ForTests.assertIntEquals(0, filtered.length());
+    let folded = empty.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(0, folded);
+  }
+
+  private function testAppend(): unit = {
+    let list1 = List.of(1).cons(2);
+    let list2 = List.of(3).cons(4);
+    let combined = list1.append(list2);
+    ForTests.assertIntEquals(4, combined.length());
+    let sum = combined.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(10, sum);
+  }
+
+  private function testReverse(): unit = {
+    let list = List.of(1).cons(2).cons(3);
+    let reversed = list.reverse();
+    let head = match reversed {
+      Nil -> -1,
+      Cons(h, _) -> h,
+    };
+    ForTests.assertIntEquals(1, head);
+  }
+
+  function run(): unit = {
+    ListTransformTests.testMapDouble();
+    ListTransformTests.testMapIncrement();
+    ListTransformTests.testFilterEven();
+    ListTransformTests.testFilterPositive();
+    ListTransformTests.testFilterGreaterThan();
+    ListTransformTests.testFoldSum();
+    ListTransformTests.testFoldProduct();
+    ListTransformTests.testFoldConcat();
+    ListTransformTests.testChainedMapFilter();
+    ListTransformTests.testChainedFilterFold();
+    ListTransformTests.testMapChained();
+    ListTransformTests.testEmptyListTransform();
+    ListTransformTests.testAppend();
+    ListTransformTests.testReverse();
+  }
+}
