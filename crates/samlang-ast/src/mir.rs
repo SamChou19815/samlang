@@ -386,6 +386,8 @@ impl FunctionName {
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::TO_INT };
   pub const STR_CONCAT: FunctionName =
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::CONCAT };
+  pub const STR_EQ: FunctionName =
+    FunctionName { type_name: TypeNameId::STR, fn_name: PStr::STR_EQ };
 
   pub const BUILTIN_FREE: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::FREE_FN };

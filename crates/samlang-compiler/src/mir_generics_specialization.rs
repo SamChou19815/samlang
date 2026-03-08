@@ -629,7 +629,11 @@ impl Rewriter {
       // We cannot distinguish unboxed int from tags
       mir::Type::Int32 | mir::Type::Int31 => false,
       mir::Type::Id(type_id) => {
-        match &self.specialized_type_definitions.get(type_id).unwrap().mappings {
+        let Some(type_def) = self.specialized_type_definitions.get(type_id) else {
+          // Recursive type currently being processed - must be heap-allocated (pointer).
+          return self.specialized_type_definition_names.contains(type_id);
+        };
+        match &type_def.mappings {
           // Structs are always pointers.
           mir::TypeDefinitionMappings::Struct(_) => true,
           // We must be careful with enums, since they are not always pointers.

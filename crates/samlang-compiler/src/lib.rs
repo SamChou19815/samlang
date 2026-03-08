@@ -189,7 +189,9 @@ class HelloWorld {
         std::collections::HashMap::from([(
           mod_ref_demo,
           r#"
-class Foo(val a: int) {}
+class Foo(val a: int) {
+  method getClosure(): () -> int = () -> this.a
+}
 
 class Option<T>(None, Some(T)) {}
 
@@ -198,6 +200,10 @@ class List(Nil(unit), Cons(int, List)) {
     i,
     List.Nil({  })
   )
+}
+
+class Maybe(None, Just(Maybe)) {
+  function wrap(m: Maybe): Maybe = Maybe.Just(m)
 }
 
 class FooOrFoo(F1(Foo), F2(Foo)) {
@@ -250,6 +256,9 @@ class Main {
       39 + Main.nestedVal() + FooOrFoo.intValue() - FooOrFoo.intValue()
     ));
     let _ = GenericObject.print();
+    let _ = Process.println(if ("hello" == "hello") { "yes" } else { "no" });
+    let _ = Maybe.wrap(Maybe.None());
+    let _ = Foo.init(42).getClosure()();
   }
 }
 "#
