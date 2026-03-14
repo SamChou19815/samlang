@@ -1,7 +1,7 @@
 ========================================
-Test Name: AndOrInsideIf
+Test Name: AVLTree
 ========================================
-Test Name: ArithmeticTests
+Test Name: AndOrInsideIf
 ========================================
 Test Name: ArrayOperations
 ========================================
@@ -12,8 +12,6 @@ Test Name: BlockInIfElse
 Test Name: BuiltinStringTest
 42!
 Hello World!
-========================================
-Test Name: ChainedOperationsTests
 ========================================
 Test Name: ConstantFoldingTest
 ========================================
@@ -78,8 +76,6 @@ x
 y
 Computing result
 ========================================
-Test Name: FunctionTests
-========================================
 Test Name: GC
 ========================================
 Test Name: IfElseTests
@@ -95,4 +91,77 @@ Test Name: IntToString
 -1234567
 -2147483648
 ========================================
-Test Name: LetExpressionTests
+Test Name: LambdaCalculus
+========================================
+Test Name: LoopOptimization
+100
+106
+112
+118
+124
+========================================
+Test Name: MapTests
+========================================
+Test Name: MathFunctions
+========================================
+Test Name: MinHeap
+========================================
+Test Name: NestedDataStructures
+========================================
+Test Name: NeuralNetwork
+========================================
+Test Name: OptionResultTests
+========================================
+Test Name: PatternMatching
+========================================
+Test Name: PrintHelloWorld
+Hello World!
+========================================
+Test Name: RegexEngine
+========================================
+Test Name: SetTests
+========================================
+Test Name: ShortCircuitAndOr
+0
+1
+false
+0
+1
+true
+0
+false
+0
+false
+0
+true
+0
+true
+0
+1
+false
+0
+1
+true
+0
+1
+0
+1
+0
+0
+0
+0
+0
+1
+0
+1
+========================================
+Test Name: SortableList
+1
+2
+3
+4
+========================================
+Test Name: TupleOperations
+========================================
+Test Name: VariousSyntaxForms
+========================================

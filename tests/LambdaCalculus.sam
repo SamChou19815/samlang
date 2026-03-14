@@ -1,0 +1,465 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class LCExpr(Var(Str), Abs(Str, LCExpr), App(LCExpr, LCExpr)) {}
+
+class ChurchEncodings {
+  private function churchNumHelper(count: int, acc: LCExpr): LCExpr =
+    {
+      if count == 0 {
+        acc
+      } else {
+        ChurchEncodings.churchNumHelper(count - 1, LCExpr.App(LCExpr.Var("f"), acc))
+      }
+    }
+
+  function churchNum(n: int): LCExpr =
+    { LCExpr.Abs("f", LCExpr.Abs("x", ChurchEncodings.churchNumHelper(n, LCExpr.Var("x")))) }
+
+  function churchTrue(): LCExpr = LCExpr.Abs("t", LCExpr.Abs("f", LCExpr.Var("t")))
+
+  function churchFalse(): LCExpr = LCExpr.Abs("t", LCExpr.Abs("f", LCExpr.Var("f")))
+
+  function churchSucc(): LCExpr =
+    LCExpr.Abs(
+      "n",
+      LCExpr.Abs(
+        "f",
+        LCExpr.Abs(
+          "x",
+          LCExpr.App(
+            LCExpr.Var("f"),
+            LCExpr.App(LCExpr.App(LCExpr.Var("n"), LCExpr.Var("f")), LCExpr.Var("x"))
+          )
+        )
+      )
+    )
+
+  function churchPlus(): LCExpr =
+    LCExpr.Abs(
+      "m",
+      LCExpr.Abs(
+        "n",
+        LCExpr.Abs(
+          "f",
+          LCExpr.Abs(
+            "x",
+            LCExpr.App(
+              LCExpr.App(LCExpr.Var("m"), LCExpr.Var("f")),
+              LCExpr.App(LCExpr.App(LCExpr.Var("n"), LCExpr.Var("f")), LCExpr.Var("x"))
+            )
+          )
+        )
+      )
+    )
+
+  function churchMult(): LCExpr =
+    LCExpr.Abs(
+      "m",
+      LCExpr.Abs(
+        "n",
+        LCExpr.Abs(
+          "f",
+          LCExpr.Abs(
+            "x",
+            LCExpr.App(
+              LCExpr.App(LCExpr.Var("m"), LCExpr.App(LCExpr.Var("n"), LCExpr.Var("f"))),
+              LCExpr.Var("x")
+            )
+          )
+        )
+      )
+    )
+
+  function churchIsZero(): LCExpr =
+    LCExpr.Abs(
+      "n",
+      LCExpr.App(
+        LCExpr.App(LCExpr.Var("n"), LCExpr.Abs("_", ChurchEncodings.churchFalse())),
+        ChurchEncodings.churchTrue()
+      )
+    )
+
+  function churchAnd(): LCExpr =
+    LCExpr.Abs(
+      "a",
+      LCExpr.Abs(
+        "b",
+        LCExpr.App(LCExpr.App(LCExpr.Var("a"), LCExpr.Var("b")), ChurchEncodings.churchFalse())
+      )
+    )
+
+  function churchOr(): LCExpr =
+    LCExpr.Abs(
+      "a",
+      LCExpr.Abs(
+        "b",
+        LCExpr.App(LCExpr.App(LCExpr.Var("a"), ChurchEncodings.churchTrue()), LCExpr.Var("b"))
+      )
+    )
+
+  function churchNot(): LCExpr =
+    LCExpr.Abs(
+      "a",
+      LCExpr.App(
+        LCExpr.App(LCExpr.Var("a"), ChurchEncodings.churchFalse()),
+        ChurchEncodings.churchTrue()
+      )
+    )
+
+  function churchPair(): LCExpr =
+    LCExpr.Abs(
+      "a",
+      LCExpr.Abs(
+        "b",
+        LCExpr.Abs("f", LCExpr.App(LCExpr.App(LCExpr.Var("f"), LCExpr.Var("a")), LCExpr.Var("b")))
+      )
+    )
+
+  function churchFst(): LCExpr =
+    LCExpr.Abs("p", LCExpr.App(LCExpr.Var("p"), LCExpr.Abs("a", LCExpr.Abs("_", LCExpr.Var("a")))))
+
+  function churchSnd(): LCExpr =
+    LCExpr.Abs("p", LCExpr.App(LCExpr.Var("p"), LCExpr.Abs("_", LCExpr.Abs("b", LCExpr.Var("b")))))
+}
+
+class YCombinator {
+  function yCombinator(): LCExpr =
+    LCExpr.Abs(
+      "f",
+      LCExpr.App(
+        LCExpr.Abs("x", LCExpr.App(LCExpr.Var("f"), LCExpr.App(LCExpr.Var("x"), LCExpr.Var("x")))),
+        LCExpr.Abs("x", LCExpr.App(LCExpr.Var("f"), LCExpr.App(LCExpr.Var("x"), LCExpr.Var("x"))))
+      )
+    )
+
+  function zCombinator(): LCExpr =
+    LCExpr.Abs(
+      "f",
+      LCExpr.App(
+        LCExpr.Abs(
+          "x",
+          LCExpr.App(
+            LCExpr.Var("f"),
+            LCExpr.Abs(
+              "v",
+              LCExpr.App(LCExpr.App(LCExpr.Var("x"), LCExpr.Var("x")), LCExpr.Var("v"))
+            )
+          )
+        ),
+        LCExpr.Abs(
+          "x",
+          LCExpr.App(
+            LCExpr.Var("f"),
+            LCExpr.Abs(
+              "v",
+              LCExpr.App(LCExpr.App(LCExpr.Var("x"), LCExpr.Var("x")), LCExpr.Var("v"))
+            )
+          )
+        )
+      )
+    )
+}
+
+class LCSubst {
+  private function substVar(n: Str, name: Str, rep: LCExpr): LCExpr =
+    if n == name { rep } else { LCExpr.Var(n) }
+
+  private function substAbs(p: Str, b: LCExpr, n: Str, r: LCExpr): LCExpr =
+    LCExpr.Abs(p, LCSubst.subst(b, n, r))
+
+  private function substApp(f: LCExpr, a: LCExpr, n: Str, r: LCExpr): LCExpr =
+    LCExpr.App(LCSubst.subst(f, n, r), LCSubst.subst(a, n, r))
+
+  function subst(e: LCExpr, name: Str, rep: LCExpr): LCExpr = {
+    match e {
+      Var(n) -> LCSubst.substVar(n, name, rep),
+      Abs(p, b) -> LCSubst.substAbs(p, b, name, rep),
+      App(f, a) -> LCSubst.substApp(f, a, name, rep),
+    }
+  }
+}
+
+class LCBeta {
+  function isRedex(e: LCExpr): bool =
+    match e {
+      App(Abs(_, _), _) -> true,
+      _ -> false,
+    }
+
+  function reduceOnce(e: LCExpr): Option<LCExpr> =
+    match e {
+      App(Abs(p, b), a) -> Option.Some(LCSubst.subst(b, p, a)),
+      _ -> Option.None(),
+    }
+}
+
+class LCEqual {
+  function equal(e1: LCExpr, e2: LCExpr): bool =
+    match (e1, e2) {
+      (Var(a), Var(b)) -> a == b,
+      (Abs(p1, b1), Abs(p2, b2)) -> p1 == p2 && LCEqual.equal(b1, b2),
+      (App(f1, a1), App(f2, a2)) -> LCEqual.equal(f1, f2) && LCEqual.equal(a1, a2),
+      _ -> false,
+    }
+}
+
+class LCPrint {
+  function printVar(n: Str): Str = n
+
+  function printAbs(p: Str, b: LCExpr): Str = "\\" :: p :: "." :: LCPrint.print(b)
+
+  function printApp(f: LCExpr, a: LCExpr): Str = {
+    let fs = match f {
+      Var(_) -> LCPrint.print(f),
+      _ -> "(" :: LCPrint.print(f) :: ")",
+    };
+    let argStr = match a {
+      Var(_) -> LCPrint.print(a),
+      _ -> "(" :: LCPrint.print(a) :: ")",
+    };
+    fs :: " " :: argStr
+  }
+
+  function print(e: LCExpr): Str =
+    match e {
+      Var(n) -> LCPrint.printVar(n),
+      Abs(p, b) -> LCPrint.printAbs(p, b),
+      App(f, a) -> LCPrint.printApp(f, a),
+    }
+}
+
+class LambdaCalculus {
+  private function testChurchNum0(): unit =
+    match ChurchEncodings.churchNum(0) {
+      Abs(_, Abs(_, Var(x))) -> ForTests.assertBool(x == "x", "0"),
+      _ -> Process.panic("0"),
+    }
+
+  private function testChurchNum1(): unit =
+    match ChurchEncodings.churchNum(1) {
+      Abs(_, Abs(_, App(Var(f), Var(x)))) -> ForTests.assertBool(f == "f" && x == "x", "1"),
+      _ -> Process.panic("1"),
+    }
+
+  private function testChurchNum2(): unit =
+    match ChurchEncodings.churchNum(2) {
+      Abs(_, Abs(_, App(Var(f1), App(Var(f2), Var(x))))) -> ForTests.assertBool(
+        f1 == "f" && f2 == "f" && x == "x",
+        "2"
+      ),
+      _ -> Process.panic("2"),
+    }
+
+  private function testChurchNum3(): unit =
+    match ChurchEncodings.churchNum(3) {
+      Abs(_, Abs(_, App(Var(_), App(Var(_), App(Var(_), Var(_)))))) -> {  },
+      _ -> Process.panic("3"),
+    }
+
+  private function testChurchNum4(): unit =
+    match ChurchEncodings.churchNum(4) {
+      Abs(_, Abs(_, App(Var(_), App(Var(_), App(Var(_), App(Var(_), Var(_))))))) -> {  },
+      _ -> Process.panic("4"),
+    }
+
+  private function testChurchNum5(): unit =
+    match ChurchEncodings.churchNum(5) {
+      Abs(_, Abs(_, App(Var(_), App(Var(_), App(Var(_), App(Var(_), App(Var(_), Var(_)))))))) -> {
+
+      },
+      _ -> Process.panic("5"),
+    }
+
+  private function testChurchTrue(): unit =
+    match ChurchEncodings.churchTrue() {
+      Abs(_, Abs(_, Var(t))) -> ForTests.assertBool(t == "t", "true"),
+      _ -> Process.panic("true"),
+    }
+
+  private function testChurchFalse(): unit =
+    match ChurchEncodings.churchFalse() {
+      Abs(_, Abs(_, Var(f))) -> ForTests.assertBool(f == "f", "false"),
+      _ -> Process.panic("false"),
+    }
+
+  private function testYComb(): unit =
+    match YCombinator.yCombinator() {
+      Abs(_, _) -> {  },
+      _ -> Process.panic("Y"),
+    }
+
+  private function testZComb(): unit =
+    match YCombinator.zCombinator() {
+      Abs(_, _) -> {  },
+      _ -> Process.panic("Z"),
+    }
+
+  private function testIsRedex1(): unit =
+    ForTests.assertBool(
+      LCBeta.isRedex(LCExpr.App(LCExpr.Abs("x", LCExpr.Var("x")), LCExpr.Var("y"))),
+      "redex"
+    )
+
+  private function testIsRedex2(): unit =
+    ForTests.assertBool(!LCBeta.isRedex(LCExpr.App(LCExpr.Var("x"), LCExpr.Var("y"))), "not redex")
+
+  private function testReduce1(): unit =
+    match LCBeta.reduceOnce(LCExpr.App(LCExpr.Abs("x", LCExpr.Var("x")), LCExpr.Var("y"))) {
+      Some(Var(n)) -> ForTests.assertBool(n == "y", "reduce1"),
+      _ -> Process.panic("reduce1"),
+    }
+
+  private function testReduce2(): unit =
+    match LCBeta.reduceOnce(LCExpr.Var("x")) {
+      None -> {  },
+      _ -> Process.panic("reduce2"),
+    }
+
+  private function testSubst1(): unit =
+    match LCSubst.subst(LCExpr.Var("x"), "x", LCExpr.Var("y")) {
+      Var(n) -> ForTests.assertBool(n == "y", "subst1"),
+      _ -> Process.panic("subst1"),
+    }
+
+  private function testSubst2(): unit =
+    match LCSubst.subst(LCExpr.Var("x"), "y", LCExpr.Var("z")) {
+      Var(n) -> ForTests.assertBool(n == "x", "subst2"),
+      _ -> Process.panic("subst2"),
+    }
+
+  private function testEqual1(): unit =
+    ForTests.assertBool(LCEqual.equal(LCExpr.Var("x"), LCExpr.Var("x")), "equal1")
+
+  private function testEqual2(): unit =
+    ForTests.assertBool(!LCEqual.equal(LCExpr.Var("x"), LCExpr.Var("y")), "equal2")
+
+  private function testEqual3(): unit =
+    ForTests.assertBool(
+      LCEqual.equal(LCExpr.Abs("x", LCExpr.Var("x")), LCExpr.Abs("x", LCExpr.Var("x"))),
+      "equal3"
+    )
+
+  private function testEqual4(): unit =
+    ForTests.assertBool(!LCEqual.equal(LCExpr.Var("x"), LCExpr.Abs("x", LCExpr.Var("x"))), "equal4")
+
+  private function testPrint1(): unit =
+    ForTests.assertBool(LCPrint.print(LCExpr.Var("x")) == "x", "print1")
+
+  private function testPrint2(): unit =
+    ForTests.assertBool(LCPrint.print(LCExpr.Abs("x", LCExpr.Var("x"))) == "\\x.x", "print2")
+
+  private function testPrint3(): unit =
+    ForTests.assertBool(
+      LCPrint.print(LCExpr.App(LCExpr.Var("f"), LCExpr.Var("x"))) == "f x",
+      "print3"
+    )
+
+  private function testPrint4(): unit =
+    ForTests.assertBool(
+      LCPrint.print(LCExpr.App(LCExpr.Abs("x", LCExpr.Var("x")), LCExpr.Var("y"))) == "(\\x.x) y",
+      "print4"
+    )
+
+  private function testSucc(): unit =
+    match ChurchEncodings.churchSucc() {
+      Abs(_, Abs(_, Abs(_, App(Var(_), App(App(Var(_), Var(_)), Var(_)))))) -> {  },
+      _ -> Process.panic("succ"),
+    }
+
+  private function testPlus(): unit =
+    match ChurchEncodings.churchPlus() {
+      Abs(
+        _,
+        Abs(_, Abs(_, Abs(_, App(App(Var(_), Var(_)), App(App(Var(_), Var(_)), Var(_))))))
+      ) -> {  },
+      _ -> Process.panic("plus"),
+    }
+
+  private function testMult(): unit =
+    match ChurchEncodings.churchMult() {
+      Abs(_, Abs(_, Abs(_, Abs(_, App(App(Var(_), App(Var(_), Var(_))), Var(_)))))) -> {  },
+      _ -> Process.panic("mult"),
+    }
+
+  private function testAnd(): unit =
+    match ChurchEncodings.churchAnd() {
+      Abs(_, Abs(_, App(App(Var(_), Var(_)), Abs(_, Abs(_, Var(_)))))) -> {  },
+      _ -> Process.panic("and"),
+    }
+
+  private function testOr(): unit =
+    match ChurchEncodings.churchOr() {
+      Abs(_, Abs(_, App(App(Var(_), Abs(_, Abs(_, Var(_)))), Var(_)))) -> {  },
+      _ -> Process.panic("or"),
+    }
+
+  private function testNot(): unit =
+    match ChurchEncodings.churchNot() {
+      Abs(_, App(App(Var(_), Abs(_, Abs(_, Var(_)))), Abs(_, Abs(_, Var(_))))) -> {  },
+      _ -> Process.panic("not"),
+    }
+
+  private function testPair(): unit =
+    match ChurchEncodings.churchPair() {
+      Abs(_, Abs(_, Abs(_, App(App(Var(_), Var(_)), Var(_))))) -> {  },
+      _ -> Process.panic("pair"),
+    }
+
+  private function testFst(): unit =
+    match ChurchEncodings.churchFst() {
+      Abs(_, App(Var(_), Abs(_, Abs(_, Var(_))))) -> {  },
+      _ -> Process.panic("fst"),
+    }
+
+  private function testSnd(): unit =
+    match ChurchEncodings.churchSnd() {
+      Abs(_, App(Var(_), Abs(_, Abs(_, Var(_))))) -> {  },
+      _ -> Process.panic("snd"),
+    }
+
+  private function testIsZero(): unit =
+    match ChurchEncodings.churchIsZero() {
+      Abs(_, App(App(Var(_), Abs(_, Abs(_, Abs(_, Var(_))))), Abs(_, Abs(_, Var(_))))) -> {  },
+      _ -> Process.panic("isZero"),
+    }
+
+  function run(): unit = {
+    LambdaCalculus.testChurchNum0();
+    LambdaCalculus.testChurchNum1();
+    LambdaCalculus.testChurchNum2();
+    LambdaCalculus.testChurchNum3();
+    LambdaCalculus.testChurchNum4();
+    LambdaCalculus.testChurchNum5();
+    LambdaCalculus.testChurchTrue();
+    LambdaCalculus.testChurchFalse();
+    LambdaCalculus.testYComb();
+    LambdaCalculus.testZComb();
+    LambdaCalculus.testIsRedex1();
+    LambdaCalculus.testIsRedex2();
+    LambdaCalculus.testReduce1();
+    LambdaCalculus.testReduce2();
+    LambdaCalculus.testSubst1();
+    LambdaCalculus.testSubst2();
+    LambdaCalculus.testEqual1();
+    LambdaCalculus.testEqual2();
+    LambdaCalculus.testEqual3();
+    LambdaCalculus.testEqual4();
+    LambdaCalculus.testPrint1();
+    LambdaCalculus.testPrint2();
+    LambdaCalculus.testPrint3();
+    LambdaCalculus.testPrint4();
+    LambdaCalculus.testSucc();
+    LambdaCalculus.testPlus();
+    LambdaCalculus.testMult();
+    LambdaCalculus.testAnd();
+    LambdaCalculus.testOr();
+    LambdaCalculus.testNot();
+    LambdaCalculus.testPair();
+    LambdaCalculus.testFst();
+    LambdaCalculus.testSnd();
+    LambdaCalculus.testIsZero();
+  }
+}

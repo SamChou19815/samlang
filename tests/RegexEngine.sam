@@ -1,0 +1,641 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class RegexNode(
+  Char(int),
+  Dot,
+  Star(RegexNode),
+  Plus(RegexNode),
+  Question(RegexNode),
+  AnchorStart,
+  AnchorEnd,
+  Alternation(RegexNode, RegexNode),
+  Concat(RegexNode, RegexNode),
+  Group(RegexNode),
+  Empty
+) {}
+
+class RegexMatcher {
+  private function getLength(text: List<int>, acc: int): int = {
+    match text {
+      Nil -> acc,
+      Cons(_, rest) -> RegexMatcher.getLength(rest, acc + 1),
+    }
+  }
+
+  private function getCharAtHelper(t: List<int>, p: int): Option<int> = {
+    match t {
+      Nil -> Option.None(),
+      Cons(c, rest) -> {
+        if p == 0 { Option.Some(c) } else { RegexMatcher.getCharAtHelper(rest, p - 1) }
+      },
+    }
+  }
+
+  private function getCharAt(text: List<int>, pos: int): Option<int> =
+    { RegexMatcher.getCharAtHelper(text, pos) }
+
+  private function matchGreedy(node: RegexNode, text: List<int>, pos: int): int = {
+    match RegexMatcher.matchHere(node, text, pos, false) {
+      None -> pos,
+      Some(newPos) -> {
+        if newPos > pos { RegexMatcher.matchGreedy(node, text, newPos) } else { pos }
+      },
+    }
+  }
+
+  function matchHere(node: RegexNode, text: List<int>, pos: int, anchorEnd: bool): Option<int> = {
+    match node {
+      Empty -> {
+        let len = RegexMatcher.getLength(text, 0);
+        if anchorEnd && pos != len { Option.None() } else { Option.Some(pos) }
+      },
+      Char(c) -> {
+        match RegexMatcher.getCharAt(text, pos) {
+          None -> Option.None(),
+          Some(tc) -> { if tc == c { Option.Some(pos + 1) } else { Option.None() } },
+        }
+      },
+      Dot -> {
+        match RegexMatcher.getCharAt(text, pos) {
+          None -> Option.None(),
+          Some(_) -> Option.Some(pos + 1),
+        }
+      },
+      AnchorStart -> { if pos == 0 { Option.Some(pos) } else { Option.None() } },
+      AnchorEnd -> {
+        let len = RegexMatcher.getLength(text, 0);
+        if pos == len { Option.Some(pos) } else { Option.None() }
+      },
+      Concat(left, right) -> {
+        match RegexMatcher.matchHere(left, text, pos, false) {
+          None -> Option.None(),
+          Some(newPos) -> RegexMatcher.matchHere(right, text, newPos, anchorEnd),
+        }
+      },
+      Alternation(left, right) -> {
+        match RegexMatcher.matchHere(left, text, pos, anchorEnd) {
+          None -> RegexMatcher.matchHere(right, text, pos, anchorEnd),
+          Some(newPos) -> Option.Some(newPos),
+        }
+      },
+      Group(inner) -> RegexMatcher.matchHere(inner, text, pos, anchorEnd),
+      Star(inner) -> Option.Some(RegexMatcher.matchGreedy(inner, text, pos)),
+      Plus(inner) -> {
+        match RegexMatcher.matchHere(inner, text, pos, false) {
+          None -> Option.None(),
+          Some(firstPos) -> Option.Some(RegexMatcher.matchGreedy(inner, text, firstPos)),
+        }
+      },
+      Question(inner) -> {
+        match RegexMatcher.matchHere(inner, text, pos, false) {
+          None -> Option.Some(pos),
+          Some(newPos) -> Option.Some(newPos),
+        }
+      },
+    }
+  }
+
+  private function hasAnchorEnd(n: RegexNode): bool = {
+    match n {
+      AnchorEnd -> true,
+      Concat(_, right) -> RegexMatcher.hasAnchorEnd(right),
+      Group(inner) -> RegexMatcher.hasAnchorEnd(inner),
+      Alternation(left, right) -> RegexMatcher.hasAnchorEnd(left) || RegexMatcher.hasAnchorEnd(
+        right
+      ),
+      _ -> false,
+    }
+  }
+
+  function matchFull(node: RegexNode, text: List<int>): bool = {
+    match RegexMatcher.matchHere(node, text, 0, RegexMatcher.hasAnchorEnd(node)) {
+      None -> false,
+      Some(endPos) -> endPos == RegexMatcher.getLength(text, 0),
+    }
+  }
+}
+
+class Regex {
+  private function a(): List<int> = List.Cons(97, List.Nil())
+
+  private function b(): List<int> = List.Cons(98, List.Nil())
+
+  private function c(): List<int> = List.Cons(99, List.Nil())
+
+  private function empty(): List<int> = List.Nil()
+
+  private function abc(): List<int> = List.Cons(97, List.Cons(98, List.Cons(99, List.Nil())))
+
+  private function charPattern(ch: int): RegexNode = RegexNode.Char(ch)
+
+  private function dotPattern(): RegexNode = RegexNode.Dot()
+
+  private function starPattern(inner: RegexNode): RegexNode = RegexNode.Star(inner)
+
+  private function plusPattern(inner: RegexNode): RegexNode = RegexNode.Plus(inner)
+
+  private function questionPattern(inner: RegexNode): RegexNode = RegexNode.Question(inner)
+
+  private function concatPattern(left: RegexNode, right: RegexNode): RegexNode =
+    RegexNode.Concat(left, right)
+
+  private function altPattern(left: RegexNode, right: RegexNode): RegexNode =
+    RegexNode.Alternation(left, right)
+
+  private function groupPattern(inner: RegexNode): RegexNode = RegexNode.Group(inner)
+
+  private function anchorStart(): RegexNode = RegexNode.AnchorStart()
+
+  private function anchorEnd(): RegexNode = RegexNode.AnchorEnd()
+
+  private function emptyPattern(): RegexNode = RegexNode.Empty()
+
+  private function testSimpleCharMatch(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.charPattern(97), Regex.a()),
+      "a should match a"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(Regex.charPattern(97), Regex.b()),
+      "a should not match b"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(Regex.charPattern(97), Regex.abc()),
+      "a should not match abc"
+    );
+  }
+
+  private function testDotMatchesAny(): unit = {
+    ForTests.assertBool(RegexMatcher.matchFull(Regex.dotPattern(), Regex.a()), ". should match a");
+    ForTests.assertBool(RegexMatcher.matchFull(Regex.dotPattern(), Regex.b()), ". should match b");
+    ForTests.assertBool(RegexMatcher.matchFull(Regex.dotPattern(), Regex.c()), ". should match c");
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(Regex.dotPattern(), Regex.empty()),
+      ". should not match empty"
+    );
+  }
+
+  private function testStarZeroOrMore(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.starPattern(Regex.charPattern(97)), Regex.empty()),
+      "a* should match empty"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.starPattern(Regex.charPattern(97)), Regex.a()),
+      "a* should match a"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.starPattern(Regex.charPattern(97)), List.Cons(97, Regex.a())),
+      "a* should match aa"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.starPattern(Regex.charPattern(97)), Regex.charPattern(98)),
+        Regex.b()
+      ),
+      "a*b should match b"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.starPattern(Regex.charPattern(97)), Regex.charPattern(98)),
+        List.Cons(97, List.Cons(97, List.Cons(97, Regex.b())))
+      ),
+      "a*b should match aaab"
+    );
+  }
+
+  private function testPlusOneOrMore(): unit = {
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(Regex.plusPattern(Regex.charPattern(97)), Regex.empty()),
+      "a+ should not match empty"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.plusPattern(Regex.charPattern(97)), Regex.a()),
+      "a+ should match a"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.plusPattern(Regex.charPattern(97)), List.Cons(97, Regex.a())),
+      "a+ should match aa"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.plusPattern(Regex.charPattern(97)), Regex.charPattern(98)),
+        List.Cons(97, Regex.b())
+      ),
+      "a+b should match ab"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.plusPattern(Regex.charPattern(97)), Regex.charPattern(98)),
+        List.Cons(97, List.Cons(97, List.Cons(97, Regex.b())))
+      ),
+      "a+b should match aaab"
+    );
+  }
+
+  private function testQuestionOptional(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.questionPattern(Regex.charPattern(97)), Regex.empty()),
+      "a? should match empty"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.questionPattern(Regex.charPattern(97)), Regex.a()),
+      "a? should match a"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.questionPattern(Regex.charPattern(97)),
+        List.Cons(97, Regex.a())
+      ),
+      "a? should not match aa"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.concatPattern(Regex.charPattern(97), Regex.questionPattern(Regex.charPattern(98))),
+          Regex.charPattern(99)
+        ),
+        List.Cons(97, Regex.c())
+      ),
+      "ab?c should match ac"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.concatPattern(Regex.charPattern(97), Regex.questionPattern(Regex.charPattern(98))),
+          Regex.charPattern(99)
+        ),
+        List.Cons(97, List.Cons(98, Regex.c()))
+      ),
+      "ab?c should match abc"
+    );
+  }
+
+  private function testAnchorStart(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.anchorStart(),
+          Regex.concatPattern(
+            Regex.charPattern(97),
+            Regex.concatPattern(Regex.charPattern(98), Regex.charPattern(99))
+          )
+        ),
+        Regex.abc()
+      ),
+      "^abc should match abc"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.anchorStart(), Regex.charPattern(97)),
+        List.Cons(98, Regex.a())
+      ),
+      "^a should not match xa"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.anchorStart(), Regex.charPattern(97)),
+        Regex.abc()
+      ),
+      "^a should not fully match abc"
+    );
+  }
+
+  private function testAnchorEnd(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.concatPattern(
+            Regex.charPattern(97),
+            Regex.concatPattern(Regex.charPattern(98), Regex.charPattern(99))
+          ),
+          Regex.anchorEnd()
+        ),
+        Regex.abc()
+      ),
+      "abc$ should match abc"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.concatPattern(
+            Regex.charPattern(97),
+            Regex.concatPattern(Regex.charPattern(98), Regex.charPattern(99))
+          ),
+          Regex.anchorEnd()
+        ),
+        List.Cons(97, List.Cons(98, List.Cons(99, List.Cons(120, List.Nil()))))
+      ),
+      "abc$ should not match abcx"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.concatPattern(Regex.charPattern(99), Regex.anchorEnd()),
+        Regex.abc()
+      ),
+      "c$ should not fully match abc"
+    );
+  }
+
+  private function testAnchorBoth(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.concatPattern(
+            Regex.anchorStart(),
+            Regex.concatPattern(
+              Regex.charPattern(97),
+              Regex.concatPattern(Regex.charPattern(98), Regex.charPattern(99))
+            )
+          ),
+          Regex.anchorEnd()
+        ),
+        Regex.abc()
+      ),
+      "^abc$ should match abc"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.concatPattern(
+            Regex.anchorStart(),
+            Regex.concatPattern(
+              Regex.charPattern(97),
+              Regex.concatPattern(Regex.charPattern(98), Regex.charPattern(99))
+            )
+          ),
+          Regex.anchorEnd()
+        ),
+        List.Cons(97, List.Cons(98, List.Cons(99, List.Cons(100, List.Nil()))))
+      ),
+      "^abc$ should not match abcd"
+    );
+  }
+
+  private function testAlternationSimple(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.altPattern(Regex.charPattern(97), Regex.charPattern(98)),
+        Regex.a()
+      ),
+      "a|b should match a"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.altPattern(Regex.charPattern(97), Regex.charPattern(98)),
+        Regex.b()
+      ),
+      "a|b should match b"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.altPattern(Regex.charPattern(97), Regex.charPattern(98)),
+        Regex.c()
+      ),
+      "a|b should not match c"
+    );
+  }
+
+  private function testAlternationMultiple(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.altPattern(
+          Regex.charPattern(97),
+          Regex.altPattern(Regex.charPattern(98), Regex.charPattern(99))
+        ),
+        Regex.a()
+      ),
+      "a|b|c should match a"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.altPattern(
+          Regex.charPattern(97),
+          Regex.altPattern(Regex.charPattern(98), Regex.charPattern(99))
+        ),
+        Regex.b()
+      ),
+      "a|b|c should match b"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.altPattern(
+          Regex.charPattern(97),
+          Regex.altPattern(Regex.charPattern(98), Regex.charPattern(99))
+        ),
+        Regex.c()
+      ),
+      "a|b|c should match c"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.altPattern(
+          Regex.charPattern(97),
+          Regex.altPattern(Regex.charPattern(98), Regex.charPattern(99))
+        ),
+        List.Cons(97, Regex.a())
+      ),
+      "a|b|c should not match aa"
+    );
+  }
+
+  private function testGroupingBasic(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98))),
+        List.Cons(97, Regex.b())
+      ),
+      "(ab) should match ab"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.plusPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        List.Cons(97, List.Cons(98, List.Cons(97, Regex.b())))
+      ),
+      "(ab)+ should match abab"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.plusPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        Regex.a()
+      ),
+      "(ab)+ should not match a"
+    );
+  }
+
+  private function testGroupingWithStar(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.starPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        Regex.empty()
+      ),
+      "(ab)* should match empty"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.starPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        List.Cons(97, Regex.b())
+      ),
+      "(ab)* should match ab"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.starPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        List.Cons(97, List.Cons(98, List.Cons(97, Regex.b())))
+      ),
+      "(ab)* should match abab"
+    );
+  }
+
+  private function testGroupingWithQuestion(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.questionPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        Regex.empty()
+      ),
+      "(ab)? should match empty"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.questionPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        List.Cons(97, Regex.b())
+      ),
+      "(ab)? should match ab"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.questionPattern(
+          Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+        ),
+        List.Cons(97, List.Cons(98, List.Cons(97, Regex.b())))
+      ),
+      "(ab)? should not match abab"
+    );
+  }
+
+  private function testNestedGrouping(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.groupPattern(Regex.groupPattern(Regex.charPattern(97))),
+        Regex.a()
+      ),
+      "((a)) should match a"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.plusPattern(
+          Regex.groupPattern(
+            Regex.groupPattern(Regex.concatPattern(Regex.charPattern(97), Regex.charPattern(98)))
+          )
+        ),
+        List.Cons(97, List.Cons(98, List.Cons(97, Regex.b())))
+      ),
+      "((ab))+ should match abab"
+    );
+  }
+
+  private function testEmptyPattern(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.emptyPattern(), Regex.empty()),
+      "empty pattern should match empty string"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(Regex.emptyPattern(), Regex.a()),
+      "empty pattern should not match non-empty"
+    );
+  }
+
+  private function testEmptyString(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.starPattern(Regex.charPattern(97)), Regex.empty()),
+      "a* should match empty string"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.questionPattern(Regex.charPattern(97)), Regex.empty()),
+      "a? should match empty string"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(Regex.plusPattern(Regex.charPattern(97)), Regex.empty()),
+      "a+ should not match empty string"
+    );
+  }
+
+  private function testDotStar(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.starPattern(Regex.dotPattern()),
+        List.Cons(97, List.Cons(110, List.Cons(121, Regex.c())))
+      ),
+      ".* should match anyc"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.starPattern(Regex.dotPattern()), Regex.a()),
+      ".* should match a"
+    );
+    ForTests.assertBool(
+      RegexMatcher.matchFull(Regex.starPattern(Regex.dotPattern()), Regex.empty()),
+      ".* should match empty"
+    );
+  }
+
+  private function testMultipleDots(): unit = {
+    ForTests.assertBool(
+      RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.dotPattern(),
+          Regex.concatPattern(Regex.dotPattern(), Regex.dotPattern())
+        ),
+        Regex.abc()
+      ),
+      "... should match abc"
+    );
+    ForTests.assertBool(
+      !RegexMatcher.matchFull(
+        Regex.concatPattern(
+          Regex.dotPattern(),
+          Regex.concatPattern(Regex.dotPattern(), Regex.dotPattern())
+        ),
+        List.Cons(97, Regex.b())
+      ),
+      "... should not match ab"
+    );
+  }
+
+  function run(): unit = {
+    Regex.testSimpleCharMatch();
+    Regex.testDotMatchesAny();
+    Regex.testStarZeroOrMore();
+    Regex.testPlusOneOrMore();
+    Regex.testQuestionOptional();
+    Regex.testAnchorStart();
+    Regex.testAnchorEnd();
+    Regex.testAnchorBoth();
+    Regex.testAlternationSimple();
+    Regex.testAlternationMultiple();
+    Regex.testGroupingBasic();
+    Regex.testGroupingWithStar();
+    Regex.testGroupingWithQuestion();
+    Regex.testNestedGrouping();
+    Regex.testEmptyPattern();
+    Regex.testEmptyString();
+    Regex.testDotStar();
+    Regex.testMultipleDots();
+  }
+}

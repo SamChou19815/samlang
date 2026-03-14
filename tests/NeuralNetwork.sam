@@ -1,0 +1,565 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { ForTests } from tests.StdLib;
+
+class Matrix(val rows: int, val cols: int, val data: List<List<int>>) {
+  private function createRowHelper(i: int): List<int> =
+    { if i <= 0 { List.Nil() } else { List.Cons(0, Matrix.createRowHelper(i - 1)) } }
+
+  private function createRowsHelper(r: int, cols: int): List<List<int>> =
+    {
+      if r <= 0 {
+        List.Nil()
+      } else {
+        List.Cons(Matrix.createRowHelper(cols), Matrix.createRowsHelper(r - 1, cols))
+      }
+    }
+
+  function zeros(rows: int, cols: int): Matrix =
+    { Matrix.init(rows, cols, Matrix.createRowsHelper(rows, cols)) }
+
+  function fromList(data: List<List<int>>): Matrix = {
+    let rows = data.length();
+    let cols = match data.first() {
+      None -> 0,
+      Some(row) -> row.length(),
+    };
+    Matrix.init(rows, cols, data)
+  }
+
+  private function getColHelper(rowList: List<int>, c: int, col: int): Option<int> = {
+    match rowList {
+      Nil -> Option.None(),
+      Cons(v, restCol) -> {
+        if c == col { Option.Some(v) } else { Matrix.getColHelper(restCol, c + 1, col) }
+      },
+    }
+  }
+
+  private function getRowHelper(lst: List<List<int>>, r: int, row: int, col: int): Option<int> = {
+    match lst {
+      Nil -> Option.None(),
+      Cons(rowData, rest) -> {
+        if r == row {
+          Matrix.getColHelper(rowData, 0, col)
+        } else {
+          Matrix.getRowHelper(rest, r + 1, row, col)
+        }
+      },
+    }
+  }
+
+  method get(row: int, col: int): Option<int> = {
+    let { rows, cols, data } = this;
+    Matrix.getRowHelper(data, 0, row, col)
+  }
+
+  private function setColHelper(rowList: List<int>, c: int, col: int, value: int): List<int> = {
+    match rowList {
+      Nil -> List.Nil(),
+      Cons(v, restCol) -> {
+        if c == col {
+          List.Cons(value, restCol)
+        } else {
+          List.Cons(v, Matrix.setColHelper(restCol, c + 1, col, value))
+        }
+      },
+    }
+  }
+
+  private function setRowHelper(lst: List<List<int>>, r: int, row: int, col: int, value: int): List<
+    List<int>
+  > = {
+    match lst {
+      Nil -> List.Nil(),
+      Cons(rowData, rest) -> {
+        if r == row {
+          List.Cons(Matrix.setColHelper(rowData, 0, col, value), rest)
+        } else {
+          List.Cons(rowData, Matrix.setRowHelper(rest, r + 1, row, col, value))
+        }
+      },
+    }
+  }
+
+  method set(row: int, col: int, value: int): Matrix = {
+    let { rows, cols, data } = this;
+    Matrix.init(rows, cols, Matrix.setRowHelper(data, 0, row, col, value))
+  }
+
+  private function addColHelper(colList: List<int>, otherColList: List<int>): List<int> = {
+    match colList {
+      Nil -> List.Nil(),
+      Cons(v, colRest) -> {
+        match otherColList {
+          Nil -> List.Nil(),
+          Cons(ov, otherColRest) -> List.Cons(v + ov, Matrix.addColHelper(colRest, otherColRest)),
+        }
+      },
+    }
+  }
+
+  private function addRowHelper(rowList: List<List<int>>, otherRowList: List<List<int>>): List<
+    List<int>
+  > = {
+    match rowList {
+      Nil -> List.Nil(),
+      Cons(row, rowRest) -> {
+        match otherRowList {
+          Nil -> List.Nil(),
+          Cons(otherRow, otherRowRest) -> {
+            List.Cons(
+              Matrix.addColHelper(row, otherRow),
+              Matrix.addRowHelper(rowRest, otherRowRest)
+            )
+          },
+        }
+      },
+    }
+  }
+
+  method add(other: Matrix): Option<Matrix> = {
+    let { rows, cols, data } = this;
+    if rows != other.rows || cols != other.cols {
+      Option.None()
+    } else {
+      Option.Some(Matrix.init(rows, cols, Matrix.addRowHelper(data, other.data)))
+    }
+  }
+
+  private function dotProductHelper(
+    m1: Matrix,
+    m2: Matrix,
+    r: int,
+    c: int,
+    i: int,
+    cols: int,
+    sum: int
+  ): int = {
+    if i >= cols {
+      sum
+    } else {
+      match (m1.get(r, i), m2.get(i, c)) {
+        (Some(a), Some(b)) -> Matrix.dotProductHelper(m1, m2, r, c, i + 1, cols, sum + a * b),
+        _ -> sum,
+      }
+    }
+  }
+
+  private function multiplyHelper(
+    m1: Matrix,
+    m2: Matrix,
+    r: int,
+    c: int,
+    acc: Matrix,
+    rows: int,
+    otherCols: int,
+    cols: int
+  ): Matrix = {
+    if r >= rows {
+      acc
+    } else if c >= otherCols {
+      Matrix.multiplyHelper(m1, m2, r + 1, 0, acc, rows, otherCols, cols)
+    } else {
+      let dp = Matrix.dotProductHelper(m1, m2, r, c, 0, cols, 0);
+      Matrix.multiplyHelper(m1, m2, r, c + 1, acc.set(r, c, dp), rows, otherCols, cols)
+    }
+  }
+
+  method multiply(other: Matrix): Option<Matrix> = {
+    let { rows, cols, data } = this;
+    if cols != other.rows {
+      Option.None()
+    } else {
+      let result = Matrix.zeros(rows, other.cols);
+      Option.Some(Matrix.multiplyHelper(this, other, 0, 0, result, rows, other.cols, cols))
+    }
+  }
+
+  private function scaleColHelper(colList: List<int>, scalar: int): List<int> = {
+    match colList {
+      Nil -> List.Nil(),
+      Cons(v, colRest) -> List.Cons(v * scalar, Matrix.scaleColHelper(colRest, scalar)),
+    }
+  }
+
+  private function scaleRowHelper(rowList: List<List<int>>, scalar: int): List<List<int>> = {
+    match rowList {
+      Nil -> List.Nil(),
+      Cons(row, rest) -> {
+        List.Cons(Matrix.scaleColHelper(row, scalar), Matrix.scaleRowHelper(rest, scalar))
+      },
+    }
+  }
+
+  method scale(scalar: int): Matrix = {
+    let { rows, cols, data } = this;
+    Matrix.init(rows, cols, Matrix.scaleRowHelper(data, scalar))
+  }
+
+  private function transposeHelper(
+    m: Matrix,
+    r: int,
+    c: int,
+    acc: Matrix,
+    rows: int,
+    cols: int
+  ): Matrix = {
+    if r >= rows {
+      acc
+    } else if c >= cols {
+      Matrix.transposeHelper(m, r + 1, 0, acc, rows, cols)
+    } else {
+      match m.get(r, c) {
+        None -> Matrix.transposeHelper(m, r, c + 1, acc, rows, cols),
+        Some(v) -> Matrix.transposeHelper(m, r, c + 1, acc.set(c, r, v), rows, cols),
+      }
+    }
+  }
+
+  method transpose(): Matrix = {
+    let { rows, cols, data } = this;
+    let result = Matrix.zeros(cols, rows);
+    Matrix.transposeHelper(this, 0, 0, result, rows, cols)
+  }
+
+  private function mapColHelper(colList: List<int>, f: (int) -> int): List<int> = {
+    match colList {
+      Nil -> List.Nil(),
+      Cons(v, colRest) -> List.Cons(f(v), Matrix.mapColHelper(colRest, f)),
+    }
+  }
+
+  private function mapRowHelper(rowList: List<List<int>>, f: (int) -> int): List<List<int>> = {
+    match rowList {
+      Nil -> List.Nil(),
+      Cons(row, rest) -> { List.Cons(Matrix.mapColHelper(row, f), Matrix.mapRowHelper(rest, f)) },
+    }
+  }
+
+  method map(f: (int) -> int): Matrix = {
+    let { rows, cols, data } = this;
+    Matrix.init(rows, cols, Matrix.mapRowHelper(data, f))
+  }
+}
+
+class Activation {
+  function clamp(x: int): int = if x > 100 { 100 } else { if x < -100 { -100 } else { x } }
+
+  function relu(x: int): int = if x > 0 { x } else { 0 }
+}
+
+class NNet(val layers: List<int>, val weights: List<Matrix>, val biases: List<Matrix>) {
+  private function initHelper(
+    layerList: List<int>,
+    layers: List<int>,
+    accWeights: List<Matrix>,
+    accBiases: List<Matrix>
+  ): NNet = {
+    match layerList {
+      Nil -> NNet.init(layers, accWeights.reverse(), accBiases.reverse()),
+      Cons(current, Nil) -> NNet.init(layers, accWeights.reverse(), accBiases.reverse()),
+      Cons(current, Cons(next, rest)) -> {
+        NNet.initHelper(
+          List.Cons(next, rest),
+          layers,
+          List.Cons(Matrix.zeros(next, current), accWeights),
+          List.Cons(Matrix.zeros(next, 1), accBiases)
+        )
+      },
+    }
+  }
+
+  function create(layers: List<int>): NNet =
+    { NNet.initHelper(layers, layers, List.Nil(), List.Nil()) }
+
+  private function forwardHelper(wList: List<Matrix>, bList: List<Matrix>, current: Matrix): Option<
+    Matrix
+  > = {
+    match wList {
+      Nil -> Option.Some(current),
+      Cons(w, wRest) -> {
+        match bList {
+          Nil -> Option.Some(current),
+          Cons(b, bRest) -> {
+            match w.multiply(current) {
+              None -> Option.None(),
+              Some(multiplied) -> {
+                match multiplied.add(b) {
+                  None -> Option.None(),
+                  Some(activated) -> {
+                    let activatedWithClamp = activated.map(Activation.clamp);
+                    NNet.forwardHelper(wRest, bRest, activatedWithClamp)
+                  },
+                }
+              },
+            }
+          },
+        }
+      },
+    }
+  }
+
+  method forward(input: Matrix): Option<Matrix> = {
+    let { layers, weights, biases } = this;
+    NNet.forwardHelper(weights, biases, input)
+  }
+
+  method setWeights(newWeights: List<Matrix>): NNet = {
+    let { layers, weights, biases } = this;
+    NNet.init(layers, newWeights, biases)
+  }
+
+  method setBiases(newBiases: List<Matrix>): NNet = {
+    let { layers, weights, biases } = this;
+    NNet.init(layers, weights, newBiases)
+  }
+}
+
+class NeuralNetworkTests {
+  private function testMatrixZeros(): unit = {
+    let m = Matrix.zeros(3, 4);
+    ForTests.assertIntEquals(3, m.rows);
+    ForTests.assertIntEquals(4, m.cols);
+    match m.get(0, 0) {
+      None -> Process.panic("Should have value"),
+      Some(v) -> ForTests.assertIntEquals(0, v),
+    }
+  }
+
+  private function testMatrixGetSet(): unit = {
+    let m = Matrix.zeros(2, 2);
+    let m2 = m.set(0, 0, 5);
+    match m2.get(0, 0) {
+      None -> Process.panic("Should have value"),
+      Some(v) -> ForTests.assertIntEquals(5, v),
+    }
+  }
+
+  private function testMatrixAdd(): unit = {
+    let m1 = Matrix.zeros(2, 2).set(0, 0, 1).set(0, 1, 2).set(1, 0, 3).set(1, 1, 4);
+    let m2 = Matrix.zeros(2, 2).set(0, 0, 5).set(0, 1, 6).set(1, 0, 7).set(1, 1, 8);
+    match m1.add(m2) {
+      None -> Process.panic("Should add"),
+      Some(result) -> {
+        match result.get(0, 0) {
+          None -> Process.panic("Should have value"),
+          Some(v) -> ForTests.assertIntEquals(6, v),
+        }
+      },
+    }
+  }
+
+  private function testMatrixMultiply(): unit = {
+    let m1 = Matrix.zeros(2, 3)
+      .set(0, 0, 1)
+      .set(0, 1, 2)
+      .set(0, 2, 3)
+      .set(1, 0, 4)
+      .set(1, 1, 5)
+      .set(1, 2, 6);
+    let m2 = Matrix.zeros(3, 2)
+      .set(0, 0, 7)
+      .set(0, 1, 8)
+      .set(1, 0, 9)
+      .set(1, 1, 10)
+      .set(2, 0, 11)
+      .set(2, 1, 12);
+    match m1.multiply(m2) {
+      None -> Process.panic("Should multiply"),
+      Some(result) -> {
+        ForTests.assertIntEquals(2, result.rows);
+        ForTests.assertIntEquals(2, result.cols);
+      },
+    }
+  }
+
+  private function testMatrixScale(): unit = {
+    let m = Matrix.zeros(2, 2).set(0, 0, 2).set(0, 1, 4);
+    let scaled = m.scale(3);
+    match scaled.get(0, 0) {
+      None -> Process.panic("Should have value"),
+      Some(v) -> ForTests.assertIntEquals(6, v),
+    }
+  }
+
+  private function testMatrixTranspose(): unit = {
+    let m = Matrix.zeros(2, 3).set(0, 1, 5);
+    let t = m.transpose();
+    ForTests.assertIntEquals(3, t.rows);
+    ForTests.assertIntEquals(2, t.cols);
+    match t.get(1, 0) {
+      None -> Process.panic("Should have value"),
+      Some(v) -> ForTests.assertIntEquals(5, v),
+    }
+  }
+
+  private function testMatrixMap(): unit = {
+    let m = Matrix.zeros(2, 2).set(0, 0, 1).set(0, 1, 2);
+    let mapped = m.map((x) -> x * 2);
+    match mapped.get(0, 0) {
+      None -> Process.panic("Should have value"),
+      Some(v) -> ForTests.assertIntEquals(2, v),
+    }
+  }
+
+  private function testActivationClamp(): unit = {
+    let c1 = Activation.clamp(0);
+    ForTests.assertIntEquals(0, c1);
+    let c2 = Activation.clamp(200);
+    ForTests.assertIntEquals(100, c2);
+    let c3 = Activation.clamp(-200);
+    ForTests.assertIntEquals(-100, c3);
+  }
+
+  private function testActivationRelu(): unit = {
+    let r1 = Activation.relu(5);
+    ForTests.assertIntEquals(5, r1);
+    let r2 = Activation.relu(-5);
+    ForTests.assertIntEquals(0, r2);
+  }
+
+  private function testNNInit(): unit = {
+    let layers = List.nil<int>().cons(1).cons(3).cons(2);
+    let nn = NNet.create(layers);
+    ForTests.assertIntEquals(2, nn.weights.length());
+    ForTests.assertIntEquals(2, nn.biases.length());
+  }
+
+  private function testNNForward(): unit = {
+    let layers = List.nil<int>().cons(1).cons(3).cons(2);
+    let nn = NNet.create(layers);
+    let input = Matrix.zeros(2, 1).set(0, 0, 1).set(1, 0, 5);
+    match nn.forward(input) {
+      None -> Process.panic("Should forward"),
+      Some(output) -> {
+        ForTests.assertIntEquals(1, output.rows);
+        ForTests.assertIntEquals(1, output.cols);
+      },
+    }
+  }
+
+  private function testNNSingleLayer(): unit = {
+    let layers = List.nil<int>().cons(1).cons(2);
+    let nn = NNet.create(layers);
+    let input = Matrix.zeros(2, 1).set(0, 0, 5).set(1, 0, 5);
+    match nn.forward(input) {
+      None -> Process.panic("Should forward"),
+      Some(output) -> {
+        ForTests.assertIntEquals(1, output.rows);
+        match output.get(0, 0) {
+          None -> Process.panic("Should have output"),
+          Some(v) -> ForTests.assertIntEquals(0, v),
+        }
+      },
+    }
+  }
+
+  private function testMatrixFromList(): unit = {
+    let data = List.nil<List<int>>()
+      .cons(List.nil<int>().cons(1).cons(2))
+      .cons(List.nil<int>().cons(3).cons(4));
+    let m = Matrix.fromList(data);
+    ForTests.assertIntEquals(2, m.rows);
+    ForTests.assertIntEquals(2, m.cols);
+  }
+
+  private function testMatrixAddMismatch(): unit = {
+    let m1 = Matrix.zeros(2, 2);
+    let m2 = Matrix.zeros(3, 3);
+    match m1.add(m2) {
+      None -> {  },
+      Some(_) -> Process.panic("Should not add mismatched matrices"),
+    }
+  }
+
+  private function testMatrixMultiplyMismatch(): unit = {
+    let m1 = Matrix.zeros(2, 3);
+    let m2 = Matrix.zeros(2, 3);
+    match m1.multiply(m2) {
+      None -> {  },
+      Some(_) -> Process.panic("Should not multiply incompatible matrices"),
+    }
+  }
+
+  private function testNNDeepNetwork(): unit = {
+    let layers = List.nil<int>().cons(2).cons(4).cons(6).cons(8).cons(10);
+    let nn = NNet.create(layers);
+    ForTests.assertIntEquals(4, nn.weights.length());
+    ForTests.assertIntEquals(4, nn.biases.length());
+  }
+
+  private function testMatrixIdentity(): unit = {
+    let m = Matrix.zeros(3, 3).set(0, 0, 1).set(1, 1, 1).set(2, 2, 1);
+    let m2 = Matrix.zeros(3, 3).set(0, 0, 1).set(1, 1, 1).set(2, 2, 1);
+    match m.multiply(m2) {
+      None -> Process.panic("Should multiply"),
+      Some(result) -> {
+        match result.get(0, 0) {
+          None -> Process.panic("Should have value"),
+          Some(v) -> ForTests.assertIntEquals(1, v),
+        }
+      },
+    }
+  }
+
+  private function testActivationClampBounds(): unit = {
+    let t1 = Activation.clamp(50);
+    ForTests.assertIntEquals(50, t1);
+    let t2 = Activation.clamp(100);
+    ForTests.assertIntEquals(100, t2);
+  }
+
+  private function testClampApprox(): unit = {
+    let e0 = Activation.clamp(0);
+    ForTests.assertIntEquals(0, e0);
+    let e1 = Activation.clamp(1);
+    ForTests.assertIntEquals(1, e1);
+  }
+
+  private function testMatrixZerosLarge(): unit = {
+    let m = Matrix.zeros(100, 100);
+    ForTests.assertIntEquals(100, m.rows);
+    ForTests.assertIntEquals(100, m.cols);
+  }
+
+  private function testMatrixTransposeTwice(): unit = {
+    let m = Matrix.zeros(3, 5).set(0, 2, 7);
+    let t1 = m.transpose();
+    let t2 = t1.transpose();
+    ForTests.assertIntEquals(3, t2.rows);
+    ForTests.assertIntEquals(5, t2.cols);
+    match t2.get(0, 2) {
+      None -> Process.panic("Should have value"),
+      Some(v) -> ForTests.assertIntEquals(7, v),
+    }
+  }
+
+  function run(): unit = {
+    NeuralNetworkTests.testMatrixZeros();
+    NeuralNetworkTests.testMatrixGetSet();
+    NeuralNetworkTests.testMatrixAdd();
+    NeuralNetworkTests.testMatrixMultiply();
+    NeuralNetworkTests.testMatrixScale();
+    NeuralNetworkTests.testMatrixTranspose();
+    NeuralNetworkTests.testMatrixMap();
+    NeuralNetworkTests.testActivationClamp();
+    NeuralNetworkTests.testActivationRelu();
+    NeuralNetworkTests.testNNInit();
+    NeuralNetworkTests.testNNForward();
+    NeuralNetworkTests.testNNSingleLayer();
+    NeuralNetworkTests.testMatrixFromList();
+    NeuralNetworkTests.testMatrixAddMismatch();
+    NeuralNetworkTests.testMatrixMultiplyMismatch();
+    NeuralNetworkTests.testNNDeepNetwork();
+    NeuralNetworkTests.testMatrixIdentity();
+    NeuralNetworkTests.testActivationClampBounds();
+    NeuralNetworkTests.testClampApprox();
+    NeuralNetworkTests.testMatrixZerosLarge();
+    NeuralNetworkTests.testMatrixTransposeTwice();
+  }
+}
+
+class NeuralNetwork {
+  function run(): unit = NeuralNetworkTests.run()
+}

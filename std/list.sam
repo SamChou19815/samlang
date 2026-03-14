@@ -112,7 +112,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
   method <A> foldRight(f: (T, A) -> A, init: A): A =
     match this {
       Nil -> init,
-      Cons(v, rest) -> rest.foldRight(f, f(v, init)),
+      Cons(v, rest) -> f(v, rest.foldRight(f, init)),
     }
 
   method <R> bind(f: (T) -> List<R>): List<R> =

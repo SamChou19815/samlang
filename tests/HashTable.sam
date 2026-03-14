@@ -1,0 +1,555 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class HashFunctions {
+  function hashInt(key: int, size: int): int = {
+    let abs = if key < 0 { -key } else { key };
+    abs % size
+  }
+
+  function hashIntProbing(key: int, attempt: int, size: int): int = {
+    let base = HashFunctions.hashInt(key, size);
+    let abs = if base < 0 { -base } else { base };
+    let probed = abs + attempt * attempt;
+    let absProbed = if probed < 0 { -probed } else { probed };
+    absProbed % size
+  }
+}
+
+class Bucket<K, V>(B(List<Pair<K, V>>)) {
+  function <K, V> empty(): Bucket<K, V> = Bucket.B(List.nil<Pair<K, V>>())
+
+  method insert(key: K, value: V, equal: (K, K) -> bool): Bucket<K, V> =
+    match this {
+      B(pairs) -> {
+        let filtered = pairs.filter((p) -> !equal(p.e0, key));
+        Bucket.B(List.Cons(Pair.init(key, value), filtered))
+      },
+    }
+
+  method get(key: K, equal: (K, K) -> bool): Option<V> =
+    match this {
+      B(pairs) -> pairs.find((p) -> equal(p.e0, key)).map((p) -> p.e1),
+    }
+
+  method contains(key: K, equal: (K, K) -> bool): bool =
+    match this {
+      B(pairs) -> pairs.exists((p) -> equal(p.e0, key)),
+    }
+
+  method remove(key: K, equal: (K, K) -> bool): Bucket<K, V> =
+    match this {
+      B(pairs) -> Bucket.B(pairs.filter((p) -> !equal(p.e0, key))),
+    }
+
+  method size(): int =
+    match this {
+      B(pairs) -> pairs.length(),
+    }
+
+  method toList(): List<Pair<K, V>> =
+    match this {
+      B(pairs) -> pairs,
+    }
+}
+
+class ChainingHashTable<K, V>(Table(int, List<Bucket<K, V>>)) {
+  function <K, V> empty(initialCapacity: int): ChainingHashTable<K, V> = {
+    let buckets = ChainingHashTable.initBuckets<K, V>(initialCapacity, 0);
+    ChainingHashTable.Table(initialCapacity, buckets)
+  }
+
+  function <K, V> initBuckets(capacity: int, index: int): List<Bucket<K, V>> =
+    if index == capacity {
+      List.nil<Bucket<K, V>>()
+    } else {
+      List.Cons(Bucket.empty<K, V>(), ChainingHashTable.initBuckets(capacity, index + 1))
+    }
+
+  function <K, V> singleton(key: K, value: V): ChainingHashTable<K, V> = {
+    let bucket = Bucket.empty<K, V>().insert(key, value, (a, b) -> a == b);
+    let buckets = List.Cons(bucket, ChainingHashTable.initBuckets<K, V>(7, 0));
+    ChainingHashTable.Table(8, buckets)
+  }
+
+  method insert(key: K, value: V, hash: (K, int) -> int, equal: (K, K) -> bool): ChainingHashTable<
+    K,
+    V
+  > =
+    match this {
+      Table(capacity, buckets) -> {
+        let index = hash(key, capacity);
+        let abs = if index < 0 { -index } else { index };
+        let idx = abs % capacity;
+        let updatedBuckets = ChainingHashTable.updateBucket<K, V>(
+          buckets,
+          idx,
+          key,
+          value,
+          equal,
+          0
+        );
+        let newSize = ChainingHashTable.countElements<K, V>(buckets, 0) + 1;
+        if newSize * 100 > capacity * 75 {
+          ChainingHashTable.resize<K, V>(buckets, capacity, hash, equal)
+        } else {
+          ChainingHashTable.Table(capacity, updatedBuckets)
+        }
+      },
+    }
+
+  function <K, V> updateBucket(
+    buckets: List<Bucket<K, V>>,
+    targetIdx: int,
+    key: K,
+    value: V,
+    equal: (K, K) -> bool,
+    currentIdx: int
+  ): List<Bucket<K, V>> =
+    match buckets {
+      Nil -> List.nil<Bucket<K, V>>(),
+      Cons(bucket, rest) -> {
+        if currentIdx == targetIdx {
+          let updated = bucket.insert(key, value, equal);
+          List.Cons(updated, rest)
+        } else {
+          List.Cons(
+            bucket,
+            ChainingHashTable.updateBucket(rest, targetIdx, key, value, equal, currentIdx + 1)
+          )
+        }
+      },
+    }
+
+  function <K, V> countElements(buckets: List<Bucket<K, V>>, acc: int): int =
+    match buckets {
+      Nil -> acc,
+      Cons(bucket, rest) -> {
+        let size = bucket.size();
+        ChainingHashTable.countElements(rest, acc + size)
+      },
+    }
+
+  function <K, V> resize(
+    buckets: List<Bucket<K, V>>,
+    oldCapacity: int,
+    hash: (K, int) -> int,
+    equal: (K, K) -> bool
+  ): ChainingHashTable<K, V> = {
+    let newCapacity = oldCapacity * 2;
+    let allPairs = ChainingHashTable.flattenBuckets<K, V>(buckets);
+    let emptyTable = ChainingHashTable.empty<K, V>(newCapacity);
+    ChainingHashTable.rehashPairs<K, V>(allPairs, hash, equal, emptyTable)
+  }
+
+  function <K, V> flattenBuckets(buckets: List<Bucket<K, V>>): List<Pair<K, V>> =
+    match buckets {
+      Nil -> List.nil<Pair<K, V>>(),
+      Cons(bucket, rest) -> bucket.toList().append(ChainingHashTable.flattenBuckets(rest)),
+    }
+
+  function <K, V> rehashPairs(
+    pairs: List<Pair<K, V>>,
+    hash: (K, int) -> int,
+    equal: (K, K) -> bool,
+    acc: ChainingHashTable<K, V>
+  ): ChainingHashTable<K, V> =
+    match pairs {
+      Nil -> acc,
+      Cons(pair, rest) -> {
+        let updated = acc.insert(pair.e0, pair.e1, hash, equal);
+        ChainingHashTable.rehashPairs(rest, hash, equal, updated)
+      },
+    }
+
+  method get(key: K, hash: (K, int) -> int, equal: (K, K) -> bool): Option<V> =
+    match this {
+      Table(capacity, buckets) -> {
+        let index = hash(key, capacity);
+        let abs = if index < 0 { -index } else { index };
+        let idx = abs % capacity;
+        let bucket = ChainingHashTable.getBucketAt<K, V>(buckets, idx, 0);
+        bucket.get(key, equal)
+      },
+    }
+
+  function <K, V> getBucketAt(buckets: List<Bucket<K, V>>, target: int, current: int): Bucket<
+    K,
+    V
+  > =
+    match buckets {
+      Nil -> Bucket.empty<K, V>(),
+      Cons(bucket, rest) -> {
+        if current == target {
+          bucket
+        } else {
+          ChainingHashTable.getBucketAt(rest, target, current + 1)
+        }
+      },
+    }
+
+  method contains(key: K, hash: (K, int) -> int, equal: (K, K) -> bool): bool =
+    match this {
+      Table(capacity, buckets) -> {
+        let index = hash(key, capacity);
+        let abs = if index < 0 { -index } else { index };
+        let idx = abs % capacity;
+        let bucket = ChainingHashTable.getBucketAt<K, V>(buckets, idx, 0);
+        bucket.contains(key, equal)
+      },
+    }
+
+  method remove(key: K, hash: (K, int) -> int, equal: (K, K) -> bool): ChainingHashTable<K, V> =
+    match this {
+      Table(capacity, buckets) -> {
+        let index = hash(key, capacity);
+        let abs = if index < 0 { -index } else { index };
+        let idx = abs % capacity;
+        let updatedBuckets = ChainingHashTable.removeFromBucket<K, V>(buckets, idx, key, equal, 0);
+        ChainingHashTable.Table(capacity, updatedBuckets)
+      },
+    }
+
+  function <K, V> removeFromBucket(
+    buckets: List<Bucket<K, V>>,
+    targetIdx: int,
+    key: K,
+    equal: (K, K) -> bool,
+    currentIdx: int
+  ): List<Bucket<K, V>> =
+    match buckets {
+      Nil -> List.nil<Bucket<K, V>>(),
+      Cons(bucket, rest) -> {
+        if currentIdx == targetIdx {
+          let updated = bucket.remove(key, equal);
+          List.Cons(updated, rest)
+        } else {
+          List.Cons(
+            bucket,
+            ChainingHashTable.removeFromBucket(rest, targetIdx, key, equal, currentIdx + 1)
+          )
+        }
+      },
+    }
+
+  method size(): int =
+    match this {
+      Table(_, buckets) -> ChainingHashTable.countElements<K, V>(buckets, 0),
+    }
+
+  method isEmpty(): bool = this.size() == 0
+}
+
+class HashTableTests {
+  private function testHashIntBasic(): unit = {
+    let h1 = HashFunctions.hashInt(5, 10);
+    let h2 = HashFunctions.hashInt(15, 10);
+    ForTests.assertIntEquals(5, h1);
+    ForTests.assertIntEquals(5, h2);
+  }
+
+  private function testHashIntNegative(): unit = {
+    let h1 = HashFunctions.hashInt(-5, 10);
+    let h2 = HashFunctions.hashInt(-15, 10);
+    ForTests.assertIntEquals(5, h1);
+    ForTests.assertIntEquals(5, h2);
+  }
+
+  private function testHashIntZero(): unit = {
+    let h = HashFunctions.hashInt(0, 10);
+    ForTests.assertIntEquals(0, h);
+  }
+
+  private function testChainingEmptyTable(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    ForTests.assertBool(table.isEmpty(), "Empty table should be empty");
+    ForTests.assertIntEquals(0, table.size());
+  }
+
+  private function testChainingSingletonTable(): unit = {
+    let table = ChainingHashTable.singleton(1, 100);
+    ForTests.assertBool(!table.isEmpty(), "Singleton table should not be empty");
+    ForTests.assertBool(table.size() >= 1, "Singleton table should have at least one element");
+  }
+
+  private function testChainingInsertSingle(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let updated = table.insert(42, 100, HashFunctions.hashInt, (a, b) -> a == b);
+    let value = updated.get(42, HashFunctions.hashInt, (a, b) -> a == b);
+    match value {
+      Some(v) -> ForTests.assertIntEquals(100, v),
+      None -> Process.panic<unit>("Should find inserted value"),
+    }
+  }
+
+  private function testChainingInsertMultiple(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(2, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(3, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(3, t3.size());
+  }
+
+  private function testChainingInsertCollision(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(9, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(17, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(3, t3.size());
+    match t3.get(1, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(10, v),
+      None -> Process.panic<unit>("Should find key 1"),
+    };
+    match t3.get(9, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(20, v),
+      None -> Process.panic<unit>("Should find key 9"),
+    };
+    match t3.get(17, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(30, v),
+      None -> Process.panic<unit>("Should find key 17"),
+    };
+  }
+
+  private function testChainingUpdate(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(1, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(1, t2.size());
+    match t2.get(1, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(20, v),
+      None -> Process.panic<unit>("Should find updated value"),
+    };
+  }
+
+  private function testChainingGetNotFound(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let value = t1.get(99, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertBool(value.isNone(), "Should not find non-existent key");
+  }
+
+  private function testChainingContainsTrue(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(42, 100, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertBool(
+      t1.contains(42, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should contain inserted key"
+    );
+  }
+
+  private function testChainingContainsFalse(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(42, 100, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertBool(
+      !t1.contains(99, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should not contain non-existent key"
+    );
+  }
+
+  private function testChainingRemoveExisting(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(2, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.remove(1, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertBool(
+      !t3.contains(1, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should not contain removed key"
+    );
+    ForTests.assertBool(
+      t3.contains(2, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should still contain other key"
+    );
+  }
+
+  private function testChainingRemoveNonExistent(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.remove(99, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertBool(
+      t2.contains(1, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should still contain existing key"
+    );
+  }
+
+  private function testChainingResizeTrigger(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(2, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(3, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    let t4 = t3.insert(4, 40, HashFunctions.hashInt, (a, b) -> a == b);
+    let t5 = t4.insert(5, 50, HashFunctions.hashInt, (a, b) -> a == b);
+    let t6 = t5.insert(6, 60, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(6, t6.size());
+    match t6.get(1, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(10, v),
+      None -> Process.panic<unit>("Should find key after resize"),
+    };
+  }
+
+  private function testChainingLargeDataset(): unit = {
+    let table = ChainingHashTable.empty<int, int>(16);
+    let result = HashTableTests.insertRange(table, 1, 50);
+    ForTests.assertIntEquals(50, result.size());
+  }
+
+  private function insertRange(
+    table: ChainingHashTable<int, int>,
+    start: int,
+    end: int
+  ): ChainingHashTable<int, int> =
+    if start > end {
+      table
+    } else {
+      let updated = table.insert(start, start * 10, HashFunctions.hashInt, (a, b) -> a == b);
+      HashTableTests.insertRange(updated, start + 1, end)
+    }
+
+  private function testChainingRemoveAll(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(2, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.remove(1, HashFunctions.hashInt, (a, b) -> a == b);
+    let t4 = t3.remove(2, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(0, t4.size());
+  }
+
+  private function testChainingRemoveAndReinsert(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.remove(1, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(1, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    match t3.get(1, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(30, v),
+      None -> Process.panic<unit>("Should find reinserted key"),
+    };
+  }
+
+  private function testChainingMultipleCollisions(): unit = {
+    let table = ChainingHashTable.empty<int, int>(4);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(5, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(9, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    let t4 = t3.insert(13, 40, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(4, t4.size());
+  }
+
+  private function testChainingStressTest(): unit = {
+    let table = ChainingHashTable.empty<int, int>(16);
+    let result = HashTableTests.stressInsert(table, 1, 100);
+    ForTests.assertIntEquals(100, result.size());
+  }
+
+  private function stressInsert(
+    table: ChainingHashTable<int, int>,
+    current: int,
+    max: int
+  ): ChainingHashTable<int, int> =
+    if current > max {
+      table
+    } else {
+      let updated = table.insert(current, current, HashFunctions.hashInt, (a, b) -> a == b);
+      HashTableTests.stressInsert(updated, current + 1, max)
+    }
+
+  private function testChainingOverwriteValue(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(42, 100, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(42, 200, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(42, 300, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(1, t3.size());
+    match t3.get(42, HashFunctions.hashInt, (a, b) -> a == b) {
+      Some(v) -> ForTests.assertIntEquals(300, v),
+      None -> Process.panic<unit>("Should find overwritten value"),
+    };
+  }
+
+  private function testChainingMixedOperations(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(2, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.remove(1, HashFunctions.hashInt, (a, b) -> a == b);
+    let t4 = t3.insert(3, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    let t5 = t4.insert(1, 15, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(3, t5.size());
+    ForTests.assertBool(
+      t5.contains(1, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should contain reinserted key"
+    );
+    ForTests.assertBool(
+      t5.contains(2, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should contain original key"
+    );
+    ForTests.assertBool(
+      t5.contains(3, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should contain new key"
+    );
+  }
+
+  private function testChainingCollisionResolution(): unit = {
+    let table = ChainingHashTable.empty<int, int>(8);
+    let t1 = table.insert(0, 100, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(8, 200, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(16, 300, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(3, t3.size());
+  }
+
+  private function testChainingLoadFactorManagement(): unit = {
+    let table = ChainingHashTable.empty<int, int>(4);
+    let t1 = table.insert(1, 10, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(2, 20, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(3, 30, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(3, t3.size());
+    let t4 = t3.insert(4, 40, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertIntEquals(4, t4.size());
+  }
+
+  private function testChainingDeleteFromCollisionChain(): unit = {
+    let table = ChainingHashTable.empty<int, int>(4);
+    let t1 = table.insert(0, 100, HashFunctions.hashInt, (a, b) -> a == b);
+    let t2 = t1.insert(4, 200, HashFunctions.hashInt, (a, b) -> a == b);
+    let t3 = t2.insert(8, 300, HashFunctions.hashInt, (a, b) -> a == b);
+    let t4 = t3.remove(4, HashFunctions.hashInt, (a, b) -> a == b);
+    ForTests.assertBool(
+      t4.contains(0, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should still contain 0"
+    );
+    ForTests.assertBool(
+      !t4.contains(4, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should not contain 4"
+    );
+    ForTests.assertBool(
+      t4.contains(8, HashFunctions.hashInt, (a, b) -> a == b),
+      "Should still contain 8"
+    );
+  }
+
+  function run(): unit = {
+    HashTableTests.testHashIntBasic();
+    HashTableTests.testHashIntNegative();
+    HashTableTests.testHashIntZero();
+    HashTableTests.testChainingEmptyTable();
+    HashTableTests.testChainingSingletonTable();
+    HashTableTests.testChainingInsertSingle();
+    HashTableTests.testChainingInsertMultiple();
+    HashTableTests.testChainingInsertCollision();
+    HashTableTests.testChainingUpdate();
+    HashTableTests.testChainingGetNotFound();
+    HashTableTests.testChainingContainsTrue();
+    HashTableTests.testChainingContainsFalse();
+    HashTableTests.testChainingRemoveExisting();
+    HashTableTests.testChainingRemoveNonExistent();
+    HashTableTests.testChainingResizeTrigger();
+    HashTableTests.testChainingLargeDataset();
+    HashTableTests.testChainingRemoveAll();
+    HashTableTests.testChainingRemoveAndReinsert();
+    HashTableTests.testChainingMultipleCollisions();
+    HashTableTests.testChainingStressTest();
+    HashTableTests.testChainingOverwriteValue();
+    HashTableTests.testChainingMixedOperations();
+    HashTableTests.testChainingCollisionResolution();
+    HashTableTests.testChainingLoadFactorManagement();
+    HashTableTests.testChainingDeleteFromCollisionChain();
+  }
+}
