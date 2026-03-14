@@ -206,6 +206,7 @@ impl PStr {
   pub const MAIN_FN: PStr = Self::four_letter_literal(b"main");
   pub const PROCESS_TYPE: PStr = Self::seven_letter_literal(b"Process");
   pub const CONCAT: PStr = Self::six_letter_literal(b"concat");
+  pub const STR_EQ: PStr = Self::two_letter_literal(b"eq");
   pub const TO_INT: PStr = Self::five_letter_literal(b"toInt");
   pub const FROM_INT: PStr = Self::seven_letter_literal(b"fromInt");
   pub const PRINTLN: PStr = Self::seven_letter_literal(b"println");

@@ -118,6 +118,10 @@ impl Expression {
       Self::FnName(n, _) => n.write_encoded(collector, heap, symbol_table),
     }
   }
+
+  pub fn type_is_str(&self) -> bool {
+    matches!(self, Self::StringName(_) | Self::Variable(_, Type::Id(TypeNameId::STR)))
+  }
 }
 
 pub const ZERO: Expression = Expression::Int32Literal(0);
@@ -276,13 +280,24 @@ impl Statement {
           | BinaryOperator::GE
           | BinaryOperator::EQ
           | BinaryOperator::NE => {
+            let is_str_cmp = matches!(operator, BinaryOperator::EQ | BinaryOperator::NE)
+              && (e1.type_is_str() || e2.type_is_str());
             // Necessary to make TS happy
             collector.push_str("Number(");
-            e1.pretty_print(collector, heap, symbol_table, str_table);
-            collector.push(' ');
-            collector.push_str(operator.as_str());
-            collector.push(' ');
-            e2.pretty_print(collector, heap, symbol_table, str_table);
+            if is_str_cmp {
+              e1.pretty_print(collector, heap, symbol_table, str_table);
+              collector.push_str("[1] ");
+              collector.push_str(operator.as_str());
+              collector.push_str("= ");
+              e2.pretty_print(collector, heap, symbol_table, str_table);
+              collector.push_str("[1]");
+            } else {
+              e1.pretty_print(collector, heap, symbol_table, str_table);
+              collector.push(' ');
+              collector.push_str(operator.as_str());
+              collector.push(' ');
+              e2.pretty_print(collector, heap, symbol_table, str_table);
+            }
             collector.push(')');
           }
           BinaryOperator::MUL

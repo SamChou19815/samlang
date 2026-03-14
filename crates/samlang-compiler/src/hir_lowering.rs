@@ -1021,7 +1021,14 @@ impl<'a> ExpressionLoweringManager<'a> {
   }
 
   fn lower_lambda(&mut self, expression: &source::expr::Lambda<Rc<type_::Type>>) -> LoweringResult {
-    let captured = expression.captured.keys().map(|k| (*k, self.resolve_variable(k))).collect_vec();
+    let captured = expression
+      .captured
+      .keys()
+      .map(|k| {
+        let resolved_name = if *k == PStr::THIS { PStr::UNDERSCORE_THIS } else { *k };
+        (resolved_name, self.resolve_variable(&resolved_name))
+      })
+      .collect_vec();
 
     let mut lowered_stmts = Vec::new();
     let closure_variable_name = self.allocate_temp_variable();

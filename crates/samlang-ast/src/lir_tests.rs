@@ -148,6 +148,12 @@ mod tests {
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::GE, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::EQ, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::NE, ZERO, ZERO),
+              Statement::binary(
+                heap.alloc_str_for_test("dd"),
+                BinaryOperator::EQ,
+                Expression::StringName(heap.alloc_str_for_test("dev_meggo_vibez")),
+                Expression::Variable(PStr::LOWER_A, Type::Id(TypeNameId::STR)),
+              ),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::XOR, ZERO, ZERO),
               Statement::binary(heap.alloc_str_for_test("dd"), BinaryOperator::MINUS, ZERO, ZERO),
               Statement::binary(
@@ -304,6 +310,7 @@ function __$f(v1: (t0: number) => number): number {{
     let dd = Number(0 >= 0);
     let dd = Number(0 == 0);
     let dd = Number(0 != 0);
+    let dd = Number(GLOBAL_STRING_0[1] === a[1]);
     let dd = 0 ^ 0;
     let dd = 0 + 0;
     let dd = 0 + -5;

@@ -58,8 +58,17 @@ fn is_reference_expr(e: &lir::Expression) -> bool {
     lir::Expression::Variable(_, t) => {
       matches!(t, lir::Type::Int31 | lir::Type::AnyPointer | lir::Type::Id(_) | lir::Type::Fn(_))
     }
+    lir::Expression::StringName(_)
+    | lir::Expression::Int32Literal(_)
+    | lir::Expression::FnName(_, _) => false,
+  }
+}
+
+fn is_string_expr(e: &lir::Expression) -> bool {
+  match e {
     lir::Expression::StringName(_) => true,
-    lir::Expression::Int32Literal(_) | lir::Expression::FnName(_, _) => false,
+    lir::Expression::Variable(_, lir::Type::Id(id)) => *id == mir::TypeNameId::STR,
+    _ => false,
   }
 }
 
@@ -162,16 +171,36 @@ impl<'a> LoweringManager<'a> {
         ))]
       }
       lir::Statement::Binary { name, operator, e1, e2 } => {
-        let i1 = Box::new(self.lower_expr(e1));
-        let i2 = Box::new(self.lower_expr(e2));
-        let is_ref_comparison =
-          matches!(operator, hir::BinaryOperator::EQ | hir::BinaryOperator::NE)
-            && (is_reference_expr(e1) || is_reference_expr(e2));
-        vec![wasm::Instruction::Inline(self.set(
-          *name,
-          wasm::Type::Int32,
-          wasm::InlineInstruction::Binary { v1: i1, op: *operator, v2: i2, is_ref_comparison },
-        ))]
+        let is_str_cmp = matches!(operator, hir::BinaryOperator::EQ | hir::BinaryOperator::NE)
+          && (is_string_expr(e1) || is_string_expr(e2));
+        if is_str_cmp {
+          let i1 = self.lower_expr(e1);
+          let i2 = self.lower_expr(e2);
+          let eq_call =
+            wasm::InlineInstruction::DirectCall(mir::FunctionName::STR_EQ, vec![i1, i2]);
+          let result = if *operator == hir::BinaryOperator::NE {
+            wasm::InlineInstruction::Binary {
+              v1: Box::new(eq_call),
+              op: hir::BinaryOperator::XOR,
+              v2: Box::new(wasm::InlineInstruction::Const(1)),
+              is_ref_comparison: false,
+            }
+          } else {
+            eq_call
+          };
+          vec![wasm::Instruction::Inline(self.set(*name, wasm::Type::Int32, result))]
+        } else {
+          let i1 = Box::new(self.lower_expr(e1));
+          let i2 = Box::new(self.lower_expr(e2));
+          let is_ref_comparison =
+            matches!(operator, hir::BinaryOperator::EQ | hir::BinaryOperator::NE)
+              && (is_reference_expr(e1) || is_reference_expr(e2));
+          vec![wasm::Instruction::Inline(self.set(
+            *name,
+            wasm::Type::Int32,
+            wasm::InlineInstruction::Binary { v1: i1, op: *operator, v2: i2, is_ref_comparison },
+          ))]
+        }
       }
       lir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         let (struct_ref, struct_type) = self.lower_expr_with_reference_type(pointer_expression);
@@ -198,6 +227,12 @@ impl<'a> LoweringManager<'a> {
         } else {
           (false, false)
         };
+        // Get the target function's expected parameter types for direct calls
+        let callee_param_types = if let lir::Expression::FnName(_, fn_type) = callee {
+          Some(&fn_type.argument_types)
+        } else {
+          None
+        };
         let argument_instructions = arguments
           .iter()
           .enumerate()
@@ -207,6 +242,22 @@ impl<'a> LoweringManager<'a> {
             // When ZERO is used as a placeholder, it comes as Int32Literal(0) but needs to be i31.
             if i == 0 && needs_ref_eq_this && matches!(arg, lir::Expression::Int32Literal(0)) {
               wasm::InlineInstruction::I31New(Box::new(lowered))
+            } else if let (Some(param_types), lir::Expression::Variable(var_name, _)) =
+              (callee_param_types, arg)
+            {
+              // For direct calls: if argument variable has WASM type (ref eq) but the target
+              // function expects a concrete reference type, insert a ref.cast to downcast.
+              // This occurs when _this is erased to AnyPointer for call_indirect compatibility
+              // but is passed to a function that expects a concrete struct type.
+              if self.local_variables.get(var_name).copied() == Some(wasm::Type::Eq)
+                && let Some(lir::Type::Id(_)) = param_types.get(i)
+              {
+                return wasm::InlineInstruction::Cast {
+                  pointer_type: param_types[i].clone(),
+                  value: Box::new(lowered),
+                };
+              }
+              lowered
             } else {
               lowered
             }
@@ -598,7 +649,9 @@ pub(super) fn compile_lir_to_wasm(heap: &mut Heap, sources: lir::Sources) -> was
     functions.push(f);
   }
   let TypeLoweringContext { function_type_mapping, heap: _, table: symbol_table } = type_cx;
-  let function_type_mapping = function_type_mapping.into_iter().map(|(t, n)| (n, t)).collect_vec();
+  let mut function_type_mapping =
+    function_type_mapping.into_iter().map(|(t, n)| (n, t)).collect_vec();
+  function_type_mapping.sort_by_key(|(n, _)| *n);
   wasm::Module {
     symbol_table,
     function_type_mapping,
@@ -1019,230 +1072,291 @@ mod tests {
         },
       ],
       main_function_names: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
-      functions: vec![Function {
-        name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
-        parameters: vec![heap.alloc_str_for_test("bar")],
-        type_: lir::Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
-        body: vec![
-          Statement::IfElse {
-            condition: ZERO,
-            s1: Vec::new(),
-            s2: Vec::new(),
-            final_assignments: Vec::new(),
-          },
-          Statement::IfElse {
-            condition: ZERO,
-            s1: Vec::new(),
-            s2: vec![Statement::Cast {
-              name: PStr::LOWER_C,
-              type_: INT_32_TYPE,
-              assigned_expression: ZERO,
-            }],
-            final_assignments: Vec::new(),
-          },
-          Statement::IfElse {
-            condition: ZERO,
-            s1: vec![Statement::While {
-              loop_variables: vec![GenenalLoopVariable {
-                name: PStr::LOWER_I,
+      functions: vec![
+        Function {
+          name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
+          parameters: vec![heap.alloc_str_for_test("bar")],
+          type_: lir::Type::new_fn_unwrapped(vec![INT_32_TYPE], INT_32_TYPE),
+          body: vec![
+            Statement::IfElse {
+              condition: ZERO,
+              s1: Vec::new(),
+              s2: Vec::new(),
+              final_assignments: Vec::new(),
+            },
+            Statement::IfElse {
+              condition: ZERO,
+              s1: Vec::new(),
+              s2: vec![Statement::Cast {
+                name: PStr::LOWER_C,
                 type_: INT_32_TYPE,
-                initial_value: ZERO,
-                loop_value: ZERO,
+                assigned_expression: ZERO,
               }],
-              statements: vec![
-                Statement::Cast {
-                  name: PStr::LOWER_C,
+              final_assignments: Vec::new(),
+            },
+            Statement::IfElse {
+              condition: ZERO,
+              s1: vec![Statement::While {
+                loop_variables: vec![GenenalLoopVariable {
+                  name: PStr::LOWER_I,
                   type_: INT_32_TYPE,
-                  assigned_expression: ZERO,
-                },
-                Statement::LateInitDeclaration { name: PStr::LOWER_C, type_: INT_32_TYPE },
-                Statement::LateInitAssignment { name: PStr::LOWER_C, assigned_expression: ZERO },
-              ],
-              break_collector: None,
-            }],
-            s2: vec![
-              Statement::While {
-                loop_variables: Vec::new(),
-                statements: vec![Statement::SingleIf {
-                  condition: ZERO,
-                  invert_condition: false,
-                  statements: vec![Statement::Break(ZERO)],
+                  initial_value: ZERO,
+                  loop_value: ZERO,
                 }],
-                break_collector: Some((PStr::LOWER_B, INT_32_TYPE)),
-              },
-              Statement::While {
-                loop_variables: Vec::new(),
-                statements: vec![Statement::SingleIf {
-                  condition: ZERO,
-                  invert_condition: true,
-                  statements: vec![Statement::Break(ZERO)],
-                }],
+                statements: vec![
+                  Statement::Cast {
+                    name: PStr::LOWER_C,
+                    type_: INT_32_TYPE,
+                    assigned_expression: ZERO,
+                  },
+                  Statement::LateInitDeclaration { name: PStr::LOWER_C, type_: INT_32_TYPE },
+                  Statement::LateInitAssignment { name: PStr::LOWER_C, assigned_expression: ZERO },
+                ],
                 break_collector: None,
-              },
-            ],
-            final_assignments: vec![(
-              PStr::LOWER_F,
-              INT_32_TYPE,
+              }],
+              s2: vec![
+                Statement::While {
+                  loop_variables: Vec::new(),
+                  statements: vec![Statement::SingleIf {
+                    condition: ZERO,
+                    invert_condition: false,
+                    statements: vec![Statement::Break(ZERO)],
+                  }],
+                  break_collector: Some((PStr::LOWER_B, INT_32_TYPE)),
+                },
+                Statement::While {
+                  loop_variables: Vec::new(),
+                  statements: vec![Statement::SingleIf {
+                    condition: ZERO,
+                    invert_condition: true,
+                    statements: vec![Statement::Break(ZERO)],
+                  }],
+                  break_collector: None,
+                },
+              ],
+              final_assignments: vec![(
+                PStr::LOWER_F,
+                INT_32_TYPE,
+                Expression::StringName(heap.alloc_str_for_test("FOO")),
+                Expression::FnName(
+                  mir::FunctionName::new_for_test(PStr::MAIN_FN),
+                  lir::Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
+                ),
+              )],
+            },
+            Statement::Not { name: heap.alloc_str_for_test("un1"), operand: ZERO },
+            Statement::IsPointer {
+              name: heap.alloc_str_for_test("un2"),
+              pointer_type: mir::TypeNameId::STR,
+              operand: ZERO,
+            },
+            Statement::binary(
+              heap.alloc_str_for_test("bin"),
+              BinaryOperator::PLUS,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin1"),
+              BinaryOperator::MUL,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin2"),
+              BinaryOperator::DIV,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin3"),
+              BinaryOperator::LE,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin4"),
+              BinaryOperator::GE,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin5"),
+              BinaryOperator::NE,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin6"),
+              BinaryOperator::MOD,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin_land"),
+              BinaryOperator::LAND,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin_lor"),
+              BinaryOperator::LOR,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin_shl"),
+              BinaryOperator::SHL,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin_shr"),
+              BinaryOperator::SHR,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin_lt"),
+              BinaryOperator::LT,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            Statement::binary(
+              heap.alloc_str_for_test("bin_gt"),
+              BinaryOperator::GT,
+              Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
+              ZERO,
+            ),
+            // Test binary comparison with Int31Literal (is_reference_expr)
+            Statement::binary(
+              heap.alloc_str_for_test("bin7"),
+              BinaryOperator::EQ,
+              Expression::Int31Literal(1),
+              Expression::Int31Literal(2),
+            ),
+            // Test binary comparison with StringName (string NE -> call __Str$eq + xor)
+            Statement::binary(
+              heap.alloc_str_for_test("bin8"),
+              BinaryOperator::NE,
               Expression::StringName(heap.alloc_str_for_test("FOO")),
-              Expression::FnName(
+              Expression::StringName(heap.alloc_str_for_test("BAR")),
+            ),
+            // Test binary comparison with StringName (string EQ -> call __Str$eq)
+            Statement::binary(
+              heap.alloc_str_for_test("bin9"),
+              BinaryOperator::EQ,
+              Expression::StringName(heap.alloc_str_for_test("FOO")),
+              Expression::StringName(heap.alloc_str_for_test("BAR")),
+            ),
+            Statement::Call {
+              callee: Expression::FnName(
                 mir::FunctionName::new_for_test(PStr::MAIN_FN),
                 lir::Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
               ),
-            )],
-          },
-          Statement::Not { name: heap.alloc_str_for_test("un1"), operand: ZERO },
-          Statement::IsPointer {
-            name: heap.alloc_str_for_test("un2"),
-            pointer_type: mir::TypeNameId::STR,
-            operand: ZERO,
-          },
-          Statement::binary(
-            heap.alloc_str_for_test("bin"),
-            BinaryOperator::PLUS,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin1"),
-            BinaryOperator::MUL,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin2"),
-            BinaryOperator::DIV,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin3"),
-            BinaryOperator::LE,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin4"),
-            BinaryOperator::GE,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin5"),
-            BinaryOperator::NE,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin6"),
-            BinaryOperator::MOD,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin_land"),
-            BinaryOperator::LAND,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin_lor"),
-            BinaryOperator::LOR,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin_shl"),
-            BinaryOperator::SHL,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin_shr"),
-            BinaryOperator::SHR,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin_lt"),
-            BinaryOperator::LT,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          Statement::binary(
-            heap.alloc_str_for_test("bin_gt"),
-            BinaryOperator::GT,
-            Expression::Variable(PStr::LOWER_F, INT_32_TYPE),
-            ZERO,
-          ),
-          // Test binary comparison with Int31Literal (is_reference_expr)
-          Statement::binary(
-            heap.alloc_str_for_test("bin7"),
-            BinaryOperator::EQ,
-            Expression::Int31Literal(1),
-            Expression::Int31Literal(2),
-          ),
-          // Test binary comparison with StringName (is_reference_expr)
-          Statement::binary(
-            heap.alloc_str_for_test("bin8"),
-            BinaryOperator::NE,
-            Expression::StringName(heap.alloc_str_for_test("FOO")),
-            Expression::StringName(heap.alloc_str_for_test("BAR")),
-          ),
-          Statement::Call {
-            callee: Expression::FnName(
-              mir::FunctionName::new_for_test(PStr::MAIN_FN),
-              lir::Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
-            ),
-            arguments: vec![ZERO],
-            return_type: INT_32_TYPE,
-            return_collector: None,
-          },
-          Statement::Call {
-            callee: Expression::Variable(PStr::LOWER_F, lir::Type::new_fn(Vec::new(), INT_32_TYPE)),
-            arguments: vec![ZERO],
-            return_type: INT_32_TYPE,
-            return_collector: Some(heap.alloc_str_for_test("rc")),
-          },
-          Statement::IndexedAccess {
-            name: heap.alloc_str_for_test("v"),
-            type_: INT_32_TYPE,
-            pointer_expression: lir::Expression::Variable(
-              heap.alloc_str_for_test("struct_ptr"),
-              lir::Type::Id(test_struct_type),
-            ),
-            index: 3,
-          },
-          Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test("s"),
-            type_: lir::Type::Id(test_struct_type),
-            expression_list: vec![
-              ZERO,
-              Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
-              ZERO,
-              ZERO,
-            ],
-          },
-          Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test("rs"),
-            type_: lir::Type::Id(ref_struct_type),
-            expression_list: vec![ZERO],
-          },
-        ],
-        return_value: ZERO,
-      }],
+              arguments: vec![ZERO],
+              return_type: INT_32_TYPE,
+              return_collector: None,
+            },
+            Statement::Call {
+              callee: Expression::Variable(
+                PStr::LOWER_F,
+                lir::Type::new_fn(Vec::new(), INT_32_TYPE),
+              ),
+              arguments: vec![ZERO],
+              return_type: INT_32_TYPE,
+              return_collector: Some(heap.alloc_str_for_test("rc")),
+            },
+            Statement::IndexedAccess {
+              name: heap.alloc_str_for_test("v"),
+              type_: INT_32_TYPE,
+              pointer_expression: lir::Expression::Variable(
+                heap.alloc_str_for_test("struct_ptr"),
+                lir::Type::Id(test_struct_type),
+              ),
+              index: 3,
+            },
+            Statement::StructInit {
+              struct_variable_name: heap.alloc_str_for_test("s"),
+              type_: lir::Type::Id(test_struct_type),
+              expression_list: vec![
+                ZERO,
+                Expression::Variable(heap.alloc_str_for_test("v"), INT_32_TYPE),
+                ZERO,
+                ZERO,
+              ],
+            },
+            Statement::StructInit {
+              struct_variable_name: heap.alloc_str_for_test("rs"),
+              type_: lir::Type::Id(ref_struct_type),
+              expression_list: vec![ZERO],
+            },
+          ],
+          return_value: ZERO,
+        },
+        // Helper function that takes a concrete TestStruct type
+        Function {
+          name: mir::FunctionName::new_for_test(heap.alloc_str_for_test("helper")),
+          parameters: vec![heap.alloc_str_for_test("arg")],
+          type_: lir::Type::new_fn_unwrapped(vec![lir::Type::Id(test_struct_type)], INT_32_TYPE),
+          body: vec![],
+          return_value: ZERO,
+        },
+        // Helper function that takes AnyPointer (no cast needed)
+        Function {
+          name: mir::FunctionName::new_for_test(heap.alloc_str_for_test("helper2")),
+          parameters: vec![heap.alloc_str_for_test("arg")],
+          type_: lir::Type::new_fn_unwrapped(vec![lir::ANY_POINTER_TYPE], INT_32_TYPE),
+          body: vec![],
+          return_value: ZERO,
+        },
+        // Method function with _this parameter (AnyPointer) that calls helpers
+        Function {
+          name: mir::FunctionName::new_for_test(heap.alloc_str_for_test("method")),
+          parameters: vec![PStr::UNDERSCORE_THIS],
+          type_: lir::Type::new_fn_unwrapped(vec![lir::ANY_POINTER_TYPE], INT_32_TYPE),
+          body: vec![
+            // Call helper expecting concrete type -> needs ref.cast
+            Statement::Call {
+              callee: Expression::FnName(
+                mir::FunctionName::new_for_test(heap.alloc_str_for_test("helper")),
+                lir::Type::new_fn_unwrapped(vec![lir::Type::Id(test_struct_type)], INT_32_TYPE),
+              ),
+              arguments: vec![Expression::Variable(
+                PStr::UNDERSCORE_THIS,
+                lir::Type::Id(test_struct_type),
+              )],
+              return_type: INT_32_TYPE,
+              return_collector: Some(heap.alloc_str_for_test("result")),
+            },
+            // Call helper2 expecting AnyPointer -> no cast needed (covers false branch)
+            Statement::Call {
+              callee: Expression::FnName(
+                mir::FunctionName::new_for_test(heap.alloc_str_for_test("helper2")),
+                lir::Type::new_fn_unwrapped(vec![lir::ANY_POINTER_TYPE], INT_32_TYPE),
+              ),
+              arguments: vec![Expression::Variable(PStr::UNDERSCORE_THIS, lir::ANY_POINTER_TYPE)],
+              return_type: INT_32_TYPE,
+              return_collector: Some(heap.alloc_str_for_test("result2")),
+            },
+          ],
+          return_value: Expression::Variable(heap.alloc_str_for_test("result"), INT_32_TYPE),
+        },
+      ],
     };
     let actual = super::compile_lir_to_wasm(heap, sources).pretty_print(heap);
     let expected = r#"(rec
 (type $_Str (array (mut i8)))
 (type $__t0 (func (result i32)))
+(type $__t1 (func (param (ref eq)) (result i32)))
 (type $_TestStruct (struct (field i32) (field i32) (field i32) (field i32)))
 (type $_RefStruct (struct (field (ref eq))))
 )
 (data $d2 "FOOBAR")
 (global $GLOBAL_STRING_0 (mut (ref null $_Str)) (ref.null $_Str))
 (global $GLOBAL_STRING_1 (mut (ref null $_Str)) (ref.null $_Str))
-(table $0 1 funcref)
-(elem $0 (i32.const 0) $__$main)
+(table $0 4 funcref)
+(elem $0 (i32.const 0) $__$main $__$helper $__$helper2 $__$method)
 (func $__$main (param $bar i32) (result i32)
   (local $b i32)
   (local $bin i32)
@@ -1254,6 +1368,7 @@ mod tests {
   (local $bin6 i32)
   (local $bin7 i32)
   (local $bin8 i32)
+  (local $bin9 i32)
   (local $bin_gt i32)
   (local $bin_land i32)
   (local $bin_lor i32)
@@ -1320,13 +1435,27 @@ mod tests {
   (local.set $bin_lt (i32.lt_s (local.get $f) (i32.const 0)))
   (local.set $bin_gt (i32.gt_s (local.get $f) (i32.const 0)))
   (local.set $bin7 (ref.eq (ref.i31 (i32.const 1)) (ref.i31 (i32.const 2))))
-  (local.set $bin8 (i32.xor (ref.eq (ref.as_non_null (global.get $GLOBAL_STRING_0)) (ref.as_non_null (global.get $GLOBAL_STRING_1))) (i32.const 1)))
+  (local.set $bin8 (i32.xor (call $__Str$eq (ref.as_non_null (global.get $GLOBAL_STRING_0)) (ref.as_non_null (global.get $GLOBAL_STRING_1))) (i32.const 1)))
+  (local.set $bin9 (call $__Str$eq (ref.as_non_null (global.get $GLOBAL_STRING_0)) (ref.as_non_null (global.get $GLOBAL_STRING_1))))
   (drop (call $__$main (i32.const 0)))
   (local.set $rc (call_indirect $0 (type $__t0) (i32.const 0) (local.get $f)))
   (local.set $v (struct.get $_TestStruct 3 (ref.as_non_null (local.get $struct_ptr))))
   (local.set $s (struct.new $_TestStruct (i32.const 0) (local.get $v) (i32.const 0) (i32.const 0)))
   (local.set $rs (struct.new $_RefStruct (ref.i31 (i32.const 0))))
   (i32.const 0)
+)
+(func $__$helper (param $arg (ref $_TestStruct)) (result i32)
+  (i32.const 0)
+)
+(func $__$helper2 (param $arg (ref eq)) (result i32)
+  (i32.const 0)
+)
+(func $__$method (type $__t1) (param $_this (ref eq)) (result i32)
+  (local $result i32)
+  (local $result2 i32)
+  (local.set $result (call $__$helper (ref.cast (ref $_TestStruct) (ref.as_non_null (local.get $_this)))))
+  (local.set $result2 (call $__$helper2 (ref.as_non_null (local.get $_this))))
+  (local.get $result)
 )
 (func $__$init_globals
   (global.set $GLOBAL_STRING_0 (array.new_data $_Str $d2 (i32.const 0) (i32.const 3)))
