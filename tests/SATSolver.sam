@@ -1,0 +1,796 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class AssignmentHelper {
+  function find(assignment: List<Pair<int, bool>>, v: int): Option<bool> =
+    match assignment {
+      Nil -> Option.None(),
+      Cons(h, t) -> { if h.e0 == v { Option.Some(h.e1) } else { AssignmentHelper.find(t, v) } },
+    }
+}
+
+class Literal(val variable: int, val positive: bool) {
+  function pos(v: int): Literal = Literal.init(v, true)
+
+  function neg(v: int): Literal = Literal.init(v, false)
+
+  method negate(): Literal = Literal.init(this.variable, !this.positive)
+
+  method equals(other: Literal): bool =
+    this.variable == other.variable && this.positive == other.positive
+
+  method satisfiedBy(assignment: List<Pair<int, bool>>): bool =
+    match AssignmentHelper.find(assignment, this.variable) {
+      None -> false,
+      Some(value) -> value == this.positive,
+    }
+}
+
+class Clause(val literals: List<Literal>) {
+  function empty(): Clause = Clause.init(List.nil<Literal>())
+
+  function of(literals: List<Literal>): Clause = Clause.init(literals)
+
+  function single(lit: Literal): Clause = Clause.init(List.of(lit))
+
+  method isEmpty(): bool =
+    match this.literals {
+      Nil -> true,
+      Cons(_, _) -> false,
+    }
+
+  method isUnit(): bool =
+    match this.literals {
+      Nil -> false,
+      Cons(_, Nil) -> true,
+      Cons(_, Cons(_, _)) -> false,
+    }
+
+  method getUnitLiteral(): Option<Literal> =
+    match this.literals {
+      Nil -> Option.None(),
+      Cons(lit, Nil) -> Option.Some(lit),
+      Cons(_, Cons(_, _)) -> Option.None(),
+    }
+
+  method contains(lit: Literal): bool =
+    match this.literals {
+      Nil -> false,
+      Cons(h, t) -> if h.equals(lit) { true } else { Clause.init(t).contains(lit) },
+    }
+
+  method satisfiedBy(assignment: List<Pair<int, bool>>): bool =
+    match this.literals {
+      Nil -> false,
+      Cons(h, t) -> {
+        if h.satisfiedBy(assignment) { true } else { Clause.init(t).satisfiedBy(assignment) }
+      },
+    }
+
+  method evaluate(assignment: List<Pair<int, bool>>): Option<bool> =
+    Clause.evaluateHelper(this.literals, assignment, false)
+
+  private function evaluateHelper(
+    lits: List<Literal>,
+    assignment: List<Pair<int, bool>>,
+    hasUnassigned: bool
+  ): Option<bool> =
+    match lits {
+      Nil -> if hasUnassigned { Option.None() } else { Option.Some(false) },
+      Cons(h, t) -> {
+        match AssignmentHelper.find(assignment, h.variable) {
+          None -> Clause.evaluateHelper(t, assignment, true),
+          Some(value) -> {
+            if value == h.positive {
+              Option.Some(true)
+            } else {
+              Clause.evaluateHelper(t, assignment, hasUnassigned)
+            }
+          },
+        }
+      },
+    }
+
+  method removeLiteral(lit: Literal): Clause = {
+    let filtered = this.literals.filter((l) -> !l.equals(lit));
+    Clause.init(filtered)
+  }
+
+  method substitute(variable: int, value: bool): Clause = {
+    let filtered = this.literals
+      .filter(
+        (l) -> {
+          if l.variable == variable { if l.positive == value { true } else { false } } else { true }
+        }
+      );
+    let simplified = filtered.filter((l) -> l.variable != variable);
+    Clause.init(simplified)
+  }
+
+  private method containsVar(vars: List<int>, v: int): bool =
+    match vars {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { this.containsVar(t, v) },
+    }
+
+  private method addUniqueVar(vars: List<int>, v: int): List<int> =
+    if this.containsVar(vars, v) { vars } else { vars.cons(v) }
+
+  private method collectVars(lits: List<Literal>, acc: List<int>): List<int> =
+    match lits {
+      Nil -> acc,
+      Cons(h, t) -> this.collectVars(t, this.addUniqueVar(acc, h.variable)),
+    }
+
+  method getVariables(): List<int> = this.collectVars(this.literals, List.nil<int>())
+
+  method size(): int = this.literals.length()
+}
+
+class CNF(val clauses: List<Clause>) {
+  function empty(): CNF = CNF.init(List.nil<Clause>())
+
+  function of(clauses: List<Clause>): CNF = CNF.init(clauses)
+
+  function single(clause: Clause): CNF = CNF.init(List.of(clause))
+
+  method isEmpty(): bool =
+    match this.clauses {
+      Nil -> true,
+      Cons(_, _) -> false,
+    }
+
+  method addClause(clause: Clause): CNF = CNF.init(this.clauses.cons(clause))
+
+  method satisfiedBy(assignment: List<Pair<int, bool>>): bool =
+    match this.clauses {
+      Nil -> true,
+      Cons(h, t) -> {
+        if h.satisfiedBy(assignment) { CNF.init(t).satisfiedBy(assignment) } else { false }
+      },
+    }
+
+  method hasEmptyClause(): bool =
+    match this.clauses {
+      Nil -> false,
+      Cons(h, t) -> { if h.isEmpty() { true } else { CNF.init(t).hasEmptyClause() } },
+    }
+
+  private method containsVarHelper(vars: List<int>, v: int): bool =
+    match vars {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { this.containsVarHelper(t, v) },
+    }
+
+  private method addUniqueVarHelper(vars: List<int>, v: int): List<int> =
+    if this.containsVarHelper(vars, v) { vars } else { vars.cons(v) }
+
+  private method collectAllVars(cls: List<Clause>, acc: List<int>): List<int> =
+    match cls {
+      Nil -> acc,
+      Cons(h, t) -> {
+        let vars = h.getVariables();
+        let merged = vars.fold((a, v) -> this.addUniqueVarHelper(a, v), acc);
+        this.collectAllVars(t, merged)
+      },
+    }
+
+  method getAllVariables(): List<int> = this.collectAllVars(this.clauses, List.nil<int>())
+
+  method substitute(variable: int, value: bool): CNF = {
+    let newClauses = this.clauses.map((c) -> c.substitute(variable, value));
+    CNF.init(newClauses)
+  }
+}
+
+class SATResult(val satisfiable: bool, val assignment: List<Pair<int, bool>>) {
+  function unsat(): SATResult = SATResult.init(false, List.nil<Pair<int, bool>>())
+
+  function sat(assignment: List<Pair<int, bool>>): SATResult = SATResult.init(true, assignment)
+}
+
+class UnitPropagation {
+  private function findUnitClause(clauses: List<Clause>): Option<Literal> =
+    match clauses {
+      Nil -> Option.None(),
+      Cons(h, t) -> {
+        if h.isUnit() {
+          match h.getUnitLiteral() {
+            None -> UnitPropagation.findUnitClause(t),
+            Some(lit) -> Option.Some(lit),
+          }
+        } else {
+          UnitPropagation.findUnitClause(t)
+        }
+      },
+    }
+
+  private function propagateStep(formula: CNF, lit: Literal): CNF = {
+    let newClauses = formula.clauses.filter((c) -> !c.contains(lit));
+    let simplified = newClauses.map((c) -> c.removeLiteral(lit.negate()));
+    CNF.init(simplified)
+  }
+
+  function propagate(formula: CNF, assignment: List<Pair<int, bool>>): Pair<
+    CNF,
+    List<Pair<int, bool>>
+  > = {
+    match UnitPropagation.findUnitClause(formula.clauses) {
+      None -> Pair.init(formula, assignment),
+      Some(lit) -> {
+        let newFormula = UnitPropagation.propagateStep(formula, lit);
+        let newAssignment = assignment.cons(Pair.init(lit.variable, lit.positive));
+        UnitPropagation.propagate(newFormula, newAssignment)
+      },
+    }
+  }
+}
+
+class PureLiteralElimination {
+  private function countInClause(
+    lits: List<Literal>,
+    variable: int,
+    posCount: int,
+    negCount: int
+  ): Pair<int, int> =
+    match lits {
+      Nil -> Pair.init(posCount, negCount),
+      Cons(h, t) -> {
+        if h.variable == variable {
+          if h.positive {
+            PureLiteralElimination.countInClause(t, variable, posCount + 1, negCount)
+          } else {
+            PureLiteralElimination.countInClause(t, variable, posCount, negCount + 1)
+          }
+        } else {
+          PureLiteralElimination.countInClause(t, variable, posCount, negCount)
+        }
+      },
+    }
+
+  private function countOccurrences(clauses: List<Clause>, variable: int): Pair<int, int> =
+    PureLiteralElimination.countOccurrencesHelper(clauses, variable, 0, 0)
+
+  private function countOccurrencesHelper(
+    clauses: List<Clause>,
+    variable: int,
+    posCount: int,
+    negCount: int
+  ): Pair<int, int> =
+    match clauses {
+      Nil -> Pair.init(posCount, negCount),
+      Cons(clause, rest) -> {
+        let counts = PureLiteralElimination.countInClause(
+          clause.literals,
+          variable,
+          posCount,
+          negCount
+        );
+        PureLiteralElimination.countOccurrencesHelper(rest, variable, counts.e0, counts.e1)
+      },
+    }
+
+  private function findPureLiterals(clauses: List<Clause>, variables: List<int>): List<Literal> =
+    match variables {
+      Nil -> List.nil<Literal>(),
+      Cons(v, rest) -> {
+        let counts = PureLiteralElimination.countOccurrences(clauses, v);
+        let posCount = counts.e0;
+        let negCount = counts.e1;
+        let restPure = PureLiteralElimination.findPureLiterals(clauses, rest);
+        if posCount > 0 && negCount == 0 {
+          restPure.cons(Literal.pos(v))
+        } else {
+          if negCount > 0 && posCount == 0 { restPure.cons(Literal.neg(v)) } else { restPure }
+        }
+      },
+    }
+
+  private function applyPure(
+    formula: CNF,
+    assignment: List<Pair<int, bool>>,
+    pureLits: List<Literal>
+  ): Pair<CNF, List<Pair<int, bool>>> =
+    match pureLits {
+      Nil -> Pair.init(formula, assignment),
+      Cons(lit, rest) -> {
+        let newFormula = formula.substitute(lit.variable, lit.positive);
+        let newAssignment = assignment.cons(Pair.init(lit.variable, lit.positive));
+        PureLiteralElimination.applyPure(newFormula, newAssignment, rest)
+      },
+    }
+
+  function eliminate(formula: CNF, assignment: List<Pair<int, bool>>): Pair<
+    CNF,
+    List<Pair<int, bool>>
+  > = {
+    let variables = formula.getAllVariables();
+    let pureLits = PureLiteralElimination.findPureLiterals(formula.clauses, variables);
+    PureLiteralElimination.applyPure(formula, assignment, pureLits)
+  }
+}
+
+class VariableSelection {
+  private function countInList(lits: List<Literal>, variable: int): int =
+    match lits {
+      Nil -> 0,
+      Cons(h, t) -> { if h.variable == variable { 1 } else { 0 } } + VariableSelection.countInList(
+        t,
+        variable
+      ),
+    }
+
+  private function countVariableOccurrences(clauses: List<Clause>, variable: int): int =
+    match clauses {
+      Nil -> 0,
+      Cons(h, t) -> {
+        let inClause = VariableSelection.countInList(h.literals, variable);
+        inClause + VariableSelection.countVariableOccurrences(t, variable)
+      },
+    }
+
+  private function findMostFrequentHelper(
+    clauses: List<Clause>,
+    variables: List<int>,
+    bestVar: int,
+    bestCount: int
+  ): Option<int> =
+    match variables {
+      Nil -> Option.Some(bestVar),
+      Cons(h, t) -> {
+        let count = VariableSelection.countVariableOccurrences(clauses, h);
+        if count > bestCount {
+          VariableSelection.findMostFrequentHelper(clauses, t, h, count)
+        } else {
+          VariableSelection.findMostFrequentHelper(clauses, t, bestVar, bestCount)
+        }
+      },
+    }
+
+  private function findMostFrequent(clauses: List<Clause>, variables: List<int>): Option<int> =
+    match variables {
+      Nil -> Option.None(),
+      Cons(h, t) -> {
+        let count = VariableSelection.countVariableOccurrences(clauses, h);
+        VariableSelection.findMostFrequentHelper(clauses, t, h, count)
+      },
+    }
+
+  function selectVariable(formula: CNF): Option<int> = {
+    let variables = formula.getAllVariables();
+    VariableSelection.findMostFrequent(formula.clauses, variables)
+  }
+
+  private function findUnassigned(variables: List<int>, assignment: List<Pair<int, bool>>): Option<
+    int
+  > =
+    match variables {
+      Nil -> Option.None(),
+      Cons(h, t) -> {
+        match AssignmentHelper.find(assignment, h) {
+          None -> Option.Some(h),
+          Some(_) -> VariableSelection.findUnassigned(t, assignment),
+        }
+      },
+    }
+
+  function selectFirstUnassigned(formula: CNF, assignment: List<Pair<int, bool>>): Option<int> = {
+    let variables = formula.getAllVariables();
+    VariableSelection.findUnassigned(variables, assignment)
+  }
+}
+
+class SATSolver {
+  function solve(formula: CNF): SATResult = SATSolver.dpll(formula, List.nil<Pair<int, bool>>())
+
+  function dpll(formula: CNF, assignment: List<Pair<int, bool>>): SATResult = {
+    let upResult = UnitPropagation.propagate(formula, assignment);
+    let formula1 = upResult.e0;
+    let assignment1 = upResult.e1;
+    let pleResult = PureLiteralElimination.eliminate(formula1, assignment1);
+    let formula2 = pleResult.e0;
+    let assignment2 = pleResult.e1;
+    if formula2.hasEmptyClause() {
+      SATResult.unsat()
+    } else if formula2.isEmpty() {
+      SATResult.sat(assignment2)
+    } else {
+      match VariableSelection.selectFirstUnassigned(formula2, assignment2) {
+        None -> SATResult.sat(assignment2),
+        Some(v) -> {
+          let trueResult = SATSolver.dpll(
+            formula2.substitute(v, true),
+            assignment2.cons(Pair.init(v, true))
+          );
+          if trueResult.satisfiable {
+            trueResult
+          } else {
+            SATSolver.dpll(formula2.substitute(v, false), assignment2.cons(Pair.init(v, false)))
+          }
+        },
+      }
+    }
+  }
+
+  function verify(formula: CNF, result: SATResult): bool =
+    if result.satisfiable { formula.satisfiedBy(result.assignment) } else { true }
+}
+
+class SATSolverTests {
+  private function testLiteralCreation(): unit = {
+    let posLit = Literal.pos(1);
+    let negLit = Literal.neg(1);
+    ForTests.assertBool(posLit.positive, "Positive literal should be positive");
+    ForTests.assertBool(!negLit.positive, "Negative literal should be negative");
+    ForTests.assertIntEquals(1, posLit.variable);
+    ForTests.assertIntEquals(1, negLit.variable);
+  }
+
+  private function testLiteralNegation(): unit = {
+    let posLit = Literal.pos(1);
+    let negated = posLit.negate();
+    ForTests.assertBool(!negated.positive, "Negated positive should be negative");
+    ForTests.assertIntEquals(1, negated.variable);
+    let negLit = Literal.neg(2);
+    let negated2 = negLit.negate();
+    ForTests.assertBool(negated2.positive, "Negated negative should be positive");
+    ForTests.assertIntEquals(2, negated2.variable);
+  }
+
+  private function testLiteralEquality(): unit = {
+    let lit1 = Literal.pos(1);
+    let lit2 = Literal.pos(1);
+    let lit3 = Literal.neg(1);
+    let lit4 = Literal.pos(2);
+    ForTests.assertBool(lit1.equals(lit2), "Same literals should be equal");
+    ForTests.assertBool(!lit1.equals(lit3), "Different polarity should not be equal");
+    ForTests.assertBool(!lit1.equals(lit4), "Different variable should not be equal");
+  }
+
+  private function testClauseIsUnit(): unit = {
+    let unitClause = Clause.single(Literal.pos(1));
+    let emptyClause = Clause.empty();
+    let multiClause = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    ForTests.assertBool(unitClause.isUnit(), "Single literal clause is unit");
+    ForTests.assertBool(!emptyClause.isUnit(), "Empty clause is not unit");
+    ForTests.assertBool(!multiClause.isUnit(), "Multi literal clause is not unit");
+  }
+
+  private function testClauseSatisfiedBy(): unit = {
+    let clause = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)));
+    let satAssignment = List.of(Pair.init(1, true));
+    let unsatAssignment = List.of(Pair.init(1, false)).cons(Pair.init(2, true));
+    let partialAssignment = List.of(Pair.init(3, true));
+    ForTests.assertBool(clause.satisfiedBy(satAssignment), "Clause should be satisfied");
+    ForTests.assertBool(!clause.satisfiedBy(unsatAssignment), "Clause should not be satisfied");
+    ForTests.assertBool(
+      !clause.satisfiedBy(partialAssignment),
+      "Partial assignment should not satisfy"
+    );
+  }
+
+  private function testClauseContains(): unit = {
+    let clause = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)));
+    ForTests.assertBool(clause.contains(Literal.pos(1)), "Should contain pos(1)");
+    ForTests.assertBool(clause.contains(Literal.neg(2)), "Should contain neg(2)");
+    ForTests.assertBool(!clause.contains(Literal.neg(1)), "Should not contain neg(1)");
+    ForTests.assertBool(!clause.contains(Literal.pos(3)), "Should not contain pos(3)");
+  }
+
+  private function testClauseRemoveLiteral(): unit = {
+    let clause = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)));
+    let removed = clause.removeLiteral(Literal.pos(1));
+    ForTests.assertBool(!removed.contains(Literal.pos(1)), "Should not contain removed literal");
+    ForTests.assertBool(removed.contains(Literal.neg(2)), "Should still contain other literal");
+  }
+
+  private function testCNFEmpty(): unit = {
+    let emptyCNF = CNF.empty();
+    ForTests.assertBool(emptyCNF.isEmpty(), "Empty CNF should be empty");
+    ForTests.assertBool(
+      emptyCNF.satisfiedBy(List.nil<Pair<int, bool>>()),
+      "Empty CNF is always satisfiable"
+    );
+  }
+
+  private function testCNFHasEmptyClause(): unit = {
+    let cnfWithEmpty = CNF.of(List.of(Clause.empty()));
+    let cnfWithoutEmpty = CNF.of(List.of(Clause.single(Literal.pos(1))));
+    ForTests.assertBool(cnfWithEmpty.hasEmptyClause(), "Should have empty clause");
+    ForTests.assertBool(!cnfWithoutEmpty.hasEmptyClause(), "Should not have empty clause");
+  }
+
+  private function testSimpleSatisfiable(): unit = {
+    let clause = Clause.single(Literal.pos(1));
+    let cnf = CNF.single(clause);
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Single positive literal should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testSimpleUnsatisfiable(): unit = {
+    let clause1 = Clause.single(Literal.pos(1));
+    let clause2 = Clause.single(Literal.neg(1));
+    let cnf = CNF.of(List.of(clause1).cons(clause2));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(!result.satisfiable, "x AND NOT x should be unsatisfiable");
+  }
+
+  private function testEmptyCNF(): unit = {
+    let cnf = CNF.empty();
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Empty CNF is trivially satisfiable");
+  }
+
+  private function testTwoVariableSAT(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)));
+    let c3 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Two variable formula should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testUnitPropagation(): unit = {
+    let c1 = Clause.single(Literal.pos(1));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)));
+    let cnf = CNF.of(List.of(c1).cons(c2));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Unit propagation should work");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testPureLiteralElimination(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(3)));
+    let c3 = Clause.of(List.of(Literal.pos(2)).cons(Literal.neg(3)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Pure literal elimination should work");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testThreeVariableCNF(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)));
+    let c2 = Clause.of(List.of(Literal.pos(2)).cons(Literal.neg(3)));
+    let c3 = Clause.of(List.of(Literal.pos(3)).cons(Literal.pos(1)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Three variable CNF should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testContradictoryClauses(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.single(Literal.neg(1));
+    let c3 = Clause.single(Literal.neg(2));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(!result.satisfiable, "Contradictory clauses should be unsatisfiable");
+  }
+
+  private function testComplexSatisfiable(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)).cons(Literal.pos(3)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)));
+    let c3 = Clause.of(List.of(Literal.neg(2)).cons(Literal.neg(3)));
+    let c4 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Complex formula should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testFourVariableSAT(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(3)));
+    let c3 = Clause.of(List.of(Literal.neg(2)).cons(Literal.neg(3)));
+    let c4 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(4)));
+    let c5 = Clause.single(Literal.pos(4));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4).cons(c5));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Four variable SAT should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testAllNegativeSAT(): unit = {
+    let c1 = Clause.of(List.of(Literal.neg(1)).cons(Literal.neg(2)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.neg(3)));
+    let c3 = Clause.of(List.of(Literal.neg(2)).cons(Literal.neg(3)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "All negative SAT should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testAllPositiveSAT(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(3)));
+    let c3 = Clause.of(List.of(Literal.pos(2)).cons(Literal.pos(3)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "All positive SAT should be satisfiable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testImplicationChain(): unit = {
+    let c1 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.neg(2)).cons(Literal.pos(3)));
+    let c3 = Clause.of(List.of(Literal.neg(3)).cons(Literal.pos(4)));
+    let c4 = Clause.single(Literal.pos(1));
+    let c5 = Clause.single(Literal.neg(4));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4).cons(c5));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(!result.satisfiable, "Contradictory implication chain should be UNSAT");
+  }
+
+  private function testMultipleUnits(): unit = {
+    let c1 = Clause.single(Literal.pos(1));
+    let c2 = Clause.single(Literal.pos(2));
+    let c3 = Clause.single(Literal.neg(3));
+    let c4 = Clause.of(List.of(Literal.neg(1)).cons(Literal.neg(2)).cons(Literal.pos(3)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(!result.satisfiable, "Multiple contradictory units should be UNSAT");
+  }
+
+  private function testLargeClause(): unit = {
+    let c1 = Clause.of(
+      List.of(Literal.pos(1))
+        .cons(Literal.pos(2))
+        .cons(Literal.pos(3))
+        .cons(Literal.pos(4))
+        .cons(Literal.pos(5))
+    );
+    let c2 = Clause.single(Literal.neg(1));
+    let c3 = Clause.single(Literal.neg(2));
+    let c4 = Clause.single(Literal.neg(3));
+    let c5 = Clause.single(Literal.neg(4));
+    let c6 = Clause.single(Literal.neg(5));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4).cons(c5).cons(c6));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(!result.satisfiable, "Large clause with all negated units should be UNSAT");
+  }
+
+  private function testTseitinLike(): unit = {
+    let c1 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(3)));
+    let c3 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)).cons(Literal.neg(3)));
+    let c4 = Clause.single(Literal.pos(1));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Tseitin-like encoding should be SAT");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testPigeonholeSmall(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.pos(3)).cons(Literal.pos(4)));
+    let c3 = Clause.of(List.of(Literal.neg(1)).cons(Literal.neg(3)));
+    let c4 = Clause.of(List.of(Literal.neg(2)).cons(Literal.neg(4)));
+    let c5 = Clause.of(List.of(Literal.neg(1)).cons(Literal.neg(4)));
+    let c6 = Clause.of(List.of(Literal.neg(2)).cons(Literal.neg(3)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4).cons(c5).cons(c6));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Small pigeonhole-like should be SAT");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testBacktrackingRequired(): unit = {
+    let c1 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)));
+    let c2 = Clause.of(List.of(Literal.neg(2)).cons(Literal.pos(3)));
+    let c3 = Clause.of(List.of(Literal.neg(3)).cons(Literal.pos(1)));
+    let c4 = Clause.single(Literal.pos(2));
+    let c5 = Clause.single(Literal.neg(1));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4).cons(c5));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Backtracking case should be SAT");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testClauseEvaluation(): unit = {
+    let clause = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)).cons(Literal.pos(3)));
+    let satAssign = List.of(Pair.init(1, true));
+    let unsatAssign = List.of(Pair.init(1, false))
+      .cons(Pair.init(2, true))
+      .cons(Pair.init(3, false));
+    let partialAssign = List.of(Pair.init(2, false));
+    ForTests.assertBool(clause.satisfiedBy(satAssign), "Should be satisfied by x1=true");
+    ForTests.assertBool(!clause.satisfiedBy(unsatAssign), "Should not be satisfied");
+    ForTests.assertBool(
+      clause.satisfiedBy(partialAssign),
+      "Partial should satisfy through x2=false"
+    );
+  }
+
+  private function testVariableSelectionHeuristic(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)));
+    let c2 = Clause.single(Literal.pos(2));
+    let c3 = Clause.of(List.of(Literal.pos(2)).cons(Literal.pos(3)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Should select most frequent variable");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testDeepNesting(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)));
+    let c2 = Clause.of(List.of(Literal.pos(2)).cons(Literal.neg(3)));
+    let c3 = Clause.of(List.of(Literal.pos(3)).cons(Literal.neg(4)));
+    let c4 = Clause.of(List.of(Literal.pos(4)).cons(Literal.neg(5)));
+    let c5 = Clause.of(List.of(Literal.pos(5)).cons(Literal.neg(6)));
+    let c6 = Clause.single(Literal.pos(6));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4).cons(c5).cons(c6));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Deep nesting should be SAT");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testMixedPolarity(): unit = {
+    let c1 = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)).cons(Literal.pos(3)));
+    let c2 = Clause.of(List.of(Literal.neg(1)).cons(Literal.pos(2)).cons(Literal.neg(4)));
+    let c3 = Clause.of(List.of(Literal.pos(2)).cons(Literal.neg(3)).cons(Literal.pos(4)));
+    let c4 = Clause.of(List.of(Literal.neg(1)).cons(Literal.neg(3)).cons(Literal.pos(5)));
+    let cnf = CNF.of(List.of(c1).cons(c2).cons(c3).cons(c4));
+    let result = SATSolver.solve(cnf);
+    ForTests.assertBool(result.satisfiable, "Mixed polarity should be SAT");
+    ForTests.assertBool(SATSolver.verify(cnf, result), "Result should verify");
+  }
+
+  private function testClauseSize(): unit = {
+    let single = Clause.single(Literal.pos(1));
+    let empty = Clause.empty();
+    let multi = Clause.of(List.of(Literal.pos(1)).cons(Literal.pos(2)).cons(Literal.pos(3)));
+    ForTests.assertIntEquals(1, single.size());
+    ForTests.assertIntEquals(0, empty.size());
+    ForTests.assertIntEquals(3, multi.size());
+  }
+
+  private function testGetVariables(): unit = {
+    let clause = Clause.of(List.of(Literal.pos(1)).cons(Literal.neg(2)).cons(Literal.pos(1)));
+    let vars = clause.getVariables();
+    let has1 = vars.contains(1, (a, b) -> a == b);
+    let has2 = vars.contains(2, (a, b) -> a == b);
+    ForTests.assertBool(has1, "Should contain variable 1");
+    ForTests.assertBool(has2, "Should contain variable 2");
+    ForTests.assertIntEquals(2, vars.length());
+  }
+
+  function run(): unit = {
+    SATSolverTests.testLiteralCreation();
+    SATSolverTests.testLiteralNegation();
+    SATSolverTests.testLiteralEquality();
+    SATSolverTests.testClauseIsUnit();
+    SATSolverTests.testClauseSatisfiedBy();
+    SATSolverTests.testClauseContains();
+    SATSolverTests.testClauseRemoveLiteral();
+    SATSolverTests.testCNFEmpty();
+    SATSolverTests.testCNFHasEmptyClause();
+    SATSolverTests.testSimpleSatisfiable();
+    SATSolverTests.testSimpleUnsatisfiable();
+    SATSolverTests.testEmptyCNF();
+    SATSolverTests.testTwoVariableSAT();
+    SATSolverTests.testUnitPropagation();
+    SATSolverTests.testPureLiteralElimination();
+    SATSolverTests.testThreeVariableCNF();
+    SATSolverTests.testContradictoryClauses();
+    SATSolverTests.testComplexSatisfiable();
+    SATSolverTests.testFourVariableSAT();
+    SATSolverTests.testAllNegativeSAT();
+    SATSolverTests.testAllPositiveSAT();
+    SATSolverTests.testImplicationChain();
+    SATSolverTests.testMultipleUnits();
+    SATSolverTests.testLargeClause();
+    SATSolverTests.testTseitinLike();
+    SATSolverTests.testPigeonholeSmall();
+    SATSolverTests.testBacktrackingRequired();
+    SATSolverTests.testClauseEvaluation();
+    SATSolverTests.testVariableSelectionHeuristic();
+    SATSolverTests.testDeepNesting();
+    SATSolverTests.testMixedPolarity();
+    SATSolverTests.testClauseSize();
+    SATSolverTests.testGetVariables();
+  }
+}

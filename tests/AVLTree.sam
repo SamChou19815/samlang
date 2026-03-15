@@ -1,0 +1,632 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { ForTests } from tests.StdLib;
+
+class AVLNode(
+  val key: int,
+  val left: Option<AVLNode>,
+  val right: Option<AVLNode>,
+  val height: int
+) {
+  function leaf(key: int): AVLNode =
+    AVLNode.init(key, Option.None<AVLNode>(), Option.None<AVLNode>(), 1)
+}
+
+class AVLTree(val root: Option<AVLNode>) {
+  function empty(): AVLTree = AVLTree.init(Option.None<AVLNode>())
+
+  private function height(node: Option<AVLNode>): int =
+    match node {
+      None -> 0,
+      Some(n) -> n.height,
+    }
+
+  private function max(a: int, b: int): int = if a > b { a } else { b }
+
+  private function updateHeight(node: AVLNode): AVLNode =
+    AVLNode.init(
+      node.key,
+      node.left,
+      node.right,
+      1 + AVLTree.max(AVLTree.height(node.left), AVLTree.height(node.right))
+    )
+
+  method balanceFactor(): int =
+    match this.root {
+      None -> 0,
+      Some(node) -> AVLTree.height(node.left) - AVLTree.height(node.right),
+    }
+
+  private method nodeBalanceFactor(node: AVLNode): int =
+    AVLTree.height(node.left) - AVLTree.height(node.right)
+
+  method isBalanced(): bool =
+    match this.root {
+      None -> true,
+      Some(node) -> {
+        let bf = this.nodeBalanceFactor(node);
+        let leftBalanced = AVLTree.init(node.left).isBalanced();
+        let rightBalanced = AVLTree.init(node.right).isBalanced();
+        bf >= -1 && bf <= 1 && leftBalanced && rightBalanced
+      },
+    }
+
+  private method rightRotate(y: AVLNode): AVLNode =
+    match y.left {
+      None -> y,
+      Some(x) -> {
+        let t2 = x.right;
+        let newNode = AVLTree.updateHeight(AVLNode.init(y.key, t2, y.right, y.height));
+        AVLTree.updateHeight(AVLNode.init(x.key, x.left, Option.Some<AVLNode>(newNode), x.height))
+      },
+    }
+
+  private method leftRotate(x: AVLNode): AVLNode =
+    match x.right {
+      None -> x,
+      Some(y) -> {
+        let t2 = y.left;
+        let newNode = AVLTree.updateHeight(AVLNode.init(x.key, x.left, t2, x.height));
+        AVLTree.updateHeight(AVLNode.init(y.key, Option.Some<AVLNode>(newNode), y.right, y.height))
+      },
+    }
+
+  method insert(key: int): AVLTree = AVLTree.init(this.insertNode(this.root, key))
+
+  private method insertNode(node: Option<AVLNode>, key: int): Option<AVLNode> =
+    match node {
+      None -> Option.Some<AVLNode>(AVLNode.leaf(key)),
+      Some(n) -> {
+        let newSubtree = if key < n.key {
+          AVLNode.init(n.key, this.insertNode(n.left, key), n.right, n.height)
+        } else {
+          if key > n.key {
+            AVLNode.init(n.key, n.left, this.insertNode(n.right, key), n.height)
+          } else {
+            n
+          }
+        };
+        let updated = AVLTree.updateHeight(newSubtree);
+        Option.Some<AVLNode>(this.balance(updated))
+      },
+    }
+
+  private method balance(node: AVLNode): AVLNode = {
+    let bf = this.nodeBalanceFactor(node);
+    if bf > 1 {
+      match node.left {
+        None -> node,
+        Some(left) -> {
+          let leftBf = this.nodeBalanceFactor(left);
+          if leftBf >= 0 {
+            this.rightRotate(node)
+          } else {
+            let rotatedLeft = AVLNode.init(
+              node.key,
+              Option.Some<AVLNode>(this.leftRotate(left)),
+              node.right,
+              node.height
+            );
+            this.rightRotate(rotatedLeft)
+          }
+        },
+      }
+    } else {
+      if bf < -1 {
+        match node.right {
+          None -> node,
+          Some(right) -> {
+            let rightBf = this.nodeBalanceFactor(right);
+            if rightBf <= 0 {
+              this.leftRotate(node)
+            } else {
+              let rotatedRight = AVLNode.init(
+                node.key,
+                node.left,
+                Option.Some<AVLNode>(this.rightRotate(right)),
+                node.height
+              );
+              this.leftRotate(rotatedRight)
+            }
+          },
+        }
+      } else {
+        node
+      }
+    }
+  }
+
+  method contains(key: int): bool = this.containsNode(this.root, key)
+
+  private method containsNode(node: Option<AVLNode>, key: int): bool =
+    match node {
+      None -> false,
+      Some(n) -> if key < n.key {
+        this.containsNode(n.left, key)
+      } else {
+        if key > n.key { this.containsNode(n.right, key) } else { true }
+      },
+    }
+
+  method findMin(): Option<int> = this.findMinNode(this.root)
+
+  private method findMinNode(node: Option<AVLNode>): Option<int> =
+    match node {
+      None -> Option.None<int>(),
+      Some(n) -> match n.left {
+        None -> Option.Some<int>(n.key),
+        Some(_) -> this.findMinNode(n.left),
+      },
+    }
+
+  method findMax(): Option<int> = this.findMaxNode(this.root)
+
+  private method findMaxNode(node: Option<AVLNode>): Option<int> =
+    match node {
+      None -> Option.None<int>(),
+      Some(n) -> match n.right {
+        None -> Option.Some<int>(n.key),
+        Some(_) -> this.findMaxNode(n.right),
+      },
+    }
+
+  method delete(key: int): AVLTree = AVLTree.init(this.deleteNode(this.root, key))
+
+  private method deleteNode(node: Option<AVLNode>, key: int): Option<AVLNode> =
+    match node {
+      None -> Option.None<AVLNode>(),
+      Some(n) -> {
+        if key < n.key {
+          let newLeft = this.deleteNode(n.left, key);
+          let updated = AVLTree.updateHeight(AVLNode.init(n.key, newLeft, n.right, n.height));
+          Option.Some<AVLNode>(this.balance(updated))
+        } else {
+          if key > n.key {
+            let newRight = this.deleteNode(n.right, key);
+            let updated = AVLTree.updateHeight(AVLNode.init(n.key, n.left, newRight, n.height));
+            Option.Some<AVLNode>(this.balance(updated))
+          } else {
+            match (n.left, n.right) {
+              (None, None) -> Option.None<AVLNode>(),
+              (None, Some(r)) -> Option.Some<AVLNode>(r),
+              (Some(l), None) -> Option.Some<AVLNode>(l),
+              (Some(l), Some(r)) -> {
+                let successor = this.findMinNodeDirect(r);
+                let newRight = this.deleteNode(Option.Some<AVLNode>(r), successor);
+                let updated = AVLTree.updateHeight(
+                  AVLNode.init(successor, Option.Some<AVLNode>(l), newRight, n.height)
+                );
+                Option.Some<AVLNode>(this.balance(updated))
+              },
+            }
+          }
+        }
+      },
+    }
+
+  private method findMinNodeDirect(node: AVLNode): int =
+    match node.left {
+      None -> node.key,
+      Some(left) -> this.findMinNodeDirect(left),
+    }
+
+  method size(): int = this.countNodes(this.root)
+
+  private method countNodes(node: Option<AVLNode>): int =
+    match node {
+      None -> 0,
+      Some(n) -> 1 + this.countNodes(n.left) + this.countNodes(n.right),
+    }
+
+  method toSortedList(): List<int> = this.inorder(this.root)
+
+  private method inorder(node: Option<AVLNode>): List<int> =
+    match node {
+      None -> List.nil<int>(),
+      Some(n) -> {
+        let leftList = this.inorder(n.left);
+        let rightList = this.inorder(n.right);
+        leftList.append(List.of(n.key)).append(rightList)
+      },
+    }
+
+  method getHeight(): int = AVLTree.height(this.root)
+
+  method isEmpty(): bool =
+    match this.root {
+      None -> true,
+      Some(_) -> false,
+    }
+
+  method isBST(): bool = this.isBSTHelper(this.root, Option.None<int>(), Option.None<int>())
+
+  private method isBSTHelper(node: Option<AVLNode>, min: Option<int>, max: Option<int>): bool =
+    match node {
+      None -> true,
+      Some(n) -> {
+        let greaterThanMin = match min {
+          None -> true,
+          Some(m) -> n.key > m,
+        };
+        let lessThanMax = match max {
+          None -> true,
+          Some(m) -> m > n.key,
+        };
+        greaterThanMin && lessThanMax && this.isBSTHelper(
+          n.left,
+          min,
+          Option.Some<int>(n.key)
+        ) && this.isBSTHelper(n.right, Option.Some<int>(n.key), max)
+      },
+    }
+}
+
+class AVLTreeTests {
+  private function testEmptyTree(): unit = {
+    let tree = AVLTree.empty();
+    ForTests.assertBool(tree.isEmpty(), "Empty tree should be empty");
+    ForTests.assertIntEquals(0, tree.size());
+    ForTests.assertIntEquals(0, tree.getHeight());
+    ForTests.assertBool(!tree.contains(5), "Empty tree should not contain anything");
+    ForTests.assertBool(tree.isBalanced(), "Empty tree should be balanced");
+    ForTests.assertBool(tree.isBST(), "Empty tree should be valid BST");
+  }
+
+  private function testSingleNodeInsert(): unit = {
+    let tree = AVLTree.empty().insert(10);
+    ForTests.assertBool(!tree.isEmpty(), "Tree should not be empty after insert");
+    ForTests.assertIntEquals(1, tree.size());
+    ForTests.assertIntEquals(1, tree.getHeight());
+    ForTests.assertBool(tree.contains(10), "Tree should contain inserted key");
+    ForTests.assertBool(!tree.contains(5), "Tree should not contain non-inserted key");
+    ForTests.assertBool(tree.isBalanced(), "Single node should be balanced");
+  }
+
+  private function testLeftRotation(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(20).insert(30);
+    ForTests.assertBool(tree.isBalanced(), "Left rotation should balance tree");
+    ForTests.assertIntEquals(2, tree.getHeight());
+    ForTests.assertIntEquals(3, tree.size());
+    ForTests.assertBool(tree.contains(10), "Should contain 10");
+    ForTests.assertBool(tree.contains(20), "Should contain 20");
+    ForTests.assertBool(tree.contains(30), "Should contain 30");
+  }
+
+  private function testRightRotation(): unit = {
+    let tree = AVLTree.empty().insert(30).insert(20).insert(10);
+    ForTests.assertBool(tree.isBalanced(), "Right rotation should balance tree");
+    ForTests.assertIntEquals(2, tree.getHeight());
+    ForTests.assertIntEquals(3, tree.size());
+    ForTests.assertBool(tree.contains(10), "Should contain 10");
+    ForTests.assertBool(tree.contains(20), "Should contain 20");
+    ForTests.assertBool(tree.contains(30), "Should contain 30");
+  }
+
+  private function testLeftRightRotation(): unit = {
+    let tree = AVLTree.empty().insert(30).insert(10).insert(20);
+    ForTests.assertBool(tree.isBalanced(), "Left-right rotation should balance tree");
+    ForTests.assertIntEquals(2, tree.getHeight());
+    ForTests.assertIntEquals(3, tree.size());
+    ForTests.assertBool(tree.contains(10), "Should contain 10");
+    ForTests.assertBool(tree.contains(20), "Should contain 20");
+    ForTests.assertBool(tree.contains(30), "Should contain 30");
+  }
+
+  private function testRightLeftRotation(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(30).insert(20);
+    ForTests.assertBool(tree.isBalanced(), "Right-left rotation should balance tree");
+    ForTests.assertIntEquals(2, tree.getHeight());
+    ForTests.assertIntEquals(3, tree.size());
+    ForTests.assertBool(tree.contains(10), "Should contain 10");
+    ForTests.assertBool(tree.contains(20), "Should contain 20");
+    ForTests.assertBool(tree.contains(30), "Should contain 30");
+  }
+
+  private function testSequentialInsertions(): unit = {
+    let tree = AVLTree.empty()
+      .insert(1)
+      .insert(2)
+      .insert(3)
+      .insert(4)
+      .insert(5)
+      .insert(6)
+      .insert(7);
+    ForTests.assertBool(tree.isBalanced(), "Sequential insertions should remain balanced");
+    ForTests.assertIntEquals(7, tree.size());
+    ForTests.assertBool(tree.isBST(), "Should maintain BST property");
+  }
+
+  private function testReverseSequentialInsertions(): unit = {
+    let tree = AVLTree.empty()
+      .insert(7)
+      .insert(6)
+      .insert(5)
+      .insert(4)
+      .insert(3)
+      .insert(2)
+      .insert(1);
+    ForTests.assertBool(tree.isBalanced(), "Reverse sequential insertions should remain balanced");
+    ForTests.assertIntEquals(7, tree.size());
+    ForTests.assertBool(tree.isBST(), "Should maintain BST property");
+  }
+
+  private function testRandomInsertions(): unit = {
+    let tree = AVLTree.empty()
+      .insert(50)
+      .insert(25)
+      .insert(75)
+      .insert(10)
+      .insert(30)
+      .insert(60)
+      .insert(90)
+      .insert(5)
+      .insert(15)
+      .insert(27);
+    ForTests.assertBool(tree.isBalanced(), "Random insertions should remain balanced");
+    ForTests.assertIntEquals(10, tree.size());
+    ForTests.assertBool(tree.isBST(), "Should maintain BST property");
+  }
+
+  private function testDeleteLeafNode(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15);
+    let afterDelete = tree.delete(5);
+    ForTests.assertBool(!afterDelete.contains(5), "Should not contain deleted key");
+    ForTests.assertIntEquals(2, afterDelete.size());
+    ForTests.assertBool(
+      afterDelete.isBalanced(),
+      "Tree should remain balanced after leaf deletion"
+    );
+  }
+
+  private function testDeleteNodeWithOneChild(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15).insert(3);
+    let afterDelete = tree.delete(5);
+    ForTests.assertBool(!afterDelete.contains(5), "Should not contain deleted key");
+    ForTests.assertBool(afterDelete.contains(3), "Should still contain child");
+    ForTests.assertIntEquals(3, afterDelete.size());
+    ForTests.assertBool(afterDelete.isBalanced(), "Tree should remain balanced");
+  }
+
+  private function testDeleteNodeWithTwoChildren(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15).insert(3).insert(7);
+    let afterDelete = tree.delete(5);
+    ForTests.assertBool(!afterDelete.contains(5), "Should not contain deleted key");
+    ForTests.assertBool(afterDelete.contains(3), "Should still contain left child");
+    ForTests.assertBool(afterDelete.contains(7), "Should still contain right child");
+    ForTests.assertIntEquals(4, afterDelete.size());
+    ForTests.assertBool(afterDelete.isBalanced(), "Tree should remain balanced");
+  }
+
+  private function testDeleteRoot(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15);
+    let afterDelete = tree.delete(10);
+    ForTests.assertBool(!afterDelete.contains(10), "Should not contain deleted root");
+    ForTests.assertIntEquals(2, afterDelete.size());
+    ForTests.assertBool(
+      afterDelete.isBalanced(),
+      "Tree should remain balanced after root deletion"
+    );
+  }
+
+  private function testDeleteNonExistent(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15);
+    let afterDelete = tree.delete(100);
+    ForTests.assertIntEquals(3, afterDelete.size());
+    ForTests.assertBool(afterDelete.contains(10), "Should still contain all original keys");
+    ForTests.assertBool(afterDelete.contains(5), "Should still contain all original keys");
+    ForTests.assertBool(afterDelete.contains(15), "Should still contain all original keys");
+  }
+
+  private function testMultipleDeletions(): unit = {
+    let tree = AVLTree.empty()
+      .insert(50)
+      .insert(25)
+      .insert(75)
+      .insert(10)
+      .insert(30)
+      .insert(60)
+      .insert(90);
+    let afterDelete = tree.delete(25).delete(75).delete(10);
+    ForTests.assertBool(!afterDelete.contains(25), "Should not contain 25");
+    ForTests.assertBool(!afterDelete.contains(75), "Should not contain 75");
+    ForTests.assertBool(!afterDelete.contains(10), "Should not contain 10");
+    ForTests.assertBool(afterDelete.contains(50), "Should still contain 50");
+    ForTests.assertBool(afterDelete.contains(30), "Should still contain 30");
+    ForTests.assertBool(afterDelete.contains(60), "Should still contain 60");
+    ForTests.assertBool(afterDelete.contains(90), "Should still contain 90");
+    ForTests.assertBool(
+      afterDelete.isBalanced(),
+      "Should remain balanced after multiple deletions"
+    );
+  }
+
+  private function testFindMin(): unit = {
+    let tree = AVLTree.empty().insert(50).insert(25).insert(75).insert(10).insert(30);
+    match tree.findMin() {
+      None -> ForTests.assertBool(false, "Should find min"),
+      Some(min) -> ForTests.assertIntEquals(10, min),
+    }
+  }
+
+  private function testFindMax(): unit = {
+    let tree = AVLTree.empty().insert(50).insert(25).insert(75).insert(10).insert(30);
+    match tree.findMax() {
+      None -> ForTests.assertBool(false, "Should find max"),
+      Some(max) -> ForTests.assertIntEquals(75, max),
+    }
+  }
+
+  private function testFindMinEmptyTree(): unit = {
+    let tree = AVLTree.empty();
+    ForTests.assertBool(tree.findMin().isNone(), "Empty tree should have no min");
+  }
+
+  private function testFindMaxEmptyTree(): unit = {
+    let tree = AVLTree.empty();
+    ForTests.assertBool(tree.findMax().isNone(), "Empty tree should have no max");
+  }
+
+  private function testToSortedList(): unit = {
+    let tree = AVLTree.empty().insert(50).insert(25).insert(75).insert(10).insert(30);
+    let sorted = tree.toSortedList();
+    ForTests.assertBool(tree.isBST(), "Should be valid BST");
+  }
+
+  private function testDuplicateInsert(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(10).insert(10);
+    ForTests.assertIntEquals(1, tree.size());
+    ForTests.assertBool(tree.contains(10), "Should contain inserted key");
+    ForTests.assertBool(tree.isBalanced(), "Should remain balanced with duplicates");
+  }
+
+  private function testLargeTreeBalance(): unit = {
+    let tree = AVLTree.empty()
+      .insert(1)
+      .insert(2)
+      .insert(3)
+      .insert(4)
+      .insert(5)
+      .insert(6)
+      .insert(7)
+      .insert(8)
+      .insert(9)
+      .insert(10)
+      .insert(11)
+      .insert(12)
+      .insert(13)
+      .insert(14)
+      .insert(15);
+    ForTests.assertBool(tree.isBalanced(), "Large tree should remain balanced");
+    ForTests.assertIntEquals(15, tree.size());
+    ForTests.assertBool(tree.isBST(), "Should maintain BST property");
+    let expectedHeight = 4;
+    let actualHeight = tree.getHeight();
+    ForTests.assertBool(actualHeight <= expectedHeight, "Height should be O(log n)");
+  }
+
+  private function testDeleteAndRebalance(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(20).insert(30).insert(40).insert(50).insert(25);
+    ForTests.assertBool(tree.isBalanced(), "Should be balanced after insertions");
+    let afterDelete = tree.delete(10).delete(20);
+    ForTests.assertBool(afterDelete.isBalanced(), "Should remain balanced after deletions");
+    ForTests.assertBool(afterDelete.isBST(), "Should maintain BST property");
+  }
+
+  private function testBalanceFactorComputation(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15);
+    let bf = tree.balanceFactor();
+    ForTests.assertBool(bf >= -1 && bf <= 1, "Balance factor should be in valid range");
+  }
+
+  private function testComplexRotations(): unit = {
+    let tree = AVLTree.empty()
+      .insert(41)
+      .insert(20)
+      .insert(65)
+      .insert(11)
+      .insert(29)
+      .insert(50)
+      .insert(26)
+      .insert(23)
+      .insert(55)
+      .insert(72);
+    ForTests.assertBool(tree.isBalanced(), "Complex insertions should remain balanced");
+    ForTests.assertIntEquals(10, tree.size());
+    ForTests.assertBool(tree.isBST(), "Should maintain BST property");
+  }
+
+  private function testInsertDeleteAlternating(): unit = {
+    let tree = AVLTree.empty().insert(50).insert(25).delete(50).insert(75).insert(10).delete(25);
+    ForTests.assertBool(tree.isBalanced(), "Alternating operations should maintain balance");
+    ForTests.assertBool(!tree.contains(50), "Should not contain deleted 50");
+    ForTests.assertBool(!tree.contains(25), "Should not contain deleted 25");
+    ForTests.assertBool(tree.contains(75), "Should contain 75");
+    ForTests.assertBool(tree.contains(10), "Should contain 10");
+  }
+
+  private function testHeightAfterMultipleOps(): unit = {
+    let tree = AVLTree.empty()
+      .insert(10)
+      .insert(20)
+      .insert(30)
+      .insert(40)
+      .insert(50)
+      .delete(30)
+      .delete(20);
+    ForTests.assertBool(tree.isBalanced(), "Should remain balanced");
+    let height = tree.getHeight();
+    ForTests.assertBool(height <= 3, "Height should be small after operations");
+  }
+
+  private function testAllValuesPresent(): unit = {
+    let tree = AVLTree.empty()
+      .insert(100)
+      .insert(50)
+      .insert(150)
+      .insert(25)
+      .insert(75)
+      .insert(125)
+      .insert(175);
+    ForTests.assertBool(tree.contains(100), "Should contain 100");
+    ForTests.assertBool(tree.contains(50), "Should contain 50");
+    ForTests.assertBool(tree.contains(150), "Should contain 150");
+    ForTests.assertBool(tree.contains(25), "Should contain 25");
+    ForTests.assertBool(tree.contains(75), "Should contain 75");
+    ForTests.assertBool(tree.contains(125), "Should contain 125");
+    ForTests.assertBool(tree.contains(175), "Should contain 175");
+    ForTests.assertBool(!tree.contains(0), "Should not contain 0");
+    ForTests.assertBool(!tree.contains(200), "Should not contain 200");
+  }
+
+  private function testDeleteAllElements(): unit = {
+    let tree = AVLTree.empty().insert(10).insert(5).insert(15);
+    let empty = tree.delete(10).delete(5).delete(15);
+    ForTests.assertBool(empty.isEmpty(), "Should be empty after deleting all");
+    ForTests.assertIntEquals(0, empty.size());
+    ForTests.assertBool(empty.isBalanced(), "Empty tree should be balanced");
+  }
+
+  private function testNegativeNumbers(): unit = {
+    let tree = AVLTree.empty().insert(0).insert(-10).insert(10).insert(-20).insert(-5);
+    ForTests.assertBool(tree.contains(-20), "Should contain negative numbers");
+    ForTests.assertBool(tree.contains(-10), "Should contain negative numbers");
+    ForTests.assertBool(tree.contains(-5), "Should contain negative numbers");
+    ForTests.assertBool(tree.contains(0), "Should contain zero");
+    ForTests.assertBool(tree.contains(10), "Should contain positive numbers");
+    ForTests.assertBool(tree.isBalanced(), "Should be balanced with negatives");
+    ForTests.assertIntEquals(5, tree.size());
+  }
+
+  function run(): unit = {
+    AVLTreeTests.testEmptyTree();
+    AVLTreeTests.testSingleNodeInsert();
+    AVLTreeTests.testLeftRotation();
+    AVLTreeTests.testRightRotation();
+    AVLTreeTests.testLeftRightRotation();
+    AVLTreeTests.testRightLeftRotation();
+    AVLTreeTests.testSequentialInsertions();
+    AVLTreeTests.testReverseSequentialInsertions();
+    AVLTreeTests.testRandomInsertions();
+    AVLTreeTests.testDeleteLeafNode();
+    AVLTreeTests.testDeleteNodeWithOneChild();
+    AVLTreeTests.testDeleteNodeWithTwoChildren();
+    AVLTreeTests.testDeleteRoot();
+    AVLTreeTests.testDeleteNonExistent();
+    AVLTreeTests.testMultipleDeletions();
+    AVLTreeTests.testFindMin();
+    AVLTreeTests.testFindMax();
+    AVLTreeTests.testFindMinEmptyTree();
+    AVLTreeTests.testFindMaxEmptyTree();
+    AVLTreeTests.testToSortedList();
+    AVLTreeTests.testDuplicateInsert();
+    AVLTreeTests.testLargeTreeBalance();
+    AVLTreeTests.testDeleteAndRebalance();
+    AVLTreeTests.testBalanceFactorComputation();
+    AVLTreeTests.testComplexRotations();
+    AVLTreeTests.testInsertDeleteAlternating();
+    AVLTreeTests.testHeightAfterMultipleOps();
+    AVLTreeTests.testAllValuesPresent();
+    AVLTreeTests.testDeleteAllElements();
+    AVLTreeTests.testNegativeNumbers();
+  }
+}

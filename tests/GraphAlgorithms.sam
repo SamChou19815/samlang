@@ -1,0 +1,1458 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Edge(val src: int, val dst: int, val weight: int) {
+  function create(src: int, dst: int, weight: int): Edge = Edge.init(src, dst, weight)
+}
+
+class Graph(val vertexCount: int, val edges: List<Edge>, val directed: bool) {
+  function directed(vertexCount: int, edges: List<Edge>): Graph =
+    Graph.init(vertexCount, edges, true)
+
+  function undirected(vertexCount: int, edges: List<Edge>): Graph =
+    Graph.init(vertexCount, edges, false)
+
+  method getNeighbors(vertex: int): List<int> = {
+    let adj = Graph.buildAdjList(
+      Graph.createEmptyAdjList(this.vertexCount),
+      this.edges,
+      this.directed
+    );
+    Graph.getAdjEntry(adj, vertex)
+  }
+
+  method getWeightedNeighbors(vertex: int): List<Pair<int, int>> = {
+    let adj = Graph.buildWeightedAdjList(
+      Graph.createEmptyWeightedAdjList(this.vertexCount),
+      this.edges,
+      this.directed
+    );
+    Graph.getWeightedAdjEntry(adj, vertex)
+  }
+
+  private function createEmptyAdjList(count: int): List<List<int>> =
+    if count == 0 {
+      List.nil<List<int>>()
+    } else {
+      Graph.createEmptyAdjList(count - 1).cons(List.nil<int>())
+    }
+
+  private function createEmptyWeightedAdjList(count: int): List<List<Pair<int, int>>> =
+    if count == 0 {
+      List.nil<List<Pair<int, int>>>()
+    } else {
+      Graph.createEmptyWeightedAdjList(count - 1).cons(List.nil<Pair<int, int>>())
+    }
+
+  private function buildAdjList(adj: List<List<int>>, edges: List<Edge>, directed: bool): List<
+    List<int>
+  > =
+    match edges {
+      Nil -> adj,
+      Cons(e, rest) -> {
+        let adj1 = Graph.addToAdjList(adj, e.src, e.dst);
+        let adj2 = if directed { adj1 } else { Graph.addToAdjList(adj1, e.dst, e.src) };
+        Graph.buildAdjList(adj2, rest, directed)
+      },
+    }
+
+  private function buildWeightedAdjList(
+    adj: List<List<Pair<int, int>>>,
+    edges: List<Edge>,
+    directed: bool
+  ): List<List<Pair<int, int>>> =
+    match edges {
+      Nil -> adj,
+      Cons(e, rest) -> {
+        let adj1 = Graph.addToWeightedAdjList(adj, e.src, e.dst, e.weight);
+        let adj2 = if directed {
+          adj1
+        } else {
+          Graph.addToWeightedAdjList(adj1, e.dst, e.src, e.weight)
+        };
+        Graph.buildWeightedAdjList(adj2, rest, directed)
+      },
+    }
+
+  private function addToAdjList(adj: List<List<int>>, v: int, u: int): List<List<int>> =
+    match adj {
+      Nil -> List.nil<List<int>>(),
+      Cons(h, t) -> if v == 0 {
+        t.cons(h.cons(u))
+      } else {
+        Graph.addToAdjList(t, v - 1, u).cons(h)
+      },
+    }
+
+  private function addToWeightedAdjList(
+    adj: List<List<Pair<int, int>>>,
+    v: int,
+    u: int,
+    w: int
+  ): List<List<Pair<int, int>>> =
+    match adj {
+      Nil -> List.nil<List<Pair<int, int>>>(),
+      Cons(h, t) -> if v == 0 {
+        t.cons(h.cons(Pair.init(u, w)))
+      } else {
+        Graph.addToWeightedAdjList(t, v - 1, u, w).cons(h)
+      },
+    }
+
+  private function getAdjEntry(adj: List<List<int>>, v: int): List<int> =
+    match adj {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if v == 0 { h } else { Graph.getAdjEntry(t, v - 1) },
+    }
+
+  private function getWeightedAdjEntry(adj: List<List<Pair<int, int>>>, v: int): List<
+    Pair<int, int>
+  > =
+    match adj {
+      Nil -> List.nil<Pair<int, int>>(),
+      Cons(h, t) -> if v == 0 { h } else { Graph.getWeightedAdjEntry(t, v - 1) },
+    }
+}
+
+class BFS {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { BFS.containsIntList(t, v) },
+    }
+
+  private function appendList(l1: List<int>, l2: List<int>): List<int> =
+    match l1 {
+      Nil -> l2,
+      Cons(h, t) -> BFS.appendList(t, l2).cons(h),
+    }
+
+  function traverse(graph: Graph, start: int): List<int> =
+    BFS.traverseStep(graph, List.of(start), List.nil<int>())
+
+  private function traverseStep(graph: Graph, queue: List<int>, visited: List<int>): List<int> =
+    match queue {
+      Nil -> visited,
+      Cons(current, restQueue) -> {
+        if BFS.containsIntList(visited, current) {
+          BFS.traverseStep(graph, restQueue, visited)
+        } else {
+          let neighbors = graph.getNeighbors(current);
+          let unvisited = BFS.filterVisited(neighbors, visited);
+          let newQueue = BFS.appendList(restQueue, unvisited);
+          BFS.traverseStep(graph, newQueue, visited.cons(current))
+        }
+      },
+    }
+
+  private function filterVisited(neighbors: List<int>, visited: List<int>): List<int> =
+    match neighbors {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> {
+        let rest = BFS.filterVisited(t, visited);
+        if BFS.containsIntList(visited, h) { rest } else { rest.cons(h) }
+      },
+    }
+
+  function findPath(graph: Graph, start: int, target: int): Option<List<int>> =
+    BFS.findPathStep(graph, List.of(start), List.nil<int>(), start, target)
+
+  private function findPathStep(
+    graph: Graph,
+    queue: List<int>,
+    visited: List<int>,
+    start: int,
+    target: int
+  ): Option<List<int>> =
+    match queue {
+      Nil -> Option.None<List<int>>(),
+      Cons(current, restQueue) -> {
+        if current == target {
+          Option.Some<List<int>>(List.of(target))
+        } else {
+          if BFS.containsIntList(visited, current) {
+            BFS.findPathStep(graph, restQueue, visited, start, target)
+          } else {
+            let neighbors = graph.getNeighbors(current);
+            let unvisited = BFS.filterVisited(neighbors, visited.cons(current));
+            let newQueue = BFS.appendList(restQueue, unvisited);
+            BFS.findPathStep(graph, newQueue, visited.cons(current), start, target)
+          }
+        }
+      },
+    }
+}
+
+class DFS {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { DFS.containsIntList(t, v) },
+    }
+
+  function traverse(graph: Graph, start: int): List<int> =
+    DFS.traverseStep(graph, start, List.nil<int>()).reverse()
+
+  private function traverseStep(graph: Graph, current: int, visited: List<int>): List<int> =
+    if DFS.containsIntList(visited, current) {
+      visited
+    } else {
+      let neighbors = graph.getNeighbors(current);
+      DFS.visitNeighbors(graph, neighbors, visited.cons(current))
+    }
+
+  private function visitNeighbors(graph: Graph, neighbors: List<int>, visited: List<int>): List<
+    int
+  > =
+    match neighbors {
+      Nil -> visited,
+      Cons(h, t) -> {
+        let newVisited = DFS.traverseStep(graph, h, visited);
+        DFS.visitNeighbors(graph, t, newVisited)
+      },
+    }
+
+  function hasPath(graph: Graph, start: int, target: int): bool =
+    DFS.hasPathStep(graph, start, target, List.nil<int>())
+
+  private function hasPathStep(graph: Graph, current: int, target: int, visited: List<int>): bool =
+    if current == target {
+      true
+    } else {
+      if DFS.containsIntList(visited, current) {
+        false
+      } else {
+        let neighbors = graph.getNeighbors(current);
+        DFS.checkNeighbors(graph, neighbors, target, visited.cons(current))
+      }
+    }
+
+  private function checkNeighbors(
+    graph: Graph,
+    neighbors: List<int>,
+    target: int,
+    visited: List<int>
+  ): bool =
+    match neighbors {
+      Nil -> false,
+      Cons(h, t) -> {
+        let found = DFS.hasPathStep(graph, h, target, visited);
+        if found { true } else { DFS.checkNeighbors(graph, t, target, visited) }
+      },
+    }
+}
+
+class TopologicalSort {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { TopologicalSort.containsIntList(t, v) },
+    }
+
+  private function getListValue(list: List<int>, index: int): int =
+    match list {
+      Nil -> 0,
+      Cons(h, t) -> if index == 0 { h } else { TopologicalSort.getListValue(t, index - 1) },
+    }
+
+  private function setListValue(list: List<int>, index: int, value: int): List<int> =
+    match list {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if index == 0 {
+        t.cons(value)
+      } else {
+        TopologicalSort.setListValue(t, index - 1, value).cons(h)
+      },
+    }
+
+  private function createList(n: int, value: int): List<int> =
+    if n == 0 { List.nil<int>() } else { TopologicalSort.createList(n - 1, value).cons(value) }
+
+  function computeInDegrees(graph: Graph): List<int> =
+    TopologicalSort.countInDegrees(TopologicalSort.createList(graph.vertexCount, 0), graph.edges)
+
+  private function countInDegrees(degrees: List<int>, edges: List<Edge>): List<int> =
+    match edges {
+      Nil -> degrees,
+      Cons(e, rest) -> {
+        let current = TopologicalSort.getListValue(degrees, e.dst);
+        let updated = TopologicalSort.setListValue(degrees, e.dst, current + 1);
+        TopologicalSort.countInDegrees(updated, rest)
+      },
+    }
+
+  function sort(graph: Graph): Option<List<int>> =
+    TopologicalSort.sortStep(graph, TopologicalSort.computeInDegrees(graph), List.nil<int>())
+
+  private function sortStep(graph: Graph, inDegree: List<int>, result: List<int>): Option<
+    List<int>
+  > =
+    if result.length() == graph.vertexCount {
+      Option.Some<List<int>>(result.reverse())
+    } else {
+      let zeroVertex = TopologicalSort.findZeroInDegree(inDegree, 0, graph.vertexCount);
+      match zeroVertex {
+        None -> Option.None<List<int>>(),
+        Some(v) -> {
+          let neighbors = graph.getNeighbors(v);
+          let newInDegree = TopologicalSort.decreaseNeighbors(inDegree, neighbors);
+          let updated = TopologicalSort.setListValue(newInDegree, v, -1);
+          TopologicalSort.sortStep(graph, updated, result.cons(v))
+        },
+      }
+    }
+
+  private function findZeroInDegree(inDegree: List<int>, i: int, n: int): Option<int> =
+    if i >= n {
+      Option.None<int>()
+    } else {
+      let degree = TopologicalSort.getListValue(inDegree, i);
+      if degree == 0 {
+        Option.Some<int>(i)
+      } else {
+        TopologicalSort.findZeroInDegree(inDegree, i + 1, n)
+      }
+    }
+
+  private function decreaseNeighbors(inDegree: List<int>, neighbors: List<int>): List<int> =
+    match neighbors {
+      Nil -> inDegree,
+      Cons(h, t) -> {
+        let current = TopologicalSort.getListValue(inDegree, h);
+        let updated = TopologicalSort.setListValue(inDegree, h, current - 1);
+        TopologicalSort.decreaseNeighbors(updated, t)
+      },
+    }
+}
+
+class ConnectedComponents {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { ConnectedComponents.containsIntList(t, v) },
+    }
+
+  private function mergeLists(l1: List<int>, l2: List<int>): List<int> =
+    match l2 {
+      Nil -> l1,
+      Cons(h, t) -> {
+        if ConnectedComponents.containsIntList(l1, h) {
+          ConnectedComponents.mergeLists(l1, t)
+        } else {
+          ConnectedComponents.mergeLists(l1.cons(h), t)
+        }
+      },
+    }
+
+  function findComponents(graph: Graph): List<List<int>> =
+    ConnectedComponents.findStep(graph, 0, List.nil<int>(), List.nil<List<int>>())
+
+  private function findStep(
+    graph: Graph,
+    current: int,
+    visited: List<int>,
+    components: List<List<int>>
+  ): List<List<int>> =
+    if current >= graph.vertexCount {
+      components.reverse()
+    } else {
+      if ConnectedComponents.containsIntList(visited, current) {
+        ConnectedComponents.findStep(graph, current + 1, visited, components)
+      } else {
+        let component = DFS.traverse(graph, current);
+        let newVisited = ConnectedComponents.mergeLists(visited, component);
+        ConnectedComponents.findStep(graph, current + 1, newVisited, components.cons(component))
+      }
+    }
+
+  function countComponents(graph: Graph): int = ConnectedComponents.findComponents(graph).length()
+}
+
+class Dijkstra {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { Dijkstra.containsIntList(t, v) },
+    }
+
+  private function getListValue(list: List<int>, index: int): int =
+    match list {
+      Nil -> 999999,
+      Cons(h, t) -> if index == 0 { h } else { Dijkstra.getListValue(t, index - 1) },
+    }
+
+  private function setListValue(list: List<int>, index: int, value: int): List<int> =
+    match list {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if index == 0 {
+        t.cons(value)
+      } else {
+        Dijkstra.setListValue(t, index - 1, value).cons(h)
+      },
+    }
+
+  private function createDist(n: int, i: int, start: int): List<int> =
+    if i >= n {
+      List.nil<int>()
+    } else {
+      let v = if i == start { 0 } else { 999999 };
+      Dijkstra.createDist(n, i + 1, start).cons(v)
+    }
+
+  function shortestPath(graph: Graph, start: int, end: int): Option<int> = {
+    let dist = Dijkstra.createDist(graph.vertexCount, 0, start);
+    Dijkstra.dijkstraStep(graph, dist, List.nil<int>(), end)
+  }
+
+  private function minVertex(
+    dist: List<int>,
+    visited: List<int>,
+    i: int,
+    n: int,
+    minV: int,
+    minD: int
+  ): int =
+    if i >= n {
+      minV
+    } else {
+      if Dijkstra.containsIntList(visited, i) {
+        Dijkstra.minVertex(dist, visited, i + 1, n, minV, minD)
+      } else {
+        let d = Dijkstra.getListValue(dist, i);
+        if d < minD {
+          Dijkstra.minVertex(dist, visited, i + 1, n, i, d)
+        } else {
+          Dijkstra.minVertex(dist, visited, i + 1, n, minV, minD)
+        }
+      }
+    }
+
+  private function dijkstraStep(
+    graph: Graph,
+    dist: List<int>,
+    visited: List<int>,
+    end: int
+  ): Option<int> =
+    if visited.length() == graph.vertexCount {
+      let d = Dijkstra.getListValue(dist, end);
+      if d == 999999 { Option.None<int>() } else { Option.Some<int>(d) }
+    } else {
+      let u = Dijkstra.minVertex(dist, visited, 0, graph.vertexCount, -1, 999999);
+      if u == -1 {
+        let d = Dijkstra.getListValue(dist, end);
+        if d == 999999 { Option.None<int>() } else { Option.Some<int>(d) }
+      } else {
+        let neighbors = graph.getNeighbors(u);
+        let newDist = Dijkstra.relaxNeighbors(neighbors, u, dist);
+        Dijkstra.dijkstraStep(graph, newDist, visited.cons(u), end)
+      }
+    }
+
+  private function relaxNeighbors(neighbors: List<int>, u: int, dist: List<int>): List<int> =
+    match neighbors {
+      Nil -> dist,
+      Cons(v, rest) -> {
+        let du = Dijkstra.getListValue(dist, u);
+        let dv = Dijkstra.getListValue(dist, v);
+        let weight = 1;
+        let newDist = if du + weight < dv {
+          Dijkstra.setListValue(dist, v, du + weight)
+        } else {
+          dist
+        };
+        Dijkstra.relaxNeighbors(rest, u, newDist)
+      },
+    }
+}
+
+class BellmanFord {
+  private function getListValue(list: List<int>, index: int): int =
+    match list {
+      Nil -> 999999,
+      Cons(h, t) -> if index == 0 { h } else { BellmanFord.getListValue(t, index - 1) },
+    }
+
+  private function setListValue(list: List<int>, index: int, value: int): List<int> =
+    match list {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if index == 0 {
+        t.cons(value)
+      } else {
+        BellmanFord.setListValue(t, index - 1, value).cons(h)
+      },
+    }
+
+  private function createDist(n: int, i: int, start: int): List<int> =
+    if i >= n {
+      List.nil<int>()
+    } else {
+      let v = if i == start { 0 } else { 999999 };
+      BellmanFord.createDist(n, i + 1, start).cons(v)
+    }
+
+  function shortestPath(graph: Graph, start: int, end: int): Option<int> = {
+    let dist = BellmanFord.createDist(graph.vertexCount, 0, start);
+    let result = BellmanFord.relaxAllEdges(dist, graph.edges, graph.vertexCount, 0);
+    if BellmanFord.hasNegativeCycle(result, graph.edges) {
+      Option.None<int>()
+    } else {
+      let d = BellmanFord.getListValue(result, end);
+      if d == 999999 { Option.None<int>() } else { Option.Some<int>(d) }
+    }
+  }
+
+  private function relaxAllEdges(dist: List<int>, edges: List<Edge>, n: int, iteration: int): List<
+    int
+  > =
+    if iteration >= n - 1 {
+      dist
+    } else {
+      let newDist = BellmanFord.relaxEdges(dist, edges);
+      BellmanFord.relaxAllEdges(newDist, edges, n, iteration + 1)
+    }
+
+  private function relaxEdges(dist: List<int>, edges: List<Edge>): List<int> =
+    match edges {
+      Nil -> dist,
+      Cons(e, rest) -> {
+        let du = BellmanFord.getListValue(dist, e.src);
+        let dv = BellmanFord.getListValue(dist, e.dst);
+        let nd = du + e.weight;
+        let newDist = if du == 999999 {
+          dist
+        } else {
+          if nd < dv { BellmanFord.setListValue(dist, e.dst, nd) } else { dist }
+        };
+        BellmanFord.relaxEdges(newDist, rest)
+      },
+    }
+
+  private function hasNegativeCycle(dist: List<int>, edges: List<Edge>): bool =
+    match edges {
+      Nil -> false,
+      Cons(e, rest) -> {
+        let du = BellmanFord.getListValue(dist, e.src);
+        let dv = BellmanFord.getListValue(dist, e.dst);
+        let nd = du + e.weight;
+        if du == 999999 {
+          BellmanFord.hasNegativeCycle(dist, rest)
+        } else {
+          if nd < dv { true } else { BellmanFord.hasNegativeCycle(dist, rest) }
+        }
+      },
+    }
+}
+
+class UnionFind(val parent: List<int>, val rank: List<int>) {
+  function create(n: int): UnionFind =
+    UnionFind.init(UnionFind.initParent(n - 1), UnionFind.initRank(n - 1))
+
+  private function initParent(i: int): List<int> =
+    if i < 0 { List.nil<int>() } else { UnionFind.initParent(i - 1).cons(i) }
+
+  private function initRank(i: int): List<int> =
+    if i < 0 { List.nil<int>() } else { UnionFind.initRank(i - 1).cons(0) }
+
+  private function getListValue(list: List<int>, index: int): int =
+    match list {
+      Nil -> 0,
+      Cons(h, t) -> if index == 0 { h } else { UnionFind.getListValue(t, index - 1) },
+    }
+
+  private function setListValue(list: List<int>, index: int, value: int): List<int> =
+    match list {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if index == 0 {
+        t.cons(value)
+      } else {
+        UnionFind.setListValue(t, index - 1, value).cons(h)
+      },
+    }
+
+  method find(x: int): int = {
+    let px = UnionFind.getListValue(this.parent, x);
+    if px == x {
+      x
+    } else {
+      let root = this.find(px);
+      root
+    }
+  }
+
+  method union(x: int, y: int): UnionFind = {
+    let px = this.find(x);
+    let py = this.find(y);
+    if px == py {
+      this
+    } else {
+      let rx = UnionFind.getListValue(this.rank, px);
+      let ry = UnionFind.getListValue(this.rank, py);
+      if rx < ry {
+        let newParent = UnionFind.setListValue(this.parent, px, py);
+        UnionFind.init(newParent, this.rank)
+      } else {
+        if rx > ry {
+          let newParent = UnionFind.setListValue(this.parent, py, px);
+          UnionFind.init(newParent, this.rank)
+        } else {
+          let newParent = UnionFind.setListValue(this.parent, py, px);
+          let newRank = UnionFind.setListValue(this.rank, px, rx + 1);
+          UnionFind.init(newParent, newRank)
+        }
+      }
+    }
+  }
+
+  method connected(x: int, y: int): bool = this.find(x) == this.find(y)
+}
+
+class KruskalMST {
+  function mst(graph: Graph): List<Edge> = {
+    let sortedEdges = KruskalMST.sortEdges(graph.edges);
+    KruskalMST.kruskalStep(
+      sortedEdges,
+      UnionFind.create(graph.vertexCount),
+      List.nil<Edge>(),
+      graph.vertexCount,
+      0
+    )
+  }
+
+  private function sortEdges(edges: List<Edge>): List<Edge> = KruskalMST.mergeSort(edges)
+
+  private function mergeSort(edges: List<Edge>): List<Edge> =
+    if edges.length() <= 1 {
+      edges
+    } else {
+      let mid = edges.length() / 2;
+      let left = KruskalMST.takeN(edges, mid);
+      let right = KruskalMST.dropN(edges, mid);
+      KruskalMST.merge(KruskalMST.mergeSort(left), KruskalMST.mergeSort(right))
+    }
+
+  private function takeN(list: List<Edge>, n: int): List<Edge> =
+    if n == 0 {
+      List.nil<Edge>()
+    } else {
+      match list {
+        Nil -> List.nil<Edge>(),
+        Cons(h, t) -> KruskalMST.takeN(t, n - 1).cons(h),
+      }
+    }
+
+  private function dropN(list: List<Edge>, n: int): List<Edge> =
+    if n == 0 {
+      list
+    } else {
+      match list {
+        Nil -> List.nil<Edge>(),
+        Cons(_, t) -> KruskalMST.dropN(t, n - 1),
+      }
+    }
+
+  private function merge(l1: List<Edge>, l2: List<Edge>): List<Edge> =
+    match l1 {
+      Nil -> l2,
+      Cons(h1, t1) -> match l2 {
+        Nil -> l1,
+        Cons(h2, t2) -> {
+          if h1.weight <= h2.weight {
+            KruskalMST.merge(t1, l2).cons(h1)
+          } else {
+            KruskalMST.merge(l1, t2).cons(h2)
+          }
+        },
+      },
+    }
+
+  private function kruskalStep(
+    edges: List<Edge>,
+    uf: UnionFind,
+    mst: List<Edge>,
+    n: int,
+    count: int
+  ): List<Edge> =
+    if count >= n - 1 {
+      mst.reverse()
+    } else {
+      match edges {
+        Nil -> mst.reverse(),
+        Cons(e, rest) -> {
+          if uf.connected(e.src, e.dst) {
+            KruskalMST.kruskalStep(rest, uf, mst, n, count)
+          } else {
+            let newUf = uf.union(e.src, e.dst);
+            KruskalMST.kruskalStep(rest, newUf, mst.cons(e), n, count + 1)
+          }
+        },
+      }
+    }
+
+  function mstWeight(graph: Graph): int = KruskalMST.sumWeights(KruskalMST.mst(graph), 0)
+
+  private function sumWeights(edges: List<Edge>, acc: int): int =
+    match edges {
+      Nil -> acc,
+      Cons(h, t) -> KruskalMST.sumWeights(t, acc + h.weight),
+    }
+}
+
+class PrimMST {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { PrimMST.containsIntList(t, v) },
+    }
+
+  private function getListValue(list: List<int>, index: int): int =
+    match list {
+      Nil -> 999999,
+      Cons(h, t) -> if index == 0 { h } else { PrimMST.getListValue(t, index - 1) },
+    }
+
+  private function setListValue(list: List<int>, index: int, value: int): List<int> =
+    match list {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if index == 0 {
+        t.cons(value)
+      } else {
+        PrimMST.setListValue(t, index - 1, value).cons(h)
+      },
+    }
+
+  private function createKey(n: int): List<int> =
+    if n == 0 { List.nil<int>() } else { PrimMST.createKey(n - 1).cons(999999) }
+
+  function mstWeight(graph: Graph): int =
+    PrimMST.primStep(graph, PrimMST.createKey(graph.vertexCount), List.nil<int>(), 0, 0)
+
+  private function minKeyVertex(
+    key: List<int>,
+    inMST: List<int>,
+    i: int,
+    n: int,
+    minV: int,
+    minK: int
+  ): int =
+    if i >= n {
+      minV
+    } else {
+      if PrimMST.containsIntList(inMST, i) {
+        PrimMST.minKeyVertex(key, inMST, i + 1, n, minV, minK)
+      } else {
+        let k = PrimMST.getListValue(key, i);
+        if k < minK {
+          PrimMST.minKeyVertex(key, inMST, i + 1, n, i, k)
+        } else {
+          PrimMST.minKeyVertex(key, inMST, i + 1, n, minV, minK)
+        }
+      }
+    }
+
+  private function primStep(
+    graph: Graph,
+    key: List<int>,
+    inMST: List<int>,
+    mstWeight: int,
+    count: int
+  ): int =
+    if count >= graph.vertexCount {
+      mstWeight
+    } else {
+      let u = PrimMST.minKeyVertex(key, inMST, 0, graph.vertexCount, -1, 999999);
+      if u == -1 {
+        mstWeight
+      } else {
+        let newInMST = inMST.cons(u);
+        let ku = PrimMST.getListValue(key, u);
+        let newWeight = if ku == 999999 { mstWeight } else { mstWeight + ku };
+        let neighbors = graph.getWeightedNeighbors(u);
+        let newKey = PrimMST.updateKey(key, neighbors);
+        PrimMST.primStep(graph, newKey, newInMST, newWeight, count + 1)
+      }
+    }
+
+  private function updateKey(key: List<int>, neighbors: List<Pair<int, int>>): List<int> =
+    match neighbors {
+      Nil -> key,
+      Cons(h, rest) -> {
+        let v = h.e0;
+        let w = h.e1;
+        let kv = PrimMST.getListValue(key, v);
+        let newKey = if w < kv { PrimMST.setListValue(key, v, w) } else { key };
+        PrimMST.updateKey(newKey, rest)
+      },
+    }
+}
+
+class CycleDetection {
+  private function containsIntList(list: List<int>, v: int): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h == v { true } else { CycleDetection.containsIntList(t, v) },
+    }
+
+  function hasCycleUndirected(graph: Graph): bool =
+    CycleDetection.cycleUndirectedStep(graph, 0, List.nil<int>())
+
+  private function cycleUndirectedStep(graph: Graph, v: int, visited: List<int>): bool =
+    if v >= graph.vertexCount {
+      false
+    } else {
+      if CycleDetection.containsIntList(visited, v) {
+        CycleDetection.cycleUndirectedStep(graph, v + 1, visited)
+      } else {
+        if CycleDetection.dfsCycleUndirected(graph, v, -1, visited) {
+          true
+        } else {
+          CycleDetection.cycleUndirectedStep(graph, v + 1, visited)
+        }
+      }
+    }
+
+  private function dfsCycleUndirected(graph: Graph, u: int, parent: int, visited: List<int>): bool =
+    if CycleDetection.containsIntList(visited, u) {
+      true
+    } else {
+      let neighbors = graph.getNeighbors(u);
+      CycleDetection.checkNeighborsUndirected(graph, neighbors, u, parent, visited.cons(u))
+    }
+
+  private function checkNeighborsUndirected(
+    graph: Graph,
+    neighbors: List<int>,
+    u: int,
+    parent: int,
+    visited: List<int>
+  ): bool =
+    match neighbors {
+      Nil -> false,
+      Cons(v, rest) -> {
+        if v == parent {
+          CycleDetection.checkNeighborsUndirected(graph, rest, u, parent, visited)
+        } else {
+          if CycleDetection.containsIntList(visited, v) {
+            true
+          } else {
+            if CycleDetection.dfsCycleUndirected(graph, v, u, visited) {
+              true
+            } else {
+              CycleDetection.checkNeighborsUndirected(graph, rest, u, parent, visited)
+            }
+          }
+        }
+      },
+    }
+
+  private function getListValue(list: List<int>, index: int): int =
+    match list {
+      Nil -> 0,
+      Cons(h, t) -> if index == 0 { h } else { CycleDetection.getListValue(t, index - 1) },
+    }
+
+  private function setListValue(list: List<int>, index: int, value: int): List<int> =
+    match list {
+      Nil -> List.nil<int>(),
+      Cons(h, t) -> if index == 0 {
+        t.cons(value)
+      } else {
+        CycleDetection.setListValue(t, index - 1, value).cons(h)
+      },
+    }
+
+  private function createColor(n: int): List<int> =
+    if n == 0 { List.nil<int>() } else { CycleDetection.createColor(n - 1).cons(0) }
+
+  function hasCycleDirected(graph: Graph): bool =
+    CycleDetection.cycleDirectedStep(graph, 0, CycleDetection.createColor(graph.vertexCount))
+
+  private function cycleDirectedStep(graph: Graph, v: int, color: List<int>): bool =
+    if v >= graph.vertexCount {
+      false
+    } else {
+      let c = CycleDetection.getListValue(color, v);
+      if c != 0 {
+        CycleDetection.cycleDirectedStep(graph, v + 1, color)
+      } else {
+        if CycleDetection.dfsCycleDirected(graph, v, color) {
+          true
+        } else {
+          CycleDetection.cycleDirectedStep(graph, v + 1, color)
+        }
+      }
+    }
+
+  private function dfsCycleDirected(graph: Graph, u: int, color: List<int>): bool = {
+    let color1 = CycleDetection.setListValue(color, u, 1);
+    let neighbors = graph.getNeighbors(u);
+    CycleDetection.checkNeighborsDirected(graph, neighbors, color1, u)
+  }
+
+  private function checkNeighborsDirected(
+    graph: Graph,
+    neighbors: List<int>,
+    color: List<int>,
+    u: int
+  ): bool =
+    match neighbors {
+      Nil -> false,
+      Cons(v, rest) -> {
+        let cv = CycleDetection.getListValue(color, v);
+        if cv == 1 {
+          true
+        } else {
+          if cv == 0 {
+            if CycleDetection.dfsCycleDirected(graph, v, color) {
+              true
+            } else {
+              CycleDetection.checkNeighborsDirected(graph, rest, color, u)
+            }
+          } else {
+            CycleDetection.checkNeighborsDirected(graph, rest, color, u)
+          }
+        }
+      },
+    }
+}
+
+class GraphTestFactory {
+  function simpleDirected(): Graph =
+    Graph.directed(
+      4,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(0, 2, 1))
+        .cons(Edge.create(1, 2, 1))
+        .cons(Edge.create(2, 0, 1))
+        .cons(Edge.create(2, 3, 1))
+        .cons(Edge.create(3, 3, 1))
+        .reverse()
+    )
+
+  function simpleUndirected(): Graph =
+    Graph.undirected(
+      5,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(0, 2, 1))
+        .cons(Edge.create(1, 3, 1))
+        .cons(Edge.create(2, 3, 1))
+        .cons(Edge.create(3, 4, 1))
+        .reverse()
+    )
+
+  function disconnectedGraph(): Graph =
+    Graph.undirected(
+      6,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(2, 3, 1))
+        .cons(Edge.create(4, 5, 1))
+        .reverse()
+    )
+
+  function dagGraph(): Graph =
+    Graph.directed(
+      6,
+      List.nil<Edge>()
+        .cons(Edge.create(5, 2, 1))
+        .cons(Edge.create(5, 0, 1))
+        .cons(Edge.create(4, 0, 1))
+        .cons(Edge.create(4, 1, 1))
+        .cons(Edge.create(2, 3, 1))
+        .cons(Edge.create(3, 1, 1))
+        .reverse()
+    )
+
+  function cyclicGraph(): Graph =
+    Graph.undirected(
+      3,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(1, 2, 1))
+        .cons(Edge.create(2, 0, 1))
+        .reverse()
+    )
+
+  function acyclicGraph(): Graph =
+    Graph.undirected(
+      3,
+      List.nil<Edge>().cons(Edge.create(0, 1, 1)).cons(Edge.create(1, 2, 1)).reverse()
+    )
+
+  function mstGraph(): Graph =
+    Graph.undirected(
+      4,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 10))
+        .cons(Edge.create(0, 2, 6))
+        .cons(Edge.create(0, 3, 5))
+        .cons(Edge.create(1, 3, 15))
+        .cons(Edge.create(2, 3, 4))
+        .reverse()
+    )
+
+  function singleVertex(): Graph = Graph.undirected(1, List.nil<Edge>())
+
+  function linearGraph(): Graph =
+    Graph.undirected(
+      4,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(1, 2, 1))
+        .cons(Edge.create(2, 3, 1))
+        .reverse()
+    )
+
+  function directedCycle(): Graph =
+    Graph.directed(
+      3,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(1, 2, 1))
+        .cons(Edge.create(2, 0, 1))
+        .reverse()
+    )
+
+  function directedAcyclic(): Graph =
+    Graph.directed(
+      4,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(1, 2, 1))
+        .cons(Edge.create(2, 3, 1))
+        .reverse()
+    )
+
+  function negativeWeightGraph(): Graph =
+    Graph.directed(
+      4,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(1, 2, -2))
+        .cons(Edge.create(2, 3, 1))
+        .reverse()
+    )
+
+  function negativeCycleGraph(): Graph =
+    Graph.directed(
+      3,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(1, 2, -3))
+        .cons(Edge.create(2, 0, 1))
+        .reverse()
+    )
+
+  function completeGraph(): Graph =
+    Graph.undirected(
+      4,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(0, 2, 1))
+        .cons(Edge.create(0, 3, 1))
+        .cons(Edge.create(1, 2, 1))
+        .cons(Edge.create(1, 3, 1))
+        .cons(Edge.create(2, 3, 1))
+        .reverse()
+    )
+
+  function starGraph(): Graph =
+    Graph.undirected(
+      5,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(0, 2, 1))
+        .cons(Edge.create(0, 3, 1))
+        .cons(Edge.create(0, 4, 1))
+        .reverse()
+    )
+
+  function binaryTreeGraph(): Graph =
+    Graph.undirected(
+      7,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 1))
+        .cons(Edge.create(0, 2, 1))
+        .cons(Edge.create(1, 3, 1))
+        .cons(Edge.create(1, 4, 1))
+        .cons(Edge.create(2, 5, 1))
+        .cons(Edge.create(2, 6, 1))
+        .reverse()
+    )
+
+  function weightedMSTGraph(): Graph =
+    Graph.undirected(
+      5,
+      List.nil<Edge>()
+        .cons(Edge.create(0, 1, 2))
+        .cons(Edge.create(0, 3, 6))
+        .cons(Edge.create(1, 2, 3))
+        .cons(Edge.create(1, 3, 8))
+        .cons(Edge.create(1, 4, 5))
+        .cons(Edge.create(2, 4, 7))
+        .cons(Edge.create(3, 4, 9))
+        .reverse()
+    )
+}
+
+class GraphAlgorithms {
+  private function testGraphCreation(): unit = {
+    let g = GraphTestFactory.simpleDirected();
+    ForTests.assertIntEquals(4, g.vertexCount);
+    ForTests.assertIntEquals(6, g.edges.length());
+  }
+
+  private function testAdjacencyList(): unit = {
+    let g = GraphTestFactory.simpleUndirected();
+    let neighbors0 = g.getNeighbors(0);
+    ForTests.assertBool(neighbors0.length() == 2, "Vertex 0 should have 2 neighbors");
+  }
+
+  private function testBFSTraversal(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let traversal = BFS.traverse(g, 0);
+    ForTests.assertIntEquals(4, traversal.length());
+  }
+
+  private function testBFSPathExists(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let path = BFS.findPath(g, 0, 3);
+    let found = match path {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(found, "Path should exist from 0 to 3");
+  }
+
+  private function testBFSPathNotFound(): unit = {
+    let g = GraphTestFactory.disconnectedGraph();
+    let path = BFS.findPath(g, 0, 3);
+    let found = match path {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(!found, "Path should not exist from 0 to 3 in disconnected graph");
+  }
+
+  private function testBFSOnCompleteGraph(): unit = {
+    let g = GraphTestFactory.completeGraph();
+    let path = BFS.findPath(g, 0, 3);
+    let found = match path {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(found, "Path should exist in complete graph");
+  }
+
+  private function testDFSTraversal(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let traversal = DFS.traverse(g, 0);
+    ForTests.assertIntEquals(4, traversal.length());
+  }
+
+  private function testDFSPathExists(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let found = DFS.hasPath(g, 0, 3);
+    ForTests.assertBool(found, "DFS should find path from 0 to 3");
+  }
+
+  private function testDFSPathNotFound(): unit = {
+    let g = GraphTestFactory.disconnectedGraph();
+    let found = DFS.hasPath(g, 0, 3);
+    ForTests.assertBool(!found, "DFS should not find path in disconnected graph");
+  }
+
+  private function testDFSOnTree(): unit = {
+    let g = GraphTestFactory.binaryTreeGraph();
+    let found = DFS.hasPath(g, 0, 6);
+    ForTests.assertBool(found, "DFS should find path in binary tree");
+  }
+
+  private function testTopologicalSortDAG(): unit = {
+    let g = GraphTestFactory.dagGraph();
+    let result = TopologicalSort.sort(g);
+    let valid = match result {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(valid, "Topological sort should succeed for DAG");
+  }
+
+  private function testTopologicalSortCyclic(): unit = {
+    let g = GraphTestFactory.directedCycle();
+    let result = TopologicalSort.sort(g);
+    let valid = match result {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(!valid, "Topological sort should fail for cyclic graph");
+  }
+
+  private function testTopologicalSortLinear(): unit = {
+    let g = GraphTestFactory.directedAcyclic();
+    let result = TopologicalSort.sort(g);
+    let valid = match result {
+      None -> false,
+      Some(order) -> order.length() == 4,
+    };
+    ForTests.assertBool(valid, "Topological sort should produce order of all vertices");
+  }
+
+  private function testConnectedComponentsCount(): unit = {
+    let g = GraphTestFactory.disconnectedGraph();
+    let count = ConnectedComponents.countComponents(g);
+    ForTests.assertIntEquals(3, count);
+  }
+
+  private function testConnectedComponentsSingle(): unit = {
+    let g = GraphTestFactory.completeGraph();
+    let count = ConnectedComponents.countComponents(g);
+    ForTests.assertIntEquals(1, count);
+  }
+
+  private function testConnectedComponentsIsolated(): unit = {
+    let g = GraphTestFactory.singleVertex();
+    let count = ConnectedComponents.countComponents(g);
+    ForTests.assertIntEquals(1, count);
+  }
+
+  private function testConnectedComponentsLinear(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let count = ConnectedComponents.countComponents(g);
+    ForTests.assertIntEquals(1, count);
+  }
+
+  private function testDijkstraShortestPath(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let path = Dijkstra.shortestPath(g, 0, 3);
+    let dist = match path {
+      None -> -1,
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(3, dist);
+  }
+
+  private function testDijkstraNoPath(): unit = {
+    let g = GraphTestFactory.disconnectedGraph();
+    let path = Dijkstra.shortestPath(g, 0, 3);
+    let found = match path {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(!found, "Dijkstra should not find path in disconnected graph");
+  }
+
+  private function testDijkstraSelfLoop(): unit = {
+    let g = GraphTestFactory.singleVertex();
+    let path = Dijkstra.shortestPath(g, 0, 0);
+    let dist = match path {
+      None -> -1,
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(0, dist);
+  }
+
+  private function testBellmanFordBasic(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let path = BellmanFord.shortestPath(g, 0, 3);
+    let dist = match path {
+      None -> -1,
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(3, dist);
+  }
+
+  private function testBellmanFordNegativeWeight(): unit = {
+    let g = GraphTestFactory.negativeWeightGraph();
+    let path = BellmanFord.shortestPath(g, 0, 3);
+    let dist = match path {
+      None -> -2,
+      Some(d) -> d,
+    };
+    ForTests.assertBool(dist < 3, "Bellman-Ford should handle negative weights");
+  }
+
+  private function testBellmanFordNegativeCycle(): unit = {
+    let g = GraphTestFactory.negativeCycleGraph();
+    let path = BellmanFord.shortestPath(g, 0, 2);
+    let found = match path {
+      None -> false,
+      Some(_) -> true,
+    };
+    ForTests.assertBool(!found, "Bellman-Ford should detect negative cycle");
+  }
+
+  private function testKruskalMST(): unit = {
+    let g = GraphTestFactory.mstGraph();
+    let mst = KruskalMST.mst(g);
+    ForTests.assertIntEquals(3, mst.length());
+  }
+
+  private function testKruskalMSTWeight(): unit = {
+    let g = GraphTestFactory.mstGraph();
+    let weight = KruskalMST.mstWeight(g);
+    ForTests.assertIntEquals(19, weight);
+  }
+
+  private function testKruskalMSTWeighted(): unit = {
+    let g = GraphTestFactory.weightedMSTGraph();
+    let weight = KruskalMST.mstWeight(g);
+    ForTests.assertIntEquals(16, weight);
+  }
+
+  private function testKruskalSingleVertex(): unit = {
+    let g = GraphTestFactory.singleVertex();
+    let mst = KruskalMST.mst(g);
+    ForTests.assertIntEquals(0, mst.length());
+  }
+
+  private function testPrimMSTWeight(): unit = {
+    let g = GraphTestFactory.mstGraph();
+    let weight = PrimMST.mstWeight(g);
+    ForTests.assertIntEquals(19, weight);
+  }
+
+  private function testPrimMSTWeighted(): unit = {
+    let g = GraphTestFactory.weightedMSTGraph();
+    let weight = PrimMST.mstWeight(g);
+    ForTests.assertIntEquals(16, weight);
+  }
+
+  private function testPrimMSTLinear(): unit = {
+    let g = GraphTestFactory.linearGraph();
+    let weight = PrimMST.mstWeight(g);
+    ForTests.assertIntEquals(3, weight);
+  }
+
+  private function testCycleDetectionCyclic(): unit = {
+    let g = GraphTestFactory.cyclicGraph();
+    let hasCycle = CycleDetection.hasCycleUndirected(g);
+    ForTests.assertBool(hasCycle, "Should detect cycle in cyclic graph");
+  }
+
+  private function testCycleDetectionAcyclic(): unit = {
+    let g = GraphTestFactory.acyclicGraph();
+    let hasCycle = CycleDetection.hasCycleUndirected(g);
+    ForTests.assertBool(!hasCycle, "Should not detect cycle in acyclic graph");
+  }
+
+  private function testCycleDetectionComplete(): unit = {
+    let g = GraphTestFactory.completeGraph();
+    let hasCycle = CycleDetection.hasCycleUndirected(g);
+    ForTests.assertBool(hasCycle, "Complete graph should have cycles");
+  }
+
+  private function testCycleDetectionTree(): unit = {
+    let g = GraphTestFactory.binaryTreeGraph();
+    let hasCycle = CycleDetection.hasCycleUndirected(g);
+    ForTests.assertBool(!hasCycle, "Tree should not have cycles");
+  }
+
+  private function testCycleDirectedPositive(): unit = {
+    let g = GraphTestFactory.directedCycle();
+    let hasCycle = CycleDetection.hasCycleDirected(g);
+    ForTests.assertBool(hasCycle, "Should detect directed cycle");
+  }
+
+  private function testCycleDirectedNegative(): unit = {
+    let g = GraphTestFactory.dagGraph();
+    let hasCycle = CycleDetection.hasCycleDirected(g);
+    ForTests.assertBool(!hasCycle, "DAG should not have cycles");
+  }
+
+  private function testCycleDirectedLinear(): unit = {
+    let g = GraphTestFactory.directedAcyclic();
+    let hasCycle = CycleDetection.hasCycleDirected(g);
+    ForTests.assertBool(!hasCycle, "Linear directed graph should not have cycles");
+  }
+
+  private function testUnionFindBasic(): unit = {
+    let uf = UnionFind.create(5);
+    ForTests.assertBool(!uf.connected(0, 1), "Initially no elements should be connected");
+  }
+
+  private function testUnionFindUnion(): unit = {
+    let uf1 = UnionFind.create(5);
+    let uf2 = uf1.union(0, 1);
+    ForTests.assertBool(uf2.connected(0, 1), "After union, elements should be connected");
+  }
+
+  private function testUnionFindTransitive(): unit = {
+    let uf1 = UnionFind.create(5);
+    let uf2 = uf1.union(0, 1);
+    let uf3 = uf2.union(1, 2);
+    ForTests.assertBool(uf3.connected(0, 2), "Connection should be transitive");
+  }
+
+  private function testGraphDirected(): unit = {
+    let g = GraphTestFactory.simpleDirected();
+    ForTests.assertBool(g.directed, "Graph should be directed");
+  }
+
+  private function testGraphUndirected(): unit = {
+    let g = GraphTestFactory.simpleUndirected();
+    ForTests.assertBool(!g.directed, "Graph should be undirected");
+  }
+
+  private function testBFSOnStarGraph(): unit = {
+    let g = GraphTestFactory.starGraph();
+    let traversal = BFS.traverse(g, 0);
+    ForTests.assertIntEquals(5, traversal.length());
+  }
+
+  private function testDFSOnStarGraph(): unit = {
+    let g = GraphTestFactory.starGraph();
+    let traversal = DFS.traverse(g, 0);
+    ForTests.assertIntEquals(5, traversal.length());
+  }
+
+  function run(): unit = {
+    GraphAlgorithms.testGraphCreation();
+    GraphAlgorithms.testAdjacencyList();
+    GraphAlgorithms.testBFSTraversal();
+    GraphAlgorithms.testBFSPathExists();
+    GraphAlgorithms.testBFSPathNotFound();
+    GraphAlgorithms.testBFSOnCompleteGraph();
+    GraphAlgorithms.testDFSTraversal();
+    GraphAlgorithms.testDFSPathExists();
+    GraphAlgorithms.testDFSPathNotFound();
+    GraphAlgorithms.testDFSOnTree();
+    GraphAlgorithms.testTopologicalSortDAG();
+    GraphAlgorithms.testTopologicalSortCyclic();
+    GraphAlgorithms.testTopologicalSortLinear();
+    GraphAlgorithms.testConnectedComponentsCount();
+    GraphAlgorithms.testConnectedComponentsSingle();
+    GraphAlgorithms.testConnectedComponentsIsolated();
+    GraphAlgorithms.testConnectedComponentsLinear();
+    GraphAlgorithms.testDijkstraShortestPath();
+    GraphAlgorithms.testDijkstraNoPath();
+    GraphAlgorithms.testDijkstraSelfLoop();
+    GraphAlgorithms.testBellmanFordBasic();
+    GraphAlgorithms.testBellmanFordNegativeWeight();
+    GraphAlgorithms.testBellmanFordNegativeCycle();
+    GraphAlgorithms.testKruskalMST();
+    GraphAlgorithms.testKruskalMSTWeight();
+    GraphAlgorithms.testKruskalMSTWeighted();
+    GraphAlgorithms.testKruskalSingleVertex();
+    GraphAlgorithms.testPrimMSTWeight();
+    GraphAlgorithms.testPrimMSTWeighted();
+    GraphAlgorithms.testPrimMSTLinear();
+    GraphAlgorithms.testCycleDetectionCyclic();
+    GraphAlgorithms.testCycleDetectionAcyclic();
+    GraphAlgorithms.testCycleDetectionComplete();
+    GraphAlgorithms.testCycleDetectionTree();
+    GraphAlgorithms.testCycleDirectedPositive();
+    GraphAlgorithms.testCycleDirectedNegative();
+    GraphAlgorithms.testCycleDirectedLinear();
+    GraphAlgorithms.testUnionFindBasic();
+    GraphAlgorithms.testUnionFindUnion();
+    GraphAlgorithms.testUnionFindTransitive();
+    GraphAlgorithms.testGraphDirected();
+    GraphAlgorithms.testGraphUndirected();
+    GraphAlgorithms.testBFSOnStarGraph();
+    GraphAlgorithms.testDFSOnStarGraph();
+  }
+}

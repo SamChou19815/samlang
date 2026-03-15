@@ -1,0 +1,725 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class HuffmanNode(Leaf(int, int), Internal(int, HuffmanNode, HuffmanNode)) {
+  method getFrequency(): int =
+    match this {
+      Leaf(freq, c) -> freq,
+      Internal(freq, left, right) -> freq,
+    }
+
+  method getChar(): Option<int> =
+    match this {
+      Leaf(freq, c) -> Option.Some(c),
+      Internal(freq, left, right) -> Option.None(),
+    }
+
+  method isLeaf(): bool =
+    match this {
+      Leaf(freq, c) -> true,
+      Internal(freq, left, right) -> false,
+    }
+}
+
+class FrequencyCounter {
+  private function updateFrequency(freqs: List<Pair<int, int>>, char: int): List<Pair<int, int>> =
+    match freqs {
+      Nil -> List.of(Pair.init(char, 1)),
+      Cons(h, t) -> {
+        if h.e0 == char {
+          t.cons(Pair.init(char, h.e1 + 1))
+        } else {
+          FrequencyCounter.updateFrequency(t, char).cons(h)
+        }
+      },
+    }
+
+  private function countInString(chars: List<int>, freqs: List<Pair<int, int>>): List<
+    Pair<int, int>
+  > =
+    match chars {
+      Nil -> freqs,
+      Cons(c, rest) -> {
+        let updated = FrequencyCounter.updateFrequency(freqs, c);
+        FrequencyCounter.countInString(rest, updated)
+      },
+    }
+
+  function count(text: List<int>): List<Pair<int, int>> =
+    FrequencyCounter.countInString(text, List.nil<Pair<int, int>>())
+}
+
+class PriorityQueue {
+  function insert(list: List<HuffmanNode>, node: HuffmanNode): List<HuffmanNode> =
+    match list {
+      Nil -> List.of(node),
+      Cons(h, t) -> {
+        let nodeFreq = node.getFrequency();
+        let hFreq = h.getFrequency();
+        if nodeFreq < hFreq {
+          list.cons(node)
+        } else {
+          if nodeFreq == hFreq {
+            match node {
+              Leaf(f1, c1) -> {
+                match h {
+                  Leaf(f2, c2) -> {
+                    if c1 < c2 { list.cons(node) } else { PriorityQueue.insert(t, node).cons(h) }
+                  },
+                  Internal(f3, l3, r3) -> PriorityQueue.insert(t, node).cons(h),
+                }
+              },
+              Internal(f4, l4, r4) -> PriorityQueue.insert(t, node).cons(h),
+            }
+          } else {
+            PriorityQueue.insert(t, node).cons(h)
+          }
+        }
+      },
+    }
+
+  function buildQueue(freqs: List<Pair<int, int>>): List<HuffmanNode> =
+    match freqs {
+      Nil -> List.nil<HuffmanNode>(),
+      Cons(h, t) -> {
+        let node = HuffmanNode.Leaf(h.e1, h.e0);
+        let rest = PriorityQueue.buildQueue(t);
+        PriorityQueue.insert(rest, node)
+      },
+    }
+}
+
+class HuffmanTreeBuilder {
+  private function extractTwo(nodes: List<HuffmanNode>): Option<
+    Pair<HuffmanNode, Pair<HuffmanNode, List<HuffmanNode>>>
+  > =
+    match nodes {
+      Nil -> Option.None(),
+      Cons(first, rest1) -> match rest1 {
+        Nil -> Option.None(),
+        Cons(second, rest2) -> Option.Some(Pair.init(first, Pair.init(second, rest2))),
+      },
+    }
+
+  function build(freqs: List<Pair<int, int>>): Option<HuffmanNode> =
+    if freqs == List.nil<Pair<int, int>>() {
+      Option.None()
+    } else {
+      let queue = PriorityQueue.buildQueue(freqs);
+      HuffmanTreeBuilder.buildFromQueue(queue)
+    }
+
+  private function buildFromQueue(queue: List<HuffmanNode>): Option<HuffmanNode> =
+    match HuffmanTreeBuilder.extractTwo(queue) {
+      None -> match queue {
+        Nil -> Option.None(),
+        Cons(single, Nil) -> Option.Some(single),
+        Cons(h2, t2) -> Option.None(),
+      },
+      Some(pair) -> {
+        let left = pair.e0;
+        let right = pair.e1.e0;
+        let rest = pair.e1.e1;
+        let combinedFreq = left.getFrequency() + right.getFrequency();
+        let newNode = HuffmanNode.Internal(combinedFreq, left, right);
+        let newQueue = PriorityQueue.insert(rest, newNode);
+        HuffmanTreeBuilder.buildFromQueue(newQueue)
+      },
+    }
+}
+
+class CodeEntry(val char: int, val code: List<bool>) {}
+
+class CodeGenerator {
+  private function updateCode(codes: List<CodeEntry>, char: int, code: List<bool>): List<
+    CodeEntry
+  > = codes.cons(CodeEntry.init(char, code))
+
+  private function generateCodesRecursive(
+    node: HuffmanNode,
+    currentCode: List<bool>,
+    codes: List<CodeEntry>
+  ): List<CodeEntry> =
+    match node {
+      Leaf(freq, c) -> CodeGenerator.updateCode(codes, c, currentCode.reverse()),
+      Internal(freq, left, right) -> {
+        let leftCodes = CodeGenerator.generateCodesRecursive(left, currentCode.cons(false), codes);
+        CodeGenerator.generateCodesRecursive(right, currentCode.cons(true), leftCodes)
+      },
+    }
+
+  function generateCodes(root: HuffmanNode): List<CodeEntry> =
+    CodeGenerator.generateCodesRecursive(root, List.nil<bool>(), List.nil<CodeEntry>())
+
+  function findCode(codes: List<CodeEntry>, char: int): Option<List<bool>> =
+    match codes {
+      Nil -> Option.None(),
+      Cons(h, t) -> if h.char == char {
+        Option.Some(h.code)
+      } else {
+        CodeGenerator.findCode(t, char)
+      },
+    }
+
+  function getCodeForChar(codes: List<CodeEntry>, char: int): List<bool> =
+    match CodeGenerator.findCode(codes, char) {
+      None -> List.nil<bool>(),
+      Some(code) -> code,
+    }
+}
+
+class HuffmanEncoder {
+  private function encodeChar(bits: List<bool>, codes: List<CodeEntry>, char: int): List<bool> =
+    match CodeGenerator.findCode(codes, char) {
+      None -> bits,
+      Some(code) -> HuffmanEncoder.appendBits(bits, code),
+    }
+
+  private function appendBits(acc: List<bool>, bits: List<bool>): List<bool> =
+    match bits {
+      Nil -> acc,
+      Cons(h, t) -> HuffmanEncoder.appendBits(acc.cons(h), t),
+    }
+
+  private function encodeChars(chars: List<int>, codes: List<CodeEntry>, bits: List<bool>): List<
+    bool
+  > =
+    match chars {
+      Nil -> bits.reverse(),
+      Cons(c, rest) -> {
+        let charCode = CodeGenerator.getCodeForChar(codes, c);
+        let newBits = HuffmanEncoder.appendBits(bits, charCode);
+        HuffmanEncoder.encodeChars(rest, codes, newBits)
+      },
+    }
+
+  function encode(text: List<int>, codes: List<CodeEntry>): List<bool> =
+    HuffmanEncoder.encodeChars(text, codes, List.nil<bool>())
+}
+
+class HuffmanDecoder {
+  private function followTree(node: HuffmanNode, bits: List<bool>): Option<Pair<int, List<bool>>> =
+    match bits {
+      Nil -> match node {
+        Leaf(freq, c) -> Option.Some(Pair.init(c, List.nil<bool>())),
+        Internal(f, l, r) -> Option.None(),
+      },
+      Cons(bit, rest) -> {
+        if node.isLeaf() {
+          match node {
+            Leaf(freq, c) -> Option.Some(Pair.init(c, bits)),
+            Internal(f, l, r) -> Option.None(),
+          }
+        } else {
+          match node {
+            Leaf(freq, c) -> Option.None(),
+            Internal(freq, left, right) -> {
+              let nextNode = if bit { right } else { left };
+              HuffmanDecoder.followTree(nextNode, rest)
+            },
+          }
+        }
+      },
+    }
+
+  private function decodeBits(bits: List<bool>, tree: HuffmanNode, decoded: List<int>): Option<
+    List<int>
+  > =
+    match HuffmanDecoder.followTree(tree, bits) {
+      None -> if bits == List.nil<bool>() { Option.Some(decoded.reverse()) } else { Option.None() },
+      Some(pair) -> {
+        let char = pair.e0;
+        let remainingBits = pair.e1;
+        if remainingBits == List.nil<bool>() {
+          Option.Some(decoded.cons(char).reverse())
+        } else {
+          HuffmanDecoder.decodeBits(remainingBits, tree, decoded.cons(char))
+        }
+      },
+    }
+
+  function decode(bits: List<bool>, tree: HuffmanNode): Option<List<int>> =
+    HuffmanDecoder.decodeBits(bits, tree, List.nil<int>())
+}
+
+class CompressionRatio {
+  function calculate(originalBits: int, compressedBits: int): int =
+    if compressedBits == 0 { 0 } else { originalBits * 100 / compressedBits }
+
+  function getOriginalBitCount(charCount: int): int = charCount * 8
+
+  function getCompressedBitCount(bits: List<bool>): int =
+    bits.fold((acc: int, b: bool) -> acc + 1, 0)
+}
+
+class HuffmanCoding {
+  private function testEmptyString(): unit = {
+    let text = List.nil<int>();
+    let freqs = FrequencyCounter.count(text);
+    ForTests.assertIntEquals(0, freqs.length());
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    ForTests.assertBool(treeOpt == Option.None(), "Empty string should have no tree");
+  }
+
+  private function testSingleCharFrequency(): unit = {
+    let text = List.of(97);
+    let freqs = FrequencyCounter.count(text);
+    ForTests.assertIntEquals(1, freqs.length());
+    let first = match freqs {
+      Nil -> Pair.init(0, 0),
+      Cons(h, t) -> h,
+    };
+    ForTests.assertIntEquals(97, first.e0);
+    ForTests.assertIntEquals(1, first.e1);
+  }
+
+  private function testMultipleCharFrequency(): unit = {
+    let text = List.of(97).cons(97).cons(98).cons(97).cons(99);
+    let freqs = FrequencyCounter.count(text);
+    ForTests.assertIntEquals(3, freqs.length());
+  }
+
+  private function testRepeatedCharFrequency(): unit = {
+    let text = List.of(97).cons(97).cons(97).cons(97).cons(97);
+    let freqs = FrequencyCounter.count(text);
+    ForTests.assertIntEquals(1, freqs.length());
+    let first = match freqs {
+      Nil -> Pair.init(0, 0),
+      Cons(h, t) -> h,
+    };
+    ForTests.assertIntEquals(5, first.e1);
+  }
+
+  private function testSingleCharTree(): unit = {
+    let text = List.of(97);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    ForTests.assertBool(tree.isLeaf(), "Single char tree should be a leaf");
+    ForTests.assertIntEquals(1, tree.getFrequency());
+  }
+
+  private function testTwoCharTree(): unit = {
+    let text = List.of(97).cons(98);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    ForTests.assertBool(!tree.isLeaf(), "Two char tree should be internal");
+    ForTests.assertIntEquals(2, tree.getFrequency());
+  }
+
+  private function testBalancedTree(): unit = {
+    let text = List.of(97).cons(98).cons(99).cons(100);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    ForTests.assertIntEquals(4, tree.getFrequency());
+  }
+
+  private function testCodeGenerationSingleChar(): unit = {
+    let text = List.of(97);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    ForTests.assertIntEquals(1, codes.length());
+  }
+
+  private function testCodeGenerationTwoChars(): unit = {
+    let text = List.of(97).cons(98);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    ForTests.assertIntEquals(2, codes.length());
+  }
+
+  private function testCodeGenerationThreeChars(): unit = {
+    let text = List.of(97).cons(98).cons(99);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    ForTests.assertIntEquals(3, codes.length());
+  }
+
+  private function testEncodingSingleChar(): unit = {
+    let text = List.of(97);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    ForTests.assertIntEquals(0, encoded.length());
+  }
+
+  private function testEncodingTwoChars(): unit = {
+    let text = List.of(97).cons(98);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    ForTests.assertIntEquals(2, encoded.length());
+  }
+
+  private function testDecodingSingleChar(): unit = {
+    let text = List.of(97);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let decoded = HuffmanDecoder.decode(encoded, tree);
+    let result = match decoded {
+      None -> List.nil<int>(),
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(1, result.length());
+  }
+
+  private function testDecodingTwoChars(): unit = {
+    let text = List.of(97).cons(98);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let decoded = HuffmanDecoder.decode(encoded, tree);
+    let result = match decoded {
+      None -> List.nil<int>(),
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(2, result.length());
+  }
+
+  private function testRoundtripSimple(): unit = {
+    let text = List.of(97).cons(98).cons(99);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let decoded = HuffmanDecoder.decode(encoded, tree);
+    let result = match decoded {
+      None -> List.nil<int>(),
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(3, result.length());
+  }
+
+  private function testRoundtripRepeated(): unit = {
+    let text = List.of(97).cons(97).cons(97).cons(98).cons(98).cons(99);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let decoded = HuffmanDecoder.decode(encoded, tree);
+    let result = match decoded {
+      None -> List.nil<int>(),
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(6, result.length());
+  }
+
+  private function testCompressionRatioSimple(): unit = {
+    let text = List.of(97).cons(98).cons(99).cons(100);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let originalBits = CompressionRatio.getOriginalBitCount(4);
+    let compressedBits = CompressionRatio.getCompressedBitCount(encoded);
+    ForTests.assertBool(compressedBits < originalBits, "Compressed should be smaller");
+  }
+
+  private function testCompressionRatioRepeated(): unit = {
+    let text = List.of(97).cons(97).cons(97).cons(97).cons(97).cons(98);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let originalBits = CompressionRatio.getOriginalBitCount(6);
+    let compressedBits = CompressionRatio.getCompressedBitCount(encoded);
+    ForTests.assertBool(
+      compressedBits < originalBits,
+      "Repeated char compression should be smaller"
+    );
+  }
+
+  private function testFrequencyCountAccuracy(): unit = {
+    let text = List.nil<int>().cons(97).cons(97).cons(97).cons(98).cons(98).cons(99);
+    let freqs = FrequencyCounter.count(text);
+    let aFreq = HuffmanCoding.findFrequency(freqs, 97);
+    let bFreq = HuffmanCoding.findFrequency(freqs, 98);
+    let cFreq = HuffmanCoding.findFrequency(freqs, 99);
+    ForTests.assertIntEquals(3, aFreq);
+    ForTests.assertIntEquals(2, bFreq);
+    ForTests.assertIntEquals(1, cFreq);
+  }
+
+  private function findFrequency(freqs: List<Pair<int, int>>, char: int): int =
+    match freqs {
+      Nil -> 0,
+      Cons(h, t) -> if h.e0 == char { h.e1 } else { HuffmanCoding.findFrequency(t, char) },
+    }
+
+  private function testPriorityQueueOrdering(): unit = {
+    let freqs = List.nil<Pair<int, int>>()
+      .cons(Pair.init(100, 5))
+      .cons(Pair.init(99, 2))
+      .cons(Pair.init(98, 8));
+    let queue = PriorityQueue.buildQueue(freqs);
+    let first = match queue {
+      Nil -> HuffmanNode.Leaf(0, 0),
+      Cons(h, t) -> h,
+    };
+    ForTests.assertIntEquals(2, first.getFrequency());
+  }
+
+  private function testManyDistinctChars(): unit = {
+    let text = List.nil<int>()
+      .cons(97)
+      .cons(98)
+      .cons(99)
+      .cons(100)
+      .cons(101)
+      .cons(102)
+      .cons(103)
+      .cons(104);
+    let freqs = FrequencyCounter.count(text);
+    ForTests.assertIntEquals(8, freqs.length());
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    ForTests.assertIntEquals(8, tree.getFrequency());
+  }
+
+  private function testRoundtripLonger(): unit = {
+    let text = List.nil<int>()
+      .cons(97)
+      .cons(98)
+      .cons(97)
+      .cons(99)
+      .cons(97)
+      .cons(98)
+      .cons(97)
+      .cons(100);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let decoded = HuffmanDecoder.decode(encoded, tree);
+    let result = match decoded {
+      None -> List.nil<int>(),
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(8, result.length());
+  }
+
+  private function testCodeUniqueness(): unit = {
+    let text = List.of(97).cons(98).cons(99).cons(100);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    ForTests.assertIntEquals(4, codes.length());
+  }
+
+  private function testHighlySkewedFrequency(): unit = {
+    let text = List.nil<int>()
+      .cons(97)
+      .cons(97)
+      .cons(97)
+      .cons(97)
+      .cons(97)
+      .cons(97)
+      .cons(97)
+      .cons(97)
+      .cons(98);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let aCode = CodeGenerator.getCodeForChar(codes, 97);
+    let bCode = CodeGenerator.getCodeForChar(codes, 98);
+    ForTests.assertBool(
+      aCode.length() <= bCode.length(),
+      "High freq char should have shorter code"
+    );
+  }
+
+  private function testAllSameChars(): unit = {
+    let text = List.of(97).cons(97).cons(97).cons(97);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    ForTests.assertIntEquals(0, encoded.length());
+  }
+
+  private function testDecodeEmptyBits(): unit = {
+    let text = List.of(97);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let decoded = HuffmanDecoder.decode(List.nil<bool>(), tree);
+    ForTests.assertBool(
+      decoded == Option.Some(List.nil<int>()),
+      "Empty bits should decode to empty"
+    );
+  }
+
+  private function testCompressionRatioCalculation(): unit = {
+    let originalBits = 1000;
+    let compressedBits = 500;
+    let ratio = CompressionRatio.calculate(originalBits, compressedBits);
+    ForTests.assertIntEquals(200, ratio);
+  }
+
+  private function testTreeNodeStructure(): unit = {
+    let text = List.of(97).cons(98).cons(99);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    match tree {
+      Leaf(f, c) -> ForTests.assertBool(false, "Should be internal"),
+      Internal(f, left, right) -> {
+        ForTests.assertBool(left.isLeaf() || right.isLeaf(), "At least one child should be leaf");
+      },
+    }
+  }
+
+  private function testFullPipeline(): unit = {
+    let text = List.nil<int>()
+      .cons(72)
+      .cons(101)
+      .cons(108)
+      .cons(108)
+      .cons(111)
+      .cons(32)
+      .cons(87)
+      .cons(111)
+      .cons(114)
+      .cons(108)
+      .cons(100);
+    let freqs = FrequencyCounter.count(text);
+    let treeOpt = HuffmanTreeBuilder.build(freqs);
+    let tree = match treeOpt {
+      None -> HuffmanNode.Leaf(0, 0),
+      Some(t) -> t,
+    };
+    let codes = CodeGenerator.generateCodes(tree);
+    let encoded = HuffmanEncoder.encode(text, codes);
+    let decoded = HuffmanDecoder.decode(encoded, tree);
+    let result = match decoded {
+      None -> List.nil<int>(),
+      Some(d) -> d,
+    };
+    ForTests.assertIntEquals(11, result.length());
+    let originalBits = CompressionRatio.getOriginalBitCount(11);
+    let compressedBits = CompressionRatio.getCompressedBitCount(encoded);
+    ForTests.assertBool(compressedBits <= originalBits, "Compression should not expand");
+  }
+
+  function run(): unit = {
+    HuffmanCoding.testEmptyString();
+    HuffmanCoding.testSingleCharFrequency();
+    HuffmanCoding.testMultipleCharFrequency();
+    HuffmanCoding.testRepeatedCharFrequency();
+    HuffmanCoding.testSingleCharTree();
+    HuffmanCoding.testTwoCharTree();
+    HuffmanCoding.testBalancedTree();
+    HuffmanCoding.testCodeGenerationSingleChar();
+    HuffmanCoding.testCodeGenerationTwoChars();
+    HuffmanCoding.testCodeGenerationThreeChars();
+    HuffmanCoding.testEncodingSingleChar();
+    HuffmanCoding.testEncodingTwoChars();
+    HuffmanCoding.testDecodingSingleChar();
+    HuffmanCoding.testDecodingTwoChars();
+    HuffmanCoding.testRoundtripSimple();
+    HuffmanCoding.testRoundtripRepeated();
+    HuffmanCoding.testCompressionRatioSimple();
+    HuffmanCoding.testCompressionRatioRepeated();
+    HuffmanCoding.testFrequencyCountAccuracy();
+    HuffmanCoding.testPriorityQueueOrdering();
+    HuffmanCoding.testManyDistinctChars();
+    HuffmanCoding.testRoundtripLonger();
+    HuffmanCoding.testCodeUniqueness();
+    HuffmanCoding.testHighlySkewedFrequency();
+    HuffmanCoding.testAllSameChars();
+    HuffmanCoding.testDecodeEmptyBits();
+    HuffmanCoding.testCompressionRatioCalculation();
+    HuffmanCoding.testTreeNodeStructure();
+    HuffmanCoding.testFullPipeline();
+  }
+}

@@ -1,0 +1,357 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Heap(val size: int, val capacity: int, val data: List<int>) {
+  function empty(): Heap = Heap.init(0, 16, List.Nil<int>())
+
+  private function parent(i: int): int = (i - 1) / 2
+
+  private function leftChild(i: int): int = 2 * i + 1
+
+  private function rightChild(i: int): int = 2 * i + 2
+
+  private function getNthHelper(lst: List<int>, n: int, defaultVal: int): int = {
+    match lst {
+      Nil -> defaultVal,
+      Cons(v, rest) -> if n == 0 { v } else { Heap.getNthHelper(rest, n - 1, defaultVal) },
+    }
+  }
+
+  private function setNthHelper(lst: List<int>, n: int, value: int): List<int> = {
+    match lst {
+      Nil -> List.Nil(),
+      Cons(v, rest) -> {
+        if n == 0 {
+          List.Cons(value, rest)
+        } else {
+          List.Cons(v, Heap.setNthHelper(rest, n - 1, value))
+        }
+      },
+    }
+  }
+
+  method peek(): Option<int> = {
+    let { size, capacity, data } = this;
+    if size == 0 { Option.None() } else { Option.Some(Heap.getNthHelper(data, 0, 0)) }
+  }
+
+  method insert(value: int): Heap = {
+    let { size, capacity, data } = this;
+    let newData = data.append(List.nil<int>().cons(value));
+    let heap = Heap.init(size + 1, capacity, newData);
+    heap.siftUp(size)
+  }
+
+  private method siftUp(index: int): Heap = {
+    let { size, capacity, data } = this;
+    if index == 0 {
+      this
+    } else {
+      let parentIdx = Heap.parent(index);
+      let currentVal = Heap.getNthHelper(data, index, 0);
+      let parentVal = Heap.getNthHelper(data, parentIdx, 0);
+      if currentVal < parentVal {
+        let newData = Heap.setNthHelper(
+          Heap.setNthHelper(data, index, parentVal),
+          parentIdx,
+          currentVal
+        );
+        Heap.init(size, capacity, newData).siftUp(parentIdx)
+      } else {
+        this
+      }
+    }
+  }
+
+  private function dropLastHelper(lst: List<int>, count: int): List<int> = {
+    match lst {
+      Nil -> List.Nil(),
+      Cons(v, rest) -> if count <= 1 {
+        List.Nil()
+      } else {
+        List.Cons(v, Heap.dropLastHelper(rest, count - 1))
+      },
+    }
+  }
+
+  method extractMin(): Option<Pair<int, Heap>> = {
+    let { size, capacity, data } = this;
+    if size == 0 {
+      Option.None()
+    } else {
+      let minVal = Heap.getNthHelper(data, 0, 0);
+      let lastVal = Heap.getNthHelper(data, size - 1, 0);
+      let newData = Heap.setNthHelper(data, 0, lastVal);
+      let newData2 = Heap.dropLastHelper(newData, size);
+      let heap = Heap.init(size - 1, capacity, newData2).siftDown(0);
+      Option.Some((minVal, heap))
+    }
+  }
+
+  private method siftDown(index: int): Heap = {
+    let { size, capacity, data } = this;
+    let left = Heap.leftChild(index);
+    let right = Heap.rightChild(index);
+    let smallest = index;
+    let currentVal = Heap.getNthHelper(data, index, 0);
+    let leftVal = Heap.getNthHelper(data, left, 2147483647);
+    let rightVal = Heap.getNthHelper(data, right, 2147483647);
+    let newSmallest = if left < size && leftVal < currentVal { left } else { smallest };
+    let newSmallest2 = {
+      let smallestVal = Heap.getNthHelper(data, newSmallest, 0);
+      if right < size && rightVal < smallestVal { right } else { newSmallest }
+    };
+    if newSmallest2 == index {
+      this
+    } else {
+      let swapVal = Heap.getNthHelper(data, newSmallest2, 0);
+      let newData = Heap.setNthHelper(
+        Heap.setNthHelper(data, index, swapVal),
+        newSmallest2,
+        currentVal
+      );
+      Heap.init(size, capacity, newData).siftDown(newSmallest2)
+    }
+  }
+
+  private function toSortedListHelper(h: Heap, acc: List<int>): List<int> = {
+    match h.extractMin() {
+      None -> acc.reverse(),
+      Some(pair) -> {
+        let { e0, e1 } = pair;
+        Heap.toSortedListHelper(e1, List.Cons(e0, acc))
+      },
+    }
+  }
+
+  method toSortedList(): List<int> = { Heap.toSortedListHelper(this, List.Nil()) }
+}
+
+class MinHeapTests {
+  private function testEmptyHeap(): unit = {
+    let h = Heap.empty();
+    ForTests.assertIntEquals(0, h.size);
+    match h.peek() {
+      None -> {  },
+      Some(_) -> Process.panic("Empty heap should not peek"),
+    }
+  }
+
+  private function testInsertOne(): unit = {
+    let h = Heap.empty().insert(5);
+    ForTests.assertIntEquals(1, h.size);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(5, v),
+    }
+  }
+
+  private function testInsertMultiple(): unit = {
+    let h = Heap.empty().insert(5).insert(3).insert(7).insert(1);
+    ForTests.assertIntEquals(4, h.size);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(1, v),
+    }
+  }
+
+  private function testExtractMin(): unit = {
+    let h = Heap.empty().insert(5).insert(3).insert(7).insert(1);
+    match h.extractMin() {
+      None -> Process.panic("Should extract"),
+      Some(pair) -> {
+        let { e0, e1 } = pair;
+        ForTests.assertIntEquals(1, e0)
+      },
+    }
+  }
+
+  private function testExtractMultiple(): unit = {
+    let h = Heap.empty().insert(5).insert(3).insert(7).insert(1).insert(9);
+    let sorted = h.toSortedList();
+    ForTests.assertIntEquals(5, sorted.length());
+    match sorted.first() {
+      None -> Process.panic("Should have first"),
+      Some(v) -> ForTests.assertIntEquals(1, v),
+    }
+  }
+
+  private function testHeapProperty(): unit = {
+    let h = Heap.empty().insert(10).insert(20).insert(5).insert(15).insert(30);
+    match h.extractMin() {
+      None -> Process.panic("Should extract"),
+      Some(pair1) -> {
+        let { e0, e1 } = pair1;
+        ForTests.assertIntEquals(5, e0);
+        match e1.extractMin() {
+          None -> Process.panic("Should extract"),
+          Some(pair2) -> { ForTests.assertIntEquals(10, pair2.e0) },
+        }
+      },
+    }
+  }
+
+  private function testInsertDescending(): unit = {
+    let h = Heap.empty().insert(9).insert(7).insert(5).insert(3).insert(1);
+    ForTests.assertIntEquals(5, h.size);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(1, v),
+    }
+  }
+
+  private function testInsertAscending(): unit = {
+    let h = Heap.empty().insert(1).insert(3).insert(5).insert(7).insert(9);
+    ForTests.assertIntEquals(5, h.size);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(1, v),
+    }
+  }
+
+  private function testExtractAll(): unit = {
+    let h = Heap.empty().insert(4).insert(2).insert(6).insert(1).insert(3).insert(5);
+    let sorted = h.toSortedList();
+    ForTests.assertIntEquals(6, sorted.length());
+  }
+
+  private function testDuplicates(): unit = {
+    let h = Heap.empty().insert(5).insert(5).insert(5).insert(3).insert(3);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(3, v),
+    }
+  }
+
+  private function testNegativeNumbers(): unit = {
+    let h = Heap.empty().insert(5).insert(-3).insert(7).insert(-1);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(-3, v),
+    }
+  }
+
+  private function buildLargeHeap(h: Heap, i: int): Heap =
+    { if i <= 0 { h } else { MinHeapTests.buildLargeHeap(h.insert(i), i - 1) } }
+
+  private function testLargeHeap(): unit = {
+    let h = MinHeapTests.buildLargeHeap(Heap.empty(), 100);
+    ForTests.assertIntEquals(100, h.size);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(1, v),
+    }
+  }
+
+  private function testInterleaved(): unit = {
+    let h = Heap.empty().insert(10).insert(5);
+    match h.extractMin() {
+      None -> Process.panic("Should extract"),
+      Some(pair) -> {
+        let { e0, e1 } = pair;
+        ForTests.assertIntEquals(5, e0);
+        let h2 = e1.insert(3).insert(7);
+        match h2.peek() {
+          None -> Process.panic("Should peek"),
+          Some(v) -> ForTests.assertIntEquals(3, v),
+        }
+      },
+    }
+  }
+
+  private function testSingleExtract(): unit = {
+    let h = Heap.empty().insert(42);
+    match h.extractMin() {
+      None -> Process.panic("Should extract"),
+      Some(pair) -> {
+        let { e0, e1 } = pair;
+        ForTests.assertIntEquals(42, e0);
+        ForTests.assertIntEquals(0, e1.size);
+      },
+    }
+  }
+
+  private function isSortedHelper(lst: List<int>, prev: int): bool = {
+    match lst {
+      Nil -> true,
+      Cons(v, rest) -> { if v < prev { false } else { MinHeapTests.isSortedHelper(rest, v) } },
+    }
+  }
+
+  private function testSortedOrder(): unit = {
+    let h = Heap.empty()
+      .insert(3)
+      .insert(1)
+      .insert(4)
+      .insert(1)
+      .insert(5)
+      .insert(9)
+      .insert(2)
+      .insert(6);
+    let sorted = h.toSortedList();
+    match sorted.first() {
+      None -> Process.panic("Should have first"),
+      Some(first) -> ForTests.assertBool(
+        MinHeapTests.isSortedHelper(sorted, first),
+        "Should be sorted"
+      ),
+    }
+  }
+
+  private function buildDuplicateHeap(h: Heap, i: int): Heap =
+    { if i <= 0 { h } else { MinHeapTests.buildDuplicateHeap(h.insert(42), i - 1) } }
+
+  private function testManyDuplicates(): unit = {
+    let h = MinHeapTests.buildDuplicateHeap(Heap.empty(), 50);
+    ForTests.assertIntEquals(50, h.size);
+    match h.peek() {
+      None -> Process.panic("Should peek"),
+      Some(v) -> ForTests.assertIntEquals(42, v),
+    }
+  }
+
+  private function testExtractAndCheckRemaining(): unit = {
+    let h = Heap.empty().insert(5).insert(3).insert(7).insert(1).insert(9);
+    match h.extractMin() {
+      None -> Process.panic("Should extract"),
+      Some(pair1) -> {
+        let { e0, e1 } = pair1;
+        ForTests.assertIntEquals(1, e0);
+        ForTests.assertIntEquals(4, e1.size);
+        match e1.extractMin() {
+          None -> Process.panic("Should extract"),
+          Some(pair2) -> {
+            ForTests.assertIntEquals(3, pair2.e0);
+            ForTests.assertIntEquals(3, pair2.e1.size);
+          },
+        }
+      },
+    }
+  }
+
+  function run(): unit = {
+    MinHeapTests.testEmptyHeap();
+    MinHeapTests.testInsertOne();
+    MinHeapTests.testInsertMultiple();
+    MinHeapTests.testExtractMin();
+    MinHeapTests.testExtractMultiple();
+    MinHeapTests.testHeapProperty();
+    MinHeapTests.testInsertDescending();
+    MinHeapTests.testInsertAscending();
+    MinHeapTests.testExtractAll();
+    MinHeapTests.testDuplicates();
+    MinHeapTests.testNegativeNumbers();
+    MinHeapTests.testLargeHeap();
+    MinHeapTests.testInterleaved();
+    MinHeapTests.testSingleExtract();
+    MinHeapTests.testSortedOrder();
+    MinHeapTests.testManyDuplicates();
+    MinHeapTests.testExtractAndCheckRemaining();
+  }
+}
+
+class MinHeap {
+  function run(): unit = MinHeapTests.run()
+}

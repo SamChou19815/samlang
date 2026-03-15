@@ -1,0 +1,1028 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Util {
+  function isGreaterThan(a: int, b: int): bool = a > b
+
+  function isLessThan(a: int, b: int): bool = a < b
+}
+
+class Position(val row: int, val col: int) {
+  method equals(other: Position): bool = this.row == other.row && this.col == other.col
+
+  method manhattanDistance(other: Position): int = {
+    let diff1 = this.row - other.row;
+    let diff2 = this.col - other.col;
+    let abs1 = if diff1 < 0 { 0 - diff1 } else { diff1 };
+    let abs2 = if diff2 < 0 { 0 - diff2 } else { diff2 };
+    abs1 + abs2
+  }
+}
+
+class PathNode(val pos: Position, val cost: int, val heuristic: int, val parent: Option<PathNode>) {
+  method totalCost(): int = this.cost + this.heuristic
+}
+
+class Maze(val rows: int, val cols: int, val grid: List<int>) {
+  function create(rows: int, cols: int, grid: List<int>): Maze = Maze.init(rows, cols, grid)
+
+  method getCell(pos: Position): int = {
+    let row = pos.row;
+    let col = pos.col;
+    if row < 0 {
+      -1
+    } else {
+      if row >= this.rows {
+        -1
+      } else {
+        if col < 0 {
+          -1
+        } else {
+          if col >= this.cols {
+            -1
+          } else {
+            let index = row * this.cols + col;
+            Maze.getListElement(this.grid, index)
+          }
+        }
+      }
+    }
+  }
+
+  method isWalkable(pos: Position): bool = {
+    let cell = this.getCell(pos);
+    cell != -1
+  }
+
+  method isStart(pos: Position): bool = this.getCell(pos) == 2
+
+  method isEnd(pos: Position): bool = this.getCell(pos) == 3
+
+  method getCost(pos: Position): int = {
+    let cell = this.getCell(pos);
+    if cell == -1 { 999999 } else { cell }
+  }
+
+  method findStart(): Option<Position> = Maze.findPosition(this.grid, this.cols, 0, 2)
+
+  method findEnd(): Option<Position> = Maze.findPosition(this.grid, this.cols, 0, 3)
+
+  method getNeighbors(pos: Position): List<Position> =
+    List.nil<Position>()
+      .cons(Position.init(pos.row - 1, pos.col))
+      .cons(Position.init(pos.row + 1, pos.col))
+      .cons(Position.init(pos.row, pos.col - 1))
+      .cons(Position.init(pos.row, pos.col + 1))
+      .filter((p) -> this.isWalkable(p))
+
+  private function getListElement(list: List<int>, index: int): int =
+    match list {
+      Nil -> 0,
+      Cons(h, t) -> if index == 0 { h } else { Maze.getListElement(t, index - 1) },
+    }
+
+  private function findPosition(grid: List<int>, cols: int, index: int, target: int): Option<
+    Position
+  > =
+    match grid {
+      Nil -> Option.None<Position>(),
+      Cons(h, t) -> if h == target {
+        Option.Some(Position.init(index / cols, index % cols))
+      } else {
+        Maze.findPosition(t, cols, index + 1, target)
+      },
+    }
+}
+
+class PathResult(val found: bool, val path: List<Position>, val cost: int) {
+  function notFound(): PathResult = PathResult.init(false, List.nil<Position>(), -1)
+
+  function found(path: List<Position>, cost: int): PathResult = PathResult.init(true, path, cost)
+}
+
+class BFS {
+  private function reconstructPath(node: PathNode): List<Position> =
+    match node.parent {
+      None -> List.of(node.pos),
+      Some(parent) -> BFS.reconstructPath(parent).cons(node.pos),
+    }
+
+  private function containsPosition(list: List<PathNode>, pos: Position): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h.pos.equals(pos) { true } else { BFS.containsPosition(t, pos) },
+    }
+
+  private function bfsStep(
+    maze: Maze,
+    queue: List<PathNode>,
+    visited: List<PathNode>,
+    endPos: Position
+  ): PathResult =
+    match queue {
+      Nil -> PathResult.notFound(),
+      Cons(current, restQueue) -> {
+        if current.pos.equals(endPos) {
+          let path = BFS.reconstructPath(current);
+          PathResult.found(path.reverse(), current.cost)
+        } else {
+          if BFS.containsPosition(visited, current.pos) {
+            BFS.bfsStep(maze, restQueue, visited, endPos)
+          } else {
+            let neighbors = maze.getNeighbors(current.pos);
+            let newNodes = BFS.addNeighbors(neighbors, visited, current);
+            let newQueue = BFS.appendList(restQueue, newNodes);
+            let newVisited = visited.cons(current);
+            BFS.bfsStep(maze, newQueue, newVisited, endPos)
+          }
+        }
+      },
+    }
+
+  private function addNeighbors(
+    neighbors: List<Position>,
+    visited: List<PathNode>,
+    parent: PathNode
+  ): List<PathNode> =
+    match neighbors {
+      Nil -> List.nil<PathNode>(),
+      Cons(h, t) -> {
+        let rest = BFS.addNeighbors(t, visited, parent);
+        if BFS.containsPosition(visited, h) {
+          rest
+        } else {
+          let newNode = PathNode.init(h, parent.cost + 1, 0, Option.Some<PathNode>(parent));
+          rest.cons(newNode)
+        }
+      },
+    }
+
+  private function appendList(l1: List<PathNode>, l2: List<PathNode>): List<PathNode> =
+    match l1 {
+      Nil -> l2,
+      Cons(h, t) -> BFS.appendList(t, l2).cons(h),
+    }
+
+  function solve(maze: Maze): PathResult =
+    match maze.findStart() {
+      None -> PathResult.notFound(),
+      Some(start) -> match maze.findEnd() {
+        None -> PathResult.notFound(),
+        Some(end) -> {
+          let startNode = PathNode.init(start, 0, 0, Option.None<PathNode>());
+          let queue = List.of(startNode);
+          BFS.bfsStep(maze, queue, List.nil<PathNode>(), end)
+        },
+      },
+    }
+}
+
+class DFS {
+  private function reconstructPath(node: PathNode): List<Position> =
+    match node.parent {
+      None -> List.of(node.pos),
+      Some(parent) -> DFS.reconstructPath(parent).cons(node.pos),
+    }
+
+  private function containsPosition(list: List<PathNode>, pos: Position): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h.pos.equals(pos) { true } else { DFS.containsPosition(t, pos) },
+    }
+
+  private function dfsStep(
+    maze: Maze,
+    stack: List<PathNode>,
+    visited: List<PathNode>,
+    endPos: Position
+  ): PathResult =
+    match stack {
+      Nil -> PathResult.notFound(),
+      Cons(current, restStack) -> {
+        if current.pos.equals(endPos) {
+          let path = DFS.reconstructPath(current);
+          PathResult.found(path.reverse(), current.cost)
+        } else {
+          if DFS.containsPosition(visited, current.pos) {
+            DFS.dfsStep(maze, restStack, visited, endPos)
+          } else {
+            let neighbors = maze.getNeighbors(current.pos);
+            let newNodes = DFS.addNeighbors(neighbors, visited, current);
+            let newStack = DFS.prependList(newNodes, restStack);
+            let newVisited = visited.cons(current);
+            DFS.dfsStep(maze, newStack, newVisited, endPos)
+          }
+        }
+      },
+    }
+
+  private function addNeighbors(
+    neighbors: List<Position>,
+    visited: List<PathNode>,
+    parent: PathNode
+  ): List<PathNode> =
+    match neighbors {
+      Nil -> List.nil<PathNode>(),
+      Cons(h, t) -> {
+        let rest = DFS.addNeighbors(t, visited, parent);
+        if DFS.containsPosition(visited, h) {
+          rest
+        } else {
+          let newNode = PathNode.init(h, parent.cost + 1, 0, Option.Some<PathNode>(parent));
+          rest.cons(newNode)
+        }
+      },
+    }
+
+  private function prependList(l1: List<PathNode>, l2: List<PathNode>): List<PathNode> =
+    match l1 {
+      Nil -> l2,
+      Cons(h, t) -> DFS.prependList(t, l2).cons(h),
+    }
+
+  function solve(maze: Maze): PathResult =
+    match maze.findStart() {
+      None -> PathResult.notFound(),
+      Some(start) -> match maze.findEnd() {
+        None -> PathResult.notFound(),
+        Some(end) -> {
+          let startNode = PathNode.init(start, 0, 0, Option.None<PathNode>());
+          let stack = List.of(startNode);
+          DFS.dfsStep(maze, stack, List.nil<PathNode>(), end)
+        },
+      },
+    }
+}
+
+class PriorityQueue {
+  function insert(list: List<PathNode>, node: PathNode): List<PathNode> =
+    match list {
+      Nil -> List.of(node),
+      Cons(h, t) -> {
+        let nodeCost = node.totalCost();
+        let hCost = h.totalCost();
+        if nodeCost < hCost { list.cons(node) } else { PriorityQueue.insert(t, node).cons(h) }
+      },
+    }
+
+  function insertMin(list: List<PathNode>, node: PathNode): List<PathNode> =
+    match list {
+      Nil -> List.of(node),
+      Cons(h, t) -> {
+        let nodeCost = node.cost;
+        let hCost = h.cost;
+        if nodeCost < hCost { list.cons(node) } else { PriorityQueue.insertMin(t, node).cons(h) }
+      },
+    }
+}
+
+class AStar {
+  private function reconstructPath(node: PathNode): List<Position> =
+    match node.parent {
+      None -> List.of(node.pos),
+      Some(parent) -> AStar.reconstructPath(parent).cons(node.pos),
+    }
+
+  private function containsPosition(list: List<PathNode>, pos: Position): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h.pos.equals(pos) { true } else { AStar.containsPosition(t, pos) },
+    }
+
+  private function getCost(list: List<PathNode>, pos: Position): int =
+    match list {
+      Nil -> 999999,
+      Cons(h, t) -> if h.pos.equals(pos) { h.cost } else { AStar.getCost(t, pos) },
+    }
+
+  private function removePosition(list: List<PathNode>, pos: Position): List<PathNode> =
+    match list {
+      Nil -> List.nil<PathNode>(),
+      Cons(h, t) -> if h.pos.equals(pos) { t } else { AStar.removePosition(t, pos).cons(h) },
+    }
+
+  private function astarStep(
+    maze: Maze,
+    openList: List<PathNode>,
+    closedList: List<PathNode>,
+    endPos: Position
+  ): PathResult =
+    match openList {
+      Nil -> PathResult.notFound(),
+      Cons(current, restOpen) -> {
+        if current.pos.equals(endPos) {
+          let path = AStar.reconstructPath(current);
+          PathResult.found(path.reverse(), current.cost)
+        } else {
+          let neighbors = maze.getNeighbors(current.pos);
+          let pair = AStar.processNeighbors(neighbors, current, endPos, restOpen, closedList);
+          let newOpen = pair.e0;
+          let newClosed = pair.e1;
+          AStar.astarStep(maze, newOpen, newClosed, endPos)
+        }
+      },
+    }
+
+  private function processNeighbors(
+    neighbors: List<Position>,
+    current: PathNode,
+    endPos: Position,
+    openList: List<PathNode>,
+    closedList: List<PathNode>
+  ): Pair<List<PathNode>, List<PathNode>> =
+    match neighbors {
+      Nil -> Pair.init(openList, closedList.cons(current)),
+      Cons(neighborPos, rest) -> {
+        if AStar.containsPosition(closedList, neighborPos) {
+          AStar.processNeighbors(rest, current, endPos, openList, closedList)
+        } else {
+          let newCost = current.cost + 1;
+          let existingCost = AStar.getCost(openList, neighborPos);
+          if Util.isLessThan(newCost, existingCost) {
+            let heuristic = neighborPos.manhattanDistance(endPos);
+            let newNode = PathNode.init(
+              neighborPos,
+              newCost,
+              heuristic,
+              Option.Some<PathNode>(current)
+            );
+            let updatedOpen = PriorityQueue.insert(
+              AStar.removePosition(openList, neighborPos),
+              newNode
+            );
+            AStar.processNeighbors(rest, current, endPos, updatedOpen, closedList)
+          } else {
+            AStar.processNeighbors(rest, current, endPos, openList, closedList)
+          }
+        }
+      },
+    }
+
+  function solve(maze: Maze): PathResult =
+    match maze.findStart() {
+      None -> PathResult.notFound(),
+      Some(start) -> match maze.findEnd() {
+        None -> PathResult.notFound(),
+        Some(end) -> {
+          let heuristic = start.manhattanDistance(end);
+          let startNode = PathNode.init(start, 0, heuristic, Option.None<PathNode>());
+          let openList = List.of(startNode);
+          AStar.astarStep(maze, openList, List.nil<PathNode>(), end)
+        },
+      },
+    }
+}
+
+class Dijkstra {
+  private function reconstructPath(node: PathNode): List<Position> =
+    match node.parent {
+      None -> List.of(node.pos),
+      Some(parent) -> Dijkstra.reconstructPath(parent).cons(node.pos),
+    }
+
+  private function containsPosition(list: List<PathNode>, pos: Position): bool =
+    match list {
+      Nil -> false,
+      Cons(h, t) -> if h.pos.equals(pos) { true } else { Dijkstra.containsPosition(t, pos) },
+    }
+
+  private function getCost(list: List<PathNode>, pos: Position): int =
+    match list {
+      Nil -> 999999,
+      Cons(h, t) -> if h.pos.equals(pos) { h.cost } else { Dijkstra.getCost(t, pos) },
+    }
+
+  private function removePosition(list: List<PathNode>, pos: Position): List<PathNode> =
+    match list {
+      Nil -> List.nil<PathNode>(),
+      Cons(h, t) -> if h.pos.equals(pos) { t } else { Dijkstra.removePosition(t, pos).cons(h) },
+    }
+
+  private function dijkstraStep(
+    maze: Maze,
+    openList: List<PathNode>,
+    closedList: List<PathNode>,
+    endPos: Position
+  ): PathResult =
+    match openList {
+      Nil -> PathResult.notFound(),
+      Cons(current, restOpen) -> {
+        if current.pos.equals(endPos) {
+          let path = Dijkstra.reconstructPath(current);
+          PathResult.found(path.reverse(), current.cost)
+        } else {
+          let neighbors = maze.getNeighbors(current.pos);
+          let pair = Dijkstra.processNeighbors(neighbors, current, maze, restOpen, closedList);
+          let newOpen = pair.e0;
+          let newClosed = pair.e1;
+          Dijkstra.dijkstraStep(maze, newOpen, newClosed, endPos)
+        }
+      },
+    }
+
+  private function processNeighbors(
+    neighbors: List<Position>,
+    current: PathNode,
+    maze: Maze,
+    openList: List<PathNode>,
+    closedList: List<PathNode>
+  ): Pair<List<PathNode>, List<PathNode>> =
+    match neighbors {
+      Nil -> Pair.init(openList, closedList.cons(current)),
+      Cons(neighborPos, rest) -> {
+        if Dijkstra.containsPosition(closedList, neighborPos) {
+          Dijkstra.processNeighbors(rest, current, maze, openList, closedList)
+        } else {
+          let moveCost = maze.getCost(neighborPos);
+          let newCost = current.cost + moveCost;
+          let existingCost = Dijkstra.getCost(openList, neighborPos);
+          if Util.isLessThan(newCost, existingCost) {
+            let newNode = PathNode.init(neighborPos, newCost, 0, Option.Some<PathNode>(current));
+            let updatedOpen = PriorityQueue.insertMin(
+              Dijkstra.removePosition(openList, neighborPos),
+              newNode
+            );
+            Dijkstra.processNeighbors(rest, current, maze, updatedOpen, closedList)
+          } else {
+            Dijkstra.processNeighbors(rest, current, maze, openList, closedList)
+          }
+        }
+      },
+    }
+
+  function solve(maze: Maze): PathResult =
+    match maze.findStart() {
+      None -> PathResult.notFound(),
+      Some(start) -> match maze.findEnd() {
+        None -> PathResult.notFound(),
+        Some(end) -> {
+          let startNode = PathNode.init(start, 0, 0, Option.None<PathNode>());
+          let openList = List.of(startNode);
+          Dijkstra.dijkstraStep(maze, openList, List.nil<PathNode>(), end)
+        },
+      },
+    }
+}
+
+class MazeSolver {
+  private function createSimpleMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(2)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(3)
+      .reverse();
+    Maze.create(3, 3, grid)
+  }
+
+  private function testSimpleMazeBFS(): unit = {
+    let maze = MazeSolver.createSimpleMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Simple maze BFS should find path");
+    ForTests.assertIntEquals(2, result.cost);
+  }
+
+  private function testSimpleMazeDFS(): unit = {
+    let maze = MazeSolver.createSimpleMaze();
+    let result = DFS.solve(maze);
+    ForTests.assertBool(result.found, "Simple maze DFS should find path");
+    ForTests.assertBool(result.cost >= 2, "DFS cost should be at least 2");
+  }
+
+  private function testSimpleMazeAStar(): unit = {
+    let maze = MazeSolver.createSimpleMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Simple maze A* should find path");
+    ForTests.assertIntEquals(2, result.cost);
+  }
+
+  private function testSimpleMazeDijkstra(): unit = {
+    let maze = MazeSolver.createSimpleMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(result.found, "Simple maze Dijkstra should find path");
+    ForTests.assertIntEquals(2, result.cost);
+  }
+
+  private function createNoSolutionMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(3)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .cons(2)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .reverse();
+    Maze.create(3, 3, grid)
+  }
+
+  private function testNoSolutionBFS(): unit = {
+    let maze = MazeSolver.createNoSolutionMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(!result.found, "No solution maze BFS should not find path");
+  }
+
+  private function testNoSolutionDFS(): unit = {
+    let maze = MazeSolver.createNoSolutionMaze();
+    let result = DFS.solve(maze);
+    ForTests.assertBool(!result.found, "No solution maze DFS should not find path");
+  }
+
+  private function testNoSolutionAStar(): unit = {
+    let maze = MazeSolver.createNoSolutionMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(!result.found, "No solution maze A* should not find path");
+  }
+
+  private function testNoSolutionDijkstra(): unit = {
+    let maze = MazeSolver.createNoSolutionMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(!result.found, "No solution maze Dijkstra should not find path");
+  }
+
+  private function createComplexMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(3)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(2)
+      .reverse();
+    Maze.create(5, 5, grid)
+  }
+
+  private function testComplexMazeBFS(): unit = {
+    let maze = MazeSolver.createComplexMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Complex maze BFS should find path");
+    ForTests.assertBool(
+      Util.isGreaterThan(result.cost, 0),
+      "Complex maze BFS should have positive cost"
+    );
+  }
+
+  private function testComplexMazeAStar(): unit = {
+    let maze = MazeSolver.createComplexMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Complex maze A* should find path");
+    ForTests.assertBool(
+      Util.isGreaterThan(result.cost, 0),
+      "Complex maze A* should have positive cost"
+    );
+  }
+
+  private function testComplexMazeDijkstra(): unit = {
+    let maze = MazeSolver.createComplexMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(result.found, "Complex maze Dijkstra should find path");
+    ForTests.assertBool(
+      Util.isGreaterThan(result.cost, 0),
+      "Complex maze Dijkstra should have positive cost"
+    );
+  }
+
+  private function createTerrainCostMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(3)
+      .cons(5)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(10)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(2)
+      .reverse();
+    Maze.create(3, 4, grid)
+  }
+
+  private function testTerrainCostBFS(): unit = {
+    let maze = MazeSolver.createTerrainCostMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Terrain maze BFS should find path");
+    ForTests.assertIntEquals(5, result.cost);
+  }
+
+  private function testTerrainCostDijkstra(): unit = {
+    let maze = MazeSolver.createTerrainCostMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(result.found, "Terrain maze Dijkstra should find path");
+    ForTests.assertBool(
+      Util.isGreaterThan(result.cost, 4),
+      "Dijkstra should account for terrain costs"
+    );
+  }
+
+  private function createLongCorridorMaze(): Maze = {
+    let grid = List.nil<int>().cons(3).cons(1).cons(1).cons(1).cons(1).cons(2).reverse();
+    Maze.create(1, 6, grid)
+  }
+
+  private function testLongCorridorBFS(): unit = {
+    let maze = MazeSolver.createLongCorridorMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Long corridor BFS should find path");
+    ForTests.assertIntEquals(5, result.cost);
+  }
+
+  private function testLongCorridorDFS(): unit = {
+    let maze = MazeSolver.createLongCorridorMaze();
+    let result = DFS.solve(maze);
+    ForTests.assertBool(result.found, "Long corridor DFS should find path");
+    ForTests.assertIntEquals(5, result.cost);
+  }
+
+  private function testLongCorridorAStar(): unit = {
+    let maze = MazeSolver.createLongCorridorMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Long corridor A* should find path");
+    ForTests.assertIntEquals(5, result.cost);
+  }
+
+  private function testLongCorridorDijkstra(): unit = {
+    let maze = MazeSolver.createLongCorridorMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(result.found, "Long corridor Dijkstra should find path");
+    ForTests.assertIntEquals(5, result.cost);
+  }
+
+  private function createOpenSpaceMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(3)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(2)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .reverse();
+    Maze.create(4, 5, grid)
+  }
+
+  private function testOpenSpaceBFS(): unit = {
+    let maze = MazeSolver.createOpenSpaceMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Open space BFS should find path");
+    ForTests.assertIntEquals(6, result.cost);
+  }
+
+  private function testOpenSpaceAStar(): unit = {
+    let maze = MazeSolver.createOpenSpaceMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Open space A* should find path");
+    ForTests.assertIntEquals(6, result.cost);
+  }
+
+  private function createMultiplePathsMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(3)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(2)
+      .cons(1)
+      .reverse();
+    Maze.create(3, 3, grid)
+  }
+
+  private function testMultiplePathsBFS(): unit = {
+    let maze = MazeSolver.createMultiplePathsMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Multiple paths BFS should find path");
+    ForTests.assertIntEquals(2, result.cost);
+  }
+
+  private function testMultiplePathsAStar(): unit = {
+    let maze = MazeSolver.createMultiplePathsMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Multiple paths A* should find path");
+    ForTests.assertIntEquals(2, result.cost);
+  }
+
+  private function createZigZagMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(3)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(2)
+      .reverse();
+    Maze.create(5, 5, grid)
+  }
+
+  private function testZigZagBFS(): unit = {
+    let maze = MazeSolver.createZigZagMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Zigzag maze BFS should find path");
+    ForTests.assertBool(Util.isGreaterThan(result.cost, 5), "Zigzag maze should have longer path");
+  }
+
+  private function testZigZagAStar(): unit = {
+    let maze = MazeSolver.createZigZagMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Zigzag maze A* should find path");
+    ForTests.assertBool(Util.isGreaterThan(result.cost, 5), "Zigzag maze should have longer path");
+  }
+
+  private function createAdjacentStartEndMaze(): Maze = {
+    let grid = List.nil<int>().cons(2).cons(3).reverse();
+    Maze.create(1, 2, grid)
+  }
+
+  private function testAdjacentStartEnd(): unit = {
+    let maze = MazeSolver.createAdjacentStartEndMaze();
+    let bfsResult = BFS.solve(maze);
+    let dfsResult = DFS.solve(maze);
+    let astarResult = AStar.solve(maze);
+    let dijkstraResult = Dijkstra.solve(maze);
+    ForTests.assertBool(bfsResult.found, "Adjacent BFS should find path");
+    ForTests.assertBool(dfsResult.found, "Adjacent DFS should find path");
+    ForTests.assertBool(astarResult.found, "Adjacent A* should find path");
+    ForTests.assertBool(dijkstraResult.found, "Adjacent Dijkstra should find path");
+    ForTests.assertIntEquals(1, bfsResult.cost);
+    ForTests.assertIntEquals(1, astarResult.cost);
+  }
+
+  private function testAlgorithmConsistency(): unit = {
+    let maze = MazeSolver.createComplexMaze();
+    let bfsResult = BFS.solve(maze);
+    let astarResult = AStar.solve(maze);
+    ForTests.assertBool(bfsResult.found, "BFS should find path");
+    ForTests.assertBool(astarResult.found, "A* should find path");
+    ForTests.assertIntEquals(bfsResult.cost, astarResult.cost);
+  }
+
+  private function createSingleCellMaze(): Maze = {
+    let grid = List.of(2);
+    Maze.create(1, 1, grid)
+  }
+
+  private function testSingleCellMaze(): unit = {
+    let maze = MazeSolver.createSingleCellMaze();
+    let bfsResult = BFS.solve(maze);
+    let dfsResult = DFS.solve(maze);
+    let astarResult = AStar.solve(maze);
+    let dijkstraResult = Dijkstra.solve(maze);
+    ForTests.assertBool(!bfsResult.found, "Single cell with no end should not find path");
+    ForTests.assertBool(!dfsResult.found, "Single cell DFS should not find path");
+    ForTests.assertBool(!astarResult.found, "Single cell A* should not find path");
+    ForTests.assertBool(!dijkstraResult.found, "Single cell Dijkstra should not find path");
+  }
+
+  private function testManhattanDistance(): unit = {
+    let p1 = Position.init(0, 0);
+    let p2 = Position.init(3, 4);
+    ForTests.assertIntEquals(7, p1.manhattanDistance(p2));
+    let p3 = Position.init(2, 2);
+    ForTests.assertIntEquals(4, p1.manhattanDistance(p3));
+  }
+
+  private function testPositionEquality(): unit = {
+    let p1 = Position.init(2, 3);
+    let p2 = Position.init(2, 3);
+    let p3 = Position.init(3, 2);
+    ForTests.assertBool(p1.equals(p2), "Same positions should be equal");
+    ForTests.assertBool(!p1.equals(p3), "Different positions should not be equal");
+  }
+
+  private function createLargeOpenMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(3)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(2)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .reverse();
+    Maze.create(5, 6, grid)
+  }
+
+  private function testLargeOpenBFS(): unit = {
+    let maze = MazeSolver.createLargeOpenMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Large open BFS should find path");
+    ForTests.assertIntEquals(6, result.cost);
+  }
+
+  private function testLargeOpenAStar(): unit = {
+    let maze = MazeSolver.createLargeOpenMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Large open A* should find path");
+    ForTests.assertIntEquals(6, result.cost);
+  }
+
+  private function testLargeOpenDijkstra(): unit = {
+    let maze = MazeSolver.createLargeOpenMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(result.found, "Large open Dijkstra should find path");
+    ForTests.assertIntEquals(6, result.cost);
+  }
+
+  private function testPathLength(): unit = {
+    let maze = MazeSolver.createSimpleMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Should find path");
+    let pathLength = result.path.length();
+    ForTests.assertIntEquals(3, pathLength);
+  }
+
+  private function createSPiralMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(2)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(-1)
+      .cons(1)
+      .cons(1)
+      .cons(3)
+      .reverse();
+    Maze.create(5, 5, grid)
+  }
+
+  private function testSpiralMazeBFS(): unit = {
+    let maze = MazeSolver.createSPiralMaze();
+    let result = BFS.solve(maze);
+    ForTests.assertBool(result.found, "Spiral maze BFS should find path");
+    ForTests.assertBool(Util.isGreaterThan(result.cost, 10), "Spiral maze should have long path");
+  }
+
+  private function testSpiralMazeAStar(): unit = {
+    let maze = MazeSolver.createSPiralMaze();
+    let result = AStar.solve(maze);
+    ForTests.assertBool(result.found, "Spiral maze A* should find path");
+    ForTests.assertBool(Util.isGreaterThan(result.cost, 10), "Spiral maze should have long path");
+  }
+
+  private function createWeightedPathMaze(): Maze = {
+    let grid = List.nil<int>()
+      .cons(3)
+      .cons(1)
+      .cons(1)
+      .cons(1)
+      .cons(5)
+      .cons(1)
+      .cons(2)
+      .cons(1)
+      .cons(1)
+      .reverse();
+    Maze.create(3, 3, grid)
+  }
+
+  private function testWeightedPathDijkstra(): unit = {
+    let maze = MazeSolver.createWeightedPathMaze();
+    let result = Dijkstra.solve(maze);
+    ForTests.assertBool(result.found, "Weighted maze Dijkstra should find path");
+    ForTests.assertBool(
+      Util.isLessThan(result.cost, 10),
+      "Dijkstra should find cheaper path avoiding weight 5"
+    );
+  }
+
+  function run(): unit = {
+    MazeSolver.testSimpleMazeBFS();
+    MazeSolver.testSimpleMazeDFS();
+    MazeSolver.testSimpleMazeAStar();
+    MazeSolver.testSimpleMazeDijkstra();
+    MazeSolver.testNoSolutionBFS();
+    MazeSolver.testNoSolutionDFS();
+    MazeSolver.testNoSolutionAStar();
+    MazeSolver.testNoSolutionDijkstra();
+    MazeSolver.testComplexMazeBFS();
+    MazeSolver.testComplexMazeAStar();
+    MazeSolver.testComplexMazeDijkstra();
+    MazeSolver.testTerrainCostBFS();
+    MazeSolver.testTerrainCostDijkstra();
+    MazeSolver.testLongCorridorBFS();
+    MazeSolver.testLongCorridorDFS();
+    MazeSolver.testLongCorridorAStar();
+    MazeSolver.testLongCorridorDijkstra();
+    MazeSolver.testOpenSpaceBFS();
+    MazeSolver.testOpenSpaceAStar();
+    MazeSolver.testMultiplePathsBFS();
+    MazeSolver.testMultiplePathsAStar();
+    MazeSolver.testZigZagBFS();
+    MazeSolver.testZigZagAStar();
+    MazeSolver.testAdjacentStartEnd();
+    MazeSolver.testAlgorithmConsistency();
+    MazeSolver.testSingleCellMaze();
+    MazeSolver.testManhattanDistance();
+    MazeSolver.testPositionEquality();
+    MazeSolver.testLargeOpenBFS();
+    MazeSolver.testLargeOpenAStar();
+    MazeSolver.testLargeOpenDijkstra();
+    MazeSolver.testPathLength();
+    MazeSolver.testSpiralMazeBFS();
+    MazeSolver.testSpiralMazeAStar();
+    MazeSolver.testWeightedPathDijkstra();
+  }
+}
