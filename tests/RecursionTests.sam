@@ -73,7 +73,7 @@ class RecursionTests {
   private function testCollatz(): unit = {
     ForTests.assertIntEquals(0, RecursionTests.collatzSteps(1, 0));
     ForTests.assertIntEquals(6, RecursionTests.collatzSteps(10, 0));
-    ForTests.assertIntEquals(19, RecursionTests.collatzSteps(27, 0));
+    ForTests.assertIntEquals(111, RecursionTests.collatzSteps(27, 0));
   }
 
   function run(): unit = {

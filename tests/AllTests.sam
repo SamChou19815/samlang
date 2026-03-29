@@ -1,11 +1,15 @@
 import { List } from std.list;
 import { AVLTreeTests } from tests.AVLTree;
 import { AndOrInsideIf } from tests.AndOrInsideIf;
+import { ArithmeticTests } from tests.ArithmeticTests;
 import { ArrayOperations } from tests.ArrayOperations;
 import { Benchmark } from tests.Benchmark;
 import { BlockInIfElse } from tests.BlockInIfElse;
+import { BooleanLogicTests } from tests.BooleanLogicTests;
 import { BuiltinStringTest } from tests.BuiltinStringTest;
 import { CSETest } from tests.CSETest;
+import { ChainedOperationsTests } from tests.ChainedOperationsTests;
+import { ClassMemberTests } from tests.ClassMemberTests;
 import { ConstantFoldingTest } from tests.ConstantFoldingTest;
 import { CorrectOp } from tests.CorrectOp;
 import { DevMeggo } from tests.DevMeggo;
@@ -15,24 +19,35 @@ import { Empty } from tests.Empty;
 import { EnumLimitsRemoved } from tests.EnumLimitsRemoved;
 import { EvaluationOrder } from tests.EvaluationOrder;
 import { ExpressionStatementTests } from tests.ExpressionStatementTests;
+import { FunctionTests } from tests.FunctionTests;
 import { GC } from tests.GC;
+import { GenericClassTests } from tests.GenericClassTests;
+import { HigherOrderFunctionTests } from tests.HigherOrderFunctionTests;
 import { IfElseTests } from tests.IfElseTests;
 import { IntToString } from tests.IntToString;
+import { InterfaceTests } from tests.InterfaceTests;
 import { LambdaCalculus } from tests.LambdaCalculus;
+import { LetExpressionTests } from tests.LetExpressionTests;
+import { ListTransformTests } from tests.ListTransformTests;
 import { LoopOptimization } from tests.LoopOptimization;
 import { MapTests } from tests.MapTests;
 import { MathFunctions } from tests.MathFunctions;
 import { MinHeap } from tests.MinHeap;
+import { MutuallyRecursiveTests } from tests.MutuallyRecursiveTests;
 import { NestedDataStructures } from tests.NestedDataStructures;
+import { NestedTupleTests } from tests.NestedTupleTests;
 import { NeuralNetwork } from tests.NeuralNetwork;
 import { OptionResultTests } from tests.OptionResultTests;
 import { PatternMatching } from tests.PatternMatching;
 import { PrintHelloWorld } from tests.PrintHelloWorld;
+import { RecursionTests } from tests.RecursionTests;
 import { Regex } from tests.RegexEngine;
 import { SetTests } from tests.SetTests;
 import { ShortCircuitAndOr } from tests.ShortCircuitAndOr;
 import { SortableListTest } from tests.SortableList;
+import { StringOperations } from tests.StringOperations;
 import { TupleOperations } from tests.TupleOperations;
+import { VariantTests } from tests.VariantTests;
 import { VariousSyntaxForms } from tests.VariousSyntaxForms;
 
 class TestCase(val name: Str, val runner: () -> unit) {
@@ -47,12 +62,16 @@ class TestCase(val name: Str, val runner: () -> unit) {
 class Main {
   private function getTests(): List<TestCase> =
     List.nil<TestCase>()
+      .cons(TestCase.init("ArithmeticTests", ArithmeticTests.run))
       .cons(TestCase.init("AVLTree", AVLTreeTests.run))
       .cons(TestCase.init("AndOrInsideIf", AndOrInsideIf.run))
       .cons(TestCase.init("ArrayOperations", ArrayOperations.run))
       .cons(TestCase.init("Benchmark", Benchmark.run))
       .cons(TestCase.init("BlockInIfElse", BlockInIfElse.run))
+      .cons(TestCase.init("BooleanLogicTests", BooleanLogicTests.run))
       .cons(TestCase.init("BuiltinStringTest", BuiltinStringTest.run))
+      .cons(TestCase.init("ChainedOperationsTests", ChainedOperationsTests.run))
+      .cons(TestCase.init("ClassMemberTests", ClassMemberTests.run))
       .cons(TestCase.init("ConstantFoldingTest", ConstantFoldingTest.run))
       .cons(TestCase.init("CorrectOp", CorrectOp.run))
       .cons(TestCase.init("CSETest", CSETest.run))
@@ -63,24 +82,35 @@ class Main {
       .cons(TestCase.init("EnumLimitsRemoved", EnumLimitsRemoved.run))
       .cons(TestCase.init("EvaluationOrder", EvaluationOrder.run))
       .cons(TestCase.init("ExpressionStatementTests", ExpressionStatementTests.run))
+      .cons(TestCase.init("FunctionTests", FunctionTests.run))
       .cons(TestCase.init("GC", GC.run))
+      .cons(TestCase.init("GenericClassTests", GenericClassTests.run))
+      .cons(TestCase.init("HigherOrderFunctionTests", HigherOrderFunctionTests.run))
       .cons(TestCase.init("IfElseTests", IfElseTests.run))
       .cons(TestCase.init("IntToString", IntToString.run))
+      .cons(TestCase.init("InterfaceTests", InterfaceTests.run))
       .cons(TestCase.init("LambdaCalculus", LambdaCalculus.run))
+      .cons(TestCase.init("LetExpressionTests", LetExpressionTests.run))
+      .cons(TestCase.init("ListTransformTests", ListTransformTests.run))
       .cons(TestCase.init("LoopOptimization", LoopOptimization.run))
       .cons(TestCase.init("MapTests", MapTests.run))
       .cons(TestCase.init("MathFunctions", MathFunctions.run))
       .cons(TestCase.init("MinHeap", MinHeap.run))
+      .cons(TestCase.init("MutuallyRecursiveTests", MutuallyRecursiveTests.run))
       .cons(TestCase.init("NestedDataStructures", NestedDataStructures.run))
+      .cons(TestCase.init("NestedTupleTests", NestedTupleTests.run))
       .cons(TestCase.init("NeuralNetwork", NeuralNetwork.run))
       .cons(TestCase.init("OptionResultTests", OptionResultTests.run))
       .cons(TestCase.init("PatternMatching", PatternMatching.run))
       .cons(TestCase.init("PrintHelloWorld", PrintHelloWorld.run))
+      .cons(TestCase.init("RecursionTests", RecursionTests.run))
       .cons(TestCase.init("RegexEngine", Regex.run))
       .cons(TestCase.init("SetTests", SetTests.run))
       .cons(TestCase.init("ShortCircuitAndOr", ShortCircuitAndOr.run))
       .cons(TestCase.init("SortableList", SortableListTest.run))
+      .cons(TestCase.init("StringOperations", StringOperations.run))
       .cons(TestCase.init("TupleOperations", TupleOperations.run))
+      .cons(TestCase.init("VariantTests", VariantTests.run))
       .cons(TestCase.init("VariousSyntaxForms", VariousSyntaxForms.run))
       .reverse()
 

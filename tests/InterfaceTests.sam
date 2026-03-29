@@ -1,0 +1,81 @@
+import { Comparable } from std.interfaces;
+import { Pair, Triple, Tuple4 } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Point(val x: int, val y: int) : Comparable<Point> {
+  method compare(other: Point): int = {
+    let dx = this.x - other.x;
+    if dx != 0 { dx } else { this.y - other.y }
+  }
+
+  method distanceSquared(): int = this.x * this.x + this.y * this.y
+}
+
+class NamedPoint(val name: Str, val x: int, val y: int) : Comparable<NamedPoint> {
+  method compare(other: NamedPoint): int = {
+    let dx = this.x - other.x;
+    if dx != 0 { dx } else { this.y - other.y }
+  }
+}
+
+class Box<T: Comparable<T>>(val value: T) : Comparable<Box<T>> {
+  method compare(other: Box<T>): int = this.value.compare(other.value)
+
+  method unwrap(): T = this.value
+}
+
+class InterfaceTests {
+  private function testPointCompare(): unit = {
+    let p1 = Point.init(1, 2);
+    let p2 = Point.init(3, 4);
+    let p3 = Point.init(1, 2);
+    ForTests.assertIntEquals(-2, p1.compare(p2));
+    ForTests.assertIntEquals(2, p2.compare(p1));
+    ForTests.assertIntEquals(0, p1.compare(p3));
+  }
+
+  private function testPointDistance(): unit = {
+    let p1 = Point.init(3, 4);
+    let p2 = Point.init(0, 0);
+    let p3 = Point.init(5, 12);
+    ForTests.assertIntEquals(25, p1.distanceSquared());
+    ForTests.assertIntEquals(0, p2.distanceSquared());
+    ForTests.assertIntEquals(169, p3.distanceSquared());
+  }
+
+  private function testBoxGeneric(): unit = {
+    let b1 = Box.init(Point.init(1, 2));
+    let b2 = Box.init(Point.init(3, 4));
+    let b3 = Box.init(Point.init(1, 2));
+    ForTests.assertIntEquals(-2, b1.compare(b2));
+    ForTests.assertIntEquals(0, b1.compare(b3));
+    let inner = b1.unwrap();
+    ForTests.assertIntEquals(1, inner.x);
+    ForTests.assertIntEquals(2, inner.y);
+  }
+
+  private function testNamedPoint(): unit = {
+    let np1 = NamedPoint.init("origin", 0, 0);
+    let np2 = NamedPoint.init("target", 3, 4);
+    ForTests.assertIntEquals(-3, np1.compare(np2));
+    ForTests.assertIntEquals(3, np2.compare(np1));
+    ForTests.assertIntEquals(0, np1.compare(NamedPoint.init("dup", 0, 0)));
+  }
+
+  private function testComparableEquality(): unit = {
+    let p1 = Point.init(5, 10);
+    let p2 = Point.init(5, 10);
+    let p3 = Point.init(5, 11);
+    ForTests.assertBool(p1.compare(p2) == 0, "Same points compare");
+    ForTests.assertBool(p1.compare(p3) != 0, "Different points compare");
+    ForTests.assertBool(p3.compare(p1) > 0, "p3 > p1");
+  }
+
+  function run(): unit = {
+    InterfaceTests.testPointCompare();
+    InterfaceTests.testPointDistance();
+    InterfaceTests.testBoxGeneric();
+    InterfaceTests.testNamedPoint();
+    InterfaceTests.testComparableEquality();
+  }
+}
