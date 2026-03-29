@@ -1,0 +1,159 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Container<A, B>(val first: A, val second: B) {
+  method swap(): Container<B, A> = Container.init(this.second, this.first)
+
+  method <C> extend(third: C): Container<A, Pair<B, C>> =
+    Container.init(this.first, Pair.init(this.second, third))
+}
+
+class NestedGeneric<T>(val value: T) {
+  method wrap(): Option<NestedGeneric<T>> = Option.Some(this)
+
+  method <R> map(f: (T) -> R): NestedGeneric<R> = NestedGeneric.init(f(this.value))
+}
+
+class Tree<T>(Leaf(T), Node(Tree<T>, T, Tree<T>)) {
+  function <T> singleton(v: T): Tree<T> = Tree.Leaf(v)
+
+  function <T> branch(left: Tree<T>, value: T, right: Tree<T>): Tree<T> =
+    Tree.Node(left, value, right)
+
+  method size(): int =
+    match this {
+      Leaf(_) -> 1,
+      Node(left, _, right) -> left.size() + 1 + right.size(),
+    }
+
+  method <R> map(f: (T) -> R): Tree<R> =
+    match this {
+      Leaf(v) -> Tree.Leaf(f(v)),
+      Node(left, v, right) -> Tree.Node(left.map(f), f(v), right.map(f)),
+    }
+
+  method toList(): List<T> =
+    match this {
+      Leaf(v) -> List.of(v),
+      Node(left, v, right) -> left.toList().append(List.of(v)).append(right.toList()),
+    }
+
+  method <A> fold(f: (A, T) -> A, init: A): A =
+    match this {
+      Leaf(v) -> f(init, v),
+      Node(left, v, right) -> {
+        let acc = left.fold(f, init);
+        let acc2 = f(acc, v);
+        right.fold(f, acc2)
+      },
+    }
+}
+
+class GenericClassTests {
+  private function testContainerSwap(): unit = {
+    let c = Container.init(1, "hello");
+    let swapped = c.swap();
+    ForTests.assertBool("hello" == swapped.first, "swapped first");
+    ForTests.assertIntEquals(1, swapped.second);
+  }
+
+  private function testContainerExtend(): unit = {
+    let c = Container.init(1, "hello");
+    let extended = c.extend(99);
+    ForTests.assertIntEquals(1, extended.first);
+    let (b, c2) = extended.second;
+    ForTests.assertBool("hello" == b, "extended second");
+    ForTests.assertIntEquals(99, c2);
+  }
+
+  private function testNestedGeneric(): unit = {
+    let ng = NestedGeneric.init(42);
+    let mapped = ng.map((x: int) -> x * 2);
+    ForTests.assertIntEquals(84, mapped.value);
+    let wrapped = ng.wrap();
+    match wrapped {
+      Some(inner) -> ForTests.assertIntEquals(42, inner.value),
+      None -> Process.panic<unit>("Should be some"),
+    };
+  }
+
+  private function testTreeSize(): unit = {
+    let leaf = Tree.singleton(1);
+    let branch = Tree.branch(Tree.singleton(1), 2, Tree.singleton(3));
+    let deep = Tree.branch(branch, 4, Tree.singleton(5));
+    ForTests.assertIntEquals(1, leaf.size());
+    ForTests.assertIntEquals(3, branch.size());
+    ForTests.assertIntEquals(5, deep.size());
+  }
+
+  private function testTreeMap(): unit = {
+    let tree = Tree.branch(Tree.singleton(1), 2, Tree.singleton(3));
+    let doubled = tree.map((x: int) -> x * 10);
+    let list = doubled.toList();
+    ForTests.assertIntEquals(3, list.length());
+    let sum = list.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(60, sum);
+  }
+
+  private function testTreeToList(): unit = {
+    let tree = Tree.branch(
+      Tree.singleton(1),
+      2,
+      Tree.branch(Tree.singleton(3), 4, Tree.singleton(5))
+    );
+    let list = tree.toList();
+    ForTests.assertIntEquals(5, list.length());
+    let sum = list.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(15, sum);
+  }
+
+  private function testTreeFold(): unit = {
+    let tree = Tree.branch(Tree.singleton(1), 2, Tree.singleton(3));
+    let sum = tree.fold((acc: int, x: int) -> acc + x, 0);
+    ForTests.assertIntEquals(6, sum);
+    let max = tree.fold((acc: int, x: int) -> if x > acc { x } else { acc }, -2147483648);
+    ForTests.assertIntEquals(3, max);
+  }
+
+  private function testGenericTypeInference(): unit = {
+    let c1 = Container.init(true, 42);
+    let c2 = Container.init("hello", false);
+    ForTests.assertBool(c1.first, "bool first");
+    ForTests.assertIntEquals(42, c1.second);
+    ForTests.assertBool("hello" == c2.first, "str first");
+    ForTests.assertBool(!c2.second, "bool second");
+  }
+
+  private function testNestedContainers(): unit = {
+    let inner = Container.init(1, 2);
+    let outer = Container.init(inner, "wrapped");
+    ForTests.assertIntEquals(1, outer.first.first);
+    ForTests.assertIntEquals(2, outer.first.second);
+    ForTests.assertBool("wrapped" == outer.second, "outer second");
+  }
+
+  private function testGenericWithTuple(): unit = {
+    let c = Container.init((1, 2), (3, 4));
+    let (a, b) = c.first;
+    let (d, e) = c.second;
+    ForTests.assertIntEquals(1, a);
+    ForTests.assertIntEquals(2, b);
+    ForTests.assertIntEquals(3, d);
+    ForTests.assertIntEquals(4, e);
+  }
+
+  function run(): unit = {
+    GenericClassTests.testContainerSwap();
+    GenericClassTests.testContainerExtend();
+    GenericClassTests.testNestedGeneric();
+    GenericClassTests.testTreeSize();
+    GenericClassTests.testTreeMap();
+    GenericClassTests.testTreeToList();
+    GenericClassTests.testTreeFold();
+    GenericClassTests.testGenericTypeInference();
+    GenericClassTests.testNestedContainers();
+    GenericClassTests.testGenericWithTuple();
+  }
+}

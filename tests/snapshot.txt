@@ -1,4 +1,6 @@
 ========================================
+Test Name: ArithmeticTests
+========================================
 Test Name: AVLTree
 ========================================
 Test Name: AndOrInsideIf
@@ -9,9 +11,15 @@ Test Name: Benchmark
 ========================================
 Test Name: BlockInIfElse
 ========================================
+Test Name: BooleanLogicTests
+========================================
 Test Name: BuiltinStringTest
 42!
 Hello World!
+========================================
+Test Name: ChainedOperationsTests
+========================================
+Test Name: ClassMemberTests
 ========================================
 Test Name: ConstantFoldingTest
 ========================================
@@ -76,7 +84,13 @@ x
 y
 Computing result
 ========================================
+Test Name: FunctionTests
+========================================
 Test Name: GC
+========================================
+Test Name: GenericClassTests
+========================================
+Test Name: HigherOrderFunctionTests
 ========================================
 Test Name: IfElseTests
 ========================================
@@ -91,7 +105,14 @@ Test Name: IntToString
 -1234567
 -2147483648
 ========================================
+Test Name: InterfaceTests
+========================================
 Test Name: LambdaCalculus
+========================================
+Test Name: LetExpressionTests
+========================================
+Test Name: ListTransformTests
+cba
 ========================================
 Test Name: LoopOptimization
 100
@@ -106,7 +127,11 @@ Test Name: MathFunctions
 ========================================
 Test Name: MinHeap
 ========================================
+Test Name: MutuallyRecursiveTests
+========================================
 Test Name: NestedDataStructures
+========================================
+Test Name: NestedTupleTests
 ========================================
 Test Name: NeuralNetwork
 ========================================
@@ -116,6 +141,8 @@ Test Name: PatternMatching
 ========================================
 Test Name: PrintHelloWorld
 Hello World!
+========================================
+Test Name: RecursionTests
 ========================================
 Test Name: RegexEngine
 ========================================
@@ -161,7 +188,12 @@ Test Name: SortableList
 3
 4
 ========================================
+Test Name: StringOperations
+Hello World
+========================================
 Test Name: TupleOperations
+========================================
+Test Name: VariantTests
 ========================================
 Test Name: VariousSyntaxForms
 ========================================

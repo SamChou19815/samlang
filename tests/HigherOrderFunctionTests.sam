@@ -1,0 +1,110 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { ForTests } from tests.StdLib;
+
+class HigherOrderFunctionTests {
+  private function applyTwice(f: (int) -> int, x: int): int = f(f(x))
+
+  private function testApplyTwice(): unit = {
+    let double = (x: int) -> x * 2;
+    let inc = (x: int) -> x + 1;
+    ForTests.assertIntEquals(20, HigherOrderFunctionTests.applyTwice(double, 5));
+    ForTests.assertIntEquals(7, HigherOrderFunctionTests.applyTwice(inc, 5));
+    ForTests.assertIntEquals(0, HigherOrderFunctionTests.applyTwice(double, 0));
+  }
+
+  private function testClosureCapture(): unit = {
+    let offset = 10;
+    let addOffset = (x: int) -> x + offset;
+    ForTests.assertIntEquals(15, addOffset(5));
+    ForTests.assertIntEquals(10, addOffset(0));
+    let multiplier = 3;
+    let multiply = (x: int) -> x * multiplier;
+    ForTests.assertIntEquals(21, multiply(7));
+  }
+
+  private function testNestedClosures(): unit = {
+    let a = 2;
+    let f = (x: int) -> {
+      let b = 3;
+      let g = (y: int) -> x + y + a + b;
+      g(4)
+    };
+    ForTests.assertIntEquals(14, f(5));
+  }
+
+  private function testClosureInList(): unit = {
+    let fns = List.of((x: int) -> x + 1).cons((x: int) -> x * 2).cons((x: int) -> x * x);
+    let sum = fns.fold((acc: int, fn: (int) -> int) -> acc + fn(3), 0);
+    ForTests.assertIntEquals(19, sum);
+  }
+
+  private function testClosureOverRecord(): unit = {
+    let pair = (10, 20);
+    let (a, b) = pair;
+    let getSum = () -> a + b;
+    ForTests.assertIntEquals(30, getSum());
+  }
+
+  private function testCurriedStyle(): unit = {
+    let add = (a: int) -> (b: int) -> a + b;
+    let add5 = add(5);
+    let add10 = add(10);
+    ForTests.assertIntEquals(8, add5(3));
+    ForTests.assertIntEquals(15, add5(10));
+    ForTests.assertIntEquals(13, add10(3));
+  }
+
+  private function testFunctionAsArgument(): unit = {
+    let compute = (f: (int, int) -> int, a: int, b: int) -> f(a, b);
+    let add = (a: int, b: int) -> a + b;
+    let mul = (a: int, b: int) -> a * b;
+    let sub = (a: int, b: int) -> a - b;
+    ForTests.assertIntEquals(7, compute(add, 3, 4));
+    ForTests.assertIntEquals(12, compute(mul, 3, 4));
+    ForTests.assertIntEquals(-1, compute(sub, 3, 4));
+  }
+
+  private function testFunctionReturningFunction(): unit = {
+    let makeAdder = (base: int) -> (x: int) -> x + base;
+    let add100 = makeAdder(100);
+    let addMinus5 = makeAdder(-5);
+    ForTests.assertIntEquals(105, add100(5));
+    ForTests.assertIntEquals(95, add100(-5));
+    ForTests.assertIntEquals(-5, addMinus5(0));
+  }
+
+  private function testPipeline(): unit = {
+    let pipeline = (x: int, fns: List<(int) -> int>) -> fns.fold(
+      (acc: int, fn: (int) -> int) -> fn(acc),
+      x
+    );
+    let result = pipeline(
+      1,
+      List.of((x: int) -> x + 1).cons((x: int) -> x * 3).cons((x: int) -> x * x).reverse()
+    );
+    ForTests.assertIntEquals(36, result);
+  }
+
+  private function testClosureWithMatch(): unit = {
+    let process = (opt: Option<int>) -> match opt {
+      Some(v) -> v * 2,
+      None -> -1,
+    };
+    ForTests.assertIntEquals(10, process(Option.Some(5)));
+    ForTests.assertIntEquals(-1, process(Option.None<int>()));
+  }
+
+  function run(): unit = {
+    HigherOrderFunctionTests.testApplyTwice();
+    HigherOrderFunctionTests.testClosureCapture();
+    HigherOrderFunctionTests.testNestedClosures();
+    HigherOrderFunctionTests.testClosureInList();
+    HigherOrderFunctionTests.testClosureOverRecord();
+    HigherOrderFunctionTests.testCurriedStyle();
+    HigherOrderFunctionTests.testFunctionAsArgument();
+    HigherOrderFunctionTests.testFunctionReturningFunction();
+    HigherOrderFunctionTests.testPipeline();
+    HigherOrderFunctionTests.testClosureWithMatch();
+  }
+}

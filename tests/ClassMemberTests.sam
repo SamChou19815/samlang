@@ -1,0 +1,140 @@
+import { Option } from std.option;
+import { Pair, Triple } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Counter(val count: int) {
+  method increment(): Counter = Counter.init(this.count + 1)
+
+  method decrement(): Counter = if this.count > 0 { Counter.init(this.count - 1) } else { this }
+
+  method value(): int = this.count
+
+  method isZero(): bool = this.count == 0
+
+  method add(n: int): Counter = Counter.init(this.count + n)
+}
+
+class Rectangle(val width: int, val height: int) {
+  method area(): int = this.width * this.height
+
+  method perimeter(): int = 2 * (this.width + this.height)
+
+  method isSquare(): bool = this.width == this.height
+
+  method scale(factor: int): Rectangle = Rectangle.init(this.width * factor, this.height * factor)
+
+  method contains(other: Rectangle): bool = other.width <= this.width && other.height <= this.height
+}
+
+class Rational(val numerator: int, val denominator: int) {
+  method <R> mapNumerator(f: (int) -> int): Rational =
+    Rational.init(f(this.numerator), this.denominator)
+
+  method multiply(other: Rational): Rational =
+    Rational.init(this.numerator * other.numerator, this.denominator * other.denominator)
+
+  method equals(other: Rational): bool =
+    this.numerator * other.denominator == other.numerator * this.denominator
+}
+
+class ClassMemberTests {
+  private function testCounterBasic(): unit = {
+    let c = Counter.init(5);
+    ForTests.assertIntEquals(5, c.value());
+    ForTests.assertBool(!c.isZero(), "5 is not zero");
+  }
+
+  private function testCounterIncrement(): unit = {
+    let c = Counter.init(0).increment().increment().increment();
+    ForTests.assertIntEquals(3, c.value());
+    ForTests.assertBool(!c.isZero(), "3 is not zero");
+  }
+
+  private function testCounterDecrement(): unit = {
+    let c = Counter.init(3).decrement().decrement();
+    ForTests.assertIntEquals(1, c.value());
+    let zero = Counter.init(0).decrement();
+    ForTests.assertIntEquals(0, zero.value());
+    ForTests.assertBool(zero.isZero(), "zero");
+  }
+
+  private function testCounterChaining(): unit = {
+    let c = Counter.init(10).add(5).decrement().decrement().decrement();
+    ForTests.assertIntEquals(12, c.value());
+  }
+
+  private function testRectangleArea(): unit = {
+    let r = Rectangle.init(5, 10);
+    ForTests.assertIntEquals(50, r.area());
+    ForTests.assertIntEquals(30, r.perimeter());
+  }
+
+  private function testRectangleIsSquare(): unit = {
+    let square = Rectangle.init(5, 5);
+    let rect = Rectangle.init(5, 10);
+    ForTests.assertBool(square.isSquare(), "5x5 is square");
+    ForTests.assertBool(!rect.isSquare(), "5x10 is not square");
+  }
+
+  private function testRectangleScale(): unit = {
+    let r = Rectangle.init(3, 4);
+    let scaled = r.scale(2);
+    ForTests.assertIntEquals(6, scaled.width);
+    ForTests.assertIntEquals(8, scaled.height);
+    ForTests.assertIntEquals(48, scaled.area());
+  }
+
+  private function testRectangleContains(): unit = {
+    let outer = Rectangle.init(10, 10);
+    let inner = Rectangle.init(5, 5);
+    let bigger = Rectangle.init(15, 5);
+    ForTests.assertBool(outer.contains(inner), "contains smaller");
+    ForTests.assertBool(!outer.contains(bigger), "does not contain bigger");
+    ForTests.assertBool(outer.contains(outer), "self contains");
+  }
+
+  private function testRational(): unit = {
+    let half = Rational.init(1, 2);
+    let third = Rational.init(1, 3);
+    let product = half.multiply(third);
+    ForTests.assertIntEquals(1, product.numerator);
+    ForTests.assertIntEquals(6, product.denominator);
+  }
+
+  private function testRationalEquality(): unit = {
+    let half = Rational.init(1, 2);
+    let twoFourths = Rational.init(2, 4);
+    let third = Rational.init(1, 3);
+    ForTests.assertBool(half.equals(twoFourths), "1/2 == 2/4");
+    ForTests.assertBool(!half.equals(third), "1/2 != 1/3");
+  }
+
+  private function testFieldDestructuring(): unit = {
+    let r = Rectangle.init(7, 3);
+    let { width as w, height as h } = r;
+    ForTests.assertIntEquals(7, w);
+    ForTests.assertIntEquals(3, h);
+  }
+
+  private function testRecordInTuple(): unit = {
+    let pair = (Rectangle.init(3, 4), Rectangle.init(5, 6));
+    let (r1, r2) = pair;
+    ForTests.assertIntEquals(12, r1.area());
+    ForTests.assertIntEquals(30, r2.area());
+  }
+
+  function run(): unit = {
+    ClassMemberTests.testCounterBasic();
+    ClassMemberTests.testCounterIncrement();
+    ClassMemberTests.testCounterDecrement();
+    ClassMemberTests.testCounterChaining();
+    ClassMemberTests.testRectangleArea();
+    ClassMemberTests.testRectangleIsSquare();
+    ClassMemberTests.testRectangleScale();
+    ClassMemberTests.testRectangleContains();
+    ClassMemberTests.testRational();
+    ClassMemberTests.testRationalEquality();
+    ClassMemberTests.testFieldDestructuring();
+    ClassMemberTests.testRecordInTuple();
+  }
+}

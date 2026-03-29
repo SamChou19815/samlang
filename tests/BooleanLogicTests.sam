@@ -1,0 +1,117 @@
+import { ForTests } from tests.StdLib;
+
+class BooleanLogicTests {
+  private function testBasicAnd(): unit = {
+    ForTests.assertBool(true && true, "tt");
+    ForTests.assertBool(!(true && false), "tf");
+    ForTests.assertBool(!(false && true), "ft");
+    ForTests.assertBool(!(false && false), "ff");
+  }
+
+  private function testBasicOr(): unit = {
+    ForTests.assertBool(true || true, "tt");
+    ForTests.assertBool(true || false, "tf");
+    ForTests.assertBool(false || true, "ft");
+    ForTests.assertBool(!(false || false), "ff");
+  }
+
+  private function testNot(): unit = {
+    ForTests.assertBool(!true == false, "!true");
+    ForTests.assertBool(!false == true, "!false");
+    let notTrue = !true;
+    let notNotTrue = !notTrue;
+    ForTests.assertBool(notNotTrue == true, "!!true");
+    let notFalse = !false;
+    let notNotFalse = !notFalse;
+    ForTests.assertBool(notNotFalse == false, "!!false");
+  }
+
+  private function testDeMorgansLaws(): unit = {
+    let a = true;
+    let b = false;
+    // !(a && b) == (!a || !b)
+    ForTests.assertBool(!(a && b) == (!a || !b), "DM1 tf");
+    // !(a || b) == (!a && !b)
+    ForTests.assertBool(!(a || b) == (!a && !b), "DM2 tf");
+    let c = true;
+    let d = true;
+    ForTests.assertBool(!(c && d) == (!c || !d), "DM1 tt");
+    ForTests.assertBool(!(c || d) == (!c && !d), "DM2 tt");
+    let e = false;
+    let f = false;
+    ForTests.assertBool(!(e && f) == (!e || !f), "DM1 ff");
+    ForTests.assertBool(!(e || f) == (!e && !f), "DM2 ff");
+  }
+
+  private function testXor(): unit = {
+    let xor = (a: bool, b: bool) -> (a || b) && (!a || !b);
+    ForTests.assertBool(!xor(true, true), "xor tt");
+    ForTests.assertBool(xor(true, false), "xor tf");
+    ForTests.assertBool(xor(false, true), "xor ft");
+    ForTests.assertBool(!xor(false, false), "xor ff");
+  }
+
+  private function testImplication(): unit = {
+    let implies = (a: bool, b: bool) -> !a || b;
+    ForTests.assertBool(implies(true, true), "T=>T");
+    ForTests.assertBool(!implies(true, false), "T=>F");
+    ForTests.assertBool(implies(false, true), "F=>T");
+    ForTests.assertBool(implies(false, false), "F=>F");
+  }
+
+  private function testChainedAnd(): unit = {
+    ForTests.assertBool(true && true && true, "3t");
+    ForTests.assertBool(!(true && true && false), "2t1f");
+    ForTests.assertBool(!(true && false && true), "tft");
+    ForTests.assertBool(!(false && true && true), "ftt");
+  }
+
+  private function testChainedOr(): unit = {
+    ForTests.assertBool(true || true || true, "3t");
+    ForTests.assertBool(true || true || false, "2t1f");
+    ForTests.assertBool(true || false || false, "1t2f");
+    ForTests.assertBool(!(false || false || false), "3f");
+  }
+
+  private function testMixedAndOr(): unit = {
+    // true && false || true => (true && false) || true => true
+    ForTests.assertBool(true && false || true, "mixed1");
+    // true || false && false => true || (false && false) => true
+    ForTests.assertBool(true || false && false, "mixed2");
+    // false || true && true => false || (true && true) => true
+    ForTests.assertBool(false || true && true, "mixed3");
+    // false && true || false && true => (false && true) || (false && true) => false
+    ForTests.assertBool(!(false && true || false && true), "mixed4");
+  }
+
+  private function testBoolToInt(): unit = {
+    let boolToInt = (b: bool) -> if b { 1 } else { 0 };
+    ForTests.assertIntEquals(1, boolToInt(true));
+    ForTests.assertIntEquals(0, boolToInt(false));
+    ForTests.assertIntEquals(2, boolToInt(true) + boolToInt(true));
+    ForTests.assertIntEquals(0, boolToInt(false) + boolToInt(false));
+  }
+
+  private function testEquality(): unit = {
+    ForTests.assertBool(true == true, "eq tt");
+    ForTests.assertBool(!(true == false), "neq tf");
+    ForTests.assertBool(!(false == true), "neq ft");
+    ForTests.assertBool(false == false, "eq ff");
+    ForTests.assertBool(true != false, "neq tf");
+    ForTests.assertBool(!(true != true), "eq tt");
+  }
+
+  function run(): unit = {
+    BooleanLogicTests.testBasicAnd();
+    BooleanLogicTests.testBasicOr();
+    BooleanLogicTests.testNot();
+    BooleanLogicTests.testDeMorgansLaws();
+    BooleanLogicTests.testXor();
+    BooleanLogicTests.testImplication();
+    BooleanLogicTests.testChainedAnd();
+    BooleanLogicTests.testChainedOr();
+    BooleanLogicTests.testMixedAndOr();
+    BooleanLogicTests.testBoolToInt();
+    BooleanLogicTests.testEquality();
+  }
+}

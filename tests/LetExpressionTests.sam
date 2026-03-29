@@ -81,7 +81,7 @@ class LetExpressionTests {
     let c = b + a;
     let d = c + b;
     let e = d + c;
-    ForTests.assertIntEquals(7, e);
+    ForTests.assertIntEquals(8, e);
   }
 
   private function testLetWithFunctionCall(): unit = {

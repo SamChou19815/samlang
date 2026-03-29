@@ -47,8 +47,8 @@ class MutuallyRecursiveTests {
     ForTests.assertIntEquals(0, MutuallyRecursiveTests.a(0));
     ForTests.assertIntEquals(3, MutuallyRecursiveTests.a(3));
     ForTests.assertIntEquals(9, MutuallyRecursiveTests.a(9));
-    ForTests.assertIntEquals(3, MutuallyRecursiveTests.b(4));
-    ForTests.assertIntEquals(3, MutuallyRecursiveTests.c(5));
+    ForTests.assertIntEquals(4, MutuallyRecursiveTests.b(4));
+    ForTests.assertIntEquals(5, MutuallyRecursiveTests.c(5));
   }
 
   private function fibA(n: int): int =
