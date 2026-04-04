@@ -6,7 +6,7 @@
   "scripts": {
     "bw": "cd crates/samlang-wasm && ./setup-generated-package.sh",
     "rt": "rm -f target/llvm-cov-target/*.profraw && cargo th",
-    "bench": "cargo b -p samlang-cli --release && time BENCHMARK_REPEAT=10000 ./target/release/samlang-cli",
+    "bench": "cargo b -p samlang-cli --release && time BENCHMARK_REPEAT=100 ./target/release/samlang-cli",
     "ssg": "pnpm --filter samlang-website ssg",
     "webdev": "pnpm --filter samlang-website dev"
   },
