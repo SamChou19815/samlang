@@ -10,10 +10,10 @@ use dupe::Dupe;
 use samlang_ast::{Description, Location, Position, Reason};
 use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::{ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 pub struct LocalTypingContext {
-  type_map: HashMap<Location, Rc<Type>>,
+  type_map: HashMap<Location, Arc<Type>>,
   ssa_analysis_result: ssa_analysis::SsaAnalysisResult,
 }
 
@@ -46,11 +46,11 @@ impl LocalTypingContext {
     collector
   }
 
-  pub(super) fn write(&mut self, loc: Location, t: Rc<Type>) {
+  pub(super) fn write(&mut self, loc: Location, t: Arc<Type>) {
     self.type_map.insert(loc, t);
   }
 
-  pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<PStr, Rc<Type>> {
+  pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<PStr, Arc<Type>> {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
       map.insert(*name, self.type_map.get(loc).unwrap().dupe());

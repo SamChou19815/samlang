@@ -7,6 +7,7 @@ edition = "2024"
 dupe = { workspace = true }
 enum-as-inner = "0.5.1"
 itertools = "0.14.0"
+rayon = { workspace = true }
 samlang-ast = { path = "../samlang-ast" }
 samlang-collections = { path = "../samlang-collections" }
 samlang-errors = { path = "../samlang-errors" }

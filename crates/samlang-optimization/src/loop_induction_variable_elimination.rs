@@ -108,7 +108,7 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
 
 pub(super) fn optimize(
   optimizable_while_loop: &OptimizableWhileLoop,
-  heap: &mut samlang_heap::Heap,
+  counter: &samlang_heap::TempPStrCounter,
 ) -> Option<LoopInductionVariableEliminationResult> {
   if optimizable_while_loop_uses_induction_var(optimizable_while_loop) {
     return None;
@@ -130,10 +130,10 @@ pub(super) fn optimize(
     &only_relevant_induction_loop_variables.multiplier,
   )?;
 
-  let new_initial_value_temp_temporary = heap.alloc_temp_str();
-  let new_initial_value_name = heap.alloc_temp_str();
-  let new_guard_value_temp_temporary = heap.alloc_temp_str();
-  let new_guard_value_name = heap.alloc_temp_str();
+  let new_initial_value_temp_temporary = counter.alloc_temp_str();
+  let new_initial_value_name = counter.alloc_temp_str();
+  let new_guard_value_temp_temporary = counter.alloc_temp_str();
+  let new_guard_value_name = counter.alloc_temp_str();
   let prefix_statements = vec![
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_initial_value_temp_temporary,
@@ -203,12 +203,13 @@ mod tests {
       IfElseFinalAssignment, ONE, Statement, SymbolTable, Type, TypeNameId, VariableName, ZERO,
     },
   };
-  use samlang_heap::{Heap, PStr};
+  use samlang_heap::{Heap, PStr, TempPStrCounter};
 
   #[test]
   fn rejection_tests() {
     let heap = &mut Heap::new();
     let table = &mut SymbolTable::new();
+    let counter = TempPStrCounter::new(0);
 
     assert!(
       super::optimize(
@@ -231,7 +232,7 @@ mod tests {
           statements: Vec::new(),
           break_collector: None
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -256,7 +257,7 @@ mod tests {
             Expression::var_name(PStr::LOWER_I, INT_32_TYPE)
           ))
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -287,7 +288,7 @@ mod tests {
           }],
           break_collector: None
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -313,7 +314,7 @@ mod tests {
           }],
           break_collector: None
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -415,7 +416,7 @@ mod tests {
           ],
           break_collector: None
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -454,7 +455,7 @@ mod tests {
           statements: Vec::new(),
           break_collector: None
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -491,7 +492,7 @@ mod tests {
           statements: Vec::new(),
           break_collector: None,
         },
-        heap,
+        &counter,
       )
       .is_none()
     );
@@ -501,6 +502,7 @@ mod tests {
   fn optimizable_test_1() {
     let heap = &mut Heap::new();
     let table = &SymbolTable::new();
+    let counter = TempPStrCounter::new(0);
 
     let optimized = super::optimize(
       &OptimizableWhileLoop {
@@ -527,7 +529,7 @@ mod tests {
         statements: Vec::new(),
         break_collector: None,
       },
-      heap,
+      &counter,
     )
     .unwrap();
 
@@ -555,6 +557,7 @@ mod tests {
   fn optimizable_test_2() {
     let heap = &mut Heap::new();
     let table = &SymbolTable::new();
+    let counter = TempPStrCounter::new(0);
 
     let optimized = super::optimize(
       &OptimizableWhileLoop {
@@ -584,7 +587,7 @@ mod tests {
         statements: Vec::new(),
         break_collector: None,
       },
-      heap,
+      &counter,
     )
     .unwrap();
 
@@ -612,6 +615,7 @@ mod tests {
   fn optimizable_test_3() {
     let heap = &mut Heap::new();
     let table = &SymbolTable::new();
+    let counter = TempPStrCounter::new(0);
 
     let optimized = super::optimize(
       &OptimizableWhileLoop {
@@ -641,7 +645,7 @@ mod tests {
         statements: Vec::new(),
         break_collector: None,
       },
-      heap,
+      &counter,
     )
     .unwrap();
 

@@ -14,7 +14,7 @@ use samlang_ast::{hir, mir, source};
 use samlang_checker::type_;
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 struct LoweringResult {
   statements: Vec<hir::Statement>,
@@ -124,7 +124,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lowered_and_add_statements(
     &mut self,
-    expression: &source::expr::E<Rc<type_::Type>>,
+    expression: &source::expr::E<Arc<type_::Type>>,
     statements: &mut Vec<hir::Statement>,
   ) -> hir::Expression {
     let LoweringResult { statements: mut lowered_statements, expression: e } =
@@ -202,7 +202,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     t
   }
 
-  fn lower(&mut self, expression: &source::expr::E<Rc<type_::Type>>) -> LoweringResult {
+  fn lower(&mut self, expression: &source::expr::E<Arc<type_::Type>>) -> LoweringResult {
     match expression {
       source::expr::E::Literal(_, source::Literal::Bool(b)) => {
         LoweringResult { statements: Vec::new(), expression: if *b { hir::ONE } else { hir::ZERO } }
@@ -249,7 +249,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_field_access(
     &mut self,
-    expression: &source::expr::FieldAccess<Rc<type_::Type>>,
+    expression: &source::expr::FieldAccess<Arc<type_::Type>>,
   ) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } = self.lower(&expression.object);
     let mappings_for_id_type =
@@ -277,7 +277,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_method_access(
     &mut self,
-    expression: &source::expr::MethodAccess<Rc<type_::Type>>,
+    expression: &source::expr::MethodAccess<Arc<type_::Type>>,
   ) -> LoweringResult {
     let source_obj_type = expression.object.type_();
     let function_name = self.create_hir_function_name(source_obj_type, expression.method_name.name);
@@ -315,7 +315,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_unary(&mut self, expression: &source::expr::Unary<Rc<type_::Type>>) -> LoweringResult {
+  fn lower_unary(&mut self, expression: &source::expr::Unary<Arc<type_::Type>>) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } =
       self.lower(&expression.argument);
     let value_name = self.allocate_temp_variable();
@@ -335,8 +335,8 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_tuple(
     &mut self,
-    common: &source::expr::ExpressionCommon<Rc<type_::Type>>,
-    expressions: &[source::expr::E<Rc<type_::Type>>],
+    common: &source::expr::ExpressionCommon<Arc<type_::Type>>,
+    expressions: &[source::expr::E<Arc<type_::Type>>],
   ) -> LoweringResult {
     let mut lowered_stmts = Vec::new();
     let return_collector_name = self.allocate_temp_variable();
@@ -373,7 +373,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_fn_call(&mut self, expression: &source::expr::Call<Rc<type_::Type>>) -> LoweringResult {
+  fn lower_fn_call(&mut self, expression: &source::expr::Call<Arc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = Vec::new();
     let is_void_return = if let Some((_, kind)) = expression.common.type_.as_primitive() {
       *kind == type_::PrimitiveTypeKind::Unit
@@ -467,7 +467,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_binary(&mut self, expression: &source::expr::E<Rc<type_::Type>>) -> LoweringResult {
+  fn lower_binary(&mut self, expression: &source::expr::E<Arc<type_::Type>>) -> LoweringResult {
     let expression = match expression {
       source::expr::E::Binary(e) => e,
       _ => return self.lower(expression),
@@ -585,7 +585,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_if_else(
     &mut self,
-    expression: &source::expr::IfElse<Rc<type_::Type>>,
+    expression: &source::expr::IfElse<Arc<type_::Type>>,
   ) -> LoweringResult {
     let mut lowered_stmts = Vec::new();
     self.variable_cx.push_scope();
@@ -645,7 +645,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_if_else_or_block(
     &mut self,
-    if_else_or_block: &source::expr::IfElseOrBlock<Rc<type_::Type>>,
+    if_else_or_block: &source::expr::IfElseOrBlock<Arc<type_::Type>>,
   ) -> LoweringResult {
     match if_else_or_block {
       source::expr::IfElseOrBlock::IfElse(e) => self.lower_if_else(e),
@@ -655,7 +655,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_matching_pattern(
     &mut self,
-    pattern: &source::pattern::MatchingPattern<Rc<type_::Type>>,
+    pattern: &source::pattern::MatchingPattern<Arc<type_::Type>>,
     binding_names: &HashMap<PStr, PStr>,
     lowered_expression: hir::Expression,
   ) -> LoweringResult {
@@ -872,7 +872,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_match(&mut self, expression: &source::expr::Match<Rc<type_::Type>>) -> LoweringResult {
+  fn lower_match(&mut self, expression: &source::expr::Match<Arc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = Vec::new();
     let matched_expr = self.lowered_and_add_statements(&expression.matched, &mut lowered_stmts);
 
@@ -949,7 +949,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn create_synthetic_lambda_function(
     &mut self,
-    expression: &source::expr::Lambda<Rc<type_::Type>>,
+    expression: &source::expr::Lambda<Arc<type_::Type>>,
     captured: &[(PStr, hir::Expression)],
     context_type: &hir::Type,
   ) -> hir::Function {
@@ -1020,7 +1020,10 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_lambda(&mut self, expression: &source::expr::Lambda<Rc<type_::Type>>) -> LoweringResult {
+  fn lower_lambda(
+    &mut self,
+    expression: &source::expr::Lambda<Arc<type_::Type>>,
+  ) -> LoweringResult {
     let captured = expression
       .captured
       .keys()
@@ -1084,7 +1087,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_block(&mut self, expression: &source::expr::Block<Rc<type_::Type>>) -> LoweringResult {
+  fn lower_block(&mut self, expression: &source::expr::Block<Arc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = Vec::new();
     self.variable_cx.push_scope();
     for s in &expression.statements {
@@ -1121,7 +1124,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
 fn lower_source_expression(
   mut manager: ExpressionLoweringManager,
-  expression: &source::expr::E<Rc<type_::Type>>,
+  expression: &source::expr::E<Arc<type_::Type>>,
 ) -> LoweringResultWithSyntheticFunctions {
   let LoweringResult { statements, expression } = manager.lower(expression);
   LoweringResultWithSyntheticFunctions {
@@ -1227,7 +1230,7 @@ fn lower_tparams(type_parameters: Option<&source::annotation::TypeParameters>) -
 
 fn compile_sources_with_generics_preserved(
   heap: &mut Heap,
-  sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
+  sources: &HashMap<ModuleReference, source::Module<Arc<type_::Type>>>,
 ) -> hir::Sources {
   let mut type_lowering_manager = TypeLoweringManager {
     generic_types: OrderSet::new(),
@@ -1445,7 +1448,7 @@ fn optimize_by_tail_rec_rewrite(heap: &mut Heap, sources: mir::Sources) -> mir::
 
 pub fn compile_sources_to_mir(
   heap: &mut Heap,
-  sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
+  sources: &HashMap<ModuleReference, source::Module<Arc<type_::Type>>>,
 ) -> mir::Sources {
   let sources = compile_sources_with_generics_preserved(heap, sources);
   let mut sources = mir_generics_specialization::perform_generics_specialization(heap, sources);
@@ -1468,10 +1471,10 @@ mod tests {
   use samlang_ast::{Location, Reason, hir, source};
   use samlang_checker::type_;
   use samlang_heap::{Heap, ModuleReference, PStr};
-  use std::{collections::HashMap, rc::Rc, sync::Arc};
+  use std::{collections::HashMap, sync::Arc};
 
   fn assert_expr_correctly_lowered(
-    source_expr: &source::expr::E<Rc<type_::Type>>,
+    source_expr: &source::expr::E<Arc<type_::Type>>,
     heap: &mut Heap,
     expected_str: &str,
   ) {
@@ -1589,14 +1592,14 @@ mod tests {
     source::test_builder::create().simple_id_annot(heap.alloc_str_for_test("Dummy"))
   }
 
-  fn dummy_source_this(heap: &mut Heap) -> source::expr::E<Rc<type_::Type>> {
+  fn dummy_source_this(heap: &mut Heap) -> source::expr::E<Arc<type_::Type>> {
     source::expr::E::LocalId(
-      source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+      source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
       source::Id::from(heap.alloc_str_for_test("this")),
     )
   }
 
-  fn id_expr(id: PStr, type_: Rc<type_::Type>) -> source::expr::E<Rc<type_::Type>> {
+  fn id_expr(id: PStr, type_: Arc<type_::Type>) -> source::expr::E<Arc<type_::Type>> {
     source::expr::E::LocalId(source::expr::ExpressionCommon::dummy(type_), source::Id::from(id))
   }
 
@@ -1656,7 +1659,7 @@ mod tests {
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Tuple(
-        source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         source::expr::ParenthesizedExpressionList {
           loc: Location::dummy(),
           start_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -1724,10 +1727,10 @@ return (_t2: _$SyntheticIDType0);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
           common: source::expr::ExpressionCommon::dummy(builder.fun_type(
-            vec![Rc::new(dummy_source_id_type(heap)), Rc::new(dummy_source_id_type(heap))],
+            vec![Arc::new(dummy_source_id_type(heap)), Arc::new(dummy_source_id_type(heap))],
             builder.int_type(),
           )),
           explicit_type_arguments: None,
@@ -2162,7 +2165,7 @@ return (_t1: _$SyntheticIDType1);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: source::expr::ExpressionCommon::dummy(
-          builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
+          builder.fun_type(vec![builder.unit_type()], Arc::new(dummy_source_id_type(heap))),
         ),
         parameters: source::expr::LambdaParameters {
           loc: Location::dummy(),
@@ -2193,7 +2196,7 @@ return (_t1: _$SyntheticIDType1);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: source::expr::ExpressionCommon::dummy(
-          builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
+          builder.fun_type(vec![builder.unit_type()], Arc::new(dummy_source_id_type(heap))),
         ),
         parameters: source::expr::LambdaParameters {
           loc: Location::dummy(),
@@ -2225,19 +2228,19 @@ return (_t1: _$SyntheticIDType0);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Expression(source::expr::E::Literal(
-          source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           source::Literal::Bool(true),
         ))),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2250,19 +2253,19 @@ return (_t1: _$SyntheticIDType0);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Expression(source::expr::E::Literal(
-          source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           source::Literal::Bool(false),
         ))),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2275,16 +2278,16 @@ return (_t1: _$SyntheticIDType0);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Expression(dummy_source_this(heap))),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2303,7 +2306,7 @@ return (_t1: DUMMY_Dummy);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         matched: Box::new(dummy_source_this(heap)),
         cases: vec![
           source::expr::VariantPatternToExpression {
@@ -2324,10 +2327,10 @@ return (_t1: DUMMY_Dummy);"#,
                   type_: builder.int_type(),
                 }],
               }),
-              type_: Rc::new(dummy_source_id_type(heap)),
+              type_: Arc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(source::expr::E::LocalId(
-              source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               source::Id::from(heap.alloc_str_for_test("bar")),
             )),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2350,7 +2353,7 @@ return (_t1: DUMMY_Dummy);"#,
                   type_: builder.int_type(),
                 }],
               }),
-              type_: Rc::new(dummy_source_id_type(heap)),
+              type_: Arc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(dummy_source_this(heap)),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2391,7 +2394,7 @@ return (_t5: DUMMY_Dummy);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         matched: Box::new(dummy_source_this(heap)),
         cases: vec![
           source::expr::VariantPatternToExpression {
@@ -2412,7 +2415,7 @@ return (_t5: DUMMY_Dummy);"#,
                   type_: builder.int_type(),
                 }],
               }),
-              type_: Rc::new(dummy_source_id_type(heap)),
+              type_: Arc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(dummy_source_this(heap)),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2435,11 +2438,11 @@ return (_t5: DUMMY_Dummy);"#,
                   type_: builder.int_type(),
                 }],
               }),
-              type_: Rc::new(dummy_source_id_type(heap)),
+              type_: Arc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(id_expr(
               heap.alloc_str_for_test("bar"),
-              Rc::new(dummy_source_id_type(heap)),
+              Arc::new(dummy_source_id_type(heap)),
             )),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
           },
@@ -2461,7 +2464,7 @@ return (_t5: DUMMY_Dummy);"#,
                   type_: builder.int_type(),
                 }],
               }),
-              type_: Rc::new(dummy_source_id_type(heap)),
+              type_: Arc::new(dummy_source_id_type(heap)),
             }),
             body: Box::new(dummy_source_this(heap)),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2516,7 +2519,7 @@ return (_t9: DUMMY_Dummy);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
           source::pattern::MatchingPattern::Wildcard {
             location: Location::dummy(),
@@ -2525,13 +2528,13 @@ return (_t9: DUMMY_Dummy);"#,
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(dummy_source_this(heap))),
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2545,7 +2548,7 @@ return (_t9: DUMMY_Dummy);"#,
     let builder = type_::test_type_builder::create();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
           source::pattern::MatchingPattern::Object {
             location: Location::dummy(),
@@ -2579,10 +2582,10 @@ return (_t9: DUMMY_Dummy);"#,
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(source::expr::E::IfElse(source::expr::IfElse {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             condition: Box::new(source::expr::IfElseCondition::Guard(
               source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
                 loc: Location::dummy(),
@@ -2639,16 +2642,16 @@ return (_t9: DUMMY_Dummy);"#,
               dummy_source_this(heap),
             )),
             e1: Box::new(source::expr::Block {
-              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               statements: Vec::new(),
               expression: Some(Box::new(id_expr(
                 heap.alloc_str_for_test("bar"),
-                Rc::new(dummy_source_id_type(heap)),
+                Arc::new(dummy_source_id_type(heap)),
               ))),
               ending_associated_comments: source::NO_COMMENT_REFERENCE,
             }),
             e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               statements: Vec::new(),
               expression: Some(Box::new(dummy_source_this(heap))),
               ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2657,7 +2660,7 @@ return (_t9: DUMMY_Dummy);"#,
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::IfElse(source::expr::IfElse {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
             source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
               location: Location::dummy(),
@@ -2683,13 +2686,13 @@ return (_t9: DUMMY_Dummy);"#,
             dummy_source_this(heap),
           )),
           e1: Box::new(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             statements: Vec::new(),
             expression: Some(Box::new(dummy_source_this(heap))),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
           }),
           e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             statements: Vec::new(),
             expression: Some(Box::new(dummy_source_this(heap))),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2737,7 +2740,7 @@ return (_t14: int);"#,
     let builder = type_::test_type_builder::create();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
           source::pattern::MatchingPattern::Object {
             location: Location::dummy(),
@@ -2803,10 +2806,10 @@ return (_t14: int);"#,
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(source::expr::E::IfElse(source::expr::IfElse {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             condition: Box::new(source::expr::IfElseCondition::Guard(
               source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
                 loc: Location::dummy(),
@@ -2838,16 +2841,16 @@ return (_t14: int);"#,
               dummy_source_this(heap),
             )),
             e1: Box::new(source::expr::Block {
-              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               statements: Vec::new(),
               expression: Some(Box::new(id_expr(
                 heap.alloc_str_for_test("bar"),
-                Rc::new(dummy_source_id_type(heap)),
+                Arc::new(dummy_source_id_type(heap)),
               ))),
               ending_associated_comments: source::NO_COMMENT_REFERENCE,
             }),
             e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               statements: Vec::new(),
               expression: Some(Box::new(dummy_source_this(heap))),
               ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2856,7 +2859,7 @@ return (_t14: int);"#,
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::IfElse(source::expr::IfElse {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
             source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
               location: Location::dummy(),
@@ -2882,13 +2885,13 @@ return (_t14: int);"#,
             dummy_source_this(heap),
           )),
           e1: Box::new(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             statements: Vec::new(),
             expression: Some(Box::new(dummy_source_this(heap))),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
           }),
           e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             statements: Vec::new(),
             expression: Some(Box::new(dummy_source_this(heap))),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -2957,7 +2960,7 @@ return (_t10: int);"#,
     let builder = type_::test_type_builder::create();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
         condition: Box::new(source::expr::IfElseCondition::Guard(
           source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
             location: Location::dummy(),
@@ -3015,10 +3018,10 @@ return (_t10: int);"#,
           dummy_source_this(heap),
         )),
         e1: Box::new(source::expr::Block {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           statements: Vec::new(),
           expression: Some(Box::new(source::expr::E::IfElse(source::expr::IfElse {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             condition: Box::new(source::expr::IfElseCondition::Guard(
               source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
                 loc: Location::dummy(),
@@ -3050,16 +3053,16 @@ return (_t10: int);"#,
               dummy_source_this(heap),
             )),
             e1: Box::new(source::expr::Block {
-              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               statements: Vec::new(),
               expression: Some(Box::new(id_expr(
                 heap.alloc_str_for_test("bar"),
-                Rc::new(dummy_source_id_type(heap)),
+                Arc::new(dummy_source_id_type(heap)),
               ))),
               ending_associated_comments: source::NO_COMMENT_REFERENCE,
             }),
             e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-              common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+              common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
               statements: Vec::new(),
               expression: Some(Box::new(dummy_source_this(heap))),
               ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -3068,7 +3071,7 @@ return (_t10: int);"#,
           ending_associated_comments: source::NO_COMMENT_REFERENCE,
         }),
         e2: Box::new(source::expr::IfElseOrBlock::IfElse(source::expr::IfElse {
-          common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+          common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
           condition: Box::new(source::expr::IfElseCondition::Guard(
             source::pattern::MatchingPattern::Tuple(source::pattern::TuplePattern {
               location: Location::dummy(),
@@ -3094,13 +3097,13 @@ return (_t10: int);"#,
             dummy_source_this(heap),
           )),
           e1: Box::new(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             statements: Vec::new(),
             expression: Some(Box::new(dummy_source_this(heap))),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
           }),
           e2: Box::new(source::expr::IfElseOrBlock::Block(source::expr::Block {
-            common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+            common: source::expr::ExpressionCommon::dummy(Arc::new(dummy_source_id_type(heap))),
             statements: Vec::new(),
             expression: Some(Box::new(dummy_source_this(heap))),
             ending_associated_comments: source::NO_COMMENT_REFERENCE,
@@ -3171,7 +3174,7 @@ return (_t10: int);"#,
     let builder = type_::test_type_builder::create();
     let heap = &mut Heap::new();
 
-    let dummy_type = Rc::new(dummy_source_id_type(heap));
+    let dummy_type = Arc::new(dummy_source_id_type(heap));
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
@@ -3290,7 +3293,7 @@ return (_t4: DUMMY_Dummy);"#,
     let _builder = type_::test_type_builder::create();
     let heap = &mut Heap::new();
 
-    let dummy_type = Rc::new(dummy_source_id_type(heap));
+    let dummy_type = Arc::new(dummy_source_id_type(heap));
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
@@ -3372,7 +3375,7 @@ return (_t2: DUMMY_Dummy);"#,
   #[test]
   fn or_pattern_empty_test() {
     let heap = &mut Heap::new();
-    let dummy_type = Rc::new(dummy_source_id_type(heap));
+    let dummy_type = Arc::new(dummy_source_id_type(heap));
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
@@ -3405,7 +3408,7 @@ return (_t2: DUMMY_Dummy);"#,
   #[test]
   fn or_pattern_single_test() {
     let heap = &mut Heap::new();
-    let dummy_type = Rc::new(dummy_source_id_type(heap));
+    let dummy_type = Arc::new(dummy_source_id_type(heap));
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
@@ -3452,7 +3455,7 @@ return (_t2: DUMMY_Dummy);"#,
   fn or_pattern_nested_in_variant_test() {
     let builder = type_::test_type_builder::create();
     let heap = &mut Heap::new();
-    let dummy_type = Rc::new(dummy_source_id_type(heap));
+    let dummy_type = Arc::new(dummy_source_id_type(heap));
 
     // match this { Wrap(Foo(x) | Bar(x)) -> x }
     assert_expr_correctly_lowered(
@@ -3775,7 +3778,7 @@ return 0;"#,
                 explicit_type_arguments: None,
                 inferred_type_arguments: Vec::new(),
                 object: Box::new(source::expr::E::ClassId(
-                  source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                  source::expr::ExpressionCommon::dummy(Arc::new(type_::Type::Nominal(
                     type_::NominalType {
                       reason: Reason::dummy(),
                       is_class_statics: true,
@@ -3965,7 +3968,7 @@ return (_t2: int);"#,
                     location: Location::dummy(),
                     start_associated_comments: source::NO_COMMENT_REFERENCE,
                     ending_associated_comments: source::NO_COMMENT_REFERENCE,
-                    parameters: Rc::new(Vec::new()),
+                    parameters: Arc::new(Vec::new()),
                   },
                   return_type: annot_builder.unit_annot(),
                 },
@@ -3978,7 +3981,7 @@ return (_t2: int);"#,
                     explicit_type_arguments: None,
                     inferred_type_arguments: Vec::new(),
                     object: Box::new(source::expr::E::ClassId(
-                      source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                      source::expr::ExpressionCommon::dummy(Arc::new(type_::Type::Nominal(
                         type_::NominalType {
                           reason: Reason::dummy(),
                           is_class_statics: true,
@@ -4021,7 +4024,7 @@ return (_t2: int);"#,
                     location: Location::dummy(),
                     start_associated_comments: source::NO_COMMENT_REFERENCE,
                     ending_associated_comments: source::NO_COMMENT_REFERENCE,
-                    parameters: Rc::new(Vec::new()),
+                    parameters: Arc::new(Vec::new()),
                   },
                   return_type: annot_builder.unit_annot(),
                 },
@@ -4034,7 +4037,7 @@ return (_t2: int);"#,
                     explicit_type_arguments: None,
                     inferred_type_arguments: Vec::new(),
                     object: Box::new(source::expr::E::ClassId(
-                      source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                      source::expr::ExpressionCommon::dummy(Arc::new(type_::Type::Nominal(
                         type_::NominalType {
                           reason: Reason::dummy(),
                           is_class_statics: true,
@@ -4092,7 +4095,7 @@ return (_t2: int);"#,
                     location: Location::dummy(),
                     start_associated_comments: source::NO_COMMENT_REFERENCE,
                     ending_associated_comments: source::NO_COMMENT_REFERENCE,
-                    parameters: Rc::new(vec![source::AnnotatedId {
+                    parameters: Arc::new(vec![source::AnnotatedId {
                       name: source::Id::from(PStr::LOWER_A),
                       type_: (), // builder.int_type(),
                       annotation: annot_builder.int_annot(),
@@ -4114,7 +4117,7 @@ return (_t2: int);"#,
                     location: Location::dummy(),
                     start_associated_comments: source::NO_COMMENT_REFERENCE,
                     ending_associated_comments: source::NO_COMMENT_REFERENCE,
-                    parameters: Rc::new(Vec::new()),
+                    parameters: Arc::new(Vec::new()),
                   },
                   return_type: annot_builder.unit_annot(),
                 },
@@ -4127,7 +4130,7 @@ return (_t2: int);"#,
                     explicit_type_arguments: None,
                     inferred_type_arguments: Vec::new(),
                     object: Box::new(source::expr::E::ClassId(
-                      source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                      source::expr::ExpressionCommon::dummy(Arc::new(type_::Type::Nominal(
                         type_::NominalType {
                           reason: Reason::dummy(),
                           is_class_statics: true,
@@ -4161,7 +4164,7 @@ return (_t2: int);"#,
                     location: Location::dummy(),
                     start_associated_comments: source::NO_COMMENT_REFERENCE,
                     ending_associated_comments: source::NO_COMMENT_REFERENCE,
-                    parameters: Rc::new(vec![
+                    parameters: Arc::new(vec![
                       source::AnnotatedId {
                         name: source::Id::from(heap.alloc_str_for_test("n")),
                         type_: (), // builder.int_type(),
@@ -4212,7 +4215,7 @@ return (_t2: int);"#,
                         explicit_type_arguments: None,
                         inferred_type_arguments: Vec::new(),
                         object: Box::new(source::expr::E::ClassId(
-                          source::expr::ExpressionCommon::dummy(Rc::new(type_::Type::Nominal(
+                          source::expr::ExpressionCommon::dummy(Arc::new(type_::Type::Nominal(
                             type_::NominalType {
                               reason: Reason::dummy(),
                               is_class_statics: true,

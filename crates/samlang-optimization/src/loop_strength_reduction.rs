@@ -6,7 +6,7 @@ use samlang_ast::{
   hir::BinaryOperator,
   mir::{Expression, INT_32_TYPE, Statement},
 };
-use samlang_heap::Heap;
+use samlang_heap::TempPStrCounter;
 use std::collections::HashMap;
 
 pub(super) struct LoopStrengthReductionOptimizationResult {
@@ -23,7 +23,7 @@ pub(super) fn optimize(
     statements,
     break_collector,
   }: OptimizableWhileLoop,
-  heap: &mut Heap,
+  counter: &TempPStrCounter,
 ) -> LoopStrengthReductionOptimizationResult {
   let mut basic_induction_variable_map = HashMap::from([(
     basic_induction_variable_with_loop_guard.name,
@@ -44,8 +44,8 @@ pub(super) fn optimize(
         &derived_induction_variable.multiplier,
       )
     {
-      let new_initial_value_temp_temporary = heap.alloc_temp_str();
-      let new_initial_value_name = heap.alloc_temp_str();
+      let new_initial_value_temp_temporary = counter.alloc_temp_str();
+      let new_initial_value_name = counter.alloc_temp_str();
       prefix_statements.push(Statement::Binary(Statement::binary_flexible_unwrapped(
         new_initial_value_temp_temporary,
         BinaryOperator::MUL,
@@ -94,7 +94,7 @@ mod tests {
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::mir::{INT_32_TYPE, ONE, SymbolTable, VariableName};
-  use samlang_heap::{Heap, PStr};
+  use samlang_heap::{Heap, PStr, TempPStrCounter};
 
   #[test]
   fn integration_test() {
@@ -151,7 +151,7 @@ mod tests {
         statements: Vec::new(),
         break_collector: None,
       },
-      heap,
+      &TempPStrCounter::new(0),
     );
 
     assert_eq!(

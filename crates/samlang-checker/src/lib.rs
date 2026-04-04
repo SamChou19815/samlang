@@ -1,7 +1,8 @@
+use rayon::prelude::*;
 use samlang_ast::source::Module;
 use samlang_errors::ErrorSet;
 use samlang_heap::ModuleReference;
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 mod checker_integration_tests;
 mod checker_tests;
@@ -29,13 +30,22 @@ pub use ssa_analysis::{SsaAnalysisResult, perform_ssa_analysis_on_module};
 pub fn type_check_sources(
   sources: &HashMap<ModuleReference, Module<()>>,
   error_set: &mut ErrorSet,
-) -> (HashMap<ModuleReference, Module<Rc<type_::Type>>>, type_::GlobalSignature) {
+) -> (HashMap<ModuleReference, Module<Arc<type_::Type>>>, type_::GlobalSignature) {
   let builtin_cx = type_::create_builtin_module_signature();
   let global_cx = global_signature::build_global_signature(sources, builtin_cx);
+  let results: Vec<_> = sources
+    .par_iter()
+    .map(|(module_reference, module)| {
+      let mut local_error_set = ErrorSet::new();
+      let (checked, _) =
+        type_check_module(*module_reference, module, &global_cx, &mut local_error_set);
+      (*module_reference, checked, local_error_set)
+    })
+    .collect();
   let mut checked_sources = HashMap::new();
-  for (module_reference, module) in sources {
-    let (checked, _) = type_check_module(*module_reference, module, &global_cx, error_set);
-    checked_sources.insert(*module_reference, checked);
+  for (mod_ref, checked, local_errors) in results {
+    checked_sources.insert(mod_ref, checked);
+    error_set.merge(local_errors);
   }
   (checked_sources, global_cx)
 }

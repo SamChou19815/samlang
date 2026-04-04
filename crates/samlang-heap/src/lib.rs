@@ -5,6 +5,7 @@ use std::{
   convert::TryInto,
   hash::Hash,
   ops::Deref,
+  sync::atomic::{AtomicU32, Ordering},
 };
 
 #[derive(Clone, Copy)]
@@ -198,9 +199,8 @@ impl PStr {
   pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr { heap_id: u128::MAX });
   pub const EMPTY: PStr =
     PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } });
-
   pub const DUMMY_MODULE: PStr = Self::five_letter_literal(b"DUMMY");
-  pub const MISSING: PStr = Self::seven_letter_literal(b"MISSING");
+  pub const MISSING: PStr = Self::seven_letter_literal(b"missing");
   pub const STR_TYPE: PStr = Self::three_letter_literal(b"Str");
   pub const MAIN_TYPE: PStr = Self::four_letter_literal(b"Main");
   pub const MAIN_FN: PStr = Self::four_letter_literal(b"main");
@@ -361,7 +361,29 @@ impl StringStoredInHeap {
   }
 }
 
-/// Users of the heap is responsible for calling retain at appropriate places to do GC.
+/// Thread-safe counter for allocating temporary PStr names during parallel optimization.
+/// Replaces `&mut Heap` in per-function passes that only need `alloc_temp_str()`.
+pub struct TempPStrCounter {
+  counter: AtomicU32,
+}
+
+impl TempPStrCounter {
+  pub fn new(start: u32) -> Self {
+    Self { counter: AtomicU32::new(start) }
+  }
+
+  pub fn alloc_temp_str(&self) -> PStr {
+    let id = self.counter.fetch_add(1, Ordering::Relaxed);
+    let string = format!("_t{id}");
+    PStr::create_inline_opt(&string).expect("Too many temporary strings")
+  }
+
+  fn current(&self) -> u32 {
+    self.counter.load(Ordering::Relaxed)
+  }
+}
+
+/// Users of the heap are responsible for calling retain at appropriate places to do GC.
 pub struct Heap {
   str_pointer_table: Vec<StringStoredInHeap>,
   module_reference_pointer_table: Vec<&'static [PStr]>,
@@ -427,6 +449,17 @@ impl Heap {
       self.interned_static_str.insert(str, id);
       self.str_pointer_table.push(StringStoredInHeap::Permanent(str));
       PStr(PStrPrivateRepr::from_id(id))
+    }
+  }
+
+  pub fn create_temp_counter(&self) -> TempPStrCounter {
+    TempPStrCounter::new(self.str_pointer_table.len() as u32)
+  }
+
+  pub fn sync_temp_counter(&mut self, counter: &TempPStrCounter) {
+    let target = counter.current() as usize;
+    while self.str_pointer_table.len() < target {
+      self.str_pointer_table.push(StringStoredInHeap::Permanent(""));
     }
   }
 
@@ -880,5 +913,23 @@ mod tests {
   fn heap_mod_ref_crash() {
     let heap = Heap::new();
     ModuleReference(100).pretty_print(&heap);
+  }
+
+  #[test]
+  fn temp_pstr_counter_sync_test() {
+    let mut heap = Heap::new();
+    let counter = heap.create_temp_counter();
+    counter.alloc_temp_str();
+    counter.alloc_temp_str();
+    counter.alloc_temp_str();
+    // Counter allocates independently, not through heap
+    assert_eq!(0, heap.str_pointer_table.len());
+    assert_eq!(3, counter.current());
+    // Sync grows the heap table to match the counter
+    heap.sync_temp_counter(&counter);
+    assert_eq!(3, heap.str_pointer_table.len());
+    // After sync, new counter starts at the synced position
+    let counter2 = heap.create_temp_counter();
+    assert_eq!(3, counter2.current());
   }
 }

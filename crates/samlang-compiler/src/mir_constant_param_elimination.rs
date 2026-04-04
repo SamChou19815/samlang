@@ -1,5 +1,6 @@
 use dupe::Dupe;
 use itertools::Itertools;
+use rayon::prelude::*;
 use samlang_ast::mir::{
   Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
   IfElseFinalAssignment, Sources, Statement, VariableName,
@@ -368,7 +369,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
       }
     }
   }
-  for f in &mut sources.functions {
+  sources.functions.par_iter_mut().for_each(|f| {
     let mut local_rewrite = HashMap::new();
     if let Some(FunctionAnalysisState::Optimizable(param_states)) = global_state.get(&f.name) {
       debug_assert_eq!(f.parameters.len(), param_states.len());
@@ -406,7 +407,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
     let state = RewriteState { all_functions: &all_functions, local_rewrite };
     rewrite_stmts(&state, &mut f.body);
     rewrite_expr(&state, &mut f.return_value);
-  }
+  });
   sources
 }
 

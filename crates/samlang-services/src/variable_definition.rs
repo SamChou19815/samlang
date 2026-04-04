@@ -7,7 +7,7 @@ use samlang_ast::{
 };
 use samlang_checker::{SsaAnalysisResult, perform_ssa_analysis_on_module};
 use samlang_heap::{ModuleReference, PStr};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub(super) struct DefinitionAndUses {
   pub(super) definition_location: Location,
@@ -412,7 +412,7 @@ pub(super) fn apply_renaming(
                         location: parameters.location,
                         start_associated_comments: parameters.start_associated_comments,
                         ending_associated_comments: parameters.ending_associated_comments,
-                        parameters: Rc::new(
+                        parameters: Arc::new(
                           parameters
                             .parameters
                             .iter()

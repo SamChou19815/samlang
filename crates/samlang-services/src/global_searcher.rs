@@ -4,7 +4,7 @@ use samlang_ast::{
 };
 use samlang_checker::type_::Type;
 use samlang_heap::{ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 pub(super) enum GlobalNameSearchRequest {
   Toplevel(ModuleReference, PStr),
@@ -48,8 +48,8 @@ fn search_id_annot(
 }
 
 fn search_matching_pattern(
-  pattern: &pattern::MatchingPattern<Rc<Type>>,
-  pattern_type: &Rc<Type>,
+  pattern: &pattern::MatchingPattern<Arc<Type>>,
+  pattern_type: &Arc<Type>,
   request: &GlobalNameSearchRequest,
   collector: &mut Vec<Location>,
 ) {
@@ -85,7 +85,7 @@ fn search_matching_pattern(
 }
 
 fn search_if_else(
-  if_else: &expr::IfElse<Rc<Type>>,
+  if_else: &expr::IfElse<Arc<Type>>,
   request: &GlobalNameSearchRequest,
   collector: &mut Vec<Location>,
 ) {
@@ -101,7 +101,7 @@ fn search_if_else(
 }
 
 fn search_if_else_or_block(
-  if_else_or_block: &expr::IfElseOrBlock<Rc<Type>>,
+  if_else_or_block: &expr::IfElseOrBlock<Arc<Type>>,
   request: &GlobalNameSearchRequest,
   collector: &mut Vec<Location>,
 ) {
@@ -112,7 +112,7 @@ fn search_if_else_or_block(
 }
 
 fn search_block(
-  block: &expr::Block<Rc<Type>>,
+  block: &expr::Block<Arc<Type>>,
   request: &GlobalNameSearchRequest,
   collector: &mut Vec<Location>,
 ) {
@@ -141,7 +141,7 @@ fn search_block(
 }
 
 fn search_expression(
-  expr: &expr::E<Rc<Type>>,
+  expr: &expr::E<Arc<Type>>,
   request: &GlobalNameSearchRequest,
   collector: &mut Vec<Location>,
 ) {
@@ -223,7 +223,7 @@ fn search_expression(
 }
 
 pub(super) fn search_modules_globally(
-  modules: &HashMap<ModuleReference, Module<Rc<Type>>>,
+  modules: &HashMap<ModuleReference, Module<Arc<Type>>>,
   request: &GlobalNameSearchRequest,
 ) -> Vec<Location> {
   let mut collector = Vec::new();

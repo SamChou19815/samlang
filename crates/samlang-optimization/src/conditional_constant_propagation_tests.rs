@@ -26,7 +26,7 @@ mod tests {
       body: stmts,
       return_value,
     };
-    super::super::conditional_constant_propagation::optimize_function(&mut f, heap);
+    super::super::conditional_constant_propagation::optimize_function(&mut f);
     let actual = format!(
       "{}\nreturn {};",
       f.body.iter().map(|it| it.debug_print(heap, table)).join("\n"),

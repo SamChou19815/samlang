@@ -10,7 +10,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
-  use std::rc::Rc;
+  use std::sync::Arc;
 
   #[test]
   fn boilterplate() {
@@ -691,7 +691,7 @@ mod tests {
               location: Location::dummy(),
               start_associated_comments: NO_COMMENT_REFERENCE,
               ending_associated_comments: NO_COMMENT_REFERENCE,
-              parameters: Rc::new(vec![AnnotatedId {
+              parameters: Arc::new(vec![AnnotatedId {
                 name: Id::from(PStr::LOWER_A),
                 type_: (),
                 annotation: builder.int_annot()
@@ -806,7 +806,7 @@ mod tests {
               location: Location::dummy(),
               start_associated_comments: NO_COMMENT_REFERENCE,
               ending_associated_comments: NO_COMMENT_REFERENCE,
-              parameters: Rc::new(Vec::new()),
+              parameters: Arc::new(Vec::new()),
             },
             return_type: builder.int_annot(),
           },
@@ -855,7 +855,7 @@ mod tests {
             location: Location::dummy(),
             start_associated_comments: NO_COMMENT_REFERENCE,
             ending_associated_comments: NO_COMMENT_REFERENCE,
-            parameters: Rc::new(Vec::new()),
+            parameters: Arc::new(Vec::new()),
           },
           return_type: builder.int_annot(),
         }],

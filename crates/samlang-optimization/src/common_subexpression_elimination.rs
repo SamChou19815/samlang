@@ -1,6 +1,6 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use samlang_ast::mir::{Binary, Function, Statement};
-use samlang_heap::Heap;
+use samlang_heap::TempPStrCounter;
 use std::collections::BTreeSet;
 
 fn intersection_of(
@@ -12,7 +12,7 @@ fn intersection_of(
 
 fn optimize_stmts(
   stmts: Vec<Statement>,
-  heap: &mut Heap,
+  counter: &TempPStrCounter,
 ) -> (Vec<Statement>, BTreeSet<BindedValue>) {
   let mut set = BTreeSet::new();
   let mut collector = Vec::new();
@@ -51,8 +51,8 @@ fn optimize_stmts(
       }
 
       Statement::IfElse { condition, s1, s2, final_assignments } => {
-        let (s1, set1) = optimize_stmts(s1, heap);
-        let (s2, set2) = optimize_stmts(s2, heap);
+        let (s1, set1) = optimize_stmts(s1, counter);
+        let (s2, set2) = optimize_stmts(s2, counter);
         let common_expressions = intersection_of(set1, vec![set2]);
         collector.push(Statement::IfElse { condition, s1, s2, final_assignments });
         for binded_value in common_expressions.into_iter().rev() {
@@ -63,18 +63,18 @@ fn optimize_stmts(
               pointer_expression,
               index,
             }) => Statement::IndexedAccess {
-              name: heap.alloc_temp_str(),
+              name: counter.alloc_temp_str(),
               type_,
               pointer_expression,
               index,
             },
             BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }) => Statement::Binary(
-              Statement::binary_unwrapped(heap.alloc_temp_str(), operator, e1, e2),
+              Statement::binary_unwrapped(counter.alloc_temp_str(), operator, e1, e2),
             ),
             BindedValue::IsPointer(pointer_type, operand) => {
-              Statement::IsPointer { name: heap.alloc_temp_str(), pointer_type, operand }
+              Statement::IsPointer { name: counter.alloc_temp_str(), pointer_type, operand }
             }
-            BindedValue::Not(operand) => Statement::Not { name: heap.alloc_temp_str(), operand },
+            BindedValue::Not(operand) => Statement::Not { name: counter.alloc_temp_str(), operand },
           })
         }
       }
@@ -84,9 +84,9 @@ fn optimize_stmts(
   (collector, set)
 }
 
-pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
+pub(super) fn optimize_function(function: &mut Function, counter: &TempPStrCounter) {
   let body = std::mem::take(&mut function.body);
-  function.body = optimize_stmts(body, heap).0;
+  function.body = optimize_stmts(body, counter).0;
 }
 
 #[cfg(test)]
@@ -100,7 +100,7 @@ mod tests {
       Statement, SymbolTable, Type, TypeNameId, VariableName, ZERO,
     },
   };
-  use samlang_heap::{Heap, PStr};
+  use samlang_heap::{Heap, PStr, TempPStrCounter};
 
   fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {
     let mut f = Function {
@@ -110,7 +110,7 @@ mod tests {
       body: stmts,
       return_value: ZERO,
     };
-    super::optimize_function(&mut f, heap);
+    super::optimize_function(&mut f, &TempPStrCounter::new(0));
     super::super::local_value_numbering::optimize_function(&mut f);
 
     assert_eq!(

@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 dupe = { workspace = true }
 itertools = "0.14.0"
+rayon = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

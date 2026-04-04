@@ -26,7 +26,7 @@ mod tests {
     let actual = super::super::inlining::optimize_functions(functions, heap)
       .into_iter()
       .map(|mut f| {
-        super::super::conditional_constant_propagation::optimize_function(&mut f, heap);
+        super::super::conditional_constant_propagation::optimize_function(&mut f);
         f.debug_print(heap, table)
       })
       .join("\n");

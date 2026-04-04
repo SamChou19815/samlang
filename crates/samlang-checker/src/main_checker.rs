@@ -23,7 +23,7 @@ use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{BTreeMap, BTreeSet, HashMap},
   ops::Deref,
-  rc::Rc,
+  sync::Arc,
 };
 
 mod type_hint {
@@ -77,7 +77,7 @@ mod type_hint {
   }
 }
 
-fn mod_type(mut expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> expr::E<Rc<Type>> {
+fn mod_type(mut expression: expr::E<Arc<Type>>, new_type: Arc<Type>) -> expr::E<Arc<Type>> {
   expression.common_mut().type_ = new_type;
   expression
 }
@@ -156,7 +156,7 @@ fn solve_type_arguments(
     partially_solved_substitution
       .entry(type_parameter.name)
       // Fill in unknown for unsolved types.
-      .or_insert_with(|| Rc::new(cx.mk_placeholder_type(*function_call_reason)));
+      .or_insert_with(|| Arc::new(cx.mk_placeholder_type(*function_call_reason)));
   }
   type_system::subst_fn_type(generic_function_type, &partially_solved_substitution)
 }
@@ -164,24 +164,24 @@ fn solve_type_arguments(
 struct FunctionCallTypeCheckingResult {
   solved_generic_type: FunctionType,
   solved_return_type: Type,
-  solved_substitution: HashMap<PStr, Rc<Type>>,
-  checked_arguments: Vec<expr::E<Rc<Type>>>,
+  solved_substitution: HashMap<PStr, Arc<Type>>,
+  checked_arguments: Vec<expr::E<Arc<Type>>>,
 }
 
 enum FieldOrMethodAccesss {
-  Field(expr::FieldAccess<Rc<Type>>),
-  Method(expr::MethodAccess<Rc<Type>>),
+  Field(expr::FieldAccess<Arc<Type>>),
+  Method(expr::MethodAccess<Arc<Type>>),
 }
 
 enum MaybeCheckedExpression<'a> {
-  Checked(expr::E<Rc<Type>>),
-  Unchecked(&'a expr::E<()>, Rc<Type>),
+  Checked(expr::E<Arc<Type>>),
+  Unchecked(&'a expr::E<()>, Arc<Type>),
 }
 
 fn validate_type_arguments(
   cx: &mut TypingContext,
   type_params: &Vec<TypeParameterSignature>,
-  subst_map: &HashMap<PStr, Rc<Type>>,
+  subst_map: &HashMap<PStr, Arc<Type>>,
 ) {
   for type_param in type_params {
     if let (Some(bound), Some(solved_type_argument)) =
@@ -211,7 +211,7 @@ fn type_check_expression(
   cx: &mut TypingContext,
   expression: &expr::E<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   match expression {
     expr::E::Literal(common, literal) => check_literal(common, literal),
     expr::E::LocalId(common, id) => check_local_variable(cx, common, id),
@@ -234,16 +234,16 @@ pub(super) fn type_check_expression_for_tests(
   cx: &mut TypingContext,
   expression: &expr::E<()>,
   hint: Option<&Type>,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   type_check_expression(cx, expression, type_hint::from_option(hint))
 }
 
-fn check_literal(common: &expr::ExpressionCommon<()>, literal: &Literal) -> expr::E<Rc<Type>> {
+fn check_literal(common: &expr::ExpressionCommon<()>, literal: &Literal) -> expr::E<Arc<Type>> {
   let reason = Reason::new(common.loc, Some(common.loc));
   let type_ = match &literal {
-    Literal::Bool(_) => Rc::new(Type::Primitive(reason, PrimitiveTypeKind::Bool)),
-    Literal::Int(_) => Rc::new(Type::Primitive(reason, PrimitiveTypeKind::Int)),
-    Literal::String(_) => Rc::new(Type::Nominal(NominalType {
+    Literal::Bool(_) => Arc::new(Type::Primitive(reason, PrimitiveTypeKind::Bool)),
+    Literal::Int(_) => Arc::new(Type::Primitive(reason, PrimitiveTypeKind::Int)),
+    Literal::String(_) => Arc::new(Type::Nominal(NominalType {
       reason,
       is_class_statics: false,
       module_reference: ModuleReference::ROOT,
@@ -258,8 +258,8 @@ fn check_local_variable(
   cx: &mut TypingContext,
   common: &expr::ExpressionCommon<()>,
   id: &Id,
-) -> expr::E<Rc<Type>> {
-  let type_ = Rc::new(cx.local_typing_context.read(&common.loc));
+) -> expr::E<Arc<Type>> {
+  let type_ = Arc::new(cx.local_typing_context.read(&common.loc));
   expr::E::LocalId(common.with_new_type(type_), *id)
 }
 
@@ -268,10 +268,10 @@ fn check_class_id(
   common: &expr::ExpressionCommon<()>,
   module_reference: ModuleReference,
   id: &Id,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let reason = Reason::new(common.loc, Some(common.loc));
   if cx.class_exists(module_reference, id.name) {
-    let type_ = Rc::new(Type::Nominal(NominalType {
+    let type_ = Arc::new(Type::Nominal(NominalType {
       reason,
       is_class_statics: true,
       module_reference,
@@ -281,7 +281,11 @@ fn check_class_id(
     expr::E::ClassId(common.with_new_type(type_), module_reference, *id)
   } else {
     cx.error_set.report_cannot_resolve_class_error(common.loc, module_reference, id.name);
-    expr::E::ClassId(common.with_new_type(Rc::new(Type::Any(reason, false))), module_reference, *id)
+    expr::E::ClassId(
+      common.with_new_type(Arc::new(Type::Any(reason, false))),
+      module_reference,
+      *id,
+    )
   }
 }
 
@@ -289,7 +293,7 @@ fn check_tuple(
   cx: &mut TypingContext,
   common: &expr::ExpressionCommon<()>,
   expressions: &expr::ParenthesizedExpressionList<()>,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let mut type_arguments = Vec::with_capacity(expressions.expressions.len());
   let mut checked_expressions = Vec::with_capacity(expressions.expressions.len());
   for e in &expressions.expressions {
@@ -315,7 +319,7 @@ fn check_tuple(
     16 => PStr::TUPLE_16,
     l => panic!("Invalid tuple length {l}"),
   };
-  let type_ = Rc::new(Type::Nominal(NominalType {
+  let type_ = Arc::new(Type::Nominal(NominalType {
     reason: Reason::new(common.loc, None),
     is_class_statics: false,
     module_reference: ModuleReference::STD_TUPLES,
@@ -335,14 +339,14 @@ fn check_tuple(
 
 fn replace_undecided_tparam_with_unknown_and_update_type(
   cx: &mut TypingContext,
-  expression: expr::E<Rc<Type>>,
+  expression: expr::E<Arc<Type>>,
   unresolved_type_parameters: Vec<TypeParameterSignature>,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let mut subst_map = HashMap::new();
   for tparam in unresolved_type_parameters {
     let reason = Reason::new(expression.loc(), None);
     let t = cx.mk_underconstrained_any_type(reason);
-    subst_map.insert(tparam.name, Rc::new(t));
+    subst_map.insert(tparam.name, Arc::new(t));
   }
 
   let type_ = type_system::subst_type(expression.type_(), &subst_map);
@@ -389,7 +393,7 @@ fn check_member_with_unresolved_tparams(
           Description::GeneralNominalType,
         );
       }
-      let any_type = Rc::new(Type::Any(Reason::new(expression.common.loc, None), false));
+      let any_type = Arc::new(Type::Any(Reason::new(expression.common.loc, None), false));
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(any_type),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -415,13 +419,13 @@ fn check_member_with_unresolved_tparams(
       if explicit_type_arguments.len() == method_type_info.type_parameters.len() {
         let mut subst_map = HashMap::new();
         for (tparam, targ) in method_type_info.type_parameters.iter().zip(explicit_type_arguments) {
-          subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
+          subst_map.insert(tparam.name, Arc::new(Type::from_annotation(targ)));
         }
         validate_type_arguments(cx, &method_type_info.type_parameters, &subst_map);
         let type_ =
-          Rc::new(Type::Fn(type_system::subst_fn_type(&method_type_info.type_, &subst_map)));
+          Arc::new(Type::Fn(type_system::subst_fn_type(&method_type_info.type_, &subst_map)));
         let inferred_type_arguments =
-          explicit_type_arguments.iter().map(|a| Rc::new(Type::from_annotation(a))).collect_vec();
+          explicit_type_arguments.iter().map(|a| Arc::new(Type::from_annotation(a))).collect_vec();
         let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
           common: expression.common.with_new_type(type_),
           explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -440,7 +444,7 @@ fn check_member_with_unresolved_tparams(
     }
     if method_type_info.type_parameters.is_empty() {
       // No type parameter to solve
-      let type_ = Rc::new(Type::Fn(method_type_info.type_));
+      let type_ = Arc::new(Type::Fn(method_type_info.type_));
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
         common: expression.common.with_new_type(type_),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -481,12 +485,12 @@ fn check_member_with_unresolved_tparams(
     }
     // When hint is bad or there is no hint, we need to give up and let context help us more.
     let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
-      common: expression.common.with_new_type(Rc::new(Type::Fn(method_type_info.type_))),
+      common: expression.common.with_new_type(Arc::new(Type::Fn(method_type_info.type_))),
       explicit_type_arguments: expression.explicit_type_arguments.clone(),
       inferred_type_arguments: method_type_info
         .type_parameters
         .iter()
-        .map(|it| Rc::new(Type::Generic(Reason::dummy(), it.name)))
+        .map(|it| Arc::new(Type::Generic(Reason::dummy(), it.name)))
         .collect_vec(),
       object: Box::new(checked_expression),
       method_name: expression.field_name,
@@ -509,7 +513,7 @@ fn check_member_with_unresolved_tparams(
     if let Some((field_type, _)) =
       field_mappings.get(&expression.field_name.name).filter(|(_, is_public)| *is_public)
     {
-      let type_ = Rc::new(field_type.reposition(expression.common.loc));
+      let type_ = Arc::new(field_type.reposition(expression.common.loc));
       let order = *field_order_mapping.get(&expression.field_name.name).unwrap();
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(type_),
@@ -526,7 +530,7 @@ fn check_member_with_unresolved_tparams(
         Description::NominalType { name: class_id, type_args: Vec::new() },
         expression.field_name.name,
       );
-      let any_type = Rc::new(Type::Any(Reason::new(expression.common.loc, None), false));
+      let any_type = Arc::new(Type::Any(Reason::new(expression.common.loc, None), false));
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(any_type),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -544,7 +548,7 @@ fn check_field_access(
   cx: &mut TypingContext,
   expression: &expr::FieldAccess<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let (partially_checked_expr, unresolved_type_parameters) =
     check_member_with_unresolved_tparams(cx, expression, hint);
   match partially_checked_expr {
@@ -561,8 +565,8 @@ fn check_field_access(
   }
 }
 
-fn check_unary(cx: &mut TypingContext, expression: &expr::Unary<()>) -> expr::E<Rc<Type>> {
-  let expected_type = Rc::new(Type::Primitive(
+fn check_unary(cx: &mut TypingContext, expression: &expr::Unary<()>) -> expr::E<Arc<Type>> {
+  let expected_type = Arc::new(Type::Primitive(
     Reason::new(expression.common.loc, Some(expression.common.loc)),
     match expression.operator {
       expr::UnaryOperator::NOT => PrimitiveTypeKind::Bool,
@@ -684,7 +688,7 @@ fn check_function_call_implicit_instantiation(
     .collect_vec();
   for type_parameter in still_unresolved_type_parameters {
     let t = cx.mk_underconstrained_any_type(*function_call_reason);
-    fully_solved_substitution.insert(type_parameter.name, Rc::new(t));
+    fully_solved_substitution.insert(type_parameter.name, Arc::new(t));
   }
   let fully_solved_generic_type =
     type_system::subst_fn_type(generic_function_type, &fully_solved_substitution);
@@ -712,7 +716,7 @@ fn check_function_call(
   cx: &mut TypingContext,
   expression: &expr::Call<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let (partially_checked_callee, unresolved_tparams) = match expression.callee.deref() {
     expr::E::FieldAccess(field_access) => {
       let (partially_checked_field_or_method_access, unresolved_tparams) =
@@ -737,7 +741,7 @@ fn check_function_call(
         );
       }
       let loc = expression.common.loc;
-      let type_ = Rc::new(Type::Any(Reason::new(loc, None), false));
+      let type_ = Arc::new(Type::Any(Reason::new(loc, None), false));
       return expr::E::Call(expr::Call {
         common: expression.common.with_new_type(type_),
         callee: Box::new(replace_undecided_tparam_with_unknown_and_update_type(
@@ -769,7 +773,7 @@ fn check_function_call(
     return expr::E::Call(expr::Call {
       common: expression
         .common
-        .with_new_type(Rc::new(Type::Any(Reason::new(expression.common.loc, None), false))),
+        .with_new_type(Arc::new(Type::Any(Reason::new(expression.common.loc, None), false))),
       callee: Box::new(replace_undecided_tparam_with_unknown_and_update_type(
         cx,
         partially_checked_callee,
@@ -802,7 +806,7 @@ fn check_function_call(
     hint.get_valid_hint(),
   );
   let fully_resolved_checked_callee =
-    mod_type(partially_checked_callee, Rc::new(Type::Fn(solved_generic_type)));
+    mod_type(partially_checked_callee, Arc::new(Type::Fn(solved_generic_type)));
   let callee_with_patched_targs = match fully_resolved_checked_callee {
     expr::E::FieldAccess(f) => expr::E::FieldAccess(expr::FieldAccess {
       common: f.common,
@@ -826,7 +830,7 @@ fn check_function_call(
     e => e,
   };
   expr::E::Call(expr::Call {
-    common: expression.common.with_new_type(Rc::new(solved_return_type)),
+    common: expression.common.with_new_type(Arc::new(solved_return_type)),
     callee: Box::new(callee_with_patched_targs),
     arguments: expr::ParenthesizedExpressionList {
       loc: expression.arguments.loc,
@@ -837,8 +841,8 @@ fn check_function_call(
   })
 }
 
-fn check_binary(cx: &mut TypingContext, expression: &expr::Binary<()>) -> expr::E<Rc<Type>> {
-  let expected_type = Rc::new(match expression.operator {
+fn check_binary(cx: &mut TypingContext, expression: &expr::Binary<()>) -> expr::E<Arc<Type>> {
+  let expected_type = Arc::new(match expression.operator {
     expr::BinaryOperator::MUL
     | expr::BinaryOperator::DIV
     | expr::BinaryOperator::MOD
@@ -925,7 +929,7 @@ fn check_if_else(
   cx: &mut TypingContext,
   expression: &expr::IfElse<()>,
   hint: type_hint::Hint,
-) -> expr::IfElse<Rc<Type>> {
+) -> expr::IfElse<Arc<Type>> {
   let condition = Box::new(match expression.condition.as_ref() {
     expr::IfElseCondition::Expression(expr) => {
       expr::IfElseCondition::Expression(type_check_expression(cx, expr, type_hint::MISSING))
@@ -957,18 +961,18 @@ fn check_if_else(
     }
   });
   let type_ = e1.common.type_.reposition(expression.common.loc);
-  expr::IfElse { common: expression.common.with_new_type(Rc::new(type_)), condition, e1, e2 }
+  expr::IfElse { common: expression.common.with_new_type(Arc::new(type_)), condition, e1, e2 }
 }
 
 fn check_match(
   cx: &mut TypingContext,
   expression: &expr::Match<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let checked_matched = type_check_expression(cx, &expression.matched, type_hint::MISSING);
   let checked_matched_type = checked_matched.type_();
   let mut checked_cases = Vec::new();
-  let mut matching_list_type: Option<Rc<Type>> = None;
+  let mut matching_list_type: Option<Arc<Type>> = None;
   let mut abstract_pattern_nodes = Vec::with_capacity(expression.cases.len());
   for expr::VariantPatternToExpression { loc, pattern, body, ending_associated_comments } in
     &expression.cases
@@ -994,7 +998,7 @@ fn check_match(
     cx.error_set.report_non_exhaustive_match_error(expression.common.loc, description);
   }
   expr::E::Match(expr::Match {
-    common: expression.common.with_new_type(Rc::new(
+    common: expression.common.with_new_type(Arc::new(
       matching_list_type
         .map(|t| t.reposition(expression.common.loc))
         .unwrap_or(Type::Any(Reason::new(expression.common.loc, None), false)),
@@ -1009,19 +1013,19 @@ fn infer_lambda_parameter_types(
   cx: &mut TypingContext,
   expression: &expr::Lambda<()>,
   hint: type_hint::Hint,
-) -> (Vec<Rc<Type>>, bool) {
+) -> (Vec<Arc<Type>>, bool) {
   let mut underconstrained = false;
   let mut types_ = Vec::with_capacity(expression.parameters.parameters.len());
   for (i, OptionallyAnnotatedId { name, type_: _, annotation }) in
     expression.parameters.parameters.iter().enumerate()
   {
     let type_ = if let Some(annot) = annotation {
-      Rc::new(Type::from_annotation(annot))
+      Arc::new(Type::from_annotation(annot))
     } else if let Some(param_hint) = hint.transform_to_nth_param(i).get_valid_hint() {
-      Rc::new(param_hint.reposition(name.loc))
+      Arc::new(param_hint.reposition(name.loc))
     } else {
       underconstrained = true;
-      Rc::new(cx.mk_underconstrained_any_type(Reason::new(name.loc, None)))
+      Arc::new(cx.mk_underconstrained_any_type(Reason::new(name.loc, None)))
     };
     cx.validate_type_instantiation_strictly(&type_);
     cx.local_typing_context.write(name.loc, type_.dupe());
@@ -1034,7 +1038,7 @@ fn check_lambda(
   cx: &mut TypingContext,
   expression: &expr::Lambda<()>,
   hint: type_hint::Hint,
-) -> expr::E<Rc<Type>> {
+) -> expr::E<Arc<Type>> {
   let (argument_types, underconstrained) = infer_lambda_parameter_types(cx, expression, hint);
   let checked_parameters = expr::LambdaParameters {
     loc: expression.parameters.loc,
@@ -1055,7 +1059,7 @@ fn check_lambda(
     expr::E::Literal(
       expression
         .common
-        .with_new_type(Rc::new(cx.mk_placeholder_type(Reason::new(expression.common.loc, None)))),
+        .with_new_type(Arc::new(cx.mk_placeholder_type(Reason::new(expression.common.loc, None)))),
       Literal::Bool(false),
     )
   } else {
@@ -1068,7 +1072,7 @@ fn check_lambda(
     return_type: body.type_().dupe(),
   });
   expr::E::Lambda(expr::Lambda {
-    common: expression.common.with_new_type(Rc::new(type_)),
+    common: expression.common.with_new_type(Arc::new(type_)),
     parameters: checked_parameters,
     captured,
     body: Box::new(body),
@@ -1091,13 +1095,13 @@ fn any_typed_invalid_tuple_pattern(
     ending_associated_comments,
     elements: destructured_names,
   }: &pattern::TuplePattern<()>,
-) -> pattern::TuplePattern<Rc<Type>> {
+) -> pattern::TuplePattern<Arc<Type>> {
   let mut checked_destructured_names = Vec::new();
   for pattern::TuplePatternElement { pattern, type_: _ } in destructured_names {
     let loc = pattern.loc();
     checked_destructured_names.push(pattern::TuplePatternElement {
       pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
-      type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+      type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
     });
   }
   pattern::TuplePattern {
@@ -1111,7 +1115,7 @@ fn any_typed_invalid_tuple_pattern(
 fn any_typed_invalid_matching_pattern(
   cx: &mut TypingContext,
   pattern: &pattern::MatchingPattern<()>,
-) -> pattern::MatchingPattern<Rc<Type>> {
+) -> pattern::MatchingPattern<Arc<Type>> {
   match pattern {
     pattern::MatchingPattern::Tuple(p) => {
       pattern::MatchingPattern::Tuple(any_typed_invalid_tuple_pattern(cx, p))
@@ -1138,7 +1142,7 @@ fn any_typed_invalid_matching_pattern(
           field_name: *field_name,
           pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
           shorthand: *shorthand,
-          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+          type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
       }
       pattern::MatchingPattern::Object {
@@ -1159,10 +1163,10 @@ fn any_typed_invalid_matching_pattern(
       tag_order: *tag_order,
       tag: *tag,
       data_variables: data_variables.as_ref().map(|p| any_typed_invalid_tuple_pattern(cx, p)),
-      type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+      type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
     }),
     pattern::MatchingPattern::Id(id, ()) => {
-      let type_ = Rc::new(Type::Any(Reason::new(id.loc, Some(id.loc)), false));
+      let type_ = Arc::new(Type::Any(Reason::new(id.loc, Some(id.loc)), false));
       cx.local_typing_context.write(id.loc, type_.dupe());
       pattern::MatchingPattern::Id(*id, type_)
     }
@@ -1184,8 +1188,8 @@ fn check_matching_pattern(
   cx: &mut TypingContext,
   pattern: &pattern::MatchingPattern<()>,
   wildcard_on_bad_pattern: bool,
-  pattern_type: &Rc<Type>,
-) -> (pattern::MatchingPattern<Rc<Type>>, pattern_matching::AbstractPatternNode) {
+  pattern_type: &Arc<Type>,
+) -> (pattern::MatchingPattern<Arc<Type>>, pattern_matching::AbstractPatternNode) {
   match pattern {
     pattern::MatchingPattern::Tuple(pattern::TuplePattern {
       location: pattern_loc,
@@ -1214,13 +1218,13 @@ fn check_matching_pattern(
             check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, &field_sig.type_);
           checked_destructured_names.push(pattern::TuplePatternElement {
             pattern: Box::new(checked),
-            type_: Rc::new(field_sig.type_.reposition(*loc)),
+            type_: Arc::new(field_sig.type_.reposition(*loc)),
           });
           abstract_pattern_nodes.push(abstract_node);
           continue;
         }
         cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
-        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
+        let type_ = Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
         let (checked, abstract_node) =
           check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, &type_);
         checked_destructured_names
@@ -1298,7 +1302,7 @@ fn check_matching_pattern(
             field_name: *field_name,
             pattern: Box::new(checked),
             shorthand: *shorthand,
-            type_: Rc::new(field_type.reposition(*loc)),
+            type_: Arc::new(field_type.reposition(*loc)),
           });
           abstract_pattern_nodes[*field_order] = abstract_node;
           continue;
@@ -1308,7 +1312,7 @@ fn check_matching_pattern(
           pattern_type.to_description(),
           field_name.name,
         );
-        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
+        let type_ = Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
         let (checked, abstract_node) =
           check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, &type_);
         checked_destructured_names.push(pattern::ObjectPatternElement {
@@ -1317,7 +1321,7 @@ fn check_matching_pattern(
           field_name: *field_name,
           pattern: Box::new(checked),
           shorthand: *shorthand,
-          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+          type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
         abstract_pattern_nodes[*field_order] = abstract_node;
       }
@@ -1401,7 +1405,7 @@ fn check_matching_pattern(
                 pattern_type.to_description(),
                 index,
               );
-              let type_ = Rc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
+              let type_ = Arc::new(Type::Any(Reason::new(*p.loc(), Some(*p.loc())), false));
               let (checked, abstract_node) =
                 check_matching_pattern(cx, p, wildcard_on_bad_pattern, &type_);
               checked_data_variables
@@ -1463,7 +1467,7 @@ fn check_matching_pattern(
       let first_pattern = patterns.first().unwrap();
       let (first_checked, first_abstract) =
         check_matching_pattern(cx, first_pattern, wildcard_on_bad_pattern, pattern_type);
-      let expected_bindings: BTreeMap<PStr, Rc<Type>> =
+      let expected_bindings: BTreeMap<PStr, Arc<Type>> =
         first_checked.bindings().into_iter().map(|(k, v)| (k, v.clone())).collect();
       let mut checked_patterns = vec![first_checked];
       let mut abstract_nodes = vec![first_abstract];
@@ -1471,7 +1475,7 @@ fn check_matching_pattern(
       for pattern in patterns.iter().skip(1) {
         let (checked, abstract_node) =
           check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, pattern_type);
-        let actual_bindings: BTreeMap<PStr, Rc<Type>> =
+        let actual_bindings: BTreeMap<PStr, Arc<Type>> =
           checked.bindings().into_iter().map(|(k, v)| (k, v.clone())).collect();
         let expected_names: BTreeSet<PStr> = expected_bindings.keys().copied().collect();
         let actual_names: BTreeSet<PStr> = actual_bindings.keys().copied().collect();
@@ -1510,7 +1514,7 @@ fn check_matching_pattern(
 fn check_declaration_statement(
   cx: &mut TypingContext,
   statement: &expr::DeclarationStatement<()>,
-) -> expr::DeclarationStatement<Rc<Type>> {
+) -> expr::DeclarationStatement<Arc<Type>> {
   let expr::DeclarationStatement {
     loc,
     associated_comments,
@@ -1550,7 +1554,7 @@ fn check_declaration_statement(
 fn check_statement(
   cx: &mut TypingContext,
   statement: &expr::Statement<()>,
-) -> expr::Statement<Rc<Type>> {
+) -> expr::Statement<Arc<Type>> {
   match statement {
     expr::Statement::Declaration(decl_stmt) => {
       expr::Statement::Declaration(Box::new(check_declaration_statement(cx, decl_stmt)))
@@ -1566,14 +1570,14 @@ fn check_block(
   cx: &mut TypingContext,
   expression: &expr::Block<()>,
   hint: type_hint::Hint,
-) -> expr::Block<Rc<Type>> {
+) -> expr::Block<Arc<Type>> {
   let statements = expression.statements.iter().map(|s| check_statement(cx, s)).collect_vec();
   let checked_final_expr =
     expression.expression.as_ref().map(|e| Box::new(type_check_expression(cx, e, hint)));
   let type_ = if let Some(e) = &checked_final_expr {
-    Rc::new(e.type_().reposition(expression.common.loc))
+    Arc::new(e.type_().reposition(expression.common.loc))
   } else {
-    Rc::new(Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit))
+    Arc::new(Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit))
   };
   expr::Block {
     common: expression.common.with_new_type(type_),
@@ -1654,7 +1658,7 @@ pub fn type_check_module(
   module: &Module<()>,
   global_cx: &GlobalSignature,
   error_set: &mut ErrorSet,
-) -> (Module<Rc<Type>>, LocalTypingContext) {
+) -> (Module<Arc<Type>>, LocalTypingContext) {
   let mut local_cx =
     LocalTypingContext::new(perform_ssa_analysis_on_module(module_reference, module, error_set));
 
@@ -1682,7 +1686,7 @@ pub fn type_check_module(
         .type_parameters()
         .iter()
         .flat_map(|it| &it.parameters)
-        .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
+        .map(|it| Arc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
         .collect_vec(),
     };
     let global_signature::SuperTypesResolutionResult { types: resolved_super_types, is_cyclic } =
@@ -1799,7 +1803,7 @@ pub fn type_check_module(
       member_cx
         .validate_type_instantiation_strictly(&Type::Fn(FunctionType::from_function(member)));
       for param in member.parameters.parameters.iter() {
-        local_cx.write(param.name.loc, Rc::new(Type::from_annotation(&param.annotation)));
+        local_cx.write(param.name.loc, Arc::new(Type::from_annotation(&param.annotation)));
       }
     }
 
@@ -1841,7 +1845,7 @@ pub fn type_check_module(
             missing_function_members.iter().copied().collect(),
           );
         }
-        local_cx.write(c.loc, Rc::new(Type::Nominal(nominal_type)));
+        local_cx.write(c.loc, Arc::new(Type::Nominal(nominal_type)));
 
         let mut checked_members = Vec::new();
         for member in &c.members.members {
