@@ -5,10 +5,10 @@ use samlang_ast::{
 };
 use samlang_checker::type_::{FunctionType, NominalType, Type};
 use samlang_heap::{ModuleReference, PStr};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub(super) enum LocationCoverSearchResult<'a> {
-  Expression(&'a expr::E<Rc<Type>>),
+  Expression(&'a expr::E<Arc<Type>>),
   ToplevelName(Location, ModuleReference, PStr),
   PropertyName(Location, ModuleReference, PStr, PStr),
   InterfaceMemberName {
@@ -17,13 +17,13 @@ pub(super) enum LocationCoverSearchResult<'a> {
     class_name: PStr,
     fn_name: PStr,
     is_method: bool,
-    type_: Rc<Type>,
+    type_: Arc<Type>,
   },
   TypedName(Location, Type, bool), // bool: binding
 }
 
 fn search_matching_pattern(
-  pattern: &'_ pattern::MatchingPattern<Rc<Type>>,
+  pattern: &'_ pattern::MatchingPattern<Arc<Type>>,
   position: Position,
 ) -> Option<LocationCoverSearchResult<'_>> {
   match pattern {
@@ -49,7 +49,7 @@ fn search_matching_pattern(
 }
 
 fn search_parenthesized_expression_list(
-  expr_list: &'_ expr::ParenthesizedExpressionList<Rc<Type>>,
+  expr_list: &'_ expr::ParenthesizedExpressionList<Arc<Type>>,
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
@@ -131,7 +131,7 @@ fn search_optional_annotation(
 }
 
 fn search_if_else(
-  if_else: &'_ expr::IfElse<Rc<Type>>,
+  if_else: &'_ expr::IfElse<Arc<Type>>,
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
@@ -146,7 +146,7 @@ fn search_if_else(
 }
 
 fn search_if_else_or_block(
-  if_else_or_block: &'_ expr::IfElseOrBlock<Rc<Type>>,
+  if_else_or_block: &'_ expr::IfElseOrBlock<Arc<Type>>,
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
@@ -157,7 +157,7 @@ fn search_if_else_or_block(
 }
 
 fn search_block(
-  block: &'_ expr::Block<Rc<Type>>,
+  block: &'_ expr::Block<Arc<Type>>,
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
@@ -190,7 +190,7 @@ fn search_block(
 }
 
 fn search_expression(
-  expr: &'_ expr::E<Rc<Type>>,
+  expr: &'_ expr::E<Arc<Type>>,
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
@@ -329,7 +329,7 @@ fn search_expression(
 
 pub(super) fn search_module_locally(
   module_reference: ModuleReference,
-  module: &Module<Rc<Type>>,
+  module: &Module<Arc<Type>>,
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult<'_>> {
@@ -355,7 +355,7 @@ pub(super) fn search_module_locally(
           class_name: name.name,
           fn_name: member.name.name,
           is_method: member.is_method,
-          type_: Rc::new(Type::Fn(FunctionType::from_function(member))),
+          type_: Arc::new(Type::Fn(FunctionType::from_function(member))),
         });
       }
       if let Some(found) =
@@ -401,7 +401,7 @@ mod tests {
     source::{Id, NO_COMMENT_REFERENCE, expr},
   };
   use samlang_heap::{Heap, ModuleReference};
-  use std::rc::Rc;
+  use std::sync::Arc;
 
   #[test]
   fn method_search_coverage_test() {
@@ -412,7 +412,7 @@ mod tests {
           common: expr::ExpressionCommon {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
+            type_: Arc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
           },
           explicit_type_arguments: None,
           inferred_type_arguments: Vec::new(),
@@ -420,7 +420,7 @@ mod tests {
             expr::ExpressionCommon {
               loc: Location::dummy(),
               associated_comments: NO_COMMENT_REFERENCE,
-              type_: Rc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
+              type_: Arc::new(samlang_checker::type_::Type::Any(Reason::dummy(), false)),
             },
             Id::from(heap.alloc_str_for_test("id")),
           )),

@@ -59,7 +59,7 @@ fn analyze_number_of_iterations_to_break_guard(
 
 pub(super) fn optimize(
   optimizable_while_loop: &OptimizableWhileLoop,
-  heap: &mut samlang_heap::Heap,
+  counter: &samlang_heap::TempPStrCounter,
 ) -> Option<Vec<Statement>> {
   let BasicInductionVariableWithLoopGuard {
     name: basic_induction_variable_with_loop_guard_name,
@@ -117,7 +117,7 @@ pub(super) fn optimize(
     .iter()
     .find(|v| v.name.eq(&break_collector.2.name))
   {
-    let increment_temporary = heap.alloc_temp_str();
+    let increment_temporary = counter.alloc_temp_str();
     Some(vec![
       Statement::Binary(Statement::binary_flexible_unwrapped(
         increment_temporary,
@@ -225,13 +225,16 @@ mod tests {
     );
   }
 
-  fn assert_rejected(optimizable_while_loop: OptimizableWhileLoop, heap: &mut Heap) {
-    assert!(super::optimize(&optimizable_while_loop, heap).is_none());
+  fn assert_rejected(
+    optimizable_while_loop: OptimizableWhileLoop,
+    counter: &samlang_heap::TempPStrCounter,
+  ) {
+    assert!(super::optimize(&optimizable_while_loop, counter).is_none());
   }
 
   #[test]
   fn rejection_tests() {
-    let heap = &mut Heap::new();
+    let counter = samlang_heap::TempPStrCounter::new(0);
 
     assert_rejected(
       OptimizableWhileLoop {
@@ -248,7 +251,7 @@ mod tests {
         statements: Vec::new(),
         break_collector: None,
       },
-      heap,
+      &counter,
     );
 
     assert_rejected(
@@ -270,7 +273,7 @@ mod tests {
         }],
         break_collector: None,
       },
-      heap,
+      &counter,
     );
 
     assert_rejected(
@@ -288,18 +291,19 @@ mod tests {
         statements: Vec::new(),
         break_collector: None,
       },
-      heap,
+      &counter,
     );
   }
 
   fn assert_optimized(
     optimizable_while_loop: OptimizableWhileLoop,
     heap: &mut Heap,
+    counter: &samlang_heap::TempPStrCounter,
     expected: &str,
   ) {
     assert_eq!(
       expected,
-      super::optimize(&optimizable_while_loop, heap)
+      super::optimize(&optimizable_while_loop, counter)
         .unwrap()
         .iter()
         .map(|s| s.debug_print(heap, &SymbolTable::new()))
@@ -310,6 +314,7 @@ mod tests {
   #[test]
   fn optimizable_tests() {
     let heap = &mut Heap::new();
+    let counter = samlang_heap::TempPStrCounter::new(0);
 
     assert_optimized(
       OptimizableWhileLoop {
@@ -327,6 +332,7 @@ mod tests {
         break_collector: None,
       },
       heap,
+      &counter,
       "",
     );
 
@@ -346,6 +352,7 @@ mod tests {
         break_collector: Some((heap.alloc_str_for_test("bc"), INT_32_TYPE, Expression::i32(3))),
       },
       heap,
+      &counter,
       "let bc = 3 + 0;",
     );
 
@@ -369,6 +376,7 @@ mod tests {
         )),
       },
       heap,
+      &counter,
       "let bc = 20 + 0;",
     );
 
@@ -399,6 +407,7 @@ mod tests {
         )),
       },
       heap,
+      &counter,
       "let _t0 = (outside: int) * 15;\nlet bc = (j_init: int) + (_t0: int);",
     );
 
@@ -429,6 +438,7 @@ mod tests {
         )),
       },
       heap,
+      &counter,
       "let bc = (aa: int) + 0;",
     );
   }

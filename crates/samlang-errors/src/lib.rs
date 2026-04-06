@@ -889,6 +889,10 @@ impl ErrorSet {
     grouped.into_iter().map(|(k, v)| (k, v.collect_vec())).collect::<HashMap<_, _>>()
   }
 
+  pub fn merge(&mut self, other: ErrorSet) {
+    self.errors.extend(other.errors);
+  }
+
   pub fn has_errors(&self) -> bool {
     !self.errors.is_empty()
   }

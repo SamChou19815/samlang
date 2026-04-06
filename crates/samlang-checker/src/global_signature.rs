@@ -8,6 +8,7 @@ use super::{
 };
 use dupe::Dupe;
 use itertools::Itertools;
+use rayon::prelude::*;
 use samlang_ast::{
   Reason,
   source::{Module, Toplevel, TypeDefinition},
@@ -15,7 +16,7 @@ use samlang_ast::{
 use samlang_heap::{ModuleReference, PStr};
 use std::{
   collections::{HashMap, HashSet},
-  rc::Rc,
+  sync::Arc,
 };
 
 pub fn build_module_signature(
@@ -43,7 +44,7 @@ pub fn build_module_signature(
     }
     let toplevel_tparams_sig = TypeParameterSignature::from_list(toplevel.type_parameters());
     let type_definition = if let Toplevel::Class(class) = toplevel {
-      let class_type = Rc::new(Type::Nominal(NominalType {
+      let class_type = Arc::new(Type::Nominal(NominalType {
         reason: Reason::new(class.name.loc, Some(class.name.loc)),
         is_class_statics: false,
         module_reference,
@@ -52,7 +53,7 @@ pub fn build_module_signature(
           .type_parameters
           .iter()
           .flat_map(|it| &it.parameters)
-          .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
+          .map(|it| Arc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
           .collect_vec(),
       }));
       match class.type_definition.as_ref() {
@@ -70,7 +71,7 @@ pub fn build_module_signature(
               reason: type_def_reason,
               argument_types: fields
                 .iter()
-                .map(|it| Rc::new(Type::from_annotation(&it.annotation)))
+                .map(|it| Arc::new(Type::from_annotation(&it.annotation)))
                 .collect_vec(),
               return_type: class_type,
             },
@@ -85,7 +86,7 @@ pub fn build_module_signature(
               .iter()
               .map(|field| StructItemDefinitionSignature {
                 name: field.name.name,
-                type_: Rc::new(Type::from_annotation(&field.annotation)),
+                type_: Arc::new(Type::from_annotation(&field.annotation)),
                 is_public: field.is_public,
               })
               .collect(),
@@ -108,7 +109,7 @@ pub fn build_module_signature(
                   .associated_data_types
                   .iter()
                   .flat_map(|it| &it.annotations)
-                  .map(|annot| Rc::new(Type::from_annotation(annot)))
+                  .map(|annot| Arc::new(Type::from_annotation(annot)))
                   .collect(),
                 return_type: class_type.dupe(),
               },
@@ -124,7 +125,7 @@ pub fn build_module_signature(
                   .associated_data_types
                   .iter()
                   .flat_map(|it| &it.annotations)
-                  .map(|it| Rc::new(Type::from_annotation(it)))
+                  .map(|it| Arc::new(Type::from_annotation(it)))
                   .collect(),
               })
               .collect(),
@@ -169,11 +170,13 @@ pub fn build_global_signature(
   sources: &HashMap<ModuleReference, Module<()>>,
   builtin_module_types: ModuleSignature,
 ) -> GlobalSignature {
-  let mut global_cx = HashMap::new();
+  let mut global_cx: HashMap<_, _> = sources
+    .par_iter()
+    .map(|(module_reference, module)| {
+      (*module_reference, build_module_signature(*module_reference, module))
+    })
+    .collect();
   global_cx.insert(ModuleReference::ROOT, builtin_module_types);
-  for (module_reference, module) in sources {
-    global_cx.insert(*module_reference, build_module_signature(*module_reference, module));
-  }
   global_cx
 }
 

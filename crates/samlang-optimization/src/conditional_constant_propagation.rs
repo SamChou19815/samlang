@@ -4,7 +4,7 @@ use super::optimization_common::{
 use itertools::Itertools;
 use samlang_ast::{hir::BinaryOperator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
-use samlang_heap::{Heap, PStr};
+use samlang_heap::PStr;
 
 fn evaluate_bin_op(operator: BinaryOperator, v1: i32, v2: i32) -> Option<i32> {
   match operator {
@@ -152,7 +152,6 @@ fn pop_scope(
 
 fn optimize_stmt(
   stmt: &Statement,
-  heap: &mut Heap,
   value_cx: &mut LocalValueContextForOptimization,
   index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
@@ -285,7 +284,6 @@ fn optimize_stmt(
         let is_true = (*v) != 0;
         let ends_with_break = optimize_stmts(
           if is_true { s1 } else { s2 },
-          heap,
           value_cx,
           index_access_cx,
           binary_expr_cx,
@@ -317,13 +315,13 @@ fn optimize_stmt(
       }
       push_scope(value_cx, index_access_cx, binary_expr_cx);
       let mut s1_collector = Vec::new();
-      optimize_stmts(s1, heap, value_cx, index_access_cx, binary_expr_cx, &mut s1_collector);
+      optimize_stmts(s1, value_cx, index_access_cx, binary_expr_cx, &mut s1_collector);
       let branch1_values =
         final_assignments.iter().map(|fa| optimize_expr(value_cx, &fa.e1)).collect_vec();
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
       push_scope(value_cx, index_access_cx, binary_expr_cx);
       let mut s2_collector = Vec::new();
-      optimize_stmts(s2, heap, value_cx, index_access_cx, binary_expr_cx, &mut s2_collector);
+      optimize_stmts(s2, value_cx, index_access_cx, binary_expr_cx, &mut s2_collector);
       let branch2_values =
         final_assignments.iter().map(|fa| optimize_expr(value_cx, &fa.e2)).collect_vec();
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
@@ -353,20 +351,13 @@ fn optimize_stmt(
       if let Expression::Int32Literal(v) = &condition {
         let is_true = (*v ^ (*invert_condition as i32)) != 0;
         if is_true {
-          optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx, collector)
+          optimize_stmts(statements, value_cx, index_access_cx, binary_expr_cx, collector)
         } else {
           false
         }
       } else {
         let mut stmt_collector = Vec::new();
-        optimize_stmts(
-          statements,
-          heap,
-          value_cx,
-          index_access_cx,
-          binary_expr_cx,
-          &mut stmt_collector,
-        );
+        optimize_stmts(statements, value_cx, index_access_cx, binary_expr_cx, &mut stmt_collector);
         collector.append(&mut single_if_or_null(condition, *invert_condition, stmt_collector));
         false
       }
@@ -392,7 +383,7 @@ fn optimize_stmt(
         .collect_vec();
       push_scope(value_cx, index_access_cx, binary_expr_cx);
       let mut stmts = Vec::new();
-      optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx, &mut stmts);
+      optimize_stmts(statements, value_cx, index_access_cx, binary_expr_cx, &mut stmts);
       let loop_variable_loop_values = filtered_loop_variables
         .iter()
         .map(|v| optimize_expr(value_cx, &v.loop_value))
@@ -414,7 +405,7 @@ fn optimize_stmt(
         for v in loop_variables {
           value_cx.checked_bind(v.name, v.initial_value);
         }
-        optimize_stmts(rest, heap, value_cx, index_access_cx, binary_expr_cx, collector);
+        optimize_stmts(rest, value_cx, index_access_cx, binary_expr_cx, collector);
         if let Some(v) = break_collector {
           let break_value = optimize_expr(value_cx, e);
           value_cx.checked_bind(v.name, break_value);
@@ -425,7 +416,6 @@ fn optimize_stmt(
           loop_variables,
           stmts,
           *break_collector,
-          heap,
           value_cx,
           index_access_cx,
           binary_expr_cx,
@@ -494,15 +484,13 @@ fn optimize_stmt(
 
 fn optimize_stmts(
   stmts: &[Statement],
-  heap: &mut Heap,
   value_cx: &mut LocalValueContextForOptimization,
   index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
   collector: &mut Vec<Statement>,
 ) -> bool {
   for stmt in stmts {
-    let ends_with_break =
-      optimize_stmt(stmt, heap, value_cx, index_access_cx, binary_expr_cx, collector);
+    let ends_with_break = optimize_stmt(stmt, value_cx, index_access_cx, binary_expr_cx, collector);
     if ends_with_break {
       return true;
     }
@@ -514,7 +502,6 @@ fn try_optimize_loop_for_some_iterations(
   mut loop_variables: Vec<GenenalLoopVariable>,
   mut stmts: Vec<Statement>,
   mut break_collector: Option<VariableName>,
-  heap: &mut Heap,
   value_cx: &mut LocalValueContextForOptimization,
   index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
@@ -528,7 +515,6 @@ fn try_optimize_loop_for_some_iterations(
     let mut first_run_optimized_stmts = Vec::new();
     optimize_stmts(
       &stmts,
-      heap,
       value_cx,
       index_access_cx,
       binary_expr_cx,
@@ -578,14 +564,13 @@ fn try_optimize_loop_for_some_iterations(
   }
 }
 
-pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
+pub(super) fn optimize_function(function: &mut Function) {
   let mut value_cx = LocalValueContextForOptimization::new();
   let mut index_access_cx = LocalStackedContext::new();
   let mut binary_expr_cx = BinaryExpressionContext::new();
   let mut collector = Vec::new();
   optimize_stmts(
     &function.body,
-    heap,
     &mut value_cx,
     &mut index_access_cx,
     &mut binary_expr_cx,

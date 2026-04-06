@@ -16,6 +16,7 @@ samlang-heap = { path = "../samlang-heap" }
 samlang-optimization = { path = "../samlang-optimization" }
 samlang-parser = { path = "../samlang-parser" }
 samlang-profiling = { path = "../samlang-profiling" }
+rayon = { workspace = true }
 wast = "215.0.0"
 wat = "1.215.0"
 

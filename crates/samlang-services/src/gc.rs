@@ -3,7 +3,7 @@ use samlang_ast::source::{
 };
 use samlang_checker::type_::{FunctionType, NominalType, Type};
 use samlang_heap::{Heap, ModuleReference};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 fn mark_annot(heap: &mut Heap, type_: &annotation::T) {
   match type_ {
@@ -61,7 +61,7 @@ fn mark_fn_type(heap: &mut Heap, type_: &FunctionType) {
   mark_type(heap, &type_.return_type);
 }
 
-fn mark_types(heap: &mut Heap, types: &Vec<Rc<Type>>) {
+fn mark_types(heap: &mut Heap, types: &Vec<Arc<Type>>) {
   for t in types {
     mark_type(heap, t);
   }
@@ -71,14 +71,14 @@ fn mark_id(heap: &mut Heap, id: &Id) {
   heap.mark(id.name);
 }
 
-fn mark_tuple_pattern(heap: &mut Heap, pattern: &pattern::TuplePattern<Rc<Type>>) {
+fn mark_tuple_pattern(heap: &mut Heap, pattern: &pattern::TuplePattern<Arc<Type>>) {
   for n in &pattern.elements {
     mark_matching_pattern(heap, &n.pattern);
     mark_type(heap, &n.type_);
   }
 }
 
-fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<Type>>) {
+fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Arc<Type>>) {
   match pattern {
     pattern::MatchingPattern::Tuple(p) => {
       mark_tuple_pattern(heap, p);
@@ -116,7 +116,7 @@ fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<
   }
 }
 
-fn mark_if_else(heap: &mut Heap, if_else: &expr::IfElse<Rc<Type>>) {
+fn mark_if_else(heap: &mut Heap, if_else: &expr::IfElse<Arc<Type>>) {
   match if_else.condition.as_ref() {
     expr::IfElseCondition::Expression(e) => mark_expression(heap, e),
     expr::IfElseCondition::Guard(p, e) => {
@@ -131,7 +131,7 @@ fn mark_if_else(heap: &mut Heap, if_else: &expr::IfElse<Rc<Type>>) {
   }
 }
 
-fn mark_block(heap: &mut Heap, block: &expr::Block<Rc<Type>>) {
+fn mark_block(heap: &mut Heap, block: &expr::Block<Arc<Type>>) {
   for stmt in &block.statements {
     match stmt {
       expr::Statement::Declaration(decl_stmt) => {
@@ -149,7 +149,7 @@ fn mark_block(heap: &mut Heap, block: &expr::Block<Rc<Type>>) {
   }
 }
 
-fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
+fn mark_expression(heap: &mut Heap, expr: &expr::E<Arc<Type>>) {
   mark_type(heap, &expr.common().type_);
   match expr {
     expr::E::Literal(_, Literal::String(s)) => heap.mark(*s),
@@ -211,7 +211,7 @@ fn mark_type_parameters(heap: &mut Heap, type_parameters: Option<&annotation::Ty
   }
 }
 
-fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
+fn mark_module(heap: &mut Heap, module: &Module<Arc<Type>>) {
   for comment_text in
     module.comment_store.all_comments().iter().flat_map(|it| it.iter()).map(|it| it.text)
   {
@@ -274,7 +274,7 @@ const NUM_SWEEP_UNIT: usize = 10000;
 fn perform_gc_after_recheck_internal(
   heap: &mut Heap,
   mut remaining_slice: usize,
-  all_modules: &HashMap<ModuleReference, Module<Rc<Type>>>,
+  all_modules: &HashMap<ModuleReference, Module<Arc<Type>>>,
   changed_modules: Vec<ModuleReference>,
 ) {
   for mod_ref in changed_modules {
@@ -295,7 +295,7 @@ fn perform_gc_after_recheck_internal(
 
 pub(super) fn perform_gc_after_recheck(
   heap: &mut Heap,
-  all_modules: &HashMap<ModuleReference, Module<Rc<Type>>>,
+  all_modules: &HashMap<ModuleReference, Module<Arc<Type>>>,
   changed_modules: Vec<ModuleReference>,
 ) {
   perform_gc_after_recheck_internal(

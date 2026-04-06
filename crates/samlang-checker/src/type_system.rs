@@ -5,7 +5,7 @@ use samlang_errors::{ErrorSet, StackableError};
 use samlang_heap::PStr;
 use std::{
   collections::{HashMap, HashSet},
-  rc::Rc,
+  sync::Arc,
 };
 
 pub(super) fn contains_placeholder(type_: &Type) -> bool {
@@ -109,7 +109,7 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
         let mut passing = true;
         for (l, u) in lower_n.type_arguments.iter().zip(&upper_n.type_arguments) {
           if let Some(t) = type_meet_visit(l, u, error_stack) {
-            type_arguments.push(Rc::new(t));
+            type_arguments.push(Arc::new(t));
           } else {
             passing = false;
             break;
@@ -135,7 +135,7 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
         let mut passing = true;
         for (l, u) in lower_f.argument_types.iter().zip(&upper_f.argument_types) {
           if let Some(t) = type_meet_visit(l, u, error_stack) {
-            argument_types.push(Rc::new(t));
+            argument_types.push(Arc::new(t));
           } else {
             passing = false;
             break;
@@ -148,7 +148,7 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
           return Some(Type::Fn(FunctionType {
             reason: lower_f.reason,
             argument_types,
-            return_type: Rc::new(return_type),
+            return_type: Arc::new(return_type),
           }));
         }
       } else {
@@ -178,7 +178,7 @@ pub(super) fn type_meet(lower: &Type, upper: &Type) -> Result<Type, StackableErr
   }
 }
 
-pub(super) fn subst_fn_type(t: &FunctionType, mapping: &HashMap<PStr, Rc<Type>>) -> FunctionType {
+pub(super) fn subst_fn_type(t: &FunctionType, mapping: &HashMap<PStr, Arc<Type>>) -> FunctionType {
   FunctionType {
     reason: t.reason,
     argument_types: t.argument_types.iter().map(|it| subst_type(it, mapping)).collect(),
@@ -190,7 +190,7 @@ fn solve_type_constraints_internal(
   concrete: &Type,
   generic: &Type,
   type_parameters: &HashSet<PStr>,
-  partially_solved: &mut HashMap<PStr, Rc<Type>>,
+  partially_solved: &mut HashMap<PStr, Arc<Type>>,
 ) {
   match generic {
     Type::Any(_, _) | Type::Primitive(_, _) => {}
@@ -210,7 +210,7 @@ fn solve_type_constraints_internal(
         // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
         // do not participate in constraint solving.
         if !contains_placeholder(concrete) {
-          partially_solved.insert(*id, Rc::new(concrete.clone()));
+          partially_solved.insert(*id, Arc::new(concrete.clone()));
         }
       }
     }
@@ -238,7 +238,7 @@ pub(super) struct TypeConstraint<'a> {
 pub(super) fn solve_multiple_type_constrains(
   constraints: &Vec<TypeConstraint>,
   type_parameter_signatures: &Vec<TypeParameterSignature>,
-) -> HashMap<PStr, Rc<Type>> {
+) -> HashMap<PStr, Arc<Type>> {
   let mut partially_solved = HashMap::new();
   let mut type_parameters = HashSet::new();
   for sig in type_parameter_signatures {
@@ -256,8 +256,8 @@ pub(super) fn solve_multiple_type_constrains(
 }
 
 pub(super) struct TypeConstraintSolution {
-  pub(super) solved_substitution: HashMap<PStr, Rc<Type>>,
-  pub(super) solved_generic_type: Rc<Type>,
+  pub(super) solved_substitution: HashMap<PStr, Arc<Type>>,
+  pub(super) solved_generic_type: Arc<Type>,
 }
 
 pub(super) fn solve_type_constraints(
@@ -273,7 +273,7 @@ pub(super) fn solve_type_constraints(
   for type_param in type_parameter_signatures {
     solved_substitution.entry(type_param.name).or_insert_with(|| {
       // Fill in placeholder for unsolved types.
-      Rc::new(Type::Any(Reason::new(concrete.get_reason().use_loc, None), true))
+      Arc::new(Type::Any(Reason::new(concrete.get_reason().use_loc, None), true))
     });
   }
   let solved_generic_type = subst_type(generic, &solved_substitution);
@@ -288,7 +288,7 @@ pub(super) fn solve_type_constraints(
 
 pub(super) fn subst_nominal_type(
   type_: &NominalType,
-  mapping: &HashMap<PStr, Rc<Type>>,
+  mapping: &HashMap<PStr, Arc<Type>>,
 ) -> NominalType {
   NominalType {
     reason: type_.reason,
@@ -299,20 +299,20 @@ pub(super) fn subst_nominal_type(
   }
 }
 
-pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
+pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Arc<Type>>) -> Arc<Type> {
   match t {
-    Type::Any(_, _) | Type::Primitive(_, _) => Rc::new((*t).clone()),
+    Type::Any(_, _) | Type::Primitive(_, _) => Arc::new((*t).clone()),
     Type::Nominal(nominal_type) => {
-      Rc::new(Type::Nominal(subst_nominal_type(nominal_type, mapping)))
+      Arc::new(Type::Nominal(subst_nominal_type(nominal_type, mapping)))
     }
     Type::Generic(_, id) => {
       if let Some(replaced) = mapping.get(id) {
         replaced.dupe()
       } else {
-        Rc::new((*t).clone())
+        Arc::new((*t).clone())
       }
     }
-    Type::Fn(f) => Rc::new(Type::Fn(subst_fn_type(f, mapping))),
+    Type::Fn(f) => Arc::new(Type::Fn(subst_fn_type(f, mapping))),
   }
 }
 
@@ -324,7 +324,7 @@ mod tests {
   use samlang_ast::{Location, Reason};
   use samlang_errors::ErrorSet;
   use samlang_heap::{Heap, PStr};
-  use std::{collections::HashMap, rc::Rc};
+  use std::{collections::HashMap, sync::Arc};
 
   #[test]
   fn contains_placeholder_test() {
@@ -337,7 +337,7 @@ mod tests {
           builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
           builder.generic_type(PStr::UPPER_B)
         ],
-        Rc::new(super::Type::Any(Reason::dummy(), true))
+        Arc::new(super::Type::Any(Reason::dummy(), true))
       ))
     );
     assert_eq!(
@@ -694,8 +694,8 @@ Found 1 error.
         &builder.fun_type(
           vec![
             builder.fun_type(
-              vec![Rc::new(Type::Any(Reason::dummy(), true))],
-              Rc::new(Type::Any(Reason::dummy(), false)),
+              vec![Arc::new(Type::Any(Reason::dummy(), true))],
+              Arc::new(Type::Any(Reason::dummy(), false)),
             ),
             builder.int_type(),
           ],
@@ -733,8 +733,8 @@ Found 1 error.
         &builder.fun_type(
           vec![
             builder.fun_type(
-              vec![Rc::new(Type::Any(Reason::dummy(), false))],
-              Rc::new(Type::Any(Reason::dummy(), true)),
+              vec![Arc::new(Type::Any(Reason::dummy(), false))],
+              Arc::new(Type::Any(Reason::dummy(), true)),
             ),
             builder.int_type(),
           ],

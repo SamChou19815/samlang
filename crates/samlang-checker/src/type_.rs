@@ -6,7 +6,7 @@ use samlang_ast::{
   source::{ClassMemberDeclaration, annotation},
 };
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Copy, Clone, Dupe, PartialEq, Eq)]
 pub enum PrimitiveTypeKind {
@@ -47,7 +47,7 @@ pub struct NominalType {
   pub is_class_statics: bool,
   pub module_reference: ModuleReference,
   pub id: PStr,
-  pub type_arguments: Vec<Rc<Type>>,
+  pub type_arguments: Vec<Arc<Type>>,
 }
 
 impl ISourceType for NominalType {
@@ -106,7 +106,7 @@ impl NominalType {
       module_reference: annotation.module_reference,
       id: annotation.id.name,
       type_arguments: if let Some(targs) = &annotation.type_arguments {
-        targs.arguments.iter().map(|annot| Rc::new(Type::from_annotation(annot))).collect()
+        targs.arguments.iter().map(|annot| Arc::new(Type::from_annotation(annot))).collect()
       } else {
         Vec::with_capacity(0)
       },
@@ -117,8 +117,8 @@ impl NominalType {
 #[derive(Clone)]
 pub struct FunctionType {
   pub reason: Reason,
-  pub argument_types: Vec<Rc<Type>>,
-  pub return_type: Rc<Type>,
+  pub argument_types: Vec<Arc<Type>>,
+  pub return_type: Arc<Type>,
 }
 
 impl ISourceType for FunctionType {
@@ -163,9 +163,9 @@ impl FunctionType {
         .parameters
         .annotations
         .iter()
-        .map(|annot| Rc::new(Type::from_annotation(annot)))
+        .map(|annot| Arc::new(Type::from_annotation(annot)))
         .collect(),
-      return_type: Rc::new(Type::from_annotation(&annotation.return_type)),
+      return_type: Arc::new(Type::from_annotation(&annotation.return_type)),
     }
   }
 
@@ -176,9 +176,9 @@ impl FunctionType {
         .parameters
         .parameters
         .iter()
-        .map(|id| Rc::new(Type::from_annotation(&id.annotation)))
+        .map(|id| Arc::new(Type::from_annotation(&id.annotation)))
         .collect(),
-      return_type: Rc::new(Type::from_annotation(&f.return_type)),
+      return_type: Arc::new(Type::from_annotation(&f.return_type)),
     }
   }
 }
@@ -343,18 +343,18 @@ pub mod test_type_builder {
   }
 
   impl CustomizedTypeBuilder {
-    pub fn unit_type(&self) -> Rc<Type> {
-      Rc::new(Type::unit_type(self.reason))
+    pub fn unit_type(&self) -> Arc<Type> {
+      Arc::new(Type::unit_type(self.reason))
     }
-    pub fn bool_type(&self) -> Rc<Type> {
-      Rc::new(Type::bool_type(self.reason))
+    pub fn bool_type(&self) -> Arc<Type> {
+      Arc::new(Type::bool_type(self.reason))
     }
-    pub fn int_type(&self) -> Rc<Type> {
-      Rc::new(Type::int_type(self.reason))
+    pub fn int_type(&self) -> Arc<Type> {
+      Arc::new(Type::int_type(self.reason))
     }
 
-    pub fn string_type(&self) -> Rc<Type> {
-      Rc::new(Type::Nominal(NominalType {
+    pub fn string_type(&self) -> Arc<Type> {
+      Arc::new(Type::Nominal(NominalType {
         reason: self.reason,
         is_class_statics: false,
         module_reference: ModuleReference::ROOT,
@@ -376,7 +376,7 @@ pub mod test_type_builder {
     pub fn general_nominal_type_unwrapped(
       &self,
       id: PStr,
-      type_arguments: Vec<Rc<Type>>,
+      type_arguments: Vec<Arc<Type>>,
     ) -> NominalType {
       NominalType {
         reason: self.reason,
@@ -387,20 +387,20 @@ pub mod test_type_builder {
       }
     }
 
-    pub fn simple_nominal_type(&self, id: PStr) -> Rc<Type> {
-      Rc::new(Type::Nominal(self.simple_nominal_type_unwrapped(id)))
+    pub fn simple_nominal_type(&self, id: PStr) -> Arc<Type> {
+      Arc::new(Type::Nominal(self.simple_nominal_type_unwrapped(id)))
     }
 
-    pub fn general_nominal_type(&self, id: PStr, type_arguments: Vec<Rc<Type>>) -> Rc<Type> {
-      Rc::new(Type::Nominal(self.general_nominal_type_unwrapped(id, type_arguments)))
+    pub fn general_nominal_type(&self, id: PStr, type_arguments: Vec<Arc<Type>>) -> Arc<Type> {
+      Arc::new(Type::Nominal(self.general_nominal_type_unwrapped(id, type_arguments)))
     }
 
-    pub fn generic_type(&self, id: PStr) -> Rc<Type> {
-      Rc::new(Type::Generic(self.reason, id))
+    pub fn generic_type(&self, id: PStr) -> Arc<Type> {
+      Arc::new(Type::Generic(self.reason, id))
     }
 
-    pub fn fun_type(&self, argument_types: Vec<Rc<Type>>, return_type: Rc<Type>) -> Rc<Type> {
-      Rc::new(Type::Fn(FunctionType { reason: self.reason, argument_types, return_type }))
+    pub fn fun_type(&self, argument_types: Vec<Arc<Type>>, return_type: Arc<Type>) -> Arc<Type> {
+      Arc::new(Type::Fn(FunctionType { reason: self.reason, argument_types, return_type }))
     }
   }
 
@@ -428,8 +428,8 @@ impl MemberSignature {
   fn create_custom_builtin_function(
     name: PStr,
     is_public: bool,
-    argument_types: Vec<Rc<Type>>,
-    return_type: Rc<Type>,
+    argument_types: Vec<Arc<Type>>,
+    return_type: Arc<Type>,
     type_parameters: Vec<PStr>,
   ) -> (PStr, MemberSignature) {
     (
@@ -447,8 +447,8 @@ impl MemberSignature {
 
   pub(super) fn create_builtin_function(
     name: PStr,
-    argument_types: Vec<Rc<Type>>,
-    return_type: Rc<Type>,
+    argument_types: Vec<Arc<Type>>,
+    return_type: Arc<Type>,
     type_parameters: Vec<PStr>,
   ) -> (PStr, MemberSignature) {
     MemberSignature::create_custom_builtin_function(
@@ -463,8 +463,8 @@ impl MemberSignature {
   #[cfg(test)]
   pub(super) fn create_private_builtin_function(
     name: PStr,
-    argument_types: Vec<Rc<Type>>,
-    return_type: Rc<Type>,
+    argument_types: Vec<Arc<Type>>,
+    return_type: Arc<Type>,
     type_parameters: Vec<PStr>,
   ) -> (PStr, MemberSignature) {
     MemberSignature::create_custom_builtin_function(
@@ -529,13 +529,13 @@ impl InterfaceSignature {
 
 pub struct StructItemDefinitionSignature {
   pub name: PStr,
-  pub type_: Rc<Type>,
+  pub type_: Arc<Type>,
   pub is_public: bool,
 }
 
 pub struct EnumVariantDefinitionSignature {
   pub name: PStr,
-  pub types: Vec<Rc<Type>>,
+  pub types: Vec<Arc<Type>>,
 }
 
 #[derive(EnumAsInner)]
@@ -609,26 +609,26 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
           functions: HashMap::from([
             MemberSignature::create_builtin_function(
               PStr::PRINTLN,
-              vec![Rc::new(Type::Nominal(NominalType {
+              vec![Arc::new(Type::Nominal(NominalType {
                 reason: Reason::builtin(),
                 is_class_statics: false,
                 module_reference: ModuleReference::ROOT,
                 id: PStr::STR_TYPE,
                 type_arguments: Vec::new(),
               }))],
-              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
+              Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
               Vec::new(),
             ),
             MemberSignature::create_builtin_function(
               PStr::PANIC,
-              vec![Rc::new(Type::Nominal(NominalType {
+              vec![Arc::new(Type::Nominal(NominalType {
                 reason: Reason::builtin(),
                 is_class_statics: false,
                 module_reference: ModuleReference::ROOT,
                 id: PStr::STR_TYPE,
                 type_arguments: Vec::new(),
               }))],
-              Rc::new(Type::Generic(Reason::builtin(), PStr::UPPER_T)),
+              Arc::new(Type::Generic(Reason::builtin(), PStr::UPPER_T)),
               vec![PStr::UPPER_T],
             ),
           ]),
@@ -641,8 +641,8 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
           type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
           functions: HashMap::from([MemberSignature::create_builtin_function(
             PStr::FROM_INT,
-            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
-            Rc::new(Type::Nominal(NominalType {
+            vec![Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
+            Arc::new(Type::Nominal(NominalType {
               reason: Reason::builtin(),
               is_class_statics: false,
               module_reference: ModuleReference::ROOT,
@@ -654,7 +654,7 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
           methods: HashMap::from([MemberSignature::create_builtin_function(
             PStr::TO_INT,
             Vec::new(),
-            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
+            Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
             Vec::new(),
           )]),
           type_parameters: Vec::new(),
@@ -669,7 +669,7 @@ pub type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
 
 #[cfg(test)]
 mod type_tests {
-  use std::rc::Rc;
+  use std::sync::Arc;
 
   use super::*;
   use pretty_assertions::assert_eq;
@@ -858,7 +858,7 @@ m2: public () -> any
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: Vec::new(),
-                return_type: Rc::new(Type::Any(Reason::dummy(), false))
+                return_type: Arc::new(Type::Any(Reason::dummy(), false))
               }
             }
           ),
@@ -870,7 +870,7 @@ m2: public () -> any
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: Vec::new(),
-                return_type: Rc::new(Type::Any(Reason::dummy(), false))
+                return_type: Arc::new(Type::Any(Reason::dummy(), false))
               }
             }
           )
@@ -1061,7 +1061,7 @@ m2: public () -> any
           location: Location::dummy(),
           start_associated_comments: NO_COMMENT_REFERENCE,
           ending_associated_comments: NO_COMMENT_REFERENCE,
-          parameters: Rc::new(vec![AnnotatedId {
+          parameters: Arc::new(vec![AnnotatedId {
             name: Id::from(PStr::LOWER_A),
             type_: (),
             annotation: builder.bool_annot()

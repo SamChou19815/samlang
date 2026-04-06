@@ -28,7 +28,7 @@ use samlang_checker::{
 };
 use samlang_errors::{ErrorDetail, ErrorSet};
 use samlang_heap::{ModuleReference, PStr};
-use std::rc::Rc;
+use std::sync::Arc;
 
 mod state_searcher_utils {
   use super::*;
@@ -51,7 +51,7 @@ mod state_searcher_utils {
     state: &'a server_state::ServerState,
     module_reference: &ModuleReference,
     class_name: &PStr,
-  ) -> Option<&'a Toplevel<Rc<Type>>> {
+  ) -> Option<&'a Toplevel<Arc<Type>>> {
     state
       .checked_modules
       .get(module_reference)?

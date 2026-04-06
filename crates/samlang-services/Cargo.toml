@@ -7,6 +7,7 @@ edition = "2024"
 dupe = { workspace = true }
 itertools = "0.14.0"
 samlang-ast = { path = "../samlang-ast" }
+rayon = { workspace = true }
 samlang-checker = { path = "../samlang-checker" }
 samlang-errors = { path = "../samlang-errors" }
 samlang-heap = { path = "../samlang-heap" }

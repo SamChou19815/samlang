@@ -2,7 +2,7 @@ use super::loc::Location;
 use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, ModuleReference, PStr};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Dupe, Copy, PartialEq, Eq)]
 pub enum CommentKind {
@@ -714,7 +714,7 @@ pub struct FunctionParameters {
   pub location: Location,
   pub start_associated_comments: CommentReference,
   pub ending_associated_comments: CommentReference,
-  pub parameters: Rc<Vec<AnnotatedId<()>>>,
+  pub parameters: Arc<Vec<AnnotatedId<()>>>,
 }
 
 #[derive(Clone, PartialEq, Eq)]

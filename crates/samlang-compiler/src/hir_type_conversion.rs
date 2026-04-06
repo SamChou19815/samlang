@@ -12,7 +12,6 @@ use samlang_checker::type_;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{BTreeMap, HashMap},
-  rc::Rc,
   sync::Arc,
 };
 
@@ -206,7 +205,7 @@ impl TypeLoweringManager {
   pub(super) fn lower_source_types(
     &mut self,
     heap: &mut Heap,
-    source_types: &Vec<Rc<type_::Type>>,
+    source_types: &Vec<Arc<type_::Type>>,
   ) -> Vec<Type> {
     let mut types = Vec::new();
     for t in source_types {
@@ -276,7 +275,7 @@ impl TypeLoweringManager {
   pub(super) fn lower_source_function_type_for_toplevel(
     &mut self,
     heap: &mut Heap,
-    argument_types: &[Rc<type_::Type>],
+    argument_types: &[Arc<type_::Type>],
     return_type: &type_::Type,
   ) -> (Vec<PStr>, FunctionType) {
     let function_type = Type::new_fn_unwrapped(

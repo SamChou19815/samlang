@@ -320,6 +320,7 @@ mod toplevel_parser {
   };
   use samlang_ast::{Location, source::*};
   use std::collections::HashSet;
+  use std::sync::Arc;
 
   pub(super) fn parse_toplevel(parser: &mut super::SourceParser) -> Toplevel<()> {
     let (loc, is_private, is_interface, comments) =
@@ -650,7 +651,7 @@ mod toplevel_parser {
         ending_associated_comments: parser
           .comments_store
           .create_comment_reference(parameters_end_comments),
-        parameters: std::rc::Rc::new(parameters),
+        parameters: Arc::new(parameters),
       },
       return_type,
     }

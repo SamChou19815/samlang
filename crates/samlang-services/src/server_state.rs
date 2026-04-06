@@ -1,4 +1,5 @@
 use super::{dep_graph::DependencyGraph, gc::perform_gc_after_recheck};
+use rayon::prelude::*;
 use samlang_ast::source::Module;
 use samlang_checker::{
   build_module_signature,
@@ -9,7 +10,7 @@ use samlang_errors::{CompileTimeError, ErrorSet};
 use samlang_heap::{Heap, ModuleReference};
 use std::{
   collections::{HashMap, HashSet},
-  rc::Rc,
+  sync::Arc,
 };
 
 pub struct ServerState {
@@ -18,7 +19,7 @@ pub struct ServerState {
   pub string_sources: HashMap<ModuleReference, String>,
   pub(super) parsed_modules: HashMap<ModuleReference, Module<()>>,
   dep_graph: DependencyGraph,
-  pub(super) checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,
+  pub(super) checked_modules: HashMap<ModuleReference, Module<Arc<Type>>>,
   pub(super) global_cx: GlobalSignature,
   pub(super) errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
 }
@@ -67,13 +68,23 @@ impl ServerState {
   /// - Dependency graph updated
   /// - recheck_set is the conservative estimate of moduled need to recheck
   fn recheck(&mut self, mut error_set: ErrorSet, recheck_set: &HashSet<ModuleReference>) {
-    // Type Checking
-    for recheck_mod_ref in recheck_set {
-      if let Some(parsed) = self.parsed_modules.get(recheck_mod_ref) {
-        let (checked, _) =
-          type_check_module(*recheck_mod_ref, parsed, &self.global_cx, &mut error_set);
-        self.checked_modules.insert(*recheck_mod_ref, checked);
-      }
+    // Type Checking (parallel)
+    let parsed_modules = &self.parsed_modules;
+    let global_cx = &self.global_cx;
+    let results: Vec<_> = recheck_set
+      .par_iter()
+      .filter_map(|recheck_mod_ref| {
+        parsed_modules.get(recheck_mod_ref).map(|parsed| {
+          let mut local_error_set = ErrorSet::new();
+          let (checked, _) =
+            type_check_module(*recheck_mod_ref, parsed, global_cx, &mut local_error_set);
+          (*recheck_mod_ref, checked, local_error_set)
+        })
+      })
+      .collect();
+    for (mod_ref, checked, local_errors) in results {
+      self.checked_modules.insert(mod_ref, checked);
+      error_set.merge(local_errors);
     }
 
     // Collating Errors

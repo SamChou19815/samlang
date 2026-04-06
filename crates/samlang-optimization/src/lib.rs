@@ -39,15 +39,15 @@ pub const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration = OptimizationCo
 
 fn optimize_function_for_one_round(
   function: &mut samlang_ast::mir::Function,
-  heap: &mut samlang_heap::Heap,
+  counter: &samlang_heap::TempPStrCounter,
   configuration: &OptimizationConfiguration,
 ) {
-  conditional_constant_propagation::optimize_function(function, heap);
+  conditional_constant_propagation::optimize_function(function);
   if configuration.does_perform_loop_optimization {
-    loop_optimizations::optimize_function(function, heap);
+    loop_optimizations::optimize_function(function, counter);
   }
   if configuration.does_perform_common_sub_expression_elimination {
-    common_subexpression_elimination::optimize_function(function, heap);
+    common_subexpression_elimination::optimize_function(function, counter);
   }
   if configuration.does_perform_local_value_numbering {
     local_value_numbering::optimize_function(function);
@@ -57,25 +57,26 @@ fn optimize_function_for_one_round(
 
 fn optimize_function_for_rounds(
   function: &mut samlang_ast::mir::Function,
-  heap: &mut samlang_heap::Heap,
+  counter: &samlang_heap::TempPStrCounter,
   configuration: &OptimizationConfiguration,
 ) {
   for _ in 0..2 {
-    optimize_function_for_one_round(function, heap, configuration);
+    optimize_function_for_one_round(function, counter, configuration);
   }
-  conditional_constant_propagation::optimize_function(function, heap);
+  conditional_constant_propagation::optimize_function(function);
   dead_code_elimination::optimize_function(function);
-  conditional_constant_propagation::optimize_function(function, heap);
+  conditional_constant_propagation::optimize_function(function);
 }
 
 fn optimize_functions_for_rounds(
   functions: &mut [samlang_ast::mir::Function],
-  heap: &mut samlang_heap::Heap,
+  counter: &samlang_heap::TempPStrCounter,
   configuration: &OptimizationConfiguration,
 ) {
-  for f in functions {
-    optimize_function_for_rounds(f, heap, configuration);
-  }
+  use rayon::prelude::*;
+  functions.par_iter_mut().for_each(|f| {
+    optimize_function_for_rounds(f, counter, configuration);
+  });
 }
 
 pub fn optimize_sources(
@@ -92,7 +93,9 @@ pub fn optimize_sources(
       main_function_names,
       mut functions,
     } = sources;
-    optimize_functions_for_rounds(&mut functions, heap, configuration);
+    let counter = heap.create_temp_counter();
+    optimize_functions_for_rounds(&mut functions, &counter, configuration);
+    heap.sync_temp_counter(&counter);
     if configuration.does_perform_inlining {
       functions = inlining::optimize_functions(functions, heap);
     }
@@ -106,7 +109,9 @@ pub fn optimize_sources(
     };
     unused_name_elimination::optimize_sources(&mut sources);
   }
-  optimize_functions_for_rounds(&mut sources.functions, heap, configuration);
+  let counter = heap.create_temp_counter();
+  optimize_functions_for_rounds(&mut sources.functions, &counter, configuration);
+  heap.sync_temp_counter(&counter);
   sources
 }
 
