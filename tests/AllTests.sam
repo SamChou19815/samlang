@@ -35,6 +35,7 @@ import { MathFunctions } from tests.MathFunctions;
 import { MinHeap } from tests.MinHeap;
 import { MutuallyRecursiveTests } from tests.MutuallyRecursiveTests;
 import { NestedDataStructures } from tests.NestedDataStructures;
+import { NestedOrPatternMatching } from tests.NestedOrPatternMatching;
 import { NestedTupleTests } from tests.NestedTupleTests;
 import { NeuralNetwork } from tests.NeuralNetwork;
 import { OptionResultTests } from tests.OptionResultTests;
@@ -98,6 +99,7 @@ class Main {
       .cons(TestCase.init("MinHeap", MinHeap.run))
       .cons(TestCase.init("MutuallyRecursiveTests", MutuallyRecursiveTests.run))
       .cons(TestCase.init("NestedDataStructures", NestedDataStructures.run))
+      .cons(TestCase.init("NestedOrPatternMatching", NestedOrPatternMatching.run))
       .cons(TestCase.init("NestedTupleTests", NestedTupleTests.run))
       .cons(TestCase.init("NeuralNetwork", NeuralNetwork.run))
       .cons(TestCase.init("OptionResultTests", OptionResultTests.run))
