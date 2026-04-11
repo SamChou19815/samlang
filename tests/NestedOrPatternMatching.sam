@@ -1,0 +1,169 @@
+import { Option } from std.option;
+import { Result } from std.result;
+import { Pair } from std.tuples;
+import { ForTests } from tests.StdLib;
+
+class Expr(Lit(int), Add(Expr, Expr), Neg(Expr), Mul(Expr, Expr)) {
+  method eval(): int =
+    match this {
+      Lit(n) -> n,
+      Add(a, b) -> a.eval() + b.eval(),
+      Neg(e) -> 0 - e.eval(),
+      Mul(a, b) -> a.eval() * b.eval(),
+    }
+}
+
+class Shape(Circle(int), Rect(int, int), Square(int), Triangle(int, int)) {}
+
+class Response(Success(int), Redirect(int), ClientError(int), ServerError(int)) {}
+
+class NestedOrPatternMatching {
+  // --- Or-patterns nested inside variant patterns ---
+  // Option wrapping a Result: or-pattern at the inner Result level
+  private function classifyOptionResult(v: Option<Result<int, int>>): int =
+    match v {
+      Some(Ok(x) | Error(x)) -> x,
+      None -> -1,
+    }
+
+  private function testOrInsideVariant(): unit = {
+    ForTests.assertIntEquals(
+      42,
+      NestedOrPatternMatching.classifyOptionResult(Option.Some(Result.Ok<int, int>(42)))
+    );
+    ForTests.assertIntEquals(
+      99,
+      NestedOrPatternMatching.classifyOptionResult(Option.Some(Result.Error<int, int>(99)))
+    );
+    ForTests.assertIntEquals(-1, NestedOrPatternMatching.classifyOptionResult(Option.None()));
+  }
+
+  // --- Or-patterns nested inside tuple patterns ---
+  private function classifyPair(p: Pair<Option<int>, Option<int>>): int =
+    match p {
+      (Some(x), None) | (None, Some(x)) -> x,
+      (Some(a), Some(b)) -> a + b,
+      (None, None) -> 0,
+    }
+
+  private function testOrInsideTuple(): unit = {
+    ForTests.assertIntEquals(
+      10,
+      NestedOrPatternMatching.classifyPair(Pair.init(Option.Some(10), Option.None<int>()))
+    );
+    ForTests.assertIntEquals(
+      20,
+      NestedOrPatternMatching.classifyPair(Pair.init(Option.None<int>(), Option.Some(20)))
+    );
+    ForTests.assertIntEquals(
+      30,
+      NestedOrPatternMatching.classifyPair(Pair.init(Option.Some(12), Option.Some(18)))
+    );
+    ForTests.assertIntEquals(
+      0,
+      NestedOrPatternMatching.classifyPair(Pair.init(Option.None<int>(), Option.None<int>()))
+    );
+  }
+
+  // --- Multiple or-alternatives with wildcards ---
+  private function shapeArea(shape: Shape): int =
+    match shape {
+      Circle(_) | Triangle(_, _) -> 0 - 1,
+      Rect(w, h) -> w * h,
+      Square(s) -> s * s,
+    }
+
+  private function testOrWithWildcards(): unit = {
+    ForTests.assertIntEquals(-1, NestedOrPatternMatching.shapeArea(Shape.Circle(5)));
+    ForTests.assertIntEquals(-1, NestedOrPatternMatching.shapeArea(Shape.Triangle(3, 4)));
+    ForTests.assertIntEquals(20, NestedOrPatternMatching.shapeArea(Shape.Rect(4, 5)));
+    ForTests.assertIntEquals(9, NestedOrPatternMatching.shapeArea(Shape.Square(3)));
+  }
+
+  // --- Three-way or-patterns ---
+  private function httpCategory(r: Response): Str =
+    match r {
+      Success(_) -> "ok",
+      Redirect(_) | ClientError(_) | ServerError(_) -> "not ok",
+    }
+
+  private function httpCode(r: Response): int =
+    match r {
+      Success(c) | Redirect(c) | ClientError(c) | ServerError(c) -> c,
+    }
+
+  private function testThreeWayOr(): unit = {
+    let s = Response.Success(200);
+    let r = Response.Redirect(301);
+    let c = Response.ClientError(404);
+    let e = Response.ServerError(500);
+    ForTests.assertBool(NestedOrPatternMatching.httpCategory(s) == "ok", "200 should be ok");
+    ForTests.assertBool(
+      NestedOrPatternMatching.httpCategory(r) == "not ok",
+      "301 should be not ok"
+    );
+    ForTests.assertBool(
+      NestedOrPatternMatching.httpCategory(c) == "not ok",
+      "404 should be not ok"
+    );
+    ForTests.assertBool(
+      NestedOrPatternMatching.httpCategory(e) == "not ok",
+      "500 should be not ok"
+    );
+    ForTests.assertIntEquals(200, NestedOrPatternMatching.httpCode(s));
+    ForTests.assertIntEquals(301, NestedOrPatternMatching.httpCode(r));
+    ForTests.assertIntEquals(404, NestedOrPatternMatching.httpCode(c));
+    ForTests.assertIntEquals(500, NestedOrPatternMatching.httpCode(e));
+  }
+
+  // --- Or-patterns with nested expression evaluation ---
+  private function simplify(e: Expr): int =
+    match e {
+      Lit(n) | Neg(Lit(n)) -> n,
+      Add(Lit(a), Lit(b)) | Mul(Lit(a), Lit(b)) -> a + b,
+      _ -> e.eval(),
+    }
+
+  private function testOrWithNestedExpr(): unit = {
+    ForTests.assertIntEquals(5, NestedOrPatternMatching.simplify(Expr.Lit(5)));
+    ForTests.assertIntEquals(3, NestedOrPatternMatching.simplify(Expr.Neg(Expr.Lit(3))));
+    ForTests.assertIntEquals(
+      7,
+      NestedOrPatternMatching.simplify(Expr.Add(Expr.Lit(3), Expr.Lit(4)))
+    );
+    ForTests.assertIntEquals(
+      7,
+      NestedOrPatternMatching.simplify(Expr.Mul(Expr.Lit(3), Expr.Lit(4)))
+    );
+    // Falls through to eval for non-literal sub-expressions
+    ForTests.assertIntEquals(
+      10,
+      NestedOrPatternMatching.simplify(Expr.Add(Expr.Lit(3), Expr.Add(Expr.Lit(3), Expr.Lit(4))))
+    );
+  }
+
+  // --- Or-patterns in nested option chains ---
+  private function doubleUnwrap(v: Option<Option<int>>): int =
+    match v {
+      Some(Some(x)) -> x,
+      Some(None) | None -> 0,
+    }
+
+  private function testNestedOptionOr(): unit = {
+    ForTests.assertIntEquals(
+      42,
+      NestedOrPatternMatching.doubleUnwrap(Option.Some(Option.Some(42)))
+    );
+    ForTests.assertIntEquals(0, NestedOrPatternMatching.doubleUnwrap(Option.Some(Option.None())));
+    ForTests.assertIntEquals(0, NestedOrPatternMatching.doubleUnwrap(Option.None()));
+  }
+
+  function run(): unit = {
+    NestedOrPatternMatching.testOrInsideVariant();
+    NestedOrPatternMatching.testOrInsideTuple();
+    NestedOrPatternMatching.testOrWithWildcards();
+    NestedOrPatternMatching.testThreeWayOr();
+    NestedOrPatternMatching.testOrWithNestedExpr();
+    NestedOrPatternMatching.testNestedOptionOr();
+  }
+}

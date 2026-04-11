@@ -131,6 +131,8 @@ Test Name: MutuallyRecursiveTests
 ========================================
 Test Name: NestedDataStructures
 ========================================
+Test Name: NestedOrPatternMatching
+========================================
 Test Name: NestedTupleTests
 ========================================
 Test Name: NeuralNetwork
