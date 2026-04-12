@@ -658,7 +658,7 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "samlang-ast"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "enum-as-inner",
@@ -669,7 +669,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-checker"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "enum-as-inner",
@@ -685,7 +685,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-cli"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "pretty_assertions",
  "samlang-ast",
@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-collections"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "fplist",
  "pretty_assertions",
@@ -712,7 +712,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-compiler"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "enum-as-inner",
@@ -734,7 +734,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-configuration"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "pretty_assertions",
  "serde_json",
@@ -742,7 +742,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-errors"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "itertools",
@@ -753,7 +753,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-heap"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "itertools",
@@ -763,7 +763,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-optimization"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "enum-as-inner",
@@ -779,7 +779,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-parser"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "itertools",
@@ -792,7 +792,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-printer"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "enum-as-inner",
@@ -806,11 +806,11 @@ dependencies = [
 
 [[package]]
 name = "samlang-profiling"
-version = "0.10.1"
+version = "0.11.0"
 
 [[package]]
 name = "samlang-services"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "dupe",
  "itertools",
@@ -827,7 +827,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-wasm"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "js-sys",
  "samlang-ast",
