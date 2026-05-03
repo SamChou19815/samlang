@@ -953,11 +953,25 @@ impl<'a> ExpressionLoweringManager<'a> {
     captured: &[(PStr, hir::Expression)],
     context_type: &hir::Type,
   ) -> hir::Function {
+    // For each captured variable, choose the binding name used inside the body.
+    // The synthetic lambda's first parameter is PStr::UNDERSCORE_THIS (the context object),
+    // so a captured source-level `this` (also resolved to UNDERSCORE_THIS) would shadow that
+    // parameter when its IndexedAccess load tries to bind the same name. Use a fresh temp in
+    // that case, then rebind UNDERSCORE_THIS in the body's variable_cx so source `this`
+    // references resolve to the fresh load. This preserves strict SSA in the lambda body.
+    let captured_renamed: Vec<(PStr, PStr, hir::Type)> = captured
+      .iter()
+      .map(|(name, e)| {
+        let body_name =
+          if *name == PStr::UNDERSCORE_THIS { self.heap.alloc_temp_str() } else { *name };
+        (*name, body_name, e.type_().dupe())
+      })
+      .collect_vec();
     let mut lambda_stmts = Vec::new();
-    for (index, (name, e)) in captured.iter().enumerate() {
+    for (index, (_orig, body_name, type_)) in captured_renamed.iter().enumerate() {
       lambda_stmts.push(hir::Statement::IndexedAccess {
-        name: *name,
-        type_: e.type_().dupe(),
+        name: *body_name,
+        type_: type_.dupe(),
         pointer_expression: hir::Expression::var_name(PStr::UNDERSCORE_THIS, context_type.dupe()),
         index,
       });
@@ -977,27 +991,34 @@ impl<'a> ExpressionLoweringManager<'a> {
       &source_fn_type.return_type,
     );
     let fn_name = self.allocate_synthetic_fn_name();
+    let mut manager = ExpressionLoweringManager::new(
+      self.module_reference,
+      parameters
+        .into_iter()
+        .zip(fun_type_without_cx_argument_types.iter().cloned())
+        .chain(self.defined_variables.iter().cloned())
+        .chain(captured_renamed.iter().map(|(_orig, body_name, t)| (*body_name, t.dupe())))
+        .collect_vec(),
+      self.type_definition_mapping,
+      self.heap,
+      self.type_lowering_manager,
+      self.string_manager,
+      self.next_synthetic_fn_id_manager,
+    );
+    for (orig, body_name, t) in &captured_renamed {
+      if *orig != *body_name {
+        bind_value(
+          &mut manager.variable_cx,
+          *orig,
+          hir::Expression::var_name(*body_name, t.dupe()),
+        );
+      }
+    }
     let LoweringResultWithSyntheticFunctions {
       statements: mut lowered_s,
       expression: lowered_e,
       mut synthetic_functions,
-    } = lower_source_expression(
-      ExpressionLoweringManager::new(
-        self.module_reference,
-        parameters
-          .into_iter()
-          .zip(fun_type_without_cx_argument_types.iter().cloned())
-          .chain(self.defined_variables.iter().cloned())
-          .chain(captured.iter().map(|(n, e)| (*n, e.type_().dupe())))
-          .collect_vec(),
-        self.type_definition_mapping,
-        self.heap,
-        self.type_lowering_manager,
-        self.string_manager,
-        self.next_synthetic_fn_id_manager,
-      ),
-      &expression.body,
-    );
+    } = lower_source_expression(manager, &expression.body);
     lambda_stmts.append(&mut lowered_s);
     self.synthetic_functions.append(&mut synthetic_functions);
 
