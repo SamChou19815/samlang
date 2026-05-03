@@ -444,7 +444,15 @@ impl Rewriter {
     function_type_arguments: Vec<mir::Type>,
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> mir::FunctionName {
-    if original_name.type_name.module_reference.is_none() {
+    if let Some(module_reference) = original_name.type_name.module_reference {
+      let mir_fn_name = mir::FunctionName {
+        type_name: self
+          .symbol_table
+          .create_simple_type_name(module_reference, original_name.type_name.type_name),
+        fn_name: original_name.fn_name,
+      };
+      self.rewrite_non_generic_fn_name(heap, mir_fn_name, function_type, function_type_arguments)
+    } else {
       let generic_class_name = original_name.type_name.type_name;
       let fn_name = original_name.fn_name;
       let replacement_class =
@@ -456,15 +464,6 @@ impl Rewriter {
         function_type,
         function_type_arguments,
       )
-    } else {
-      let mir_fn_name = mir::FunctionName {
-        type_name: self.symbol_table.create_simple_type_name(
-          original_name.type_name.module_reference.unwrap(),
-          original_name.type_name.type_name,
-        ),
-        fn_name: original_name.fn_name,
-      };
-      self.rewrite_non_generic_fn_name(heap, mir_fn_name, function_type, function_type_arguments)
     }
   }
 
