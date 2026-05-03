@@ -530,7 +530,7 @@ pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> V
         heap,
       ))
     }
-    inlined.sort_by(|a, b| a.name.cmp(&b.name));
+    inlined.sort_by_key(|a| a.name);
     temp_functions = inlined;
   }
   temp_functions

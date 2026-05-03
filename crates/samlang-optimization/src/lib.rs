@@ -14,6 +14,8 @@ mod loop_invariant_code_motion;
 mod loop_optimizations;
 mod loop_strength_reduction;
 mod optimization_common;
+mod scalar_replacement;
+mod scalar_replacement_tests;
 mod unused_name_elimination;
 
 pub struct OptimizationConfiguration {
@@ -21,6 +23,7 @@ pub struct OptimizationConfiguration {
   pub does_perform_common_sub_expression_elimination: bool,
   pub does_perform_loop_optimization: bool,
   pub does_perform_inlining: bool,
+  pub does_perform_scalar_replacement: bool,
 }
 
 pub const ALL_ENABLED_CONFIGURATION: OptimizationConfiguration = OptimizationConfiguration {
@@ -28,6 +31,7 @@ pub const ALL_ENABLED_CONFIGURATION: OptimizationConfiguration = OptimizationCon
   does_perform_common_sub_expression_elimination: true,
   does_perform_loop_optimization: true,
   does_perform_inlining: true,
+  does_perform_scalar_replacement: true,
 };
 
 pub const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration = OptimizationConfiguration {
@@ -35,6 +39,7 @@ pub const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration = OptimizationCo
   does_perform_common_sub_expression_elimination: false,
   does_perform_loop_optimization: false,
   does_perform_inlining: false,
+  does_perform_scalar_replacement: false,
 };
 
 fn optimize_function_for_one_round(
@@ -43,6 +48,9 @@ fn optimize_function_for_one_round(
   configuration: &OptimizationConfiguration,
 ) {
   conditional_constant_propagation::optimize_function(function);
+  if configuration.does_perform_scalar_replacement {
+    scalar_replacement::optimize_function(function);
+  }
   if configuration.does_perform_loop_optimization {
     loop_optimizations::optimize_function(function, counter);
   }
