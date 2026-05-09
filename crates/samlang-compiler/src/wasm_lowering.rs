@@ -72,6 +72,39 @@ fn is_string_expr(e: &lir::Expression) -> bool {
   }
 }
 
+/// For a Vec runtime function, returns the argument index whose WAT slot is the
+/// uniform `(ref null eq)` element type (and may need i31 boxing of i32 args).
+/// Returns None for Vec functions whose args are all non-element-typed.
+fn vec_fn_element_arg_index(name: mir::FunctionName) -> Option<usize> {
+  if name == mir::FunctionName::VEC_OF || name == mir::FunctionName::VEC_PUSH {
+    Some(1)
+  } else if name == mir::FunctionName::VEC_SET {
+    Some(2)
+  } else {
+    None
+  }
+}
+
+/// True if the WAT signature for this Vec function returns the element type
+/// (`(ref eq)`); the call site may need to unbox (i31) or cast (struct ref).
+fn vec_fn_returns_element(name: mir::FunctionName) -> bool {
+  name == mir::FunctionName::VEC_POP || name == mir::FunctionName::VEC_GET
+}
+
+/// True if this Vec WAT function is a "static" with a (ref eq) placeholder
+/// receiver as its first parameter (rather than a real (ref $_Vec)).
+fn vec_fn_is_static(name: mir::FunctionName) -> bool {
+  name == mir::FunctionName::VEC_EMPTY
+    || name == mir::FunctionName::VEC_OF
+    || name == mir::FunctionName::VEC_WITH_CAPACITY
+}
+
+/// True if the LIR expression has type i32. Used to decide whether a Vec
+/// element argument needs i31 boxing before being passed to the WAT runtime.
+fn lir_expr_is_i32(e: &lir::Expression) -> bool {
+  matches!(e, lir::Expression::Int32Literal(_) | lir::Expression::Variable(_, lir::Type::Int32))
+}
+
 struct LoweringManager<'a> {
   label_id: u32,
   type_cx: TypeLoweringContext<'a>,
@@ -217,16 +250,19 @@ impl<'a> LoweringManager<'a> {
       }
       lir::Statement::Call { callee, arguments, return_type, return_collector } => {
         // Check if this is a call to a builtin that expects (ref eq) as the first arg
-        let (needs_ref_eq_this, is_panic) = if let lir::Expression::FnName(name, _) = callee {
-          // PROCESS_PRINTLN and PROCESS_PANIC take (ref eq) as first arg
-          // STR_FROM_INT takes (ref eq) as first arg
-          let needs_ref_eq = name.type_name == mir::TypeNameId::PROCESS
-            || (*name == mir::FunctionName::STR_FROM_INT);
-          let is_panic = *name == mir::FunctionName::PROCESS_PANIC;
-          (needs_ref_eq, is_panic)
-        } else {
-          (false, false)
-        };
+        let (needs_ref_eq_this, is_panic, vec_element_arg, vec_returns_element) =
+          if let lir::Expression::FnName(name, _) = callee {
+            // PROCESS_PRINTLN and PROCESS_PANIC take (ref eq) as first arg.
+            // STR_FROM_INT takes (ref eq) as first arg.
+            // Vec static methods (empty, of, withCapacity) take (ref eq) as first arg.
+            let needs_ref_eq = name.type_name == mir::TypeNameId::PROCESS
+              || (*name == mir::FunctionName::STR_FROM_INT)
+              || vec_fn_is_static(*name);
+            let is_panic = *name == mir::FunctionName::PROCESS_PANIC;
+            (needs_ref_eq, is_panic, vec_fn_element_arg_index(*name), vec_fn_returns_element(*name))
+          } else {
+            (false, false, None, false)
+          };
         // Get the target function's expected parameter types for direct calls
         let callee_param_types = if let lir::Expression::FnName(_, fn_type) = callee {
           Some(&fn_type.argument_types)
@@ -241,8 +277,14 @@ impl<'a> LoweringManager<'a> {
             // The first argument (this/self) to builtin methods should be (ref eq), not i32.
             // When ZERO is used as a placeholder, it comes as Int32Literal(0) but needs to be i31.
             if i == 0 && needs_ref_eq_this && matches!(arg, lir::Expression::Int32Literal(0)) {
-              wasm::InlineInstruction::I31New(Box::new(lowered))
-            } else if let (Some(param_types), lir::Expression::Variable(var_name, _)) =
+              return wasm::InlineInstruction::I31New(Box::new(lowered));
+            }
+            // Vec element-typed args: the WAT slot is (ref null eq). i32 args (Vec<int>)
+            // need i31 boxing; reference args fit via subtyping with no extra work.
+            if Some(i) == vec_element_arg && lir_expr_is_i32(arg) {
+              return wasm::InlineInstruction::I31New(Box::new(lowered));
+            }
+            if let (Some(param_types), lir::Expression::Variable(var_name, _)) =
               (callee_param_types, arg)
             {
               // For direct calls: if argument variable has WASM type (ref eq) but the target
@@ -257,10 +299,8 @@ impl<'a> LoweringManager<'a> {
                   value: Box::new(lowered),
                 };
               }
-              lowered
-            } else {
-              lowered
             }
+            lowered
           })
           .collect_vec();
         let call = if let lir::Expression::FnName(name, _) = callee {
@@ -287,6 +327,20 @@ impl<'a> LoweringManager<'a> {
           }
           result
         } else {
+          // Vec.pop / Vec.get return (ref eq) at WAT level. Unwrap based on the source-level
+          // element type the LIR call expects: i32 element → __$unwrapI31, struct ref → ref.cast.
+          let call = if vec_returns_element {
+            if matches!(return_type, lir::Type::Int32) {
+              wasm::InlineInstruction::DirectCall(mir::FunctionName::UNWRAP_I31, vec![call])
+            } else {
+              wasm::InlineInstruction::Cast {
+                pointer_type: return_type.clone(),
+                value: Box::new(call),
+              }
+            }
+          } else {
+            call
+          };
           let stmt = if let Some(c) = return_collector {
             let ret_type = self.type_cx.lower(return_type);
             self.set(*c, ret_type, call)
@@ -1039,6 +1093,146 @@ mod tests {
   }
 
   #[test]
+  fn vec_helper_predicates_test() {
+    use mir::FunctionName;
+    assert_eq!(Some(1), super::vec_fn_element_arg_index(FunctionName::VEC_OF));
+    assert_eq!(Some(1), super::vec_fn_element_arg_index(FunctionName::VEC_PUSH));
+    assert_eq!(Some(2), super::vec_fn_element_arg_index(FunctionName::VEC_SET));
+    assert_eq!(None, super::vec_fn_element_arg_index(FunctionName::VEC_LENGTH));
+    assert_eq!(None, super::vec_fn_element_arg_index(FunctionName::STR_FROM_INT));
+
+    assert!(super::vec_fn_returns_element(FunctionName::VEC_POP));
+    assert!(super::vec_fn_returns_element(FunctionName::VEC_GET));
+    assert!(!super::vec_fn_returns_element(FunctionName::VEC_LENGTH));
+
+    assert!(super::vec_fn_is_static(FunctionName::VEC_EMPTY));
+    assert!(super::vec_fn_is_static(FunctionName::VEC_OF));
+    assert!(super::vec_fn_is_static(FunctionName::VEC_WITH_CAPACITY));
+    assert!(!super::vec_fn_is_static(FunctionName::VEC_PUSH));
+
+    assert!(super::lir_expr_is_i32(&Expression::Int32Literal(0)));
+    assert!(super::lir_expr_is_i32(&Expression::Variable(PStr::LOWER_A, INT_32_TYPE)));
+    assert!(!super::lir_expr_is_i32(&Expression::Int31Literal(0)));
+    assert!(!super::lir_expr_is_i32(&Expression::Variable(PStr::LOWER_A, INT_31_TYPE)));
+  }
+
+  #[test]
+  fn vec_call_lowering_test() {
+    let heap = &mut Heap::new();
+    let symbol_table = mir::SymbolTable::new();
+    let some_struct_id = mir::TypeNameId::STR; // any reference type works
+
+    // Vec<int>::push(this, i32 literal) → second arg should be i31-boxed.
+    // Vec<int>::pop(this): i32 → result should go through __$unwrapI31.
+    // Vec<Foo>::get(this, idx): Foo → result should be ref.cast.
+    let sources = Sources {
+      symbol_table,
+      global_variables: Vec::new(),
+      type_definitions: Vec::new(),
+      main_function_names: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
+      functions: vec![Function {
+        name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
+        parameters: vec![heap.alloc_str_for_test("v")],
+        type_: lir::Type::new_fn_unwrapped(vec![lir::Type::Id(mir::TypeNameId::VEC)], INT_32_TYPE),
+        body: vec![
+          // Vec.empty() — static, exercises needs_ref_eq_this for Vec.
+          Statement::Call {
+            callee: Expression::FnName(
+              mir::FunctionName::VEC_EMPTY,
+              lir::Type::new_fn_unwrapped(vec![INT_32_TYPE], lir::Type::Id(mir::TypeNameId::VEC)),
+            ),
+            arguments: vec![ZERO],
+            return_type: lir::Type::Id(mir::TypeNameId::VEC),
+            return_collector: Some(heap.alloc_str_for_test("v0")),
+          },
+          // vec.push(42) — exercises VEC_PUSH element-arg boxing of an i32 literal.
+          Statement::Call {
+            callee: Expression::FnName(
+              mir::FunctionName::VEC_PUSH,
+              lir::Type::new_fn_unwrapped(
+                vec![lir::Type::Id(mir::TypeNameId::VEC), INT_32_TYPE],
+                INT_32_TYPE,
+              ),
+            ),
+            arguments: vec![
+              Expression::Variable(
+                heap.alloc_str_for_test("v"),
+                lir::Type::Id(mir::TypeNameId::VEC),
+              ),
+              Expression::Int32Literal(42),
+            ],
+            return_type: INT_32_TYPE,
+            return_collector: None,
+          },
+          // vec.pop(): i32 — exercises VEC_POP unwrap-to-i32 path.
+          Statement::Call {
+            callee: Expression::FnName(
+              mir::FunctionName::VEC_POP,
+              lir::Type::new_fn_unwrapped(vec![lir::Type::Id(mir::TypeNameId::VEC)], INT_32_TYPE),
+            ),
+            arguments: vec![Expression::Variable(
+              heap.alloc_str_for_test("v"),
+              lir::Type::Id(mir::TypeNameId::VEC),
+            )],
+            return_type: INT_32_TYPE,
+            return_collector: Some(heap.alloc_str_for_test("popped")),
+          },
+          // vec.get(0): Str — exercises VEC_GET ref.cast path for an Id return.
+          Statement::Call {
+            callee: Expression::FnName(
+              mir::FunctionName::VEC_GET,
+              lir::Type::new_fn_unwrapped(
+                vec![lir::Type::Id(mir::TypeNameId::VEC), INT_32_TYPE],
+                lir::Type::Id(some_struct_id),
+              ),
+            ),
+            arguments: vec![
+              Expression::Variable(
+                heap.alloc_str_for_test("v"),
+                lir::Type::Id(mir::TypeNameId::VEC),
+              ),
+              ZERO,
+            ],
+            return_type: lir::Type::Id(some_struct_id),
+            return_collector: Some(heap.alloc_str_for_test("got")),
+          },
+          // vec.set(0, 7) — exercises VEC_SET element-arg boxing at index 2.
+          Statement::Call {
+            callee: Expression::FnName(
+              mir::FunctionName::VEC_SET,
+              lir::Type::new_fn_unwrapped(
+                vec![lir::Type::Id(mir::TypeNameId::VEC), INT_32_TYPE, INT_32_TYPE],
+                INT_32_TYPE,
+              ),
+            ),
+            arguments: vec![
+              Expression::Variable(
+                heap.alloc_str_for_test("v"),
+                lir::Type::Id(mir::TypeNameId::VEC),
+              ),
+              ZERO,
+              Expression::Int32Literal(7),
+            ],
+            return_type: INT_32_TYPE,
+            return_collector: None,
+          },
+        ],
+        return_value: ZERO,
+      }],
+    };
+    let actual = super::compile_lir_to_wasm(heap, sources).pretty_print(heap);
+    // Boxing: i32 literal 42 boxed via ref.i31 in the push call.
+    assert!(actual.contains("(call $__Vec$push"));
+    assert!(actual.contains("(ref.i31 (i32.const 42))"));
+    // Unwrap path: pop -> __$unwrapI31.
+    assert!(actual.contains("(call $__$unwrapI31"));
+    // Cast path: get -> ref.cast to the concrete reference type.
+    assert!(actual.contains("(ref.cast (ref $_Str) (call $__Vec$get"));
+    // Set with i32 literal 7 also boxed.
+    assert!(actual.contains("(call $__Vec$set"));
+  }
+
+  #[test]
   fn comprehensive_test() {
     let heap = &mut Heap::new();
 
@@ -1347,6 +1541,8 @@ mod tests {
     let actual = super::compile_lir_to_wasm(heap, sources).pretty_print(heap);
     let expected = r#"(rec
 (type $_Str (array (mut i8)))
+(type $_VecData (array (mut (ref null eq))))
+(type $_Vec (struct (field (mut (ref $_VecData))) (field (mut i32))))
 (type $__t0 (func (result i32)))
 (type $__t1 (func (param (ref eq)) (result i32)))
 (type $_TestStruct (struct (field i32) (field i32) (field i32) (field i32)))

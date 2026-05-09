@@ -596,6 +596,28 @@ impl ModuleSignature {
 }
 
 pub fn create_builtin_module_signature() -> ModuleSignature {
+  let int_t = || Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int));
+  let unit_t = || Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit));
+  let bool_t = || Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Bool));
+  let str_t = || {
+    Arc::new(Type::Nominal(NominalType {
+      reason: Reason::builtin(),
+      is_class_statics: false,
+      module_reference: ModuleReference::ROOT,
+      id: PStr::STR_TYPE,
+      type_arguments: Vec::new(),
+    }))
+  };
+  let generic_t = |name: PStr| Arc::new(Type::Generic(Reason::builtin(), name));
+  let vec_of = |arg: Arc<Type>| {
+    Arc::new(Type::Nominal(NominalType {
+      reason: Reason::builtin(),
+      is_class_statics: false,
+      module_reference: ModuleReference::ROOT,
+      id: PStr::VEC_TYPE,
+      type_arguments: vec![arg],
+    }))
+  };
   ModuleSignature {
     interfaces: HashMap::from([
       (
@@ -609,26 +631,14 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
           functions: HashMap::from([
             MemberSignature::create_builtin_function(
               PStr::PRINTLN,
-              vec![Arc::new(Type::Nominal(NominalType {
-                reason: Reason::builtin(),
-                is_class_statics: false,
-                module_reference: ModuleReference::ROOT,
-                id: PStr::STR_TYPE,
-                type_arguments: Vec::new(),
-              }))],
-              Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
+              vec![str_t()],
+              unit_t(),
               Vec::new(),
             ),
             MemberSignature::create_builtin_function(
               PStr::PANIC,
-              vec![Arc::new(Type::Nominal(NominalType {
-                reason: Reason::builtin(),
-                is_class_statics: false,
-                module_reference: ModuleReference::ROOT,
-                id: PStr::STR_TYPE,
-                type_arguments: Vec::new(),
-              }))],
-              Arc::new(Type::Generic(Reason::builtin(), PStr::UPPER_T)),
+              vec![str_t()],
+              generic_t(PStr::UPPER_T),
               vec![PStr::UPPER_T],
             ),
           ]),
@@ -641,24 +651,92 @@ pub fn create_builtin_module_signature() -> ModuleSignature {
           type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
           functions: HashMap::from([MemberSignature::create_builtin_function(
             PStr::FROM_INT,
-            vec![Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
-            Arc::new(Type::Nominal(NominalType {
-              reason: Reason::builtin(),
-              is_class_statics: false,
-              module_reference: ModuleReference::ROOT,
-              id: PStr::STR_TYPE,
-              type_arguments: Vec::new(),
-            })),
+            vec![int_t()],
+            str_t(),
             Vec::new(),
           )]),
           methods: HashMap::from([MemberSignature::create_builtin_function(
             PStr::TO_INT,
             Vec::new(),
-            Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
+            int_t(),
             Vec::new(),
           )]),
           type_parameters: Vec::new(),
           super_types: Vec::new(),
+        },
+      ),
+      (
+        PStr::VEC_TYPE,
+        InterfaceSignature {
+          private: false,
+          type_definition: Some(TypeDefinitionSignature::Enum(Vec::new())),
+          type_parameters: vec![TypeParameterSignature { name: PStr::UPPER_T, bound: None }],
+          super_types: Vec::new(),
+          functions: HashMap::from([
+            MemberSignature::create_builtin_function(
+              PStr::EMPTY_FN,
+              Vec::new(),
+              vec_of(generic_t(PStr::UPPER_T)),
+              vec![PStr::UPPER_T],
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::OF,
+              vec![generic_t(PStr::UPPER_T)],
+              vec_of(generic_t(PStr::UPPER_T)),
+              vec![PStr::UPPER_T],
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::WITH_CAPACITY,
+              vec![int_t()],
+              vec_of(generic_t(PStr::UPPER_T)),
+              vec![PStr::UPPER_T],
+            ),
+          ]),
+          methods: HashMap::from([
+            MemberSignature::create_builtin_function(PStr::LENGTH, Vec::new(), int_t(), Vec::new()),
+            MemberSignature::create_builtin_function(
+              PStr::CAPACITY,
+              Vec::new(),
+              int_t(),
+              Vec::new(),
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::RESERVE,
+              vec![int_t()],
+              unit_t(),
+              Vec::new(),
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::PUSH,
+              vec![generic_t(PStr::UPPER_T)],
+              unit_t(),
+              Vec::new(),
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::POP,
+              Vec::new(),
+              generic_t(PStr::UPPER_T),
+              Vec::new(),
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::GET,
+              vec![int_t()],
+              generic_t(PStr::UPPER_T),
+              Vec::new(),
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::SET,
+              vec![int_t(), generic_t(PStr::UPPER_T)],
+              unit_t(),
+              Vec::new(),
+            ),
+            MemberSignature::create_builtin_function(
+              PStr::STR_EQ,
+              vec![vec_of(generic_t(PStr::UPPER_T))],
+              bool_t(),
+              Vec::new(),
+            ),
+          ]),
         },
       ),
     ]),

@@ -846,7 +846,8 @@ List [kind=Class, detail=class List]
 Main [kind=Class, detail=class Main]
 Pair [kind=Class, detail=class Pair]
 Process [kind=Class, detail=class Process]
-Str [kind=Class, detail=class Str]"#,
+Str [kind=Class, detail=class Str]
+Vec [kind=Class, detail=class Vec]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(4, 5))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
@@ -1022,6 +1023,7 @@ Main [kind=Class, detail=class Main]
 Other [kind=Class, detail=class Other]
 Process [kind=Class, detail=class Process]
 Str [kind=Class, detail=class Str]
+Vec [kind=Class, detail=class Vec]
 "#
       .trim(),
       completion::auto_complete(&state, &mod_ref, Position(3, 39))

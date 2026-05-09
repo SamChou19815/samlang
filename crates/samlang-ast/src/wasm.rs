@@ -422,6 +422,8 @@ impl Module {
     let mut collector = String::new();
     collector.push_str("(rec\n");
     collector.push_str("(type $_Str (array (mut i8)))\n");
+    collector.push_str("(type $_VecData (array (mut (ref null eq))))\n");
+    collector.push_str("(type $_Vec (struct (field (mut (ref $_VecData))) (field (mut i32))))\n");
     for (type_name, fun_t) in &self.function_type_mapping {
       collector.push_str("(type $");
       type_name.write_encoded(&mut collector, heap, &self.symbol_table);
@@ -838,6 +840,8 @@ mod tests {
     module.symbol_table = table;
     let expected = r#"(rec
 (type $_Str (array (mut i8)))
+(type $_VecData (array (mut (ref null eq))))
+(type $_Vec (struct (field (mut (ref $_VecData))) (field (mut i32))))
 (type $_FnType (func (param i32) (result i32)))
 (type $_F (struct (field i32) (field (ref $_F))))
 (type $_Parent (sub (struct (field i32))))

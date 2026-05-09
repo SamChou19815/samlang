@@ -239,3 +239,136 @@
   )
   (ref.as_non_null (local.get $new_array))
 )
+
+;; -----------------------------------------------------------------------------
+;; Vec<T> runtime
+;;
+;; Vec is a builtin growable container with a uniform (ref null eq) element
+;; representation, regardless of the source-level element type. Element values
+;; that are i32 (e.g. `int`) are boxed/unboxed via i31 at the call site by the
+;; WASM lowering pass; reference values pass through untouched via subtyping.
+;;
+;; A Vec is a struct of {data: ref _VecData, length: i32}; capacity is the
+;; backing array's length. Static methods take a (ref eq) placeholder receiver,
+;; matching the pattern used by Str.fromInt and Process.println.
+;; -----------------------------------------------------------------------------
+
+(func $__$unwrapI31 (param $v (ref eq)) (result i32)
+  (i31.get_s (ref.cast (ref i31) (local.get $v)))
+)
+
+(func $__Vec$empty (param $_this (ref eq)) (result (ref $_Vec))
+  (struct.new $_Vec (array.new $_VecData (ref.null eq) (i32.const 0)) (i32.const 0))
+)
+
+(func $__Vec$withCapacity (param $_this (ref eq)) (param $cap i32) (result (ref $_Vec))
+  (struct.new $_Vec (array.new $_VecData (ref.null eq) (local.get $cap)) (i32.const 0))
+)
+
+(func $__Vec$of (param $_this (ref eq)) (param $v (ref null eq)) (result (ref $_Vec))
+  (local $d (ref $_VecData))
+  (local.set $d (array.new $_VecData (local.get $v) (i32.const 1)))
+  (struct.new $_Vec (local.get $d) (i32.const 1))
+)
+
+(func $__Vec$length (param $this (ref $_Vec)) (result i32)
+  (struct.get $_Vec 1 (local.get $this))
+)
+
+(func $__Vec$capacity (param $this (ref $_Vec)) (result i32)
+  (array.len (struct.get $_Vec 0 (local.get $this)))
+)
+
+;; reserve(min_cap): grow data to at least min_cap (geometric: max(min_cap, 2*cap, 4))
+(func $__Vec$reserve (param $this (ref $_Vec)) (param $min i32) (result i32)
+  (local $cap i32) (local $new_cap i32)
+  (local $old (ref $_VecData)) (local $new (ref $_VecData)) (local $len i32)
+  (local.set $old (struct.get $_Vec 0 (local.get $this)))
+  (local.set $cap (array.len (local.get $old)))
+  (block $no_grow
+    (br_if $no_grow (i32.le_s (local.get $min) (local.get $cap)))
+    (local.set $new_cap (i32.shl (local.get $cap) (i32.const 1)))
+    (if (i32.lt_s (local.get $new_cap) (local.get $min))
+      (then (local.set $new_cap (local.get $min))))
+    (if (i32.lt_s (local.get $new_cap) (i32.const 4))
+      (then (local.set $new_cap (i32.const 4))))
+    (local.set $new (array.new $_VecData (ref.null eq) (local.get $new_cap)))
+    (local.set $len (struct.get $_Vec 1 (local.get $this)))
+    (array.copy $_VecData $_VecData
+      (local.get $new) (i32.const 0)
+      (local.get $old) (i32.const 0)
+      (local.get $len))
+    (struct.set $_Vec 0 (local.get $this) (local.get $new))
+  )
+  (i32.const 0)
+)
+
+(func $__Vec$push (param $this (ref $_Vec)) (param $v (ref null eq)) (result i32)
+  (local $len i32)
+  (local.set $len (struct.get $_Vec 1 (local.get $this)))
+  (drop (call $__Vec$reserve (local.get $this) (i32.add (local.get $len) (i32.const 1))))
+  (array.set $_VecData
+    (struct.get $_Vec 0 (local.get $this))
+    (local.get $len)
+    (local.get $v))
+  (struct.set $_Vec 1 (local.get $this) (i32.add (local.get $len) (i32.const 1)))
+  (i32.const 0)
+)
+
+(func $__Vec$pop (param $this (ref $_Vec)) (result (ref eq))
+  (local $len i32) (local $v (ref null eq))
+  (local.set $len (struct.get $_Vec 1 (local.get $this)))
+  (if (i32.eqz (local.get $len)) (then (unreachable)))
+  (local.set $len (i32.sub (local.get $len) (i32.const 1)))
+  (local.set $v (array.get $_VecData
+    (struct.get $_Vec 0 (local.get $this))
+    (local.get $len)))
+  ;; Clear the slot so the popped value can be GC'd.
+  (array.set $_VecData
+    (struct.get $_Vec 0 (local.get $this))
+    (local.get $len)
+    (ref.null eq))
+  (struct.set $_Vec 1 (local.get $this) (local.get $len))
+  (ref.as_non_null (local.get $v))
+)
+
+(func $__Vec$get (param $this (ref $_Vec)) (param $i i32) (result (ref eq))
+  (if (i32.ge_u (local.get $i) (struct.get $_Vec 1 (local.get $this)))
+    (then (unreachable)))
+  (ref.as_non_null
+    (array.get $_VecData (struct.get $_Vec 0 (local.get $this)) (local.get $i)))
+)
+
+(func $__Vec$set (param $this (ref $_Vec)) (param $i i32) (param $v (ref null eq)) (result i32)
+  (if (i32.ge_u (local.get $i) (struct.get $_Vec 1 (local.get $this)))
+    (then (unreachable)))
+  (array.set $_VecData
+    (struct.get $_Vec 0 (local.get $this))
+    (local.get $i)
+    (local.get $v))
+  (i32.const 0)
+)
+
+(func $__Vec$eq (param $a (ref $_Vec)) (param $b (ref $_Vec)) (result i32)
+  (local $len i32) (local $i i32)
+  (local $ad (ref $_VecData)) (local $bd (ref $_VecData))
+  (if (ref.eq (local.get $a) (local.get $b)) (then (return (i32.const 1))))
+  (local.set $len (struct.get $_Vec 1 (local.get $a)))
+  (if (i32.ne (local.get $len) (struct.get $_Vec 1 (local.get $b)))
+    (then (return (i32.const 0))))
+  (local.set $ad (struct.get $_Vec 0 (local.get $a)))
+  (local.set $bd (struct.get $_Vec 0 (local.get $b)))
+  (local.set $i (i32.const 0))
+  (block $done
+    (loop $loop
+      (br_if $done (i32.ge_s (local.get $i) (local.get $len)))
+      (if (i32.eqz (ref.eq
+        (array.get $_VecData (local.get $ad) (local.get $i))
+        (array.get $_VecData (local.get $bd) (local.get $i))
+      )) (then (return (i32.const 0))))
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br $loop)
+    )
+  )
+  (i32.const 1)
+)

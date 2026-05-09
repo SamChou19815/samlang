@@ -575,6 +575,7 @@ pub fn ts_prolog() -> String {
 
   collector.push_str("type i31 = number;\n");
   collector.push_str("type _Str = [number, number];\n");
+  collector.push_str("type _Vec = any[];\n");
   collector.push_str("const ");
   FunctionName::STR_CONCAT.write_encoded(&mut collector, heap, table);
   collector.push_str(" = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];\n");
@@ -596,6 +597,60 @@ pub fn ts_prolog() -> String {
   collector
     .push_str(" = (_: number, [, v]: _Str): never => { throw Error(v as unknown as string); };\n");
 
+  // Vec<T>: backed by a JS array. Element boxing is unnecessary in TS since the
+  // backend is dynamically typed; ints flow through unwrapped.
+  collector.push_str("const ");
+  FunctionName::VEC_EMPTY.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (_: number): _Vec => [];\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_WITH_CAPACITY.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (_: number, _n: number): _Vec => [];\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_OF.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (_: number, v: any): _Vec => [v];\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_LENGTH.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (t: _Vec): number => t.length;\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_CAPACITY.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (t: _Vec): number => t.length;\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_RESERVE.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (_t: _Vec, _n: number): number => 0;\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_PUSH.write_encoded(&mut collector, heap, table);
+  collector.push_str(" = (t: _Vec, v: any): number => { t.push(v); return 0; };\n");
+
+  collector.push_str("const ");
+  FunctionName::VEC_POP.write_encoded(&mut collector, heap, table);
+  collector.push_str(
+    " = (t: _Vec): any => { if (t.length === 0) { throw Error('pop from empty Vec'); } return t.pop(); };\n",
+  );
+
+  collector.push_str("const ");
+  FunctionName::VEC_GET.write_encoded(&mut collector, heap, table);
+  collector.push_str(
+    " = (t: _Vec, i: number): any => { if (i < 0 || i >= t.length) { throw Error('Vec index out of bounds'); } return t[i]; };\n",
+  );
+
+  collector.push_str("const ");
+  FunctionName::VEC_SET.write_encoded(&mut collector, heap, table);
+  collector.push_str(
+    " = (t: _Vec, i: number, v: any): number => { if (i < 0 || i >= t.length) { throw Error('Vec index out of bounds'); } t[i] = v; return 0; };\n",
+  );
+
+  collector.push_str("const ");
+  FunctionName::VEC_EQ.write_encoded(&mut collector, heap, table);
+  collector.push_str(
+    " = (a: _Vec, b: _Vec): number => { if (a === b) return 1; if (a.length !== b.length) return 0; for (let i = 0; i < a.length; i++) { if (a[i] !== b[i]) return 0; } return 1; };\n",
+  );
+
   collector
 }
 
@@ -613,8 +668,8 @@ impl Sources {
       str_lookup_table.insert(*s, i);
     }
     for d in &self.type_definitions {
-      // Skip STR type - it's a special built-in type handled in ts_prolog
-      if d.name == TypeNameId::STR {
+      // Skip STR and VEC types - they are special built-in types handled in ts_prolog
+      if d.name == TypeNameId::STR || d.name == TypeNameId::VEC {
         continue;
       }
       collector.push_str("type ");

@@ -7,7 +7,7 @@ mod lexer;
 mod source_parser;
 
 fn builtin_classes() -> HashSet<PStr> {
-  HashSet::from([PStr::PROCESS_TYPE, PStr::STR_TYPE])
+  HashSet::from([PStr::PROCESS_TYPE, PStr::STR_TYPE, PStr::VEC_TYPE])
 }
 
 pub fn parse_source_module_from_text(
