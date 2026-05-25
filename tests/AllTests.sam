@@ -50,6 +50,7 @@ import { StringOperations } from tests.StringOperations;
 import { TupleOperations } from tests.TupleOperations;
 import { VariantTests } from tests.VariantTests;
 import { VariousSyntaxForms } from tests.VariousSyntaxForms;
+import { VecOperations } from tests.VecOperations;
 
 class TestCase(val name: Str, val runner: () -> unit) {
   method run(): unit = {
@@ -114,6 +115,7 @@ class Main {
       .cons(TestCase.init("TupleOperations", TupleOperations.run))
       .cons(TestCase.init("VariantTests", VariantTests.run))
       .cons(TestCase.init("VariousSyntaxForms", VariousSyntaxForms.run))
+      .cons(TestCase.init("VecOperations", VecOperations.run))
       .reverse()
 
   function main(): unit = {

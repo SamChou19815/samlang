@@ -50,6 +50,12 @@ impl TypeName {
     suffix: Vec::new(),
     sub_type_tag: None,
   };
+  const VEC: TypeName = TypeName {
+    module_reference: ModuleReference::ROOT,
+    type_name: PStr::VEC_TYPE,
+    suffix: Vec::new(),
+    sub_type_tag: None,
+  };
 
   fn encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     collector.push_str(&self.module_reference.encoded(heap));
@@ -88,11 +94,15 @@ impl TypeNameId {
   pub const EMPTY: TypeNameId = TypeNameId(0);
   pub const STR: TypeNameId = TypeNameId(1);
   pub const PROCESS: TypeNameId = TypeNameId(2);
+  pub const VEC: TypeNameId = TypeNameId(3);
 
   pub(super) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
-    // STR is special - it's the builtin $_Str GC array type, not a generated struct
+    // STR and VEC are special - they're builtin GC types defined in libsam.wat,
+    // not generated structs.
     if *self == Self::STR {
       collector.push_str("_Str");
+    } else if *self == Self::VEC {
+      collector.push_str("_Vec");
     } else {
       table.type_name_lookup_table.get(self).unwrap().encoded(collector, heap, table);
     }
@@ -122,6 +132,7 @@ impl Default for SymbolTable {
     table.create_type_name_internal(TypeName::EMPTY);
     table.create_type_name_internal(TypeName::STR);
     table.create_type_name_internal(TypeName::PROCESS);
+    table.create_type_name_internal(TypeName::VEC);
     table
   }
 }
@@ -388,6 +399,31 @@ impl FunctionName {
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::CONCAT };
   pub const STR_EQ: FunctionName =
     FunctionName { type_name: TypeNameId::STR, fn_name: PStr::STR_EQ };
+
+  pub const VEC_EMPTY: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::EMPTY_FN };
+  pub const VEC_OF: FunctionName = FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::OF };
+  pub const VEC_WITH_CAPACITY: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::WITH_CAPACITY };
+  pub const VEC_LENGTH: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::LENGTH };
+  pub const VEC_CAPACITY: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::CAPACITY };
+  pub const VEC_RESERVE: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::RESERVE };
+  pub const VEC_PUSH: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::PUSH };
+  pub const VEC_POP: FunctionName = FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::POP };
+  pub const VEC_GET: FunctionName = FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::GET };
+  pub const VEC_SET: FunctionName = FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::SET };
+  pub const VEC_EQ: FunctionName =
+    FunctionName { type_name: TypeNameId::VEC, fn_name: PStr::STR_EQ };
+
+  /// Helper that casts a `(ref eq)` to `(ref i31)` and returns its i32 value.
+  /// Used by the WASM lowering to unbox the result of `Vec.get`/`Vec.pop`
+  /// when the source-level element type is `int`. Defined in libsam.wat.
+  pub const UNWRAP_I31: FunctionName =
+    FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::UNWRAP_I31 };
 
   pub const BUILTIN_FREE: FunctionName =
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::FREE_FN };

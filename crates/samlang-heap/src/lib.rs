@@ -196,6 +196,42 @@ impl PStr {
     })
   }
 
+  pub const fn eight_letter_literal(bytes: &[u8; 8]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 8,
+        storage: [
+          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], 0, 0, 0,
+          0, 0, 0, 0,
+        ],
+      },
+    })
+  }
+
+  pub const fn nine_letter_literal(bytes: &[u8; 9]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 9,
+        storage: [
+          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8],
+          0, 0, 0, 0, 0, 0,
+        ],
+      },
+    })
+  }
+
+  pub const fn twelve_letter_literal(bytes: &[u8; 12]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 12,
+        storage: [
+          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8],
+          bytes[9], bytes[10], bytes[11], 0, 0, 0,
+        ],
+      },
+    })
+  }
+
   pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr { heap_id: u128::MAX });
   pub const EMPTY: PStr =
     PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } });
@@ -205,6 +241,7 @@ impl PStr {
   pub const MAIN_TYPE: PStr = Self::four_letter_literal(b"Main");
   pub const MAIN_FN: PStr = Self::four_letter_literal(b"main");
   pub const PROCESS_TYPE: PStr = Self::seven_letter_literal(b"Process");
+  pub const VEC_TYPE: PStr = Self::three_letter_literal(b"Vec");
   pub const CONCAT: PStr = Self::six_letter_literal(b"concat");
   pub const STR_EQ: PStr = Self::two_letter_literal(b"eq");
   pub const TO_INT: PStr = Self::five_letter_literal(b"toInt");
@@ -216,6 +253,21 @@ impl PStr {
   pub const DEC_REF_FN: PStr = Self::seven_letter_literal(b"dec_ref");
   pub const INIT: PStr = Self::four_letter_literal(b"init");
   pub const THIS: PStr = Self::four_letter_literal(b"this");
+
+  pub const EMPTY_FN: PStr = Self::five_letter_literal(b"empty");
+  pub const OF: PStr = Self::two_letter_literal(b"of");
+  pub const WITH_CAPACITY: PStr = Self::twelve_letter_literal(b"withCapacity");
+  pub const LENGTH: PStr = Self::six_letter_literal(b"length");
+  pub const CAPACITY: PStr = Self::eight_letter_literal(b"capacity");
+  pub const RESERVE: PStr = Self::seven_letter_literal(b"reserve");
+  pub const PUSH: PStr = Self::four_letter_literal(b"push");
+  pub const POP: PStr = Self::three_letter_literal(b"pop");
+  pub const GET: PStr = Self::three_letter_literal(b"get");
+  pub const SET: PStr = Self::three_letter_literal(b"set");
+  pub const FOR_EACH: PStr = Self::seven_letter_literal(b"forEach");
+  pub const MAP: PStr = Self::three_letter_literal(b"map");
+  pub const FOLD: PStr = Self::four_letter_literal(b"fold");
+  pub const UNWRAP_I31: PStr = Self::nine_letter_literal(b"unwrapI31");
 
   pub const STD: PStr = Self::three_letter_literal(b"std");
   pub const TUPLES: PStr = Self::six_letter_literal(b"tuples");
@@ -766,6 +818,9 @@ mod tests {
     assert_eq!("aaaaa", PStr::five_letter_literal(b"aaaaa").as_str(heap));
     assert_eq!("aaaaaa", PStr::six_letter_literal(b"aaaaaa").as_str(heap));
     assert_eq!("aaaaaaa", PStr::seven_letter_literal(b"aaaaaaa").as_str(heap));
+    assert_eq!("aaaaaaaa", PStr::eight_letter_literal(b"aaaaaaaa").as_str(heap));
+    assert_eq!("aaaaaaaaa", PStr::nine_letter_literal(b"aaaaaaaaa").as_str(heap));
+    assert_eq!("aaaaaaaaaaaa", PStr::twelve_letter_literal(b"aaaaaaaaaaaa").as_str(heap));
   }
 
   #[test]

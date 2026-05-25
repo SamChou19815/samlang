@@ -547,6 +547,14 @@ impl Rewriter {
     if id_type.name.module_reference.is_none() {
       return *generics_replacement_map.get(&id_type.name.type_name).unwrap();
     }
+    // Vec is a builtin type with uniform (ref null eq) element representation.
+    // All Vec<T> instantiations share TypeNameId::VEC; the WAT runtime in libsam.wat
+    // implements a single $_Vec/$_VecData pair regardless of element type.
+    if id_type.name.module_reference == Some(samlang_heap::ModuleReference::ROOT)
+      && id_type.name.type_name == PStr::VEC_TYPE
+    {
+      return mir::Type::Id(mir::TypeNameId::VEC);
+    }
     let concrete_type_mir_targs = id_type
       .type_arguments
       .iter()
@@ -883,6 +891,63 @@ sources.mains = [_DUMMY_I$main]
 variant type _Str = []
 function _DUMMY_I$main(): int {
   __Process$println("G1");
+  return 0;
+}
+
+sources.mains = [_DUMMY_I$main]
+"#,
+    );
+  }
+
+  #[test]
+  fn vec_type_skips_specialization_test() {
+    // Vec<T> at ROOT must lower uniformly to TypeNameId::VEC, regardless of T.
+    // The fast-path in rewrite_id_type prevents per-instantiation type names
+    // (Vec_int, Vec__Str, etc.) and avoids panicking on the missing type def.
+    let heap = &mut Heap::new();
+    assert_specialized(
+      hir::Sources {
+        global_variables: Vec::new(),
+        closure_types: Vec::new(),
+        type_definitions: Vec::new(),
+        main_function_names: vec![hir::FunctionName {
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
+        }],
+        functions: vec![hir::Function {
+          name: hir::FunctionName {
+            type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+            fn_name: PStr::MAIN_FN,
+          },
+          parameters: vec![PStr::LOWER_A, PStr::LOWER_B],
+          type_parameters: Vec::new(),
+          // (Vec<int>, Vec<Str>) -> int — both Vec types must collapse to _Vec.
+          type_: hir::Type::new_fn_unwrapped(
+            vec![
+              hir::Type::Id(hir::IdType {
+                name: hir::TypeName {
+                  module_reference: Some(ModuleReference::ROOT),
+                  type_name: PStr::VEC_TYPE,
+                },
+                type_arguments: std::sync::Arc::from([hir::INT_TYPE]),
+              }),
+              hir::Type::Id(hir::IdType {
+                name: hir::TypeName {
+                  module_reference: Some(ModuleReference::ROOT),
+                  type_name: PStr::VEC_TYPE,
+                },
+                type_arguments: std::sync::Arc::from([hir::STRING_TYPE.dupe()]),
+              }),
+            ],
+            hir::INT_TYPE,
+          ),
+          body: Vec::new(),
+          return_value: hir::ZERO,
+        }],
+      },
+      heap,
+      r#"
+function _DUMMY_I$main(a: _Vec, b: _Vec): int {
   return 0;
 }
 

@@ -199,3 +199,7 @@ Test Name: VariantTests
 ========================================
 Test Name: VariousSyntaxForms
 ========================================
+Test Name: VecOperations
+hello
+world
+========================================

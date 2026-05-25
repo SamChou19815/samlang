@@ -709,7 +709,38 @@ String literals produce values of type `Str`. See Section 2 for string literal s
 
 `Process` has no constructors and cannot be instantiated. It is an uninhabited type (empty enum) that serves purely as a namespace for its static functions.
 
-### 5.12 Type Errors
+### 5.12 The `Vec<T>` Type
+
+`Vec<T>` is a built-in generic class representing a mutable, growable, contiguously-stored sequence of values of type `T`. It is the samlang analogue of Rust's `Vec`. All `Vec<T>` instantiations share a single uniform runtime representation; element values of primitive type `int` are transparently boxed into the underlying GC array.
+
+Static functions:
+
+- `Vec.empty<T>(): Vec<T>` -- creates an empty `Vec<T>`
+- `Vec.of<T>(t: T): Vec<T>` -- creates a single-element `Vec<T>`
+- `Vec.withCapacity<T>(n: int): Vec<T>` -- creates an empty `Vec<T>` with a backing array sized to hold at least `n` elements without reallocating
+
+Instance methods:
+
+- `.length(): int` -- number of stored elements
+- `.capacity(): int` -- size of the backing array (an implementation hint; backends may round up)
+- `.reserve(n: int): unit` -- ensure capacity is at least `n`; existing elements are preserved
+- `.push(t: T): unit` -- append an element, growing the backing array if needed (geometric growth)
+- `.pop(): T` -- remove and return the last element; **panics** if the `Vec` is empty
+- `.get(i: int): T` -- read the element at index `i`; **panics** if `i` is out of bounds
+- `.set(i: int, t: T): unit` -- overwrite the element at index `i`; **panics** if `i` is out of bounds
+- `.eq(other: Vec<T>): bool` -- length-and-element-wise equality. Elements are compared by reference identity (`==`-style), matching samlang's default semantics for boxed values; element-wise structural deep equality is not performed.
+
+`pop` and `get` deliberately panic on bad input rather than returning `Option<T>` -- callers should bounds-check using `.length()` first when in doubt. Iteration helpers (`forEach`, `map`, `fold`) are not yet provided as built-in methods; iterate manually with `.length()` and `.get(i)`.
+
+```samlang
+let v = Vec.empty<int>();
+v.push(10);
+v.push(20);
+v.push(30);
+let sum = ForTests.intRange(0, v.length()).fold((acc, i) -> acc + v.get(i), 0);
+```
+
+### 5.13 Type Errors
 
 The type checker reports errors in the following situations:
 
@@ -1479,7 +1510,36 @@ The `Process` module provides runtime interactions.
 - `Process.println(s: Str): unit` — Print a string followed by a newline to standard output.
 - `Process.panic<T>(s: Str): T` — Terminate the program with an error message. This function never returns; the generic type parameter `T` allows it to be used in any expression context.
 
-### 10.3 Auto-generated Constructors
+### 10.3 The `Vec<T>` Type
+
+`Vec<T>` is a built-in generic, mutable, growable array — see Section 5.12 for the full type-system view. All `Vec<T>` instantiations share one runtime representation; `int` elements are auto-boxed.
+
+**Static Methods:**
+
+- `Vec.empty<T>(): Vec<T>` — Create an empty `Vec`.
+- `Vec.of<T>(t: T): Vec<T>` — Create a single-element `Vec`.
+- `Vec.withCapacity<T>(n: int): Vec<T>` — Create an empty `Vec` with the backing array sized for at least `n` elements.
+
+**Instance Methods:**
+
+- `.length(): int` — Number of stored elements.
+- `.capacity(): int` — Backing array size (advisory; backends may round up).
+- `.reserve(n: int): unit` — Ensure capacity is at least `n`.
+- `.push(t: T): unit` — Append an element.
+- `.pop(): T` — Remove and return the last element. **Panics** if empty.
+- `.get(i: int): T` — Read at index `i`. **Panics** if out of bounds.
+- `.set(i: int, t: T): unit` — Overwrite at index `i`. **Panics** if out of bounds.
+- `.eq(other: Vec<T>): bool` — Length-and-element-wise equality (reference identity per element).
+
+```samlang
+let v = Vec.empty<int>();
+v.push(1);
+v.push(2);
+v.push(3);
+let last = v.pop();  // 3
+```
+
+### 10.4 Auto-generated Constructors
 
 For user-defined classes, the compiler automatically generates constructors:
 

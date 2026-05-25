@@ -1,0 +1,126 @@
+import { ForTests } from tests.StdLib;
+
+class Point(val x: int, val y: int) {}
+
+class VecOperations {
+  private function testEmpty(): unit = {
+    let v = Vec.empty<int>();
+    ForTests.assertIntEquals(0, v.length());
+  }
+
+  private function testWithCapacity(): unit = {
+    let v = Vec.withCapacity<int>(16);
+    ForTests.assertIntEquals(0, v.length());
+    // capacity() is an implementation hint; backends are free to round it.
+  }
+
+  private function testOf(): unit = {
+    let v = Vec.of<int>(42);
+    ForTests.assertIntEquals(1, v.length());
+    ForTests.assertIntEquals(42, v.get(0));
+  }
+
+  private function testPushPopInt(): unit = {
+    let v = Vec.empty<int>();
+    v.push(1);
+    v.push(2);
+    v.push(3);
+    ForTests.assertIntEquals(3, v.length());
+    ForTests.assertIntEquals(3, v.pop());
+    ForTests.assertIntEquals(2, v.pop());
+    ForTests.assertIntEquals(1, v.pop());
+    ForTests.assertIntEquals(0, v.length());
+  }
+
+  private function testGetSetInt(): unit = {
+    let v = Vec.empty<int>();
+    v.push(10);
+    v.push(20);
+    v.push(30);
+    ForTests.assertIntEquals(10, v.get(0));
+    ForTests.assertIntEquals(20, v.get(1));
+    ForTests.assertIntEquals(30, v.get(2));
+    v.set(1, 99);
+    ForTests.assertIntEquals(99, v.get(1));
+  }
+
+  private function testGrowth(): unit = {
+    let v = Vec.empty<int>();
+    let i = 0;
+    // Grow well past initial capacity, exercising the geometric reserve path.
+    let _ = VecOperations.fillIntVec(v, 0, 100);
+    ForTests.assertIntEquals(100, v.length());
+    ForTests.assertIntEquals(0, v.get(0));
+    ForTests.assertIntEquals(50, v.get(50));
+    ForTests.assertIntEquals(99, v.get(99));
+  }
+
+  private function fillIntVec(v: Vec<int>, start: int, count: int): int =
+    if count == 0 {
+      0
+    } else {
+      v.push(start);
+      VecOperations.fillIntVec(v, start + 1, count - 1)
+    }
+
+  private function testStrings(): unit = {
+    let v = Vec.empty<Str>();
+    v.push("hello");
+    v.push("world");
+    ForTests.assertIntEquals(2, v.length());
+    Process.println(v.get(0));
+    Process.println(v.get(1));
+    ForTests.assertBool(v.pop() == "world", "Last should be world");
+    ForTests.assertIntEquals(1, v.length());
+  }
+
+  private function testStructs(): unit = {
+    let v = Vec.empty<Point>();
+    v.push(Point.init(1, 2));
+    v.push(Point.init(3, 4));
+    let p = v.get(0);
+    ForTests.assertIntEquals(1, p.x);
+    ForTests.assertIntEquals(2, p.y);
+    let q = v.get(1);
+    ForTests.assertIntEquals(3, q.x);
+    ForTests.assertIntEquals(4, q.y);
+  }
+
+  private function testEq(): unit = {
+    let a = Vec.empty<int>();
+    let b = Vec.empty<int>();
+    ForTests.assertBool(a.eq(b), "Two empty vecs should be equal");
+    a.push(1);
+    a.push(2);
+    a.push(3);
+    b.push(1);
+    b.push(2);
+    b.push(3);
+    ForTests.assertBool(a.eq(b), "Vecs with same int contents should be equal");
+    b.set(0, 99);
+    ForTests.assertBool(!a.eq(b), "Diverging vecs should not be equal");
+  }
+
+  private function testReserve(): unit = {
+    let v = Vec.empty<int>();
+    v.reserve(64);
+    // reserve does not affect length; subsequent pushes must still work.
+    ForTests.assertIntEquals(0, v.length());
+    v.push(7);
+    ForTests.assertIntEquals(1, v.length());
+    ForTests.assertIntEquals(7, v.get(0));
+  }
+
+  function run(): unit = {
+    VecOperations.testEmpty();
+    VecOperations.testWithCapacity();
+    VecOperations.testOf();
+    VecOperations.testPushPopInt();
+    VecOperations.testGetSetInt();
+    VecOperations.testGrowth();
+    VecOperations.testStrings();
+    VecOperations.testStructs();
+    VecOperations.testEq();
+    VecOperations.testReserve();
+  }
+}
