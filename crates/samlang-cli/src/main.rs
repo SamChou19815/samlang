@@ -288,6 +288,7 @@ mod lsp {
             trigger_characters: Some(vec![".".to_string()]),
             all_commit_characters: None,
             work_done_progress_options: Default::default(),
+            completion_item: None,
           }),
           signature_help_provider: Some(SignatureHelpOptions {
             trigger_characters: Some(vec!["(".to_string(), ",".to_string()]),
@@ -674,6 +675,7 @@ mod lsp {
             end_line: location.end.0,
             end_character: Some(location.end.1),
             kind: None,
+            collapsed_text: None,
           })
           .collect()
       }))
