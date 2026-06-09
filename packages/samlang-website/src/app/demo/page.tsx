@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type React from 'react';
 import LanguageDemo from '../../components/Demo';
 
 export const metadata: Metadata = {
@@ -6,7 +7,7 @@ export const metadata: Metadata = {
   description: 'IDE demo of samlang',
 };
 
-export default function DemoPage(): JSX.Element {
+export default function DemoPage(): React.JSX.Element {
   return (
     <div>
       <LanguageDemo />

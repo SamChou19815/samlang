@@ -1,5 +1,5 @@
-import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-import type { editor, languages } from 'monaco-editor/esm/vs/editor/editor.api';
+import type * as monaco from 'monaco-editor';
+import type { editor, languages } from 'monaco-editor';
 import type * as SamlangTypes from './samlang-wasm-glue';
 
 export type MonacoEditor = typeof monaco;

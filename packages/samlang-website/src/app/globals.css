@@ -1,4 +1,4 @@
-@tailwind base;
+@import 'tailwindcss';
 
 @layer base {
   h1 {
@@ -38,6 +38,3 @@
     @apply ml-0 mr-0 mt-4 mb-4 p-2 rounded-md text-sm;
   }
 }
-
-@tailwind components;
-@tailwind utilities;

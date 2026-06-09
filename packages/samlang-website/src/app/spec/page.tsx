@@ -60,7 +60,7 @@ export default async function SpecPage(): Promise<React.JSX.Element> {
               }
 
               return (
-                <pre className="bg-gray-100 p-4 rounded overflow-x-auto">
+                <pre className="bg-gray-100 p-4 rounded-sm overflow-x-auto">
                   <code className={className} {...props}>
                     {children}
                   </code>
