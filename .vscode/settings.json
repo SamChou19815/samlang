@@ -8,5 +8,6 @@
     "**/*.code-search": true
   },
   "css.validate": false,
+  "git.enabled": false,
   "tailwindCSS.experimental.configFile": "./packages/samlang-website/tailwind.config.ts"
 }
