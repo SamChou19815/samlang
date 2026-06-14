@@ -69,9 +69,9 @@
     "publish": "vsce publish --no-dependencies"
   },
   "devDependencies": {
-    "@types/node": "^24.9.1",
+    "@types/node": "^25.9.2",
     "@types/vscode": "1.75.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.0",
     "vscode-languageclient": "^9.0.1"
   }
 }

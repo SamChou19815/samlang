@@ -46,7 +46,7 @@ export default function LanguageDemo(): React.JSX.Element {
           </div>
         </div>
       )}
-      <nav className="sticky top-0 z-40 flex h-12 bg-white pr-4 drop-shadow-sm filter">
+      <nav className="sticky top-0 z-40 flex h-12 bg-white pr-4 drop-shadow-xs filter">
         <div className="flex w-full flex-wrap justify-between">
           <div className="flex min-w-0 flex-auto items-center">
             <Link className="mr-8 flex min-w-0 items-center text-gray-900" href="/">
