@@ -5,9 +5,9 @@ edition = "2024"
 
 [dependencies]
 dupe = { workspace = true }
-enum-as-inner = "0.5.1"
-itertools = "0.14.0"
-ordermap = "1.0.0"
+enum-as-inner = "0.7.0"
+itertools = "0.15.0"
+ordermap = "1.2.0"
 samlang-ast = { path = "../samlang-ast" }
 samlang-checker = { path = "../samlang-checker" }
 samlang-collections = { path = "../samlang-collections" }
@@ -17,8 +17,8 @@ samlang-optimization = { path = "../samlang-optimization" }
 samlang-parser = { path = "../samlang-parser" }
 samlang-profiling = { path = "../samlang-profiling" }
 rayon = { workspace = true }
-wast = "245.0.1"
-wat = "1.215.0"
+wast = "252.0.0"
+wat = "1.252.0"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

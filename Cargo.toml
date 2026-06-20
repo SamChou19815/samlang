@@ -18,8 +18,8 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-dupe = "0.9"
-rayon = "1.10"
+dupe = "0.9.1"
+rayon = "1.12.0"
 
 [profile.release]
 lto = true
