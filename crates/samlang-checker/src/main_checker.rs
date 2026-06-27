@@ -733,7 +733,7 @@ fn check_function_call(
   let callee_function_type = match partially_checked_callee_type {
     Type::Fn(fn_type) => fn_type,
     t => {
-      if !matches!(t, Type::Any(_, _)) {
+      if !t.is_any() {
         cx.error_set.report_incompatible_type_kind_error(
           expression.callee.loc(),
           t.to_description(),

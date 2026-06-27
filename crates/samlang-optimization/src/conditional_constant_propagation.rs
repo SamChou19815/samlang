@@ -521,7 +521,7 @@ fn try_optimize_loop_for_some_iterations(
       &mut first_run_optimized_stmts,
     );
     if let Some(last_stmt) = first_run_optimized_stmts.last() {
-      if !matches!(last_stmt, Statement::Break(_)) {
+      if !last_stmt.is_break() {
         pop_scope(value_cx, index_access_cx, binary_expr_cx);
         return vec![Statement::While { loop_variables, statements: stmts, break_collector }];
       }
