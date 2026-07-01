@@ -330,7 +330,7 @@ impl<'a> LoweringManager<'a> {
           // Vec.pop / Vec.get return (ref eq) at WAT level. Unwrap based on the source-level
           // element type the LIR call expects: i32 element → __$unwrapI31, struct ref → ref.cast.
           let call = if vec_returns_element {
-            if matches!(return_type, lir::Type::Int32) {
+            if return_type.is_int32() {
               wasm::InlineInstruction::DirectCall(mir::FunctionName::UNWRAP_I31, vec![call])
             } else {
               wasm::InlineInstruction::Cast {
@@ -463,7 +463,7 @@ impl<'a> LoweringManager<'a> {
           // - Casting from AnyPointer (ref eq) to a specific struct type
           // - Casting from a parent enum type to one of its variant subtypes
           let is_ref_src = matches!(src_t, lir::Type::AnyPointer | lir::Type::Id(_));
-          let is_ref_target = matches!(type_, lir::Type::Id(_));
+          let is_ref_target = type_.is_id();
           is_ref_src && is_ref_target
         });
         let assigned = if needs_ref_cast {
