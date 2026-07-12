@@ -1,4 +1,5 @@
 use super::prettier::Document;
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::source::{
   ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore,
@@ -149,7 +150,7 @@ pub(super) fn annotation_to_doc(
       heap,
       comment_store,
       id.associated_comments,
-      text_pstr(heap, id.name),
+      text_pstr(heap, id.name.dupe()),
     ),
     annotation::T::Fn(annotation::Function {
       location: _,
@@ -208,7 +209,7 @@ fn id_annot_to_doc(
     comment_store,
     id.associated_comments,
     Document::Concat(
-      Rc::new(text_pstr(heap, id.name)),
+      Rc::new(text_pstr(heap, id.name.dupe())),
       Rc::new(optional_targs(heap, comment_store, type_arguments.as_ref())),
     ),
   )
@@ -440,7 +441,7 @@ fn create_chainable_ir_docs(
       chain.push((
         e.field_name.associated_comments,
         vec![
-          (text_pstr(heap, e.field_name.name)),
+          (text_pstr(heap, e.field_name.name.dupe())),
           optional_targs(heap, comment_store, e.explicit_type_arguments.as_ref()),
         ],
       ));
@@ -452,7 +453,7 @@ fn create_chainable_ir_docs(
       chain.push((
         e.method_name.associated_comments,
         vec![
-          (text_pstr(heap, e.method_name.name)),
+          (text_pstr(heap, e.method_name.name.dupe())),
           optional_targs(heap, comment_store, e.explicit_type_arguments.as_ref()),
         ],
       ));
@@ -579,9 +580,9 @@ fn create_doc_without_preceding_comment(
     expr::E::Literal(_, Literal::Bool(true)) => Document::Text("true"),
     expr::E::Literal(_, Literal::Int(i)) => Document::non_static_str(i.to_string()),
     expr::E::Literal(_, Literal::String(s)) => {
-      Document::concat(vec![Document::Text("\""), text_pstr(heap, *s), Document::Text("\"")])
+      Document::concat(vec![Document::Text("\""), text_pstr(heap, s.dupe()), Document::Text("\"")])
     }
-    expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => text_pstr(heap, id.name),
+    expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => text_pstr(heap, id.name.dupe()),
     expr::E::Tuple(_, e) => create_doc_for_parenthesized_expression_list(heap, comment_store, e),
     expr::E::FieldAccess(_) | expr::E::MethodAccess(_) | expr::E::Call(_) => {
       create_doc_for_dotted_chain(
@@ -712,12 +713,12 @@ fn create_doc_without_preceding_comment(
             id.name.associated_comments,
             if let Some(annot) = &id.annotation {
               Document::concat(vec![
-                text_pstr(heap, id.name.name),
+                text_pstr(heap, id.name.name.dupe()),
                 Document::Text(": "),
                 annotation_to_doc(heap, comment_store, annot),
               ])
             } else {
-              text_pstr(heap, id.name.name)
+              text_pstr(heap, id.name.name.dupe())
             },
           )
         },
@@ -793,10 +794,10 @@ fn matching_pattern_to_document(
         *ending_associated_comments,
         |it| {
           if it.shorthand {
-            text_pstr(heap, it.field_name.name)
+            text_pstr(heap, it.field_name.name.dupe())
           } else {
             Document::concat(vec![
-              (text_pstr(heap, it.field_name.name)),
+              (text_pstr(heap, it.field_name.name.dupe())),
               Document::Text(" as "),
               matching_pattern_to_document(heap, comment_store, &it.pattern),
             ])
@@ -817,7 +818,7 @@ fn matching_pattern_to_document(
             heap,
             comment_store,
             tag.associated_comments,
-            text_pstr(heap, tag.name),
+            text_pstr(heap, tag.name.dupe()),
           ),
           tuple_pattern_to_document(heap, comment_store, p),
         ])
@@ -826,7 +827,7 @@ fn matching_pattern_to_document(
           heap,
           comment_store,
           tag.associated_comments,
-          text_pstr(heap, tag.name),
+          text_pstr(heap, tag.name.dupe()),
         )
       }
     }
@@ -834,7 +835,7 @@ fn matching_pattern_to_document(
       heap,
       comment_store,
       id.associated_comments,
-      text_pstr(heap, id.name),
+      text_pstr(heap, id.name.dupe()),
     ),
     pattern::MatchingPattern::Wildcard { location: _, associated_comments } => {
       create_opt_preceding_comment_doc(
@@ -924,12 +925,12 @@ fn type_parameters_to_doc(
           tparam.name.associated_comments,
           if let Some(b) = &tparam.bound {
             Document::concat(vec![
-              text_pstr(heap, tparam.name.name),
+              text_pstr(heap, tparam.name.name.dupe()),
               Document::Text(": "),
               id_annot_to_doc(heap, comment_store, b),
             ])
           } else {
-            text_pstr(heap, tparam.name.name)
+            text_pstr(heap, tparam.name.name.dupe())
           },
         )
       },
@@ -981,7 +982,7 @@ fn create_doc_for_interface_member(
     if member.is_public { Document::Nil } else { Document::Text("private ") },
     Document::Text(if member.is_method { "method " } else { "function " }),
     type_parameters_to_doc(heap, comment_store, true, member.type_parameters.as_ref()),
-    (text_pstr(heap, member.name.name)),
+    (text_pstr(heap, member.name.name.dupe())),
     create_opt_preceding_comment_doc(
       heap,
       comment_store,
@@ -997,7 +998,7 @@ fn create_doc_for_interface_member(
             comment_store,
             param.name.associated_comments,
             Document::concat(vec![
-              (text_pstr(heap, param.name.name)),
+              (text_pstr(heap, param.name.name.dupe())),
               Document::Text(": "),
               annotation_to_doc(heap, comment_store, &param.annotation),
             ]),
@@ -1056,7 +1057,7 @@ fn interface_to_doc(
     )
     .unwrap_or(Document::Nil),
     Document::Text(if interface.private { "private interface " } else { "interface " }),
-    (text_pstr(heap, interface.name.name)),
+    (text_pstr(heap, interface.name.name.dupe())),
     type_parameters_to_doc(heap, comment_store, false, interface.type_parameters.as_ref()),
     extends_or_implements_node_to_doc(
       heap,
@@ -1108,7 +1109,7 @@ fn class_to_doc(
     )
     .unwrap_or(Document::Nil),
     Document::Text(if class.private { "private class " } else { "class " }),
-    text_pstr(heap, class.name.name),
+    text_pstr(heap, class.name.name.dupe()),
     type_parameters_to_doc(heap, comment_store, false, class.type_parameters.as_ref()),
     match class.type_definition.as_ref() {
       None => Document::Nil,
@@ -1129,7 +1130,7 @@ fn class_to_doc(
           |field| {
             Document::concat(vec![
               Document::Text(if field.is_public { "val " } else { "private val " }),
-              text_pstr(heap, field.name.name),
+              text_pstr(heap, field.name.name.dupe()),
               Document::Text(": "),
               annotation_to_doc(heap, comment_store, &field.annotation),
             ])
@@ -1153,7 +1154,7 @@ fn class_to_doc(
           |variant| {
             if let Some(annotations) = &variant.associated_data_types {
               Document::concat(vec![
-                (text_pstr(heap, variant.name.name)),
+                (text_pstr(heap, variant.name.name.dupe())),
                 create_opt_preceding_comment_doc(
                   heap,
                   comment_store,
@@ -1168,7 +1169,7 @@ fn class_to_doc(
                 ),
               ])
             } else {
-              text_pstr(heap, variant.name.name)
+              text_pstr(heap, variant.name.name.dupe())
             }
           },
         )),
@@ -1237,7 +1238,7 @@ pub(super) fn import_to_document(
     comment_store,
     imported_members,
     NO_COMMENT_REFERENCE,
-    |m| text_pstr(heap, m.name),
+    |m| text_pstr(heap, m.name.dupe()),
   )));
   documents.push(Document::Text(" from "));
   documents.push(Document::non_static_str(imported_module.pretty_print(heap)));
@@ -1479,7 +1480,7 @@ ClassName /* b */ /* c */.classMember<
     assert_reprint_expr("foo.bar", "foo.bar");
 
     let empty_comment_store = CommentStore::new();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let e = expr::E::MethodAccess(expr::MethodAccess {
       common: expr::ExpressionCommon::dummy(()),
       explicit_type_arguments: None,

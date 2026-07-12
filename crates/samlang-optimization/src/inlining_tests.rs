@@ -404,14 +404,14 @@ function __$moveMove(a: int): int {
 }
 
 function __$insanelyBigFunction(a: int): int {
-  let _t2c: int = (a: int)[0];
+  let _t0c: int = (a: int)[0];
   (a: int)();
-  let _t4u0 = !(a: int);
-  let _t4u1 = (a: int) is _Str;
-  let _t4_ = 0 as int;
-  let _t4b: int;
-  _t4b = 0;
-  let _t4c: int = (a: int)[0];
+  let _t2u0 = !(a: int);
+  let _t2u1 = (a: int) is _Str;
+  let _t2_ = 0 as int;
+  let _t2b: int;
+  _t2b = 0;
+  let _t2c: int = (a: int)[0];
   (a: int)();
   __$non-existing-function();
   __$non-existing-function();

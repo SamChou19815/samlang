@@ -1,108 +1,197 @@
 use dupe::Dupe;
 use itertools::Itertools;
 use std::{
-  collections::{HashMap, HashSet},
-  convert::TryInto,
-  hash::Hash,
+  collections::HashMap,
+  mem::ManuallyDrop,
   ops::Deref,
-  sync::atomic::{AtomicU32, Ordering},
+  sync::{
+    Arc,
+    atomic::{AtomicU32, Ordering},
+  },
 };
 
+const INLINE_STR_CAPACITY: usize = 15;
+/// Flag bit set in the tag byte of every inline string, so that the tag byte is never zero.
+const INLINE_TAG_FLAG: u8 = 0x80;
+const INVALID_TAG: u8 = u8::MAX;
+
+#[repr(C)]
 #[derive(Clone, Copy)]
 struct PStrPrivateReprInline {
-  size: u8,
-  storage: [u8; 15],
+  storage: [u8; INLINE_STR_CAPACITY],
+  /// `INLINE_TAG_FLAG | size` for inline strings, or `INVALID_TAG`: always nonzero.
+  /// This byte doubles as the tag of the union (see `PStrPrivateRepr::tag`).
+  tagged_size: u8,
 }
 
-#[derive(Clone, Copy)]
+/// A 16-byte tagged union: either 15 bytes of inline string data, or a plain `Arc<str>`.
+///
+/// The tag is the last byte. For the inline/invalid variants it is always nonzero.
+/// For the heap variant, the last byte of an `Arc<str>` is the most significant byte of
+/// either its length (< 2^56) or its data pointer (canonical 64-bit userspace address),
+/// so it is always zero on every supported (little-endian) 64-bit target. On 32-bit
+/// targets (wasm32) the `Arc<str>` covers only the first 8 bytes, so `heap_variant`
+/// explicitly zeroes the repr before writing the `Arc`. This invariant is asserted at
+/// every new heap allocation in `from_arc_str`, so a layout change would fail fast
+/// rather than misbehave.
+#[repr(C)]
 union PStrPrivateRepr {
   inline: PStrPrivateReprInline,
-  heap_id: u128,
+  heap: ManuallyDrop<Arc<str>>,
 }
 
-const ALL_ZERO_SLICE: [u8; 15] = [0; 15];
+const _: () = assert!(std::mem::size_of::<PStrPrivateRepr>() == 16);
+const _: () = assert!(cfg!(target_endian = "little"));
 
-impl std::fmt::Debug for PStrPrivateRepr {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self.as_inline_str() {
-      Ok(s) => f.write_fmt(format_args!("\"{s}\"")),
-      Err(id) => f.write_fmt(format_args!("id={id}")),
-    }
-  }
+enum PStrPrivateView<'a> {
+  Inline(&'a str),
+  Heap(&'a str),
+  Invalid,
 }
 
 impl PStrPrivateRepr {
-  fn as_inline_str(&self) -> Result<&str, u32> {
-    unsafe {
-      if (self.heap_id >> 120) != 255 {
-        Ok(std::str::from_utf8_unchecked(&self.inline.storage[..(self.inline.size as usize)]))
-      } else {
-        Err((self.heap_id & (u32::MAX as u128)) as u32)
-      }
+  fn tag(&self) -> u8 {
+    // SAFETY: the last byte is always initialized in both variants,
+    // and every bit pattern is a valid u8.
+    unsafe { self.inline.tagged_size }
+  }
+
+  fn view(&self) -> PStrPrivateView<'_> {
+    let tag = self.tag();
+    if tag == 0 {
+      // SAFETY: a zero tag byte means the repr holds a live `Arc<str>` (see type docs).
+      PStrPrivateView::Heap(unsafe { &self.heap })
+    } else if tag != INVALID_TAG {
+      debug_assert!(tag & INLINE_TAG_FLAG != 0);
+      let size = (tag & !INLINE_TAG_FLAG) as usize;
+      // SAFETY: inline-tagged repr always holds bytes copied from a valid str.
+      PStrPrivateView::Inline(unsafe {
+        std::str::from_utf8_unchecked(&self.inline.storage[..size])
+      })
+    } else {
+      PStrPrivateView::Invalid
     }
   }
 
-  fn as_heap_id(&self) -> Option<u32> {
-    unsafe {
-      if (self.heap_id >> 120) as u8 == 255 {
-        Some((self.heap_id & (u32::MAX as u128)) as u32)
-      } else {
-        None
-      }
+  fn as_str_opt(&self) -> Option<&str> {
+    match self.view() {
+      PStrPrivateView::Inline(s) | PStrPrivateView::Heap(s) => Some(s),
+      PStrPrivateView::Invalid => None,
     }
   }
 
   fn from_str_opt(s: &str) -> Option<PStrPrivateRepr> {
     let bytes = s.as_bytes();
     let size = bytes.len();
-    if size <= 15 {
-      let mut storage = [0; 15];
+    if size <= INLINE_STR_CAPACITY {
+      let mut storage = [0; INLINE_STR_CAPACITY];
       storage[..size].copy_from_slice(bytes);
-      Some(PStrPrivateRepr { inline: PStrPrivateReprInline { size: size as u8, storage } })
+      Some(PStrPrivateRepr {
+        inline: PStrPrivateReprInline { storage, tagged_size: INLINE_TAG_FLAG | (size as u8) },
+      })
     } else {
       None
     }
   }
 
-  fn from_string(s: String) -> Result<PStrPrivateRepr, String> {
-    let size = s.len();
-    if size <= 15 {
-      let mut bytes = s.into_bytes();
-      bytes.extend_from_slice(&ALL_ZERO_SLICE[size..15]);
-      Ok(PStrPrivateRepr {
-        inline: PStrPrivateReprInline { size: size as u8, storage: bytes.try_into().unwrap() },
-      })
-    } else {
-      Err(s)
-    }
+  #[cfg(target_pointer_width = "64")]
+  fn heap_variant(arc: Arc<str>) -> PStrPrivateRepr {
+    PStrPrivateRepr { heap: ManuallyDrop::new(arc) }
   }
 
-  fn from_id(id: u32) -> PStrPrivateRepr {
-    PStrPrivateRepr { heap_id: (id as u128) | (255_u128 << 120) }
+  #[cfg(not(target_pointer_width = "64"))]
+  fn heap_variant(arc: Arc<str>) -> PStrPrivateRepr {
+    // The `Arc<str>` covers only the first 8 of the repr's 16 bytes, so start from an
+    // all-zero repr to keep the tag byte initialized (to the heap-variant tag of zero).
+    let mut repr = PStrPrivateRepr {
+      inline: PStrPrivateReprInline { storage: [0; INLINE_STR_CAPACITY], tagged_size: 0 },
+    };
+    repr.heap = ManuallyDrop::new(arc);
+    repr
+  }
+
+  fn from_arc_str(arc: Arc<str>) -> PStrPrivateRepr {
+    let repr = Self::heap_variant(arc);
+    // Guards the tagging invariant documented on the type.
+    assert_eq!(0, repr.tag(), "Unsupported Arc<str> layout on this platform");
+    repr
+  }
+
+  /// Returns a new strong reference to the underlying `Arc<str>` for heap strings.
+  fn as_heap_arc(&self) -> Option<Arc<str>> {
+    if self.tag() == 0 {
+      // SAFETY: a zero tag byte means the repr holds a live `Arc<str>`.
+      Some(Arc::clone(unsafe { &self.heap }))
+    } else {
+      None
+    }
+  }
+}
+
+impl Clone for PStrPrivateRepr {
+  fn clone(&self) -> Self {
+    match self.as_heap_arc() {
+      Some(arc) => PStrPrivateRepr::heap_variant(arc),
+      // SAFETY: non-heap variants are plain bytes.
+      None => PStrPrivateRepr { inline: unsafe { self.inline } },
+    }
+  }
+}
+
+impl Drop for PStrPrivateRepr {
+  fn drop(&mut self) {
+    if self.tag() == 0 {
+      // SAFETY: a zero tag byte means the repr holds a live `Arc<str>`,
+      // whose strong reference is owned by this repr and released exactly once here.
+      unsafe { ManuallyDrop::drop(&mut self.heap) }
+    }
+  }
+}
+
+impl std::fmt::Debug for PStrPrivateRepr {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self.as_str_opt() {
+      Some(s) => f.write_fmt(format_args!("\"{s}\"")),
+      None => f.write_str("INVALID"),
+    }
+  }
+}
+
+impl PartialEq for PStrPrivateRepr {
+  fn eq(&self, other: &Self) -> bool {
+    match (self.view(), other.view()) {
+      (PStrPrivateView::Inline(s1), PStrPrivateView::Inline(s2)) => s1 == s2,
+      (PStrPrivateView::Heap(s1), PStrPrivateView::Heap(s2)) => {
+        // Duped PStrs share one allocation, so try pointer equality first.
+        std::ptr::eq(s1, s2) || s1 == s2
+      }
+      (PStrPrivateView::Invalid, PStrPrivateView::Invalid) => true,
+      _ => false,
+    }
   }
 }
 
 impl Eq for PStrPrivateRepr {}
 
-impl PartialEq for PStrPrivateRepr {
-  fn eq(&self, other: &Self) -> bool {
-    unsafe { self.heap_id.eq(&other.heap_id) }
-  }
-}
-
-impl Hash for PStrPrivateRepr {
+impl std::hash::Hash for PStrPrivateRepr {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    unsafe { self.heap_id.hash(state) }
+    match self.view() {
+      PStrPrivateView::Inline(s) | PStrPrivateView::Heap(s) => s.hash(state),
+      PStrPrivateView::Invalid => INVALID_TAG.hash(state),
+    }
   }
 }
 
 impl Ord for PStrPrivateRepr {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    match (self.as_inline_str(), other.as_inline_str()) {
-      (Ok(s1), Ok(s2)) => s1.cmp(s2),
-      (Err(id1), Err(id2)) => id1.cmp(&id2),
-      (Ok(_), Err(_)) => std::cmp::Ordering::Less,
-      (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
+    match (self.view(), other.view()) {
+      (PStrPrivateView::Inline(s1), PStrPrivateView::Inline(s2)) => s1.cmp(s2),
+      (PStrPrivateView::Inline(_), PStrPrivateView::Heap(_)) => std::cmp::Ordering::Less,
+      (PStrPrivateView::Heap(_), PStrPrivateView::Inline(_)) => std::cmp::Ordering::Greater,
+      (PStrPrivateView::Heap(s1), PStrPrivateView::Heap(s2)) => s1.cmp(s2),
+      (PStrPrivateView::Invalid, PStrPrivateView::Invalid) => std::cmp::Ordering::Equal,
+      (PStrPrivateView::Invalid, _) => std::cmp::Ordering::Greater,
+      (_, PStrPrivateView::Invalid) => std::cmp::Ordering::Less,
     }
   }
 }
@@ -115,126 +204,82 @@ impl PartialOrd for PStrPrivateRepr {
 
 impl Dupe for PStrPrivateRepr {}
 
-#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-/// A string pointer free to be copied. However, we have to do GC manually.
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// A string pointer that is cheap to clone/dupe. Short strings are stored inline, while long
+/// strings are shared reference-counted `Arc<str>` allocations. Equality, ordering and hashing
+/// are all content-based, so two independently allocated `PStr`s of the same string are equal.
 pub struct PStr(PStrPrivateRepr);
 
 impl PStr {
-  pub fn as_str<'a>(&'a self, heap: &'a Heap) -> &'a str {
-    self.0.as_inline_str().unwrap_or_else(|id| &heap.str_pointer_table[id as usize])
+  pub fn as_str<'a>(&'a self, _heap: &'a Heap) -> &'a str {
+    self.0.as_str_opt().expect("Dereferencing PStr::INVALID_PSTR")
   }
 
   fn create_inline_opt(s: &str) -> Option<PStr> {
     PStrPrivateRepr::from_str_opt(s).map(PStr)
   }
 
-  pub const fn one_letter_literal(c: char) -> PStr {
+  const fn inline_literal<const N: usize>(bytes: &[u8; N]) -> PStr {
+    let mut storage = [0; INLINE_STR_CAPACITY];
+    let mut i = 0;
+    while i < N {
+      storage[i] = bytes[i];
+      i += 1;
+    }
     PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 1,
-        storage: [c as u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
+      inline: PStrPrivateReprInline { storage, tagged_size: INLINE_TAG_FLAG | (N as u8) },
     })
+  }
+
+  pub const fn one_letter_literal(c: char) -> PStr {
+    Self::inline_literal(&[c as u8])
   }
 
   pub const fn two_letter_literal(bytes: &[u8; 2]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 2,
-        storage: [bytes[0], bytes[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn three_letter_literal(bytes: &[u8; 3]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 3,
-        storage: [bytes[0], bytes[1], bytes[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn four_letter_literal(bytes: &[u8; 4]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 4,
-        storage: [bytes[0], bytes[1], bytes[2], bytes[3], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn five_letter_literal(bytes: &[u8; 5]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 5,
-        storage: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn six_letter_literal(bytes: &[u8; 6]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 6,
-        storage: [
-          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn seven_letter_literal(bytes: &[u8; 7]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 7,
-        storage: [
-          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], 0, 0, 0, 0, 0, 0,
-          0, 0,
-        ],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn eight_letter_literal(bytes: &[u8; 8]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 8,
-        storage: [
-          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], 0, 0, 0,
-          0, 0, 0, 0,
-        ],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn nine_letter_literal(bytes: &[u8; 9]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 9,
-        storage: [
-          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8],
-          0, 0, 0, 0, 0, 0,
-        ],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
   pub const fn twelve_letter_literal(bytes: &[u8; 12]) -> PStr {
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: 12,
-        storage: [
-          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8],
-          bytes[9], bytes[10], bytes[11], 0, 0, 0,
-        ],
-      },
-    })
+    Self::inline_literal(bytes)
   }
 
-  pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr { heap_id: u128::MAX });
-  pub const EMPTY: PStr =
-    PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } });
+  pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr {
+    inline: PStrPrivateReprInline { storage: [0; INLINE_STR_CAPACITY], tagged_size: INVALID_TAG },
+  });
+  pub const EMPTY: PStr = PStr(PStrPrivateRepr {
+    inline: PStrPrivateReprInline {
+      storage: [0; INLINE_STR_CAPACITY],
+      tagged_size: INLINE_TAG_FLAG,
+    },
+  });
   pub const DUMMY_MODULE: PStr = Self::five_letter_literal(b"DUMMY");
   pub const MISSING: PStr = Self::seven_letter_literal(b"missing");
   pub const STR_TYPE: PStr = Self::three_letter_literal(b"Str");
@@ -383,36 +428,6 @@ impl ModuleReference {
   }
 }
 
-enum StringStoredInHeap {
-  Permanent(&'static str),
-  Temporary(String, bool), // bool: marked
-  Deallocated(Option<String>),
-}
-
-impl Deref for StringStoredInHeap {
-  type Target = str;
-
-  fn deref(&self) -> &Self::Target {
-    match self {
-      StringStoredInHeap::Permanent(s) => s,
-      StringStoredInHeap::Temporary(s, _) => s,
-      StringStoredInHeap::Deallocated(s) => {
-        panic!("Dereferencing deallocated string: {}", s.as_deref().unwrap_or("???"))
-      }
-    }
-  }
-}
-
-impl StringStoredInHeap {
-  fn deallocated(keep: bool, str: &str) -> StringStoredInHeap {
-    if keep {
-      StringStoredInHeap::Deallocated(Some(str.to_string()))
-    } else {
-      StringStoredInHeap::Deallocated(None)
-    }
-  }
-}
-
 /// Thread-safe counter for allocating temporary PStr names during parallel optimization.
 /// Replaces `&mut Heap` in per-function passes that only need `alloc_temp_str()`.
 pub struct TempPStrCounter {
@@ -435,28 +450,21 @@ impl TempPStrCounter {
   }
 }
 
-/// Users of the heap are responsible for calling retain at appropriate places to do GC.
+/// The heap interns module references and allocates the globally unique temp string names.
+/// Strings themselves are not interned: every `PStr` fully owns its string (inline or via a
+/// reference-counted allocation), so no GC of the heap is ever needed.
 pub struct Heap {
-  str_pointer_table: Vec<StringStoredInHeap>,
   module_reference_pointer_table: Vec<&'static [PStr]>,
-  interned_string: HashMap<&'static str, u32>,
-  interned_static_str: HashMap<&'static str, u32>,
   interned_module_reference: HashMap<&'static [PStr], ModuleReference>,
-  unmarked_module_references: HashSet<ModuleReference>,
-  // invariant: 0 <= sweep_index < str_pointer_table.len()
-  sweep_index: usize,
+  alloc_counter: u32,
 }
 
 impl Heap {
   pub fn new() -> Heap {
     let mut heap = Heap {
-      str_pointer_table: Vec::new(),
       module_reference_pointer_table: Vec::new(),
-      interned_string: HashMap::new(),
-      interned_static_str: HashMap::new(),
       interned_module_reference: HashMap::new(),
-      unmarked_module_references: HashSet::new(),
-      sweep_index: 0,
+      alloc_counter: 0,
     };
     heap.alloc_module_reference(Vec::new()); // Root
     let dummy_parts = vec![PStr::DUMMY_MODULE];
@@ -467,114 +475,47 @@ impl Heap {
     heap
   }
 
-  pub(crate) fn get_allocated_str_opt(&self, str: &str) -> Option<PStr> {
-    let inlined = PStr::create_inline_opt(str);
-    if inlined.is_some() {
-      inlined
-    } else {
-      self
-        .interned_static_str
-        .get(&str)
-        .or_else(|| self.interned_string.get(&str))
-        .copied()
-        .map(|id| PStr(PStrPrivateRepr::from_id(id)))
-    }
+  pub fn alloc_str_for_test(&self, s: &'static str) -> PStr {
+    Self::alloc_str_internal(s)
   }
 
-  pub fn alloc_str_for_test(&mut self, s: &'static str) -> PStr {
-    self.alloc_str_internal(s)
-  }
-
-  fn alloc_str_internal(&mut self, str: &'static str) -> PStr {
+  fn alloc_str_internal(str: &str) -> PStr {
     if let Some(p) = PStr::create_inline_opt(str) {
       p
-    } else if let Some(id) = self.interned_static_str.get(&str) {
-      PStr(PStrPrivateRepr::from_id(*id))
-    } else if let Some(id) = self.interned_string.remove(&str) {
-      // If for some reasons, the string is already allocated by regular strings,
-      // we will promote this to the permanent generation.
-      self.str_pointer_table[id as usize] = StringStoredInHeap::Permanent(str);
-      self.interned_static_str.insert(str, id);
-      PStr(PStrPrivateRepr::from_id(id))
     } else {
-      let id = self.str_pointer_table.len() as u32;
-      self.interned_static_str.insert(str, id);
-      self.str_pointer_table.push(StringStoredInHeap::Permanent(str));
-      PStr(PStrPrivateRepr::from_id(id))
+      PStr(PStrPrivateRepr::from_arc_str(Arc::from(str)))
     }
   }
 
   pub fn create_temp_counter(&self) -> TempPStrCounter {
-    TempPStrCounter::new(self.str_pointer_table.len() as u32)
+    TempPStrCounter::new(self.alloc_counter)
   }
 
   pub fn sync_temp_counter(&mut self, counter: &TempPStrCounter) {
-    let target = counter.current() as usize;
-    while self.str_pointer_table.len() < target {
-      self.str_pointer_table.push(StringStoredInHeap::Permanent(""));
-    }
+    self.alloc_counter = self.alloc_counter.max(counter.current());
   }
 
   /// This function can only be called in compiler code.
   pub fn alloc_temp_str(&mut self) -> PStr {
     // We use a more specialized implementation here,
     // since the generated strings are guaranteed to be globally unique.
-    let id = self.str_pointer_table.len() as u32;
+    let id = self.alloc_counter;
+    self.alloc_counter += 1;
     let string = format!("_t{id}");
     // We are going to run out of memory before hitting the case when we cannot inline alloc the string
-    let p = PStr::create_inline_opt(&string).expect("Too many temporary strings");
-    // We will never read from here, but we just need the ID to increase,
-    // so we push some cheap value there.
-    self.str_pointer_table.push(StringStoredInHeap::Permanent(""));
-    p
+    PStr::create_inline_opt(&string).expect("Too many temporary strings")
   }
 
-  pub fn alloc_string(&mut self, string: String) -> PStr {
-    match PStrPrivateRepr::from_string(string) {
-      Ok(repr) => PStr(repr),
-      Err(string) => {
-        let key = string.as_str();
-        if let Some(id) = self.interned_static_str.get(&key) {
-          PStr(PStrPrivateRepr::from_id(*id))
-        } else if let Some(id) = self.interned_string.get(&key) {
-          PStr(PStrPrivateRepr::from_id(*id))
-        } else {
-          let id = self.str_pointer_table.len() as u32;
-          // The string pointer is managed by the the string pointer table.
-          let unmanaged_str_ptr: &'static str = unsafe { (key as *const str).as_ref().unwrap() };
-          self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
-          self.interned_string.insert(unmanaged_str_ptr, id);
-          PStr(PStrPrivateRepr::from_id(id))
-        }
-      }
-    }
-  }
-
-  fn make_string_static(string: String) -> &'static str {
-    Box::leak(Box::new(string))
-  }
-
-  fn make_string_permanent(&mut self, p_str: PStr) {
-    if let Some(id) = p_str.0.as_heap_id() {
-      let stored_string = &mut self.str_pointer_table[id as usize];
-      match stored_string {
-        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
-        StringStoredInHeap::Temporary(s, _) => {
-          let removed = self.interned_string.remove(s.as_str()).expect(s);
-          let static_str: &'static str = Self::make_string_static(s.to_string());
-          *stored_string = StringStoredInHeap::Permanent(static_str);
-          debug_assert_eq!(removed, id);
-          self.interned_static_str.insert(static_str, id);
-        }
-      }
+  pub fn alloc_string(string: String) -> PStr {
+    if let Some(repr) = PStrPrivateRepr::from_str_opt(&string) {
+      PStr(repr)
+    } else {
+      PStr(PStrPrivateRepr::from_arc_str(Arc::from(string)))
     }
   }
 
   pub fn get_allocated_module_reference_opt(&self, parts: Vec<String>) -> Option<ModuleReference> {
-    let mut p_str_parts = Vec::new();
-    for part in &parts {
-      p_str_parts.push(self.get_allocated_str_opt(part)?);
-    }
+    let p_str_parts = parts.iter().map(|p| Self::alloc_str_internal(p)).collect_vec();
     self.interned_module_reference.get(p_str_parts.deref()).cloned()
   }
 
@@ -583,9 +524,6 @@ impl Heap {
       *id
     } else {
       let mod_ref = ModuleReference(self.module_reference_pointer_table.len());
-      for p in &parts {
-        self.make_string_permanent(*p);
-      }
       // We don't plan to gc module
       let leaked_parts = Vec::leak(parts);
       self.interned_module_reference.insert(leaked_parts, mod_ref);
@@ -595,8 +533,7 @@ impl Heap {
   }
 
   pub fn alloc_module_reference_from_string_vec(&mut self, parts: Vec<String>) -> ModuleReference {
-    let parts =
-      parts.into_iter().map(|p| self.alloc_str_internal(Self::make_string_static(p))).collect_vec();
+    let parts = parts.into_iter().map(Heap::alloc_string).collect_vec();
     self.alloc_module_reference(parts)
   }
 
@@ -604,107 +541,6 @@ impl Heap {
     let parts = vec![PStr::DUMMY_MODULE];
     self.alloc_module_reference(parts)
   }
-
-  /// Returns the statistics of heap to help debugging
-  pub fn stat(&self) -> String {
-    let total_slots = self.str_pointer_table.len();
-    let total_unused = self
-      .str_pointer_table
-      .iter()
-      .filter(|it| matches!(it, StringStoredInHeap::Deallocated(_)))
-      .count();
-    let total_used = total_slots - total_unused;
-    format!("Total slots: {total_slots}. Total used: {total_used}. Total unused: {total_unused}")
-  }
-
-  /// Returns all unmarked strings for debugging
-  pub fn debug_unmarked_strings(&self) -> String {
-    self
-      .str_pointer_table
-      .iter()
-      .filter_map(|stored| match stored {
-        StringStoredInHeap::Permanent(_)
-        | StringStoredInHeap::Deallocated(_)
-        | StringStoredInHeap::Temporary(_, true) => None,
-        StringStoredInHeap::Temporary(s, false) => Some(s),
-      })
-      .sorted()
-      .join("\n")
-  }
-
-  /// This function can be used for GC purposes only. Use with caution.
-  ///
-  /// This function informs the heap that a new module reference has been touched, so that
-  /// everything related to the module need to be marked again.
-  ///
-  /// Adding the full set of changed modules since the last GC is critical for the correctness of GC.
-  pub fn add_unmarked_module_reference(&mut self, module_reference: ModuleReference) {
-    self.unmarked_module_references.insert(module_reference);
-  }
-
-  /// This function can be used for GC purposes only. Use with caution.
-  ///
-  /// This function informs the heap that marking of a module has completed.
-  ///
-  /// It should be called at the end of one slice of incremental marking.
-  pub fn pop_unmarked_module_reference(&mut self) -> Option<ModuleReference> {
-    let item = self.unmarked_module_references.iter().next().copied()?;
-    self.unmarked_module_references.remove(&item);
-    Some(item)
-  }
-
-  /// This function can be used for GC purposes only. Use with caution.
-  ///
-  /// This function marks a string as being used, thus excluding it from the next around of GC.
-  ///
-  /// It should be called during incremental marking.
-  pub fn mark(&mut self, p_str: PStr) {
-    if let Some(id) = p_str.0.as_heap_id() {
-      match &mut self.str_pointer_table[id as usize] {
-        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
-        StringStoredInHeap::Temporary(_, marked) => *marked = true,
-      }
-    }
-  }
-
-  /// This function can be used for GC purposes only. Use with caution.
-  ///
-  /// This function is a no-op if there are remaining unmarked module references. If there are not,
-  /// then it will retain all the marked temporary strings, and purge the rest of the temporarily
-  /// strings. It doesn't compactify the heap.
-  ///
-  /// It should be called at the end of a GC round. Sweep is still incremental. The amount of work
-  /// is controled by `work_unit`.
-  pub fn sweep(&mut self, work_unit: usize) {
-    if !self.unmarked_module_references.is_empty() {
-      return;
-    }
-    let sweep_start = self.sweep_index;
-    let mut sweep_end = self.sweep_index + work_unit;
-    let max_sweep = self.str_pointer_table.len();
-    if sweep_end >= max_sweep {
-      self.sweep_index = 0;
-      sweep_end = max_sweep;
-    } else {
-      self.sweep_index = sweep_end
-    }
-    for string_stored in self.str_pointer_table[sweep_start..sweep_end].iter_mut() {
-      match string_stored {
-        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
-        StringStoredInHeap::Temporary(str, marked) => {
-          if *marked {
-            *marked = false;
-          } else {
-            self.interned_string.remove(str.as_str());
-            // In dev mode, we keep the string to help debug
-            *string_stored = StringStoredInHeap::deallocated(cfg!(test), str)
-          }
-        }
-      }
-    }
-  }
-
-  // compactify is not implemented for now. It's likely not needed for a while.
 }
 
 impl Default for Heap {
@@ -715,28 +551,30 @@ impl Default for Heap {
 
 #[cfg(test)]
 mod tests {
-  use super::{
-    Heap, ModuleReference, PStr, PStrPrivateRepr, PStrPrivateReprInline, StringStoredInHeap,
-  };
+  use super::{Heap, ModuleReference, PStr, TempPStrCounter};
   use dupe::Dupe;
   use pretty_assertions::assert_eq;
-  use std::{cmp::Ordering, ops::Deref};
+  use std::{cmp::Ordering, collections::HashSet};
+
+  #[test]
+  fn pstr_size_test() {
+    assert_eq!(16, std::mem::size_of::<PStr>());
+  }
 
   #[test]
   fn boilterplate() {
-    assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.storage.contains(&0));
-    assert!(
-      !format!(
-        "{:?} {:?}",
-        PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } })
-          .dupe(),
-        PStr::INVALID_PSTR
-      )
-      .is_empty()
-    );
+    let long = Heap::alloc_string("a_string_that_is_intentionally_very_long".to_string());
+    assert_eq!("PStr(\"\")", format!("{:?}", PStr::EMPTY.dupe()));
+    assert_eq!("PStr(\"b\")", format!("{:?}", PStr::LOWER_B));
+    assert_eq!("PStr(INVALID)", format!("{:?}", PStr::INVALID_PSTR.dupe()));
+    assert_eq!("PStr(\"a_string_that_is_intentionally_very_long\")", format!("{long:?}"));
+    assert_eq!(PStr::INVALID_PSTR, PStr::INVALID_PSTR);
 
-    StringStoredInHeap::deallocated(true, "");
-    StringStoredInHeap::deallocated(false, "");
+    let mut set = HashSet::new();
+    set.insert(long.dupe());
+    set.insert(PStr::LOWER_A);
+    set.insert(PStr::INVALID_PSTR);
+    assert!(set.contains(&long));
   }
 
   #[test]
@@ -745,17 +583,17 @@ mod tests {
     assert_eq!(1, heap.alloc_dummy_module_reference().0);
     let a1 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
     let b = PStr::LOWER_B;
-    let a2 = heap.alloc_string("aaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string());
-    heap.alloc_string("aa".to_string());
-    assert!(PStrPrivateRepr { heap_id: 0 }.dupe().eq(&PStrPrivateRepr { heap_id: 0 }));
-    assert!(heap.get_allocated_str_opt("aaaaaaaaaaaaaaaaaaaaaaaaaaa").is_some());
-    assert!(heap.get_allocated_str_opt("dddddddddddddddddddddddddddddddddddddddd").is_none());
+    let a2 = Heap::alloc_string("aaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string());
+    Heap::alloc_string("aa".to_string());
+    let temp_only = Heap::alloc_string("a_long_string_only_known_to_alloc_string".to_string());
+    assert_eq!(PStr::LOWER_C, heap.alloc_str_for_test("c"));
     assert!(a1.dupe().eq(&a2.dupe()));
     assert!(a1.ne(&b));
     assert!(a2.ne(&b));
     assert_eq!(Ordering::Equal, a1.cmp(&a2));
     assert_eq!(Some(Ordering::Equal), a1.partial_cmp(&a2));
-    a1.as_str(&heap);
+    assert_eq!("aaaaaaaaaaaaaaaaaaaaaaaaaaa", a1.as_str(&heap));
+    assert_eq!("a_long_string_only_known_to_alloc_string", temp_only.as_str(&heap));
     a2.as_str(&heap);
     b.dupe().as_str(&heap);
 
@@ -764,6 +602,9 @@ mod tests {
     let ma2 = heap.alloc_module_reference_from_string_vec(vec!["a".to_string()]);
     let std_a =
       heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "a".to_string()]);
+    let m_long = heap.alloc_module_reference_from_string_vec(vec![
+      "a_module_part_that_is_intentionally_very_long".to_string(),
+    ]);
     let m_dummy = heap.alloc_dummy_module_reference();
     assert_eq!(true, heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
     assert_eq!(true, heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
@@ -784,6 +625,7 @@ mod tests {
     assert_eq!("a", ma1.pretty_print(&heap));
     assert_eq!("b/d-c.sam", mb.to_filename(&heap));
     assert_eq!("b$d_c", mb.encoded(&heap));
+    assert_eq!("a_module_part_that_is_intentionally_very_long", m_long.pretty_print(&heap));
     assert_eq!("DUMMY", m_dummy.pretty_print(&heap));
     mb.dupe().pretty_print(&heap);
   }
@@ -797,20 +639,42 @@ mod tests {
   }
 
   #[test]
+  fn temp_str_name_test() {
+    let heap = &mut Heap::new();
+    // String allocations do not affect temp string names.
+    Heap::alloc_string("a_string_that_is_intentionally_very_long".to_string());
+    heap.alloc_str_for_test("another_intentionally_very_long_string");
+    assert_eq!("_t0", heap.alloc_temp_str().as_str(heap));
+    assert_eq!("_t1", heap.alloc_temp_str().as_str(heap));
+  }
+
+  #[test]
   fn pstr_comparison() {
     let heap = &mut Heap::new();
     let s1 = PStr::LOWER_A;
     let s2 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
+    let s3 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdase");
+    let a_with_nul = Heap::alloc_string("a\u{0}".to_string());
 
     assert!(s1 <= s1);
+    assert!(s1 < PStr::LOWER_B);
+    // Storage bytes tie; the size is the tiebreak.
+    assert_eq!(Ordering::Less, s1.cmp(&a_with_nul));
     assert!(s1 <= s2);
     assert!(s2 >= s2);
     assert!(s2 >= s1);
+    assert!(s2 < s3);
+    assert!(s2 != s3);
+    assert_eq!(Ordering::Equal, PStr::INVALID_PSTR.cmp(&PStr::INVALID_PSTR));
+    assert_eq!(Ordering::Greater, PStr::INVALID_PSTR.cmp(&s1));
+    assert_eq!(Ordering::Less, s2.cmp(&PStr::INVALID_PSTR));
+    assert_eq!(Some(Ordering::Less), s1.partial_cmp(&s2));
   }
 
   #[test]
   fn pstr_const_ctor_fns() {
     let heap = &Heap::new();
+    assert_eq!("", PStr::EMPTY.as_str(heap));
     assert_eq!("a", PStr::one_letter_literal('a').as_str(heap));
     assert_eq!("aa", PStr::two_letter_literal(b"aa").as_str(heap));
     assert_eq!("aaa", PStr::three_letter_literal(b"aaa").as_str(heap));
@@ -824,25 +688,9 @@ mod tests {
   }
 
   #[test]
-  fn heap_no_ops_on_inline_pstrs() {
-    let heap = &mut Heap::new();
-    heap.mark(PStr::LOWER_A);
-    heap.make_string_permanent(PStr::CONCAT);
-  }
-
-  #[test]
-  fn heap_mk_permanent_test() {
-    let heap = &mut Heap::new();
-    let s = heap.alloc_string("dfsdadasdasdasdasdasdasdasd".to_string());
-    heap.alloc_string("dfsdadasdasdasdasdasdasdasd".to_string());
-    heap.make_string_permanent(s);
-    heap.make_string_permanent(s);
-  }
-
-  #[test]
   fn heap_alloc_regular_before_permanent_string() {
     let heap = &mut Heap::new();
-    let s1 = heap.alloc_string(
+    let s1 = Heap::alloc_string(
       "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew"
         .to_string(),
     );
@@ -865,7 +713,7 @@ mod tests {
     let s2 = heap.alloc_str_for_test(
       "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew",
     );
-    let s3 = heap.alloc_string(
+    let s3 = Heap::alloc_string(
       "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew"
         .to_string(),
     );
@@ -874,93 +722,17 @@ mod tests {
   }
 
   #[test]
-  fn gc_successful_sweep_test() {
-    let heap = &mut Heap::new();
-    heap.alloc_string("a_string_that_is_intentionally_very_long".to_string());
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-    assert_eq!("a_string_that_is_intentionally_very_long", heap.debug_unmarked_strings());
-    heap.sweep(1000);
-    assert_eq!("Total slots: 1. Total used: 0. Total unused: 1", heap.stat());
-    assert_eq!("", heap.debug_unmarked_strings());
-  }
-
-  #[test]
-  fn gc_do_not_collect_permanent_sweep_test() {
-    let heap = &mut Heap::new();
-    let p = heap.alloc_string("a_string_that_is_intentionally_very_long".to_string());
-    heap.make_string_permanent(p);
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-    heap.sweep(1000);
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-    assert_eq!("", heap.debug_unmarked_strings());
-  }
-
-  #[test]
-  fn gc_partial_sweep_test() {
-    let heap = &mut Heap::new();
-    heap.alloc_string("a_string_that_is_intentionally_very_long_1".to_string());
-    heap.alloc_string("a_string_that_is_intentionally_very_long_2".to_string());
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
-    heap.sweep(0);
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
-    heap.sweep(1);
-    assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
-    heap.sweep(1);
-    assert_eq!("Total slots: 2. Total used: 0. Total unused: 2", heap.stat());
-    heap.sweep(1);
-    assert_eq!("Total slots: 2. Total used: 0. Total unused: 2", heap.stat());
-    assert_eq!(1, heap.sweep_index);
-  }
-
-  #[test]
-  fn gc_marked_full_sweep_test() {
-    let heap = &mut Heap::new();
-    let p1 = heap.alloc_str_for_test("a_string_that_is_intentionally_very_long_static1");
-    heap.alloc_str_for_test("a_string_that_is_intentionally_very_long_static2");
-    let p2 = heap.alloc_string("a_string_that_is_intentionally_very_long_string1".to_string());
-    heap.alloc_string("a_string_that_is_intentionally_very_long_string2".to_string());
-    heap.mark(p1);
-    heap.mark(p2);
-    assert_eq!("Total slots: 4. Total used: 4. Total unused: 0", heap.stat());
-    heap.sweep(1000);
-    assert_eq!("Total slots: 4. Total used: 3. Total unused: 1", heap.stat());
-  }
-
-  #[test]
-  fn gc_has_unmarked_no_op_sweep_test() {
-    let heap = &mut Heap::new();
-    heap.alloc_string("a_string_that_is_intentionally_very_long_1".to_string());
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-    heap.add_unmarked_module_reference(ModuleReference::DUMMY);
-    heap.sweep(1000);
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-  }
-
-  #[test]
-  fn gc_mark_unmark_module_reference_sweep_test() {
-    let heap = &mut Heap::new();
-    heap.alloc_string("a_string_that_is_intentionally_very_long_1".to_string());
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-    heap.add_unmarked_module_reference(ModuleReference::DUMMY);
-    heap.sweep(1000);
-    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
-    assert!(heap.pop_unmarked_module_reference().is_some());
-    assert!(heap.pop_unmarked_module_reference().is_none());
-    heap.sweep(1000);
-    assert_eq!("Total slots: 1. Total used: 0. Total unused: 1", heap.stat());
+  fn alloc_same_string_twice_still_equal_test() {
+    let p1 = Heap::alloc_string("a_string_that_is_intentionally_very_long_string1".to_string());
+    let p2 = Heap::alloc_string("a_string_that_is_intentionally_very_long_string1".to_string());
+    assert_eq!(p1, p2);
   }
 
   #[should_panic]
   #[test]
   fn heap_str_crash() {
     let heap = Heap::new();
-    PStr(PStrPrivateRepr::from_id(1000)).as_str(&heap);
-  }
-
-  #[should_panic]
-  #[test]
-  fn heap_str_stored_crash() {
-    let _ = StringStoredInHeap::Deallocated(None).deref();
+    PStr::INVALID_PSTR.as_str(&heap);
   }
 
   #[should_panic]
@@ -978,13 +750,16 @@ mod tests {
     counter.alloc_temp_str();
     counter.alloc_temp_str();
     // Counter allocates independently, not through heap
-    assert_eq!(0, heap.str_pointer_table.len());
     assert_eq!(3, counter.current());
-    // Sync grows the heap table to match the counter
+    // Sync moves the heap counter forward to match.
     heap.sync_temp_counter(&counter);
-    assert_eq!(3, heap.str_pointer_table.len());
+    assert_eq!("_t3", heap.alloc_temp_str().as_str(&heap));
+    // Syncing with a stale counter does not move the counter backwards.
+    let stale_counter = TempPStrCounter::new(0);
+    heap.sync_temp_counter(&stale_counter);
+    assert_eq!("_t4", heap.alloc_temp_str().as_str(&heap));
     // After sync, new counter starts at the synced position
     let counter2 = heap.create_temp_counter();
-    assert_eq!(3, counter2.current());
+    assert_eq!(5, counter2.current());
   }
 }

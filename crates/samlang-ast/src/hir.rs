@@ -4,7 +4,7 @@ use itertools::Itertools;
 use samlang_heap::{ModuleReference, PStr};
 use std::{hash::Hash, sync::Arc, sync::LazyLock};
 
-#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypeName {
   /// When it is None, it is a generic type
   pub module_reference: Option<ModuleReference>,
@@ -136,7 +136,7 @@ impl ClosureTypeDefinition {
   pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
     format!(
       "closure type {} = {}",
-      name_with_tparams(heap, self.name, &self.type_parameters),
+      name_with_tparams(heap, self.name.dupe(), &self.type_parameters),
       self.function_type.pretty_print(heap)
     )
   }
@@ -157,7 +157,7 @@ pub struct TypeDefinition {
 
 impl TypeDefinition {
   pub fn pretty_print(&self, heap: &samlang_heap::Heap) -> String {
-    let id_part = name_with_tparams(heap, self.name, &self.type_parameters);
+    let id_part = name_with_tparams(heap, self.name.dupe(), &self.type_parameters);
     match &self.mappings {
       TypeDefinitionMappings::Struct(types) => {
         format!(
@@ -249,7 +249,7 @@ impl VariableName {
   }
 }
 
-#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FunctionName {
   pub type_name: TypeName,
   pub fn_name: PStr,
@@ -651,7 +651,7 @@ impl Function {
   }
 }
 
-#[derive(Debug, Clone, Dupe, Copy)]
+#[derive(Debug, Clone, Dupe)]
 pub struct GlobalString(pub PStr);
 
 #[derive(Debug)]

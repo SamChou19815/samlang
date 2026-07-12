@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use samlang_ast::hir::GlobalString;
 use samlang_heap::PStr;
 use std::collections::BTreeSet;
@@ -16,7 +17,7 @@ impl StringManager {
   }
 
   pub(super) fn allocate(&mut self, str: PStr) -> GlobalString {
-    self.global_variable_reference_map.insert(str);
+    self.global_variable_reference_map.insert(str.dupe());
     GlobalString(str)
   }
 }

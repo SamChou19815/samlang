@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+  use dupe::Dupe;
+
   use super::super::{
     ssa_analysis::SsaAnalysisResult,
     type_::{
@@ -109,7 +111,7 @@ mod tests {
 
   #[test]
   fn is_subtype_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
     let mut error_set = ErrorSet::new();
@@ -197,7 +199,7 @@ mod tests {
   fn validate_type_instantiation_tests() {
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::DUMMY,
@@ -258,19 +260,21 @@ mod tests {
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
     cx.validate_type_instantiation_allow_abstract_types(&Type::Any(Reason::dummy(), false));
-    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_nominal_type(str_tparam));
+    cx.validate_type_instantiation_allow_abstract_types(
+      &builder.simple_nominal_type(str_tparam.dupe()),
+    );
     cx.validate_type_instantiation_allow_abstract_types(
       &builder.general_nominal_type(str_tparam, vec![builder.int_type()]),
     );
     cx.validate_type_instantiation_allow_abstract_types(&builder.generic_type(str_t));
-    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_nominal_type(str_a));
+    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_nominal_type(str_a.dupe()));
     cx.validate_type_instantiation_allow_abstract_types(
-      &builder.general_nominal_type(str_a, vec![builder.int_type(), builder.int_type()]),
+      &builder.general_nominal_type(str_a.dupe(), vec![builder.int_type(), builder.int_type()]),
     );
-    cx.validate_type_instantiation_allow_abstract_types(
-      &builder
-        .general_nominal_type(str_a, vec![builder.int_type(), builder.simple_nominal_type(str_b)]),
-    );
+    cx.validate_type_instantiation_allow_abstract_types(&builder.general_nominal_type(
+      str_a,
+      vec![builder.int_type(), builder.simple_nominal_type(str_b.dupe())],
+    ));
     cx.validate_type_instantiation_strictly(&builder.simple_nominal_type(str_b));
 
     let expected_errors = r#"

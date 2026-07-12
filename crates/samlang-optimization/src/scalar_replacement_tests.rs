@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
   use super::super::scalar_replacement;
+  use dupe::Dupe;
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
@@ -72,24 +73,24 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO, ONE],
         },
         Statement::IndexedAccess {
-          name: v0,
+          name: v0.dupe(),
           type_: INT_32_TYPE,
-          pointer_expression: Expression::var_name(s, Type::Id(pair)),
+          pointer_expression: Expression::var_name(s.dupe(), Type::Id(pair)),
           index: 0,
         },
         Statement::IndexedAccess {
-          name: v1,
+          name: v1.dupe(),
           type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(s, Type::Id(pair)),
           index: 1,
         },
         Statement::binary(
-          r,
+          r.dupe(),
           BinaryOperator::PLUS,
           Expression::var_name(v0, INT_32_TYPE),
           Expression::var_name(v1, INT_32_TYPE),
@@ -110,7 +111,7 @@ mod tests {
     let pair = id_type(heap, table, "Pair");
     assert_correctly_optimized(
       vec![Statement::StructInit {
-        struct_variable_name: s,
+        struct_variable_name: s.dupe(),
         type_name: pair,
         expression_list: vec![ZERO, ONE],
       }],
@@ -130,7 +131,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO, ONE],
         },
@@ -162,12 +163,12 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s1,
+          struct_variable_name: s1.dupe(),
           type_name: inner,
           expression_list: vec![ZERO],
         },
         Statement::StructInit {
-          struct_variable_name: s2,
+          struct_variable_name: s2.dupe(),
           type_name: outer,
           expression_list: vec![Expression::var_name(s1, Type::Id(inner))],
         },
@@ -189,12 +190,12 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
         Statement::Cast {
-          name: cast_v,
+          name: cast_v.dupe(),
           type_: INT_32_TYPE,
           assigned_expression: Expression::var_name(s, Type::Id(pair)),
         },
@@ -216,13 +217,13 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
-        Statement::LateInitDeclaration { name: li, type_: Type::Id(pair) },
+        Statement::LateInitDeclaration { name: li.dupe(), type_: Type::Id(pair) },
         Statement::LateInitAssignment {
-          name: li,
+          name: li.dupe(),
           assigned_expression: Expression::var_name(s, Type::Id(pair)),
         },
       ],
@@ -243,7 +244,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
@@ -252,9 +253,9 @@ mod tests {
           s1: vec![],
           s2: vec![],
           final_assignments: vec![IfElseFinalAssignment {
-            name: r,
+            name: r.dupe(),
             type_: Type::Id(pair),
-            e1: Expression::var_name(s, Type::Id(pair)),
+            e1: Expression::var_name(s.dupe(), Type::Id(pair)),
             e2: Expression::var_name(s, Type::Id(pair)),
           }],
         },
@@ -276,13 +277,13 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: lv,
+            name: lv.dupe(),
             type_: Type::Id(pair),
             initial_value: Expression::var_name(s, Type::Id(pair)),
             loop_value: Expression::var_name(lv, Type::Id(pair)),
@@ -308,11 +309,16 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
-        Statement::binary(r, BinaryOperator::PLUS, Expression::var_name(s, Type::Id(pair)), ZERO),
+        Statement::binary(
+          r.dupe(),
+          BinaryOperator::PLUS,
+          Expression::var_name(s, Type::Id(pair)),
+          ZERO,
+        ),
       ],
       Expression::var_name(r, INT_32_TYPE),
       heap,
@@ -332,13 +338,13 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
-        Statement::Not { name: n, operand: Expression::var_name(s, Type::Id(pair)) },
+        Statement::Not { name: n, operand: Expression::var_name(s.dupe(), Type::Id(pair)) },
         Statement::IsPointer {
-          name: p,
+          name: p.dupe(),
           pointer_type: pair,
           operand: Expression::var_name(s, Type::Id(pair)),
         },
@@ -361,7 +367,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
@@ -373,7 +379,7 @@ mod tests {
             loop_value: ZERO,
           }],
           statements: vec![Statement::Break(Expression::var_name(s, Type::Id(pair)))],
-          break_collector: Some(VariableName { name: bc, type_: Type::Id(pair) }),
+          break_collector: Some(VariableName { name: bc.dupe(), type_: Type::Id(pair) }),
         },
       ],
       Expression::var_name(bc, Type::Id(pair)),
@@ -396,12 +402,12 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: cx,
+          struct_variable_name: cx.dupe(),
           type_name: cx_t,
           expression_list: vec![ZERO],
         },
         Statement::ClosureInit {
-          closure_variable_name: c,
+          closure_variable_name: c.dupe(),
           closure_type_name: cl_t,
           function_name: FunctionNameExpression {
             name: f,
@@ -416,7 +422,7 @@ mod tests {
           callee: Callee::Variable(VariableName { name: c, type_: Type::Id(cl_t) }),
           arguments: vec![],
           return_type: INT_32_TYPE,
-          return_collector: Some(r),
+          return_collector: Some(r.dupe()),
         },
       ],
       Expression::var_name(r, INT_32_TYPE),
@@ -436,7 +442,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::ClosureInit {
-          closure_variable_name: c,
+          closure_variable_name: c.dupe(),
           closure_type_name: cl_t,
           function_name: FunctionNameExpression {
             name: f,
@@ -473,7 +479,7 @@ mod tests {
     let f = FunctionName::new_for_test(heap.alloc_str_for_test("f"));
     assert_correctly_optimized(
       vec![Statement::ClosureInit {
-        closure_variable_name: c,
+        closure_variable_name: c.dupe(),
         closure_type_name: cl_t,
         function_name: FunctionNameExpression {
           name: f,
@@ -504,12 +510,12 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: cx,
+          struct_variable_name: cx.dupe(),
           type_name: cx_t,
           expression_list: vec![ZERO, ONE],
         },
         Statement::ClosureInit {
-          closure_variable_name: c,
+          closure_variable_name: c.dupe(),
           closure_type_name: cl_t,
           function_name: FunctionNameExpression {
             name: f,
@@ -549,21 +555,21 @@ mod tests {
     // s1 = [x, ?]; v = s1[0]; s2 = [v, z]; w = s2[1] => return z
     assert_correctly_optimized(
       vec![
-        Statement::binary(x, BinaryOperator::PLUS, ZERO, ONE),
-        Statement::binary(z, BinaryOperator::PLUS, ONE, ONE),
+        Statement::binary(x.dupe(), BinaryOperator::PLUS, ZERO, ONE),
+        Statement::binary(z.dupe(), BinaryOperator::PLUS, ONE, ONE),
         Statement::StructInit {
-          struct_variable_name: s1,
+          struct_variable_name: s1.dupe(),
           type_name: a,
           expression_list: vec![Expression::var_name(x, INT_32_TYPE), ZERO],
         },
         Statement::IndexedAccess {
-          name: v,
+          name: v.dupe(),
           type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(s1, Type::Id(a)),
           index: 0,
         },
         Statement::StructInit {
-          struct_variable_name: s2,
+          struct_variable_name: s2.dupe(),
           type_name: b,
           expression_list: vec![
             Expression::var_name(v, INT_32_TYPE),
@@ -571,7 +577,7 @@ mod tests {
           ],
         },
         Statement::IndexedAccess {
-          name: w,
+          name: w.dupe(),
           type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(s2, Type::Id(b)),
           index: 1,
@@ -597,21 +603,21 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO, ONE],
         },
         Statement::IfElse {
           condition: ONE,
           s1: vec![Statement::IndexedAccess {
-            name: v,
+            name: v.dupe(),
             type_: INT_32_TYPE,
             pointer_expression: Expression::var_name(s, Type::Id(pair)),
             index: 0,
           }],
           s2: vec![],
           final_assignments: vec![IfElseFinalAssignment {
-            name: r,
+            name: r.dupe(),
             type_: INT_32_TYPE,
             e1: Expression::var_name(v, INT_32_TYPE),
             e2: ONE,
@@ -636,7 +642,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
@@ -670,20 +676,20 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: lv,
+            name: lv.dupe(),
             type_: INT_32_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(lv, INT_32_TYPE),
           }],
           statements: vec![
             Statement::IndexedAccess {
-              name: v,
+              name: v.dupe(),
               type_: INT_32_TYPE,
               pointer_expression: Expression::var_name(s, Type::Id(pair)),
               index: 0,
@@ -730,27 +736,27 @@ mod tests {
       vec![
         // Tracked struct that gets dropped.
         Statement::StructInit {
-          struct_variable_name: s_dropped,
+          struct_variable_name: s_dropped.dupe(),
           type_name: pair,
           expression_list: vec![ZERO, ONE],
         },
         Statement::IndexedAccess {
-          name: v_loaded,
+          name: v_loaded.dupe(),
           type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(s_dropped, Type::Id(pair)),
           index: 0,
         },
         // Escaping struct so its StructInit goes through the "else" branch of rewriter.
         Statement::StructInit {
-          struct_variable_name: escaping_struct,
+          struct_variable_name: escaping_struct.dupe(),
           type_name: other_t,
-          expression_list: vec![Expression::var_name(v_loaded, INT_32_TYPE)],
+          expression_list: vec![Expression::var_name(v_loaded.dupe(), INT_32_TYPE)],
         },
         // Cast forces escaping_struct to escape, so its StructInit isn't dropped.
         Statement::Cast {
           name: heap.alloc_str_for_test("forced_escape"),
           type_: INT_32_TYPE,
-          assigned_expression: Expression::var_name(escaping_struct, Type::Id(other_t)),
+          assigned_expression: Expression::var_name(escaping_struct.dupe(), Type::Id(other_t)),
         },
         // IndexedAccess on a non-tracked pointer — exercises the "else" branch.
         Statement::IndexedAccess {
@@ -761,7 +767,7 @@ mod tests {
         },
         // ClosureInit kept (escapes via return).
         Statement::ClosureInit {
-          closure_variable_name: cl_keep,
+          closure_variable_name: cl_keep.dupe(),
           closure_type_name: cl_t,
           function_name: FunctionNameExpression {
             name: f_name,
@@ -770,30 +776,33 @@ mod tests {
               return_type: Box::new(INT_32_TYPE),
             },
           },
-          context: Expression::var_name(v_loaded, INT_32_TYPE),
+          context: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
         },
         // Other statement kinds with operands referencing v_loaded (which gets substituted to 0).
         Statement::Binary(samlang_ast::mir::Binary {
           name: bin_name,
           operator: BinaryOperator::PLUS,
-          e1: Expression::var_name(v_loaded, INT_32_TYPE),
+          e1: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
           e2: ONE,
         }),
-        Statement::Not { name: not_name, operand: Expression::var_name(v_loaded, INT_32_TYPE) },
+        Statement::Not {
+          name: not_name.dupe(),
+          operand: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
+        },
         Statement::IsPointer {
           name: isp_name,
           pointer_type: pair,
-          operand: Expression::var_name(v_loaded, INT_32_TYPE),
+          operand: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
         },
         Statement::Cast {
           name: cast_name,
           type_: INT_32_TYPE,
-          assigned_expression: Expression::var_name(v_loaded, INT_32_TYPE),
+          assigned_expression: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
         },
-        Statement::LateInitDeclaration { name: li_name, type_: INT_32_TYPE },
+        Statement::LateInitDeclaration { name: li_name.dupe(), type_: INT_32_TYPE },
         Statement::LateInitAssignment {
           name: li_name,
-          assigned_expression: Expression::var_name(v_loaded, INT_32_TYPE),
+          assigned_expression: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
         },
         // SingleIf with a body that references v_loaded.
         Statement::SingleIf {
@@ -802,7 +811,7 @@ mod tests {
           statements: vec![Statement::Cast {
             name: heap.alloc_str_for_test("inner_cast"),
             type_: INT_32_TYPE,
-            assigned_expression: Expression::var_name(v_loaded, INT_32_TYPE),
+            assigned_expression: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
           }],
         },
         // IfElse with final assignments referencing v_loaded.
@@ -813,7 +822,7 @@ mod tests {
           final_assignments: vec![IfElseFinalAssignment {
             name: if_r,
             type_: INT_32_TYPE,
-            e1: Expression::var_name(v_loaded, INT_32_TYPE),
+            e1: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
             e2: ONE,
           }],
         },
@@ -822,10 +831,10 @@ mod tests {
           loop_variables: vec![GenenalLoopVariable {
             name: lv,
             type_: INT_32_TYPE,
-            initial_value: Expression::var_name(v_loaded, INT_32_TYPE),
-            loop_value: Expression::var_name(v_loaded, INT_32_TYPE),
+            initial_value: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
+            loop_value: Expression::var_name(v_loaded.dupe(), INT_32_TYPE),
           }],
-          statements: vec![Statement::Break(Expression::var_name(v_loaded, INT_32_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(v_loaded.dupe(), INT_32_TYPE))],
           break_collector: Some(VariableName { name: bc, type_: INT_32_TYPE }),
         },
         // Call with arguments referencing v_loaded.
@@ -876,7 +885,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: s,
+          struct_variable_name: s.dupe(),
           type_name: pair,
           expression_list: vec![ZERO],
         },
@@ -911,7 +920,7 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::ClosureInit {
-          closure_variable_name: c,
+          closure_variable_name: c.dupe(),
           closure_type_name: cl_t,
           function_name: FunctionNameExpression {
             name: f,
@@ -926,7 +935,7 @@ mod tests {
           callee: Callee::Variable(VariableName { name: c, type_: Type::Id(cl_t) }),
           arguments: vec![ONE, Expression::i32(42)],
           return_type: INT_32_TYPE,
-          return_collector: Some(r),
+          return_collector: Some(r.dupe()),
         },
       ],
       Expression::var_name(r, INT_32_TYPE),
@@ -979,24 +988,24 @@ mod tests {
         type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
           Statement::StructInit {
-            struct_variable_name: s,
+            struct_variable_name: s.dupe(),
             type_name: pair,
             expression_list: vec![Expression::i32(3), Expression::i32(5)],
           },
           Statement::IndexedAccess {
-            name: v0,
+            name: v0.dupe(),
             type_: INT_32_TYPE,
-            pointer_expression: Expression::var_name(s, Type::Id(pair)),
+            pointer_expression: Expression::var_name(s.dupe(), Type::Id(pair)),
             index: 0,
           },
           Statement::IndexedAccess {
-            name: v1,
+            name: v1.dupe(),
             type_: INT_32_TYPE,
             pointer_expression: Expression::var_name(s, Type::Id(pair)),
             index: 1,
           },
           Statement::binary(
-            r,
+            r.dupe(),
             BinaryOperator::PLUS,
             Expression::var_name(v0, INT_32_TYPE),
             Expression::var_name(v1, INT_32_TYPE),
@@ -1033,18 +1042,18 @@ mod tests {
         type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
           Statement::StructInit {
-            struct_variable_name: s,
+            struct_variable_name: s.dupe(),
             type_name: pair,
             expression_list: vec![Expression::i32(3), Expression::i32(5)],
           },
           Statement::IndexedAccess {
-            name: v0,
+            name: v0.dupe(),
             type_: INT_32_TYPE,
             pointer_expression: Expression::var_name(s, Type::Id(pair)),
             index: 0,
           },
           Statement::binary(
-            r,
+            r.dupe(),
             BinaryOperator::PLUS,
             Expression::var_name(v0, INT_32_TYPE),
             Expression::i32(5),
@@ -1075,7 +1084,7 @@ mod tests {
         type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
           Statement::ClosureInit {
-            closure_variable_name: c,
+            closure_variable_name: c.dupe(),
             closure_type_name: cl_t,
             function_name: FunctionNameExpression {
               name: f,
@@ -1090,7 +1099,7 @@ mod tests {
             callee: Callee::Variable(VariableName { name: c, type_: Type::Id(cl_t) }),
             arguments: vec![Expression::i32(7)],
             return_type: INT_32_TYPE,
-            return_collector: Some(r),
+            return_collector: Some(r.dupe()),
           },
         ],
         return_value: Expression::var_name(r, INT_32_TYPE),
@@ -1118,21 +1127,21 @@ mod tests {
         type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
           Statement::StructInit {
-            struct_variable_name: s,
+            struct_variable_name: s.dupe(),
             type_name: pair,
             expression_list: vec![Expression::i32(42), ZERO],
           },
           Statement::IfElse {
             condition: ONE,
             s1: vec![Statement::IndexedAccess {
-              name: v,
+              name: v.dupe(),
               type_: INT_32_TYPE,
               pointer_expression: Expression::var_name(s, Type::Id(pair)),
               index: 0,
             }],
             s2: vec![],
             final_assignments: vec![IfElseFinalAssignment {
-              name: r,
+              name: r.dupe(),
               type_: INT_32_TYPE,
               e1: Expression::var_name(v, INT_32_TYPE),
               e2: Expression::i32(0),
@@ -1163,7 +1172,7 @@ mod tests {
       parameters: Vec::new(),
       type_: Type::new_fn_unwrapped(Vec::new(), Type::Id(pair)),
       body: vec![Statement::StructInit {
-        struct_variable_name: s,
+        struct_variable_name: s.dupe(),
         type_name: pair,
         expression_list: vec![Expression::i32(10), Expression::i32(20)],
       }],
@@ -1177,12 +1186,12 @@ mod tests {
       type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
       body: vec![
         Statement::StructInit {
-          struct_variable_name: s2,
+          struct_variable_name: s2.dupe(),
           type_name: pair,
           expression_list: vec![Expression::i32(10), Expression::i32(20)],
         },
         Statement::IndexedAccess {
-          name: v,
+          name: v.dupe(),
           type_: INT_32_TYPE,
           pointer_expression: Expression::var_name(s2, Type::Id(pair)),
           index: 1,
@@ -1220,21 +1229,21 @@ mod tests {
         parameters: Vec::new(),
         type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
-          Statement::binary(x, BinaryOperator::PLUS, Expression::i32(3), Expression::i32(4)),
-          Statement::binary(z, BinaryOperator::PLUS, Expression::i32(1), Expression::i32(2)),
+          Statement::binary(x.dupe(), BinaryOperator::PLUS, Expression::i32(3), Expression::i32(4)),
+          Statement::binary(z.dupe(), BinaryOperator::PLUS, Expression::i32(1), Expression::i32(2)),
           Statement::StructInit {
-            struct_variable_name: s1,
+            struct_variable_name: s1.dupe(),
             type_name: a,
             expression_list: vec![Expression::var_name(x, INT_32_TYPE), ZERO],
           },
           Statement::IndexedAccess {
-            name: v,
+            name: v.dupe(),
             type_: INT_32_TYPE,
             pointer_expression: Expression::var_name(s1, Type::Id(a)),
             index: 0,
           },
           Statement::StructInit {
-            struct_variable_name: s2,
+            struct_variable_name: s2.dupe(),
             type_name: b,
             expression_list: vec![
               Expression::var_name(v, INT_32_TYPE),
@@ -1242,7 +1251,7 @@ mod tests {
             ],
           },
           Statement::IndexedAccess {
-            name: w,
+            name: w.dupe(),
             type_: INT_32_TYPE,
             pointer_expression: Expression::var_name(s2, Type::Id(b)),
             index: 1,
@@ -1273,20 +1282,20 @@ mod tests {
         type_: Type::new_fn_unwrapped(Vec::new(), INT_32_TYPE),
         body: vec![
           Statement::StructInit {
-            struct_variable_name: s,
+            struct_variable_name: s.dupe(),
             type_name: pair,
             expression_list: vec![Expression::i32(0), ZERO],
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
-              name: lv,
+              name: lv.dupe(),
               type_: INT_32_TYPE,
               initial_value: ZERO,
               loop_value: Expression::var_name(lv, INT_32_TYPE),
             }],
             statements: vec![
               Statement::IndexedAccess {
-                name: v,
+                name: v.dupe(),
                 type_: INT_32_TYPE,
                 pointer_expression: Expression::var_name(s, Type::Id(pair)),
                 index: 0,
@@ -1323,7 +1332,7 @@ mod tests {
           expression_list: vec![ZERO],
         },
         Statement::IndexedAccess {
-          name: v,
+          name: v.dupe(),
           type_: INT_32_TYPE,
           pointer_expression: Expression::i32(0),
           index: 0,

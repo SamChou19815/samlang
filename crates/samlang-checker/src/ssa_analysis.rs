@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use samlang_ast::{
   Location,
   source::{
@@ -32,7 +33,7 @@ impl SsaLocalStackedContext {
       if let Some(v) = value {
         if !for_type {
           for captured_level in (level + 1)..(self.captured_values_stack.len()) {
-            self.captured_values_stack[captured_level].insert(*name, *v);
+            self.captured_values_stack[captured_level].insert(name.dupe(), *v);
           }
         }
         return Some(v);
@@ -89,14 +90,14 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_module(&mut self, module: &Module<()>) {
     for import in &module.imports {
       for member in &import.imported_members {
-        self.define_id(member.name, member.loc);
+        self.define_id(member.name.dupe(), member.loc);
       }
     }
 
     // Hoist toplevel names
     for toplevel in &module.toplevels {
       let name = toplevel.name();
-      self.define_id(name.name, name.loc);
+      self.define_id(name.name.dupe(), name.loc);
     }
 
     for toplevel in &module.toplevels {
@@ -150,7 +151,7 @@ impl<'a> SsaAnalysisState<'a> {
               self.visit_annot(annot)
             }
             for name in names {
-              self.define_id(name.name, name.loc);
+              self.define_id(name.name.dupe(), name.loc);
             }
           }
         }
@@ -161,7 +162,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.push_scope();
         for m in toplevel.members_iter() {
           let id = &m.name;
-          self.define_id(id.name, id.loc);
+          self.define_id(id.name.dupe(), id.loc);
         }
         self.context.pop_scope();
         // Visit instance methods
@@ -171,7 +172,7 @@ impl<'a> SsaAnalysisState<'a> {
         }
         for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
           let id = &tparam.name;
-          self.define_id(id.name, id.loc);
+          self.define_id(id.name.dupe(), id.loc);
         }
         self.visit_members(toplevel, true);
         self.context.pop_scope();
@@ -217,7 +218,7 @@ impl<'a> SsaAnalysisState<'a> {
     self.context.push_scope();
     for param in member.parameters.parameters.iter() {
       let id = &param.name;
-      self.define_id(id.name, id.loc);
+      self.define_id(id.name.dupe(), id.loc);
     }
     if let Some(b) = body {
       self.visit_expression(b);
@@ -245,7 +246,7 @@ impl<'a> SsaAnalysisState<'a> {
       }
       for tparam in parameters {
         let id = &tparam.name;
-        self.define_id(id.name, id.loc);
+        self.define_id(id.name.dupe(), id.loc);
       }
       for tparam in parameters {
         if let Some(bound) = &tparam.bound {
@@ -303,7 +304,7 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Lambda(e) => {
         self.context.push_scope();
         for OptionallyAnnotatedId { name, type_: _, annotation } in &e.parameters.parameters {
-          self.define_id(name.name, name.loc);
+          self.define_id(name.name.dupe(), name.loc);
           if let Some(annot) = annotation {
             self.visit_annot(annot)
           }
@@ -386,7 +387,7 @@ impl<'a> SsaAnalysisState<'a> {
           self.visit_tuple_pattern(p);
         }
       }
-      pattern::MatchingPattern::Id(id, ()) => self.define_id(id.name, id.loc),
+      pattern::MatchingPattern::Id(id, ()) => self.define_id(id.name.dupe(), id.loc),
       pattern::MatchingPattern::Wildcard { .. } => {}
       pattern::MatchingPattern::Or { patterns, .. } => {
         let mut iter = patterns.iter();
@@ -463,7 +464,7 @@ impl<'a> SsaAnalysisState<'a> {
   }
 
   fn define_id(&mut self, name: PStr, loc: Location) {
-    if let Some(previous) = self.context.insert(name, loc)
+    if let Some(previous) = self.context.insert(name.dupe(), loc)
       && !self.invalid_defines.contains(&loc)
     {
       // Never error on an illegal define twice, since they might be visited multiple times.
@@ -477,8 +478,8 @@ impl<'a> SsaAnalysisState<'a> {
     if let Some(definition) = self.context.get(name, for_type) {
       self.use_define_map.insert(loc, *definition);
     } else {
-      self.unbound_names.insert(*name);
-      self.error_set.report_cannot_resolve_name_error(loc, *name);
+      self.unbound_names.insert(name.dupe());
+      self.error_set.report_cannot_resolve_name_error(loc, name.dupe());
     }
   }
 }

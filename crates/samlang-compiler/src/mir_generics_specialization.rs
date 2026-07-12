@@ -1,3 +1,4 @@
+use dupe::{Dupe, IterDupedExt};
 use itertools::Itertools;
 use samlang_ast::{hir, mir};
 use samlang_heap::{Heap, PStr};
@@ -57,13 +58,13 @@ impl Rewriter {
     match stmt {
       hir::Statement::Not { name, operand } => {
         collector.push(mir::Statement::Not {
-          name: *name,
+          name: name.dupe(),
           operand: self.rewrite_expr(heap, operand, generics_replacement_map),
         });
       }
       hir::Statement::Binary { name, operator, e1, e2 } => {
         collector.push(mir::Statement::Binary(mir::Statement::binary_unwrapped(
-          *name,
+          name.dupe(),
           *operator,
           self.rewrite_expr(heap, e1, generics_replacement_map),
           self.rewrite_expr(heap, e2, generics_replacement_map),
@@ -71,7 +72,7 @@ impl Rewriter {
       }
       hir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         collector.push(mir::Statement::IndexedAccess {
-          name: *name,
+          name: name.dupe(),
           type_: self.rewrite_type(heap, type_, generics_replacement_map),
           pointer_expression: self.rewrite_expr(heap, pointer_expression, generics_replacement_map),
           index: *index,
@@ -85,14 +86,14 @@ impl Rewriter {
             ),
             hir::Callee::Variable(hir::VariableName { name, type_ }) => {
               mir::Callee::Variable(mir::VariableName {
-                name: *name,
+                name: name.dupe(),
                 type_: self.rewrite_type(heap, type_, generics_replacement_map),
               })
             }
           },
           arguments: self.rewrite_expressions(heap, arguments, generics_replacement_map),
           return_type: self.rewrite_type(heap, return_type, generics_replacement_map),
-          return_collector: *return_collector,
+          return_collector: return_collector.dupe(),
         });
       }
       hir::Statement::ConditionalDestructure {
@@ -117,13 +118,13 @@ impl Rewriter {
 
             let mut tag_check_stmts = Vec::new();
             tag_check_stmts.push(mir::Statement::IndexedAccess {
-              name: variable_for_tag,
+              name: variable_for_tag.dupe(),
               type_: mir::INT_32_TYPE,
-              pointer_expression: test_expr,
+              pointer_expression: test_expr.dupe(),
               index: 0,
             });
             tag_check_stmts.push(mir::Statement::binary(
-              comparison_temp,
+              comparison_temp.dupe(),
               hir::BinaryOperator::EQ,
               mir::Expression::var_name(variable_for_tag, mir::INT_32_TYPE),
               mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap()),
@@ -133,16 +134,16 @@ impl Rewriter {
             // Once we pass the check, we can cast the general enum type to a
             // more specific subtype.
             nested_stmts.push(mir::Statement::Cast {
-              name: casted_collector,
+              name: casted_collector.dupe(),
               type_: subtype,
-              assigned_expression: test_expr,
+              assigned_expression: test_expr.dupe(),
             });
             for (i, binding) in bindings.iter().enumerate() {
               if let Some((name, type_)) = binding {
                 nested_stmts.push(mir::Statement::IndexedAccess {
-                  name: *name,
+                  name: name.dupe(),
                   type_: self.rewrite_type(heap, type_, generics_replacement_map),
-                  pointer_expression: mir::Expression::var_name(casted_collector, subtype),
+                  pointer_expression: mir::Expression::var_name(casted_collector.dupe(), subtype),
                   index: i + 1,
                 });
               }
@@ -173,16 +174,16 @@ impl Rewriter {
               let outer_final_assignments = rewritten_final_assignments
                 .iter()
                 .map(|fa| mir::IfElseFinalAssignment {
-                  name: fa.name,
+                  name: fa.name.dupe(),
                   type_: fa.type_,
-                  e1: mir::Expression::var_name(fa.name, fa.type_),
-                  e2: fa.e2,
+                  e1: mir::Expression::var_name(fa.name.dupe(), fa.type_),
+                  e2: fa.e2.dupe(),
                 })
                 .collect();
 
               let is_pointer_temp = heap.alloc_temp_str();
               collector.push(mir::Statement::IsPointer {
-                name: is_pointer_temp,
+                name: is_pointer_temp.dupe(),
                 pointer_type: subtype_name,
                 operand: test_expr,
               });
@@ -207,20 +208,20 @@ impl Rewriter {
           // pointer type. Therefore, we only need to check whether the test expression is a pointer.
           mir::EnumTypeDefinition::Unboxed(unboxed_t) => {
             debug_assert!(bindings.len() == 1);
-            let binded_name = bindings[0].as_ref().unwrap().0;
+            let binded_name = &bindings[0].as_ref().unwrap().0;
             let comparison_temp = heap.alloc_temp_str();
             // For WASM GC, we can do ref.test directly on the enum value (which is ref eq)
             // without casting to INT_32_TYPE first.
             collector.push(mir::Statement::IsPointer {
-              name: comparison_temp,
+              name: comparison_temp.dupe(),
               pointer_type: *unboxed_t,
-              operand: test_expr,
+              operand: test_expr.dupe(),
             });
             let mut nested_stmts = Vec::new();
             // Once we pass the is-pointer check, we can cast the test expression to the underlying
             // unboxed pointer type.
             nested_stmts.push(mir::Statement::Cast {
-              name: binded_name,
+              name: binded_name.dupe(),
               type_: mir::Type::Id(*unboxed_t),
               assigned_expression: test_expr,
             });
@@ -242,7 +243,7 @@ impl Rewriter {
             // The enum type (which becomes AnyPointer in LIR) is a subtype of ref eq,
             // and Int31Literal is ref i31, so ref.eq can compare them directly.
             collector.push(mir::Statement::binary(
-              comparison_temp,
+              comparison_temp.dupe(),
               hir::BinaryOperator::EQ,
               test_expr,
               mir::Expression::Int31Literal(i32::try_from(*tag).unwrap()),
@@ -274,13 +275,13 @@ impl Rewriter {
       }
       hir::Statement::LateInitDeclaration { name, type_ } => {
         collector.push(mir::Statement::LateInitDeclaration {
-          name: *name,
+          name: name.dupe(),
           type_: self.rewrite_type(heap, type_, generics_replacement_map),
         })
       }
       hir::Statement::LateInitAssignment { name, assigned_expression } => {
         collector.push(mir::Statement::LateInitAssignment {
-          name: *name,
+          name: name.dupe(),
           assigned_expression: self.rewrite_expr(
             heap,
             assigned_expression,
@@ -292,7 +293,7 @@ impl Rewriter {
         let type_name =
           self.rewrite_id_type(heap, type_, generics_replacement_map).into_id().unwrap();
         collector.push(mir::Statement::StructInit {
-          struct_variable_name: *struct_variable_name,
+          struct_variable_name: struct_variable_name.dupe(),
           type_name,
           expression_list: self.rewrite_expressions(
             heap,
@@ -315,7 +316,7 @@ impl Rewriter {
             let subtype_name =
               self.symbol_table.derived_type_name_with_subtype_tag(enum_type, *tag as u32);
             collector.push(mir::Statement::StructInit {
-              struct_variable_name: temp,
+              struct_variable_name: temp.dupe(),
               type_name: subtype_name,
               expression_list: vec![mir::Expression::i32(i32::try_from(*tag * 2 + 1).unwrap())]
                 .into_iter()
@@ -328,7 +329,7 @@ impl Rewriter {
             });
             // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
-              name: *enum_variable_name,
+              name: enum_variable_name.dupe(),
               type_: mir::Type::Id(enum_type),
               assigned_expression: mir::Expression::var_name(temp, mir::Type::Id(subtype_name)),
             });
@@ -337,7 +338,7 @@ impl Rewriter {
             debug_assert_eq!(associated_data_list.len(), 1);
             // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
-              name: *enum_variable_name,
+              name: enum_variable_name.dupe(),
               type_: mir::Type::Id(enum_type),
               assigned_expression: self.rewrite_expr(
                 heap,
@@ -350,7 +351,7 @@ impl Rewriter {
             debug_assert!(associated_data_list.is_empty());
             // Cast from more specific subtype to the general enum type.
             collector.push(mir::Statement::Cast {
-              name: *enum_variable_name,
+              name: enum_variable_name.dupe(),
               type_: mir::Type::Id(enum_type),
               assigned_expression: mir::Expression::Int31Literal(i32::try_from(*tag).unwrap()),
             });
@@ -366,7 +367,7 @@ impl Rewriter {
         let closure_type_name =
           self.rewrite_id_type(heap, closure_type, generics_replacement_map).into_id().unwrap();
         collector.push(mir::Statement::ClosureInit {
-          closure_variable_name: *closure_variable_name,
+          closure_variable_name: closure_variable_name.dupe(),
           closure_type_name,
           function_name: self.rewrite_fn_name_expr(heap, function_name, generics_replacement_map),
           context: self.rewrite_expr(heap, context, generics_replacement_map),
@@ -384,7 +385,7 @@ impl Rewriter {
     final_assignments
       .iter()
       .map(|(n, t, e1, e2)| mir::IfElseFinalAssignment {
-        name: *n,
+        name: n.dupe(),
         type_: self.rewrite_type(heap, t, generics_replacement_map),
         e1: self.rewrite_expr(heap, e1, generics_replacement_map),
         e2: self.rewrite_expr(heap, e2, generics_replacement_map),
@@ -411,12 +412,12 @@ impl Rewriter {
       hir::Expression::IntLiteral(i) => mir::Expression::Int32Literal(*i),
       hir::Expression::Int31Zero => mir::Expression::Int31Literal(0),
       hir::Expression::StringName(s) => {
-        self.used_string_names.insert(*s);
-        mir::Expression::StringName(*s)
+        self.used_string_names.insert(s.dupe());
+        mir::Expression::StringName(s.dupe())
       }
       hir::Expression::Variable(hir::VariableName { name, type_ }) => {
         mir::Expression::Variable(mir::VariableName {
-          name: *name,
+          name: name.dupe(),
           type_: self.rewrite_type(heap, type_, generics_replacement_map),
         })
       }
@@ -431,8 +432,13 @@ impl Rewriter {
   ) -> mir::FunctionNameExpression {
     let fn_type = self.rewrite_fn_type(heap, type_, generics_replacement_map);
     let rewritten_targs = self.rewrite_types(heap, type_arguments, generics_replacement_map);
-    let rewritten_name =
-      self.rewrite_fn_name(heap, *name, fn_type.clone(), rewritten_targs, generics_replacement_map);
+    let rewritten_name = self.rewrite_fn_name(
+      heap,
+      name.dupe(),
+      fn_type.clone(),
+      rewritten_targs,
+      generics_replacement_map,
+    );
     mir::FunctionNameExpression { name: rewritten_name, type_: fn_type }
   }
 
@@ -482,13 +488,13 @@ impl Rewriter {
         fn_name: original_name.fn_name,
       };
       if !self.specialized_function_names.contains(&encoded_specialized_fn_name) {
-        self.specialized_function_names.insert(encoded_specialized_fn_name);
+        self.specialized_function_names.insert(encoded_specialized_fn_name.dupe());
         let rewritten_fn = self.rewrite_function(
           heap,
           &existing_fn,
-          encoded_specialized_fn_name,
+          encoded_specialized_fn_name.dupe(),
           function_type,
-          &existing_fn.type_parameters.iter().copied().zip(function_type_arguments).collect(),
+          &existing_fn.type_parameters.iter().duped().zip(function_type_arguments).collect(),
         );
         self.specialized_functions.push(rewritten_fn);
       }
@@ -562,14 +568,14 @@ impl Rewriter {
       .collect_vec();
     let mir_type_name = self.symbol_table.create_type_name_with_suffix(
       id_type.name.module_reference.unwrap(),
-      id_type.name.type_name,
+      id_type.name.type_name.dupe(),
       concrete_type_mir_targs.clone(),
     );
     if !self.specialized_type_definition_names.contains(&mir_type_name) {
       self.specialized_type_definition_names.insert(mir_type_name);
       if let Some(type_def) = self.original_type_defs.get(&id_type.name).cloned() {
         let solved_targs_replacement_map: HashMap<PStr, mir::Type> =
-          type_def.type_parameters.iter().copied().zip(concrete_type_mir_targs).collect();
+          type_def.type_parameters.iter().duped().zip(concrete_type_mir_targs).collect();
         let rewritten_mappings = match &type_def.mappings {
           hir::TypeDefinitionMappings::Struct(types) => mir::TypeDefinitionMappings::Struct(
             types
@@ -618,7 +624,7 @@ impl Rewriter {
       } else {
         let closure_def = self.original_closure_defs.get(&id_type.name).unwrap();
         let solved_targs_replacement_map: HashMap<PStr, mir::Type> =
-          closure_def.type_parameters.iter().copied().zip(concrete_type_mir_targs).collect();
+          closure_def.type_parameters.iter().duped().zip(concrete_type_mir_targs).collect();
         let original_fn_type = closure_def.function_type.clone();
         let rewritten_fn_type =
           self.rewrite_fn_type(heap, &original_fn_type, &solved_targs_replacement_map);
@@ -687,8 +693,8 @@ pub(super) fn perform_generics_specialization(
 ) -> mir::Sources {
   let mut symbol_table = mir::SymbolTable::new();
   let mut rewriter = Rewriter {
-    original_closure_defs: closure_types.into_iter().map(|it| (it.name, it)).collect(),
-    original_type_defs: type_definitions.into_iter().map(|it| (it.name, it)).collect(),
+    original_closure_defs: closure_types.into_iter().map(|it| (it.name.dupe(), it)).collect(),
+    original_type_defs: type_definitions.into_iter().map(|it| (it.name.dupe(), it)).collect(),
     original_functions: functions
       .into_iter()
       .map(|it| {
@@ -696,9 +702,9 @@ pub(super) fn perform_generics_specialization(
           mir::FunctionName {
             type_name: symbol_table.create_simple_type_name(
               it.name.type_name.module_reference.unwrap(),
-              it.name.type_name.type_name,
+              it.name.type_name.type_name.dupe(),
             ),
-            fn_name: it.name.fn_name,
+            fn_name: it.name.fn_name.dupe(),
           },
           it,
         )
@@ -718,11 +724,11 @@ pub(super) fn perform_generics_specialization(
     let mir_main_fn_name = mir::FunctionName {
       type_name: rewriter.symbol_table.create_simple_type_name(
         main_fn_name.type_name.module_reference.unwrap(),
-        main_fn_name.type_name.type_name,
+        main_fn_name.type_name.type_name.dupe(),
       ),
-      fn_name: main_fn_name.fn_name,
+      fn_name: main_fn_name.fn_name.dupe(),
     };
-    rewriter.specialized_function_names.insert(mir_main_fn_name);
+    rewriter.specialized_function_names.insert(mir_main_fn_name.dupe());
     let original_fn = rewriter.original_functions.get(&mir_main_fn_name).cloned().unwrap();
     let fn_type = mir::FunctionType {
       argument_types: rewriter.rewrite_types(
@@ -736,8 +742,13 @@ pub(super) fn perform_generics_specialization(
         &empty_replacement_map,
       )),
     };
-    let rewritten =
-      rewriter.rewrite_function(heap, &original_fn, mir_main_fn_name, fn_type, &HashMap::new());
+    let rewritten = rewriter.rewrite_function(
+      heap,
+      &original_fn,
+      mir_main_fn_name.dupe(),
+      fn_type,
+      &HashMap::new(),
+    );
     rewriter.specialized_functions.push(rewritten);
     mir_main_function_names.push(mir_main_fn_name);
   }
@@ -761,7 +772,7 @@ pub(super) fn perform_generics_specialization(
       .sorted_by_key(|d| d.name)
       .collect(),
     main_function_names: mir_main_function_names,
-    functions: specialized_functions.into_iter().sorted_by_key(|d| d.name).collect(),
+    functions: specialized_functions.into_iter().sorted_by_key(|d| d.name.dupe()).collect(),
   }
 }
 
@@ -850,7 +861,7 @@ sources.mains = [_DUMMY_I$main]
         global_variables: vec![GlobalString(heap.alloc_str_for_test("G1"))],
         closure_types: Vec::new(),
         type_definitions: vec![hir::TypeDefinition {
-          name: hir::STRING_TYPE.dupe().as_id().unwrap().name,
+          name: hir::STRING_TYPE.dupe().as_id().unwrap().name.clone(),
           type_parameters: Vec::new(),
           mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
         }],
@@ -1010,7 +1021,7 @@ sources.mains = [_DUMMY_I$main]
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE]),
           },
           hir::TypeDefinition {
-            name: hir::STRING_TYPE.dupe().as_id().unwrap().name,
+            name: hir::STRING_TYPE.dupe().as_id().unwrap().name.clone(),
             type_parameters: Vec::new(),
             mappings: hir::TypeDefinitionMappings::Enum(Vec::new()),
           },

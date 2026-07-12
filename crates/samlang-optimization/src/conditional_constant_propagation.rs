@@ -1,6 +1,7 @@
 use super::optimization_common::{
   IndexAccessBindedValue, LocalValueContextForOptimization, if_else_or_null, single_if_or_null,
 };
+use dupe::{Dupe, OptionDupedExt};
 use itertools::Itertools;
 use samlang_ast::{hir::BinaryOperator, mir::*};
 use samlang_collections::local_stacked_context::LocalStackedContext;
@@ -58,7 +59,7 @@ fn merge_binary_expression(
       if inner.operator == BinaryOperator::PLUS {
         Some(BinaryExpression {
           operator: BinaryOperator::PLUS,
-          e1: inner.e1,
+          e1: inner.e1.dupe(),
           e2: inner.e2 + outer_const,
         })
       } else {
@@ -69,7 +70,7 @@ fn merge_binary_expression(
       if inner.operator == BinaryOperator::MUL {
         Some(BinaryExpression {
           operator: BinaryOperator::MUL,
-          e1: inner.e1,
+          e1: inner.e1.dupe(),
           e2: inner.e2 * outer_const,
         })
       } else {
@@ -85,7 +86,7 @@ fn merge_binary_expression(
       if inner.operator == BinaryOperator::PLUS {
         Some(BinaryExpression {
           operator: outer_operator,
-          e1: inner.e1,
+          e1: inner.e1.dupe(),
           e2: outer_const - inner.e2,
         })
       } else {
@@ -102,16 +103,18 @@ fn optimize_variable_name(
   value_cx: &mut LocalValueContextForOptimization,
   VariableName { name, type_ }: &VariableName,
 ) -> Expression {
-  if let Some(binded) = value_cx.get(name).copied() {
+  if let Some(binded) = value_cx.get(name).duped() {
     binded
   } else {
-    Expression::Variable(VariableName { name: *name, type_: *type_ })
+    Expression::Variable(VariableName { name: name.dupe(), type_: *type_ })
   }
 }
 
 fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression) -> Expression {
   match e {
-    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => *e,
+    Expression::Int32Literal(_) | Expression::Int31Literal(_) | Expression::StringName(_) => {
+      e.dupe()
+    }
     Expression::Variable(v) => optimize_variable_name(value_cx, v),
   }
 }
@@ -161,15 +164,15 @@ fn optimize_stmt(
     Statement::Not { name, operand } => {
       let operand = optimize_expr(value_cx, operand);
       if let Expression::Int32Literal(v) = operand {
-        value_cx.checked_bind(*name, Expression::Int32Literal(v ^ 1));
+        value_cx.checked_bind(name.dupe(), Expression::Int32Literal(v ^ 1));
       } else {
-        collector.push(Statement::Not { name: *name, operand });
+        collector.push(Statement::Not { name: name.dupe(), operand });
       }
       false
     }
     Statement::IsPointer { name, pointer_type, operand } => {
       collector.push(Statement::IsPointer {
-        name: *name,
+        name: name.dupe(),
         pointer_type: *pointer_type,
         operand: optimize_expr(value_cx, operand),
       });
@@ -182,46 +185,46 @@ fn optimize_stmt(
       if let Expression::Int32Literal(v2) = &e2 {
         if *v2 == 0 {
           if operator == BinaryOperator::PLUS {
-            value_cx.checked_bind(*name, e1);
+            value_cx.checked_bind(name.dupe(), e1);
             return false;
           }
           if operator == BinaryOperator::MUL {
-            value_cx.checked_bind(*name, ZERO);
+            value_cx.checked_bind(name.dupe(), ZERO);
             return false;
           }
         }
         if *v2 == 1 {
           if operator == BinaryOperator::MOD {
-            value_cx.checked_bind(*name, ZERO);
+            value_cx.checked_bind(name.dupe(), ZERO);
             return false;
           }
           if operator == BinaryOperator::MUL || operator == BinaryOperator::DIV {
-            value_cx.checked_bind(*name, e1);
+            value_cx.checked_bind(name.dupe(), e1);
             return false;
           }
         }
         if let Expression::Int32Literal(v1) = &e1
           && let Some(value) = evaluate_bin_op(operator, *v1, *v2)
         {
-          value_cx.checked_bind(*name, Expression::Int32Literal(value));
+          value_cx.checked_bind(name.dupe(), Expression::Int32Literal(value));
           return false;
         }
       }
       match (&e1, &e2) {
         (Expression::Variable(v1), Expression::Variable(v2)) if v1.name.eq(&v2.name) => {
           if operator == BinaryOperator::MINUS || operator == BinaryOperator::MOD {
-            value_cx.checked_bind(*name, ZERO);
+            value_cx.checked_bind(name.dupe(), ZERO);
             return false;
           }
           if operator == BinaryOperator::DIV {
-            value_cx.checked_bind(*name, ONE);
+            value_cx.checked_bind(name.dupe(), ONE);
             return false;
           }
         }
         _ => {}
       }
       let partially_optimized_binary =
-        Statement::binary_flexible_unwrapped(*name, operator, e1, e2);
+        Statement::binary_flexible_unwrapped(name.dupe(), operator, e1, e2);
       if let Binary {
         name,
         operator,
@@ -234,14 +237,15 @@ fn optimize_stmt(
             merge_binary_expression(*operator, existing_b1, *v2)
         {
           collector.push(Statement::Binary(Binary {
-            name: *name,
+            name: name.dupe(),
             operator,
             e1: Expression::Variable(e1),
             e2: Expression::Int32Literal(e2),
           }));
           return false;
         }
-        binary_expr_cx.insert(*name, BinaryExpression { operator: *operator, e1: *v1, e2: *v2 });
+        binary_expr_cx
+          .insert(name.dupe(), BinaryExpression { operator: *operator, e1: v1.dupe(), e2: *v2 });
       }
       collector.push(Statement::Binary(partially_optimized_binary));
       false
@@ -251,13 +255,13 @@ fn optimize_stmt(
       let pointer_expression = optimize_expr(value_cx, pointer_expression);
       if let Some(computed) = index_access_cx.get(&IndexAccessBindedValue {
         type_: INT_32_TYPE,
-        pointer_expression,
+        pointer_expression: pointer_expression.dupe(),
         index: *index,
       }) {
-        value_cx.checked_bind(*name, *computed);
+        value_cx.checked_bind(name.dupe(), computed.dupe());
       } else {
         collector.push(Statement::IndexedAccess {
-          name: *name,
+          name: name.dupe(),
           type_: *type_,
           pointer_expression,
           index: *index,
@@ -273,7 +277,7 @@ fn optimize_stmt(
         callee,
         arguments,
         return_type: *return_type,
-        return_collector: *return_collector,
+        return_collector: return_collector.dupe(),
       });
       false
     }
@@ -295,7 +299,7 @@ fn optimize_stmt(
         for IfElseFinalAssignment { name, type_: _, e1, e2 } in final_assignments {
           let optimized =
             if is_true { optimize_expr(value_cx, e1) } else { optimize_expr(value_cx, e2) };
-          value_cx.checked_bind(*name, optimized);
+          value_cx.checked_bind(name.dupe(), optimized);
         }
         return false;
       }
@@ -303,11 +307,11 @@ fn optimize_stmt(
         let IfElseFinalAssignment { name, type_: _, e1, e2 } = &final_assignments[0];
         match (e1, e2) {
           (Expression::Int32Literal(1), Expression::Int32Literal(0)) => {
-            value_cx.checked_bind(*name, condition);
+            value_cx.checked_bind(name.dupe(), condition);
             return false;
           }
           (Expression::Int32Literal(0), Expression::Int32Literal(1)) => {
-            collector.push(Statement::binary(*name, BinaryOperator::XOR, condition, ONE));
+            collector.push(Statement::binary(name.dupe(), BinaryOperator::XOR, condition, ONE));
             return false;
           }
           _ => {}
@@ -328,10 +332,10 @@ fn optimize_stmt(
       let mut optimized_final_assignments = Vec::new();
       for ((e1, e2), fa) in branch1_values.into_iter().zip(branch2_values).zip(final_assignments) {
         if e1 == e2 {
-          value_cx.checked_bind(fa.name, e1);
+          value_cx.checked_bind(fa.name.dupe(), e1);
         } else {
           optimized_final_assignments.push(IfElseFinalAssignment {
-            name: fa.name,
+            name: fa.name.dupe(),
             type_: fa.type_,
             e1,
             e2,
@@ -372,7 +376,7 @@ fn optimize_stmt(
       let mut filtered_loop_variables = Vec::new();
       for v in loop_variables.iter() {
         if v.initial_value == v.loop_value {
-          value_cx.checked_bind(v.name, v.initial_value);
+          value_cx.checked_bind(v.name.dupe(), v.initial_value.dupe());
         } else {
           filtered_loop_variables.push(v);
         }
@@ -394,7 +398,7 @@ fn optimize_stmt(
         .zip(loop_variable_loop_values)
         .zip(filtered_loop_variables)
         .map(|((initial_value, loop_value), variable)| GenenalLoopVariable {
-          name: variable.name,
+          name: variable.name.dupe(),
           type_: variable.type_,
           initial_value,
           loop_value,
@@ -408,14 +412,14 @@ fn optimize_stmt(
         optimize_stmts(rest, value_cx, index_access_cx, binary_expr_cx, collector);
         if let Some(v) = break_collector {
           let break_value = optimize_expr(value_cx, e);
-          value_cx.checked_bind(v.name, break_value);
+          value_cx.checked_bind(v.name.dupe(), break_value);
         }
         false
       } else {
         let mut stmts = try_optimize_loop_for_some_iterations(
           loop_variables,
           stmts,
-          *break_collector,
+          break_collector.dupe(),
           value_cx,
           index_access_cx,
           binary_expr_cx,
@@ -427,7 +431,7 @@ fn optimize_stmt(
 
     Statement::Cast { name, type_, assigned_expression } => {
       collector.push(Statement::Cast {
-        name: *name,
+        name: name.dupe(),
         type_: *type_,
         assigned_expression: optimize_expr(value_cx, assigned_expression),
       });
@@ -435,13 +439,13 @@ fn optimize_stmt(
     }
 
     Statement::LateInitDeclaration { name, type_ } => {
-      collector.push(Statement::LateInitDeclaration { name: *name, type_: *type_ });
+      collector.push(Statement::LateInitDeclaration { name: name.dupe(), type_: *type_ });
       false
     }
 
     Statement::LateInitAssignment { name, assigned_expression } => {
       collector.push(Statement::LateInitAssignment {
-        name: *name,
+        name: name.dupe(),
         assigned_expression: optimize_expr(value_cx, assigned_expression),
       });
       false
@@ -454,16 +458,16 @@ fn optimize_stmt(
         let key = IndexAccessBindedValue {
           type_: INT_32_TYPE,
           pointer_expression: Expression::Variable(VariableName {
-            name: *struct_variable_name,
+            name: struct_variable_name.dupe(),
             type_: Type::Id(*type_name),
           }),
           index: i,
         };
-        index_access_cx.insert(key, optimized);
+        index_access_cx.insert(key, optimized.dupe());
         optimized_expression_list.push(optimized);
       }
       collector.push(Statement::StructInit {
-        struct_variable_name: *struct_variable_name,
+        struct_variable_name: struct_variable_name.dupe(),
         type_name: *type_name,
         expression_list: optimized_expression_list,
       });
@@ -472,7 +476,7 @@ fn optimize_stmt(
 
     Statement::ClosureInit { closure_variable_name, closure_type_name, function_name, context } => {
       collector.push(Statement::ClosureInit {
-        closure_variable_name: *closure_variable_name,
+        closure_variable_name: closure_variable_name.dupe(),
         closure_type_name: *closure_type_name,
         function_name: function_name.clone(),
         context: optimize_expr(value_cx, context),
@@ -510,7 +514,7 @@ fn try_optimize_loop_for_some_iterations(
   loop {
     push_scope(value_cx, index_access_cx, binary_expr_cx);
     for v in &loop_variables {
-      value_cx.checked_bind(v.name, v.initial_value);
+      value_cx.checked_bind(v.name.dupe(), v.initial_value.dupe());
     }
     let mut first_run_optimized_stmts = Vec::new();
     optimize_stmts(
@@ -541,7 +545,7 @@ fn try_optimize_loop_for_some_iterations(
       first_run_optimized_stmts = vec![Statement::While {
         loop_variables: advanced_loop_variables,
         statements: stmts,
-        break_collector,
+        break_collector: break_collector.dupe(),
       }];
     }
     pop_scope(value_cx, index_access_cx, binary_expr_cx);

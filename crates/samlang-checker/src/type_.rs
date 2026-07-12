@@ -69,10 +69,10 @@ impl ISourceType for NominalType {
   fn to_description(&self) -> Description {
     if self.is_class_statics {
       debug_assert!(self.type_arguments.is_empty());
-      Description::Class(self.id)
+      Description::Class(self.id.dupe())
     } else {
       Description::NominalType {
-        name: self.id,
+        name: self.id.dupe(),
         type_args: self.type_arguments.iter().map(|t| t.to_description()).collect(),
       }
     }
@@ -104,7 +104,7 @@ impl NominalType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       is_class_statics: false,
       module_reference: annotation.module_reference,
-      id: annotation.id.name,
+      id: annotation.id.name.dupe(),
       type_arguments: if let Some(targs) = &annotation.type_arguments {
         targs.arguments.iter().map(|annot| Arc::new(Type::from_annotation(annot))).collect()
       } else {
@@ -210,7 +210,7 @@ impl ISourceType for Type {
       Self::Any(_, _) => Description::AnyType,
       Self::Primitive(_, p) => p.to_description(),
       Self::Nominal(t) => t.to_description(),
-      Self::Generic(_, s) => Description::GenericType(*s),
+      Self::Generic(_, s) => Description::GenericType(s.dupe()),
       Self::Fn(t) => t.to_description(),
     }
   }
@@ -264,10 +264,10 @@ impl Type {
         reason: reason.to_use_reason(use_loc),
         is_class_statics: *is_class_statics,
         module_reference: *module_reference,
-        id: *id,
+        id: id.dupe(),
         type_arguments: type_arguments.clone(),
       }),
-      Self::Generic(reason, s) => Self::Generic(reason.to_use_reason(use_loc), *s),
+      Self::Generic(reason, s) => Self::Generic(reason.to_use_reason(use_loc), s.dupe()),
       Self::Fn(FunctionType { reason, argument_types, return_type }) => Self::Fn(FunctionType {
         reason: reason.to_use_reason(use_loc),
         argument_types: argument_types.clone(),
@@ -291,7 +291,9 @@ impl Type {
         Self::Any(Reason::new(*loc, Some(*loc)), false)
       }
       annotation::T::Id(annot) => Self::Nominal(NominalType::from_annotation(annot)),
-      annotation::T::Generic(loc, id) => Self::Generic(Reason::new(*loc, Some(*loc)), id.name),
+      annotation::T::Generic(loc, id) => {
+        Self::Generic(Reason::new(*loc, Some(*loc)), id.name.dupe())
+      }
       annotation::T::Fn(annot) => Self::Fn(FunctionType::from_annotation(annot)),
     }
   }
@@ -310,7 +312,7 @@ impl TypeParameterSignature {
     let mut tparam_sigs = Vec::new();
     for tparam in type_parameters.iter().flat_map(|it| &it.parameters) {
       tparam_sigs.push(TypeParameterSignature {
-        name: tparam.name.name,
+        name: tparam.name.name.dupe(),
         bound: tparam.bound.as_ref().map(NominalType::from_annotation),
       });
     }
@@ -318,7 +320,10 @@ impl TypeParameterSignature {
   }
 
   pub fn to_description(&self) -> Description {
-    Description::TypeParameter(self.name, self.bound.as_ref().map(|t| Box::new(t.to_description())))
+    Description::TypeParameter(
+      self.name.dupe(),
+      self.bound.as_ref().map(|t| Box::new(t.to_description())),
+    )
   }
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
@@ -772,7 +777,7 @@ mod type_tests {
   #[test]
   fn pretty_print_tests() {
     let builder = test_type_builder::create();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
 
     assert_eq!("any", Type::Any(Reason::dummy(), false).pretty_print(&heap));
     assert_eq!("placeholder", Type::Any(Reason::dummy(), true).pretty_print(&heap));
@@ -1010,7 +1015,7 @@ m2: public () -> any
   #[test]
   fn description_tests() {
     let builder = test_type_builder::create();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
 
     assert_eq!("any", Type::Any(Reason::dummy(), false).to_description().pretty_print(&heap));
     assert_eq!("unit", builder.unit_type().to_description().pretty_print(&heap));
@@ -1064,7 +1069,7 @@ m2: public () -> any
 
   #[test]
   fn reposition_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let builder = test_type_builder::create();
 
     assert_eq!(

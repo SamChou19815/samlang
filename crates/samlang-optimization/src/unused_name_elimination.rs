@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::mir::{
   Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
@@ -30,7 +31,7 @@ fn collect_used_names_from_expression(
       collect_for_type_set(&v.type_, type_set);
     }
     Expression::StringName(n) => {
-      str_name_set.insert(*n);
+      str_name_set.insert(n.dupe());
     }
   }
 }
@@ -60,7 +61,7 @@ fn collect_used_names_from_statement(
     Statement::Call { callee, arguments, return_type, return_collector: _ } => {
       match callee {
         Callee::FunctionName(n) => {
-          fn_name_set.insert(n.name);
+          fn_name_set.insert(n.name.dupe());
           type_set.insert(n.name.type_name);
         }
         Callee::Variable(v) => collect_for_type_set(&v.type_, type_set),
@@ -116,7 +117,7 @@ fn collect_used_names_from_statement(
       function_name,
       context,
     } => {
-      fn_name_set.insert(function_name.name);
+      fn_name_set.insert(function_name.name.dupe());
       type_set.insert(function_name.name.type_name);
       collect_used_names_from_expression(str_name_set, type_set, context);
       type_set.insert(*closure_type_name);
@@ -162,7 +163,7 @@ fn analyze_all_used_names(
 ) -> (HashSet<PStr>, HashSet<FunctionName>, HashSet<TypeNameId>) {
   let mut used_functions_map = HashMap::new();
   for f in functions {
-    used_functions_map.insert(f.name, get_other_functions_used_by_given_function(f));
+    used_functions_map.insert(f.name.dupe(), get_other_functions_used_by_given_function(f));
   }
   let mut type_def_map = HashMap::new();
   for d in closure_types {
@@ -202,12 +203,12 @@ fn analyze_all_used_names(
       used_functions_map.get(&fn_name)
     {
       for used_fn in fn_used_by_this_function {
-        if used_fn_names.insert(*used_fn) {
-          stack.push(*used_fn);
+        if used_fn_names.insert(used_fn.dupe()) {
+          stack.push(used_fn.dupe());
         }
       }
       for used_str in str_used_by_this_function {
-        used_str_names.insert(*used_str);
+        used_str_names.insert(used_str.dupe());
       }
     }
   }

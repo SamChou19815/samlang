@@ -9,7 +9,7 @@ use std::{
   rc::Rc,
 };
 
-#[derive(Debug, Copy, Clone, Dupe, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Dupe, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub(super) struct VariantPatternConstructor {
   pub(super) module_reference: ModuleReference,
   pub(super) class_name: PStr,
@@ -38,7 +38,7 @@ impl AbstractPatternNodeInner {
           Some(VariantPatternConstructor { module_reference: _, class_name: _, variant_name }),
         elements,
       } => Description::VariantPattern(
-        *variant_name,
+        variant_name.dupe(),
         elements.iter().map(AbstractPatternNode::to_description).collect(),
       ),
       Self::Wildcard => Description::WildcardPattern,
@@ -176,7 +176,7 @@ fn useful_internal<CX: PatternMatchingContext>(
       let rs_len = rs.len();
       useful_internal(
         cx,
-        &convert_into_specialized_matrix(p, *variant, rs_len),
+        &convert_into_specialized_matrix(p, variant.dupe(), rs_len),
         PatternVector(rs.clone().append(q_rest)),
       )
     }
@@ -238,7 +238,7 @@ fn convert_into_specialized_matrix_row(
         convert_into_specialized_matrix_row(
           new_rows,
           &PatternVector(cons(r.dupe(), p_row.rest())),
-          variant,
+          variant.dupe(),
           rs_len,
         )
       }
@@ -253,7 +253,7 @@ fn convert_into_specialized_matrix(
 ) -> PatternMatrix {
   let mut new_rows = Vec::new();
   for p_row in &p.0 {
-    convert_into_specialized_matrix_row(&mut new_rows, p_row, variant, rs_len)
+    convert_into_specialized_matrix_row(&mut new_rows, p_row, variant.dupe(), rs_len)
   }
   PatternMatrix(new_rows)
 }
@@ -266,7 +266,7 @@ fn find_roots_constructors(p: &PatternMatrix) -> HashMap<Option<VariantPatternCo
     match pattern.0.as_ref() {
       AbstractPatternNodeInner::Wildcard => {}
       AbstractPatternNodeInner::StructLike { variant, elements } => {
-        root_constructors.insert(*variant, elements.len());
+        root_constructors.insert(variant.dupe(), elements.len());
       }
       AbstractPatternNodeInner::Or(possibilities) => {
         find_constructor_pattern_queue.extend(possibilities.iter())
@@ -307,8 +307,10 @@ fn signature_incomplete_names<CX: PatternMatchingContext>(
     return Some(Vec::with_capacity(0));
   }
   let mut variants_grouped = Vec::new();
-  for (key, group) in
-    &root_constructors.keys().filter_map(|c| *c).chunk_by(|c| (c.module_reference, c.class_name))
+  for (key, group) in &root_constructors
+    .keys()
+    .filter_map(|c| c.dupe())
+    .chunk_by(|c| (c.module_reference, c.class_name.dupe()))
   {
     variants_grouped.push((key, group.map(|g| g.variant_name).collect_vec()));
   }
@@ -316,10 +318,17 @@ fn signature_incomplete_names<CX: PatternMatchingContext>(
   let ((mod_ref, class_name), variants) =
     variants_grouped.pop().expect("Already checked it's non-empty.");
   let result = cx
-    .variant_signature_incomplete_names(mod_ref, class_name, &variants)
+    .variant_signature_incomplete_names(mod_ref, class_name.dupe(), &variants)
     .into_iter()
     .map(|(n, size)| {
-      (VariantPatternConstructor { module_reference: mod_ref, class_name, variant_name: n }, size)
+      (
+        VariantPatternConstructor {
+          module_reference: mod_ref,
+          class_name: class_name.dupe(),
+          variant_name: n,
+        },
+        size,
+      )
     })
     .collect_vec();
   if result.is_empty() { None } else { Some(result) }
@@ -351,10 +360,10 @@ fn incomplete_counterexample_internal<CX: PatternMatchingContext>(
     };
     Some(PatternVector(cons(head, incomplete_vector.0)))
   } else {
-    for (variant, a_k) in root_constructors.into_iter().sorted_by_key(|(k, _)| *k) {
+    for (variant, a_k) in root_constructors.into_iter().sorted_by_key(|(k, _)| k.dupe()) {
       if let Some(incomplete_vector) = incomplete_counterexample_internal(
         cx,
-        &convert_into_specialized_matrix(p, variant, a_k),
+        &convert_into_specialized_matrix(p, variant.dupe(), a_k),
         a_k + n - 1,
       ) {
         let mut split_remaining_count = a_k;

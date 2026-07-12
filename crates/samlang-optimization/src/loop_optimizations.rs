@@ -3,6 +3,7 @@ use super::{
   loop_induction_analysis::{OptimizableWhileLoop, extract_optimizable_while_loop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
 };
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::hir::BinaryOperator;
 use samlang_ast::mir::{
@@ -24,7 +25,7 @@ fn expand_optimizable_while_loop(
 ) -> Statement {
   let basic_induction_variable_with_loop_guard_value_collector = counter.alloc_temp_str();
   let break_value = if let Some((_, _, e)) = &break_collector { e } else { &ZERO };
-  let mut useful_used_set = HashSet::from([basic_induction_variable_with_loop_guard.name]);
+  let mut useful_used_set = HashSet::from([basic_induction_variable_with_loop_guard.name.dupe()]);
   dead_code_elimination::collect_use_from_expression(break_value, &mut useful_used_set);
   for v in &loop_variables_that_are_not_basic_induction_variables {
     dead_code_elimination::collect_use_from_expression(&v.loop_value, &mut useful_used_set);
@@ -40,20 +41,20 @@ fn expand_optimizable_while_loop(
     .into_iter()
     .filter(|v| useful_used_set.contains(&v.name))
     .chain(vec![GenenalLoopVariable {
-      name: basic_induction_variable_with_loop_guard.name,
+      name: basic_induction_variable_with_loop_guard.name.dupe(),
       type_: INT_32_TYPE,
       initial_value: basic_induction_variable_with_loop_guard.initial_value,
       loop_value: Expression::var_name(
-        basic_induction_variable_with_loop_guard_value_collector,
+        basic_induction_variable_with_loop_guard_value_collector.dupe(),
         INT_32_TYPE,
       ),
     }])
     .chain(general_basic_induction_variables_with_loop_value_collectors.iter().map(|(v, n)| {
       GenenalLoopVariable {
-        name: v.name,
+        name: v.name.dupe(),
         type_: INT_32_TYPE,
-        initial_value: v.initial_value,
-        loop_value: Expression::var_name(*n, INT_32_TYPE),
+        initial_value: v.initial_value.dupe(),
+        loop_value: Expression::var_name(n.dupe(), INT_32_TYPE),
       }
     }))
     .collect_vec();
@@ -62,15 +63,15 @@ fn expand_optimizable_while_loop(
     loop_variables,
     statements: vec![
       Statement::Binary(Statement::binary_unwrapped(
-        loop_condition_variable,
+        loop_condition_variable.dupe(),
         basic_induction_variable_with_loop_guard.guard_operator.invert().to_op(),
-        Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_32_TYPE),
+        Expression::var_name(basic_induction_variable_with_loop_guard.name.dupe(), INT_32_TYPE),
         basic_induction_variable_with_loop_guard.guard_expression.to_expression(),
       )),
       Statement::SingleIf {
         condition: Expression::var_name(loop_condition_variable, INT_32_TYPE),
         invert_condition: false,
-        statements: vec![Statement::Break(*break_value)],
+        statements: vec![Statement::Break(break_value.dupe())],
       },
     ]
     .into_iter()
@@ -95,7 +96,7 @@ fn expand_optimizable_while_loop(
       let step_1_temp = counter.alloc_temp_str();
       vec![
         Statement::Binary(Statement::binary_flexible_unwrapped(
-          step_1_temp,
+          step_1_temp.dupe(),
           BinaryOperator::MUL,
           Expression::var_name(v.base_name, INT_32_TYPE),
           v.multiplier.to_expression(),
@@ -162,7 +163,7 @@ fn optimize_while_statement_with_all_loop_optimizations(
       final_stmts.append(&mut prefix_statements);
 
       let already_handled_induction_variable_names =
-        general_induction_variables.iter().map(|v| v.name).collect::<HashSet<_>>();
+        general_induction_variables.iter().map(|v| v.name.dupe()).collect::<HashSet<_>>();
       final_stmts.push(expand_optimizable_while_loop(
         OptimizableWhileLoop {
           basic_induction_variable_with_loop_guard,

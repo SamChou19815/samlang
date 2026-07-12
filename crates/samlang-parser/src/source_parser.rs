@@ -1,4 +1,5 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp, TokenProducer};
+use dupe::Dupe;
 use samlang_ast::{Location, source::*};
 use samlang_errors::ErrorSet;
 use samlang_heap::{Heap, ModuleReference, PStr};
@@ -44,8 +45,8 @@ impl<'a> SourceParser<'a> {
   }
 
   fn peek(&mut self) -> Token {
-    if let Some(token) = self.peeked {
-      return token;
+    if let Some(token) = &self.peeked {
+      return token.dupe();
     }
     loop {
       match self.token_producer.next_token(self.heap, self.error_set) {
@@ -62,12 +63,12 @@ impl<'a> SourceParser<'a> {
           self.last_location = loc;
         }
         Some(token) => {
-          self.peeked = Some(token);
+          self.peeked = Some(token.dupe());
           return token;
         }
         None => {
           let eof = Token(self.last_location, TokenContent::EndOfFile);
-          self.peeked = Some(eof);
+          self.peeked = Some(eof.dupe());
           return eof;
         }
       }
@@ -254,7 +255,7 @@ pub fn parse_module(mut parser: SourceParser) -> Module<()> {
     let imported_module = parser.heap.alloc_module_reference(imported_module_parts);
     let imported_module_loc = import_loc_start.union(&parser.last_location);
     for variable in imported_members.iter() {
-      parser.class_source_map.insert(variable.name, imported_module);
+      parser.class_source_map.insert(variable.name.dupe(), imported_module);
     }
     let loc =
       if let Token(semicolon_loc, TokenContent::Operator(TokenOp::Semicolon)) = parser.peek() {
@@ -318,6 +319,7 @@ mod toplevel_parser {
     super::lexer::{Keyword, Token, TokenContent, TokenOp},
     MAX_STRUCT_SIZE,
   };
+  use dupe::Dupe;
   use samlang_ast::{Location, source::*};
   use std::collections::HashSet;
   use std::sync::Arc;
@@ -620,7 +622,7 @@ mod toplevel_parser {
     let type_parameters = super::type_parser::parse_type_parameters(parser);
     parser
       .available_tparams
-      .extend(type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name));
+      .extend(type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name.dupe()));
     let name = parser.parse_lower_id();
     let (fun_type_loc_start, parameters_start_comments) =
       parser.assert_and_consume_operator(TokenOp::LeftParenthesis);
@@ -665,6 +667,7 @@ mod expression_parser {
     super::lexer::{Keyword, Token, TokenContent, TokenOp},
     MAX_STRUCT_SIZE,
   };
+  use dupe::Dupe;
   use itertools::Itertools;
   use samlang_ast::{Location, source::*};
   use samlang_heap::PStr;
@@ -1525,7 +1528,7 @@ mod expression_parser {
               .create_comment_reference(associated_comments),
             type_: (),
           },
-          Literal::String(parser.heap.alloc_string(str_lit)),
+          Literal::String(samlang_heap::Heap::alloc_string(str_lit)),
         ))
       }
       Token(peeked_loc, TokenContent::Keyword(Keyword::This)) => {
@@ -1564,7 +1567,7 @@ mod expression_parser {
               .create_comment_reference(associated_comments),
             type_: (),
           },
-          super::utils::resolve_class(parser, name),
+          super::utils::resolve_class(parser, name.dupe()),
           Id { loc: peeked_loc, associated_comments: NO_COMMENT_REFERENCE, name },
         ))
       }
@@ -1789,6 +1792,7 @@ mod expression_parser {
 
 mod pattern_parser {
   use super::super::lexer::{Keyword, Token, TokenContent, TokenOp};
+  use dupe::Dupe;
   use samlang_ast::source::*;
 
   pub(super) fn parse_matching_pattern(
@@ -1838,7 +1842,7 @@ mod pattern_parser {
               let loc = field_name.loc.union(nested.loc());
               (Box::new(nested), loc, false)
             } else {
-              (Box::new(pattern::MatchingPattern::Id(field_name, ())), field_name.loc, true)
+              (Box::new(pattern::MatchingPattern::Id(field_name.dupe(), ())), field_name.loc, true)
             };
           pattern::ObjectPatternElement {
             loc,
@@ -1916,6 +1920,7 @@ mod pattern_parser {
 
 mod type_parser {
   use super::super::lexer::{Keyword, Token, TokenContent, TokenOp};
+  use dupe::Dupe;
   use samlang_ast::source::{annotation::TypeArguments, *};
 
   pub(super) fn parse_type_parameters(
@@ -1929,7 +1934,7 @@ mod type_parser {
       );
       let (additional_loc, end_comments) = parser.assert_and_consume_operator(TokenOp::GreaterThan);
       let location = start_loc.union(&additional_loc);
-      parser.available_tparams.extend(parameters.iter().map(|it| it.name.name));
+      parser.available_tparams.extend(parameters.iter().map(|it| it.name.name.dupe()));
       fix_tparams_with_generic_annot(parser, &mut parameters);
       Some(annotation::TypeParameters {
         location,
@@ -2117,7 +2122,7 @@ mod type_parser {
       annotation::T::Id(id_annot) => {
         if id_annot.type_arguments.is_none() && parser.available_tparams.contains(&id_annot.id.name)
         {
-          *annot = annotation::T::Generic(id_annot.location, id_annot.id)
+          *annot = annotation::T::Generic(id_annot.location, id_annot.id.dupe())
         }
       }
       annotation::T::Fn(t) => {
@@ -2141,7 +2146,7 @@ mod type_parser {
     };
     annotation::Id {
       location,
-      module_reference: super::utils::resolve_class(parser, identifier.name),
+      module_reference: super::utils::resolve_class(parser, identifier.name.dupe()),
       id: identifier,
       type_arguments,
     }

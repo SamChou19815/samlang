@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use samlang_ast::{
   hir::BinaryOperator,
   mir::{
@@ -9,7 +10,7 @@ use std::collections::HashSet;
 
 pub(super) fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<PStr>) {
   if let Expression::Variable(v) = expression {
-    set.insert(v.name);
+    set.insert(v.name.dupe());
   }
 }
 
@@ -40,7 +41,7 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
     }
     Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
       if let Callee::Variable(v) = callee {
-        set.insert(v.name);
+        set.insert(v.name.dupe());
       }
       for e in arguments {
         collect_use_from_expression(e, set)
@@ -122,11 +123,11 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
     }
     Statement::Call { callee, arguments, return_type: _, return_collector } => {
       *return_collector = match return_collector {
-        Some(n) if set.contains(n) => Some(*n),
+        Some(n) if set.contains(n) => Some(n.dupe()),
         _ => None,
       };
       if let Callee::Variable(v) = &callee {
-        set.insert(v.name);
+        set.insert(v.name.dupe());
       }
       for e in arguments {
         collect_use_from_expression(e, set);
@@ -167,7 +168,7 @@ fn optimize_stmt(stmt: &mut Statement, set: &mut HashSet<PStr>) -> bool {
     }
     Statement::While { loop_variables, statements, break_collector } => {
       *break_collector = match break_collector {
-        Some(v) if set.contains(&v.name) => Some(*v),
+        Some(v) if set.contains(&v.name) => Some(v.dupe()),
         _ => None,
       };
       let mut used_inside_loop = HashSet::new();

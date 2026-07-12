@@ -53,7 +53,7 @@ impl LocalTypingContext {
   pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<PStr, Arc<Type>> {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
-      map.insert(*name, self.type_map.get(loc).unwrap().dupe());
+      map.insert(name.dupe(), self.type_map.get(loc).unwrap().dupe());
     }
     map
   }
@@ -134,7 +134,7 @@ impl<'a> TypingContext<'a> {
     match type_ {
       Type::Any(_, _) | Type::Primitive(_, _) | Type::Fn(_) => None,
       Type::Nominal(t) => Some(t),
-      Type::Generic(_, id) => self.resolve_to_potentially_in_scope_type_parameter_bound(*id),
+      Type::Generic(_, id) => self.resolve_to_potentially_in_scope_type_parameter_bound(id.dupe()),
     }
   }
 
@@ -184,7 +184,7 @@ impl<'a> TypingContext<'a> {
     if let Some(interface_info) = global_signature::resolve_interface_cx(
       self.global_signature,
       nominal_type.module_reference,
-      nominal_type.id,
+      nominal_type.id.dupe(),
     ) {
       let interface_type_parameters = interface_info.type_parameters.clone();
       if interface_info.type_definition.is_none() && enforce_concrete_types {
@@ -206,7 +206,7 @@ impl<'a> TypingContext<'a> {
       let subst_mapping = interface_type_parameters
         .iter()
         .zip(&nominal_type.type_arguments)
-        .map(|(tparam, targ)| (tparam.name, targ.dupe()))
+        .map(|(tparam, targ)| (tparam.name.dupe(), targ.dupe()))
         .collect::<HashMap<_, _>>();
       for (tparam, targ) in interface_type_parameters.into_iter().zip(&nominal_type.type_arguments)
       {
@@ -247,17 +247,19 @@ impl<'a> TypingContext<'a> {
     global_signature::resolve_interface_cx(
       self.global_signature,
       nominal_type.module_reference,
-      nominal_type.id,
+      nominal_type.id.dupe(),
     )
     .filter(|it| !it.private || nominal_type.module_reference == self.current_module_reference)?;
     if nominal_type.is_class_statics {
       let resolved = global_signature::resolve_function_signature(
         self.global_signature,
-        (nominal_type.module_reference, nominal_type.id),
+        (nominal_type.module_reference, nominal_type.id.dupe()),
         method_name,
       );
       let type_info = resolved.first()?;
-      if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
+      if type_info.is_public
+        || self.in_same_class(nominal_type.module_reference, nominal_type.id.dupe())
+      {
         Some(type_info.reposition(use_loc))
       } else {
         None
@@ -269,7 +271,9 @@ impl<'a> TypingContext<'a> {
         method_name,
       );
       let type_info = resolved.first()?;
-      if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
+      if type_info.is_public
+        || self.in_same_class(nominal_type.module_reference, nominal_type.id.dupe())
+      {
         Some(type_info.reposition(use_loc))
       } else {
         None
@@ -322,7 +326,7 @@ impl<'a> TypingContext<'a> {
     let resolved_type_def = global_signature::resolve_interface_cx(
       self.global_signature,
       nominal_type.module_reference,
-      nominal_type.id,
+      nominal_type.id.dupe(),
     )
     .filter(|toplevel_cx| {
       !toplevel_cx.private || nominal_type.module_reference == self.current_module_reference
@@ -332,24 +336,24 @@ impl<'a> TypingContext<'a> {
     for (tparam, targ) in global_signature::resolve_interface_cx(
       self.global_signature,
       nominal_type.module_reference,
-      nominal_type.id,
+      nominal_type.id.dupe(),
     )
     .unwrap()
     .type_parameters
     .iter()
     .zip(&nominal_type.type_arguments)
     {
-      subst_map.insert(tparam.name, targ.dupe());
+      subst_map.insert(tparam.name.dupe(), targ.dupe());
     }
     let mod_ref = nominal_type.module_reference;
-    let t_id = nominal_type.id;
+    let t_id = nominal_type.id.dupe();
     match resolved_type_def {
       TypeDefinitionSignature::Struct(items) => {
         let def = TypeDefinitionSignature::Struct(
           items
             .iter()
             .map(|item| StructItemDefinitionSignature {
-              name: item.name,
+              name: item.name.dupe(),
               type_: type_system::subst_type(&item.type_, &subst_map),
               is_public: item.is_public || nominal_type.id.eq(&self.current_class),
             })
@@ -362,7 +366,7 @@ impl<'a> TypingContext<'a> {
           variants
             .iter()
             .map(|variant| EnumVariantDefinitionSignature {
-              name: variant.name,
+              name: variant.name.dupe(),
               types: variant
                 .types
                 .iter()
@@ -393,7 +397,7 @@ impl super::pattern_matching::PatternMatchingContext for TypingContext<'_> {
         .as_enum()
         .expect("Should not be called with invalid enum.")
         .iter()
-        .map(|variant| (variant.name, variant.types.len()))
+        .map(|variant| (variant.name.dupe(), variant.types.len()))
         .collect::<HashMap<_, _>>();
     for n in variant_name {
       incomplete.remove(n);

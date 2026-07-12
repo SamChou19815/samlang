@@ -1,4 +1,5 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
+use dupe::Dupe;
 use samlang_ast::mir::{Binary, Function, Statement};
 use samlang_heap::TempPStrCounter;
 use std::collections::BTreeSet;
@@ -30,21 +31,25 @@ fn optimize_stmts(
       | Statement::ClosureInit { .. } => collector.push(stmt),
 
       Statement::IsPointer { name, pointer_type, operand } => {
-        set.insert(BindedValue::IsPointer(pointer_type, operand));
+        set.insert(BindedValue::IsPointer(pointer_type, operand.dupe()));
         collector.push(Statement::IsPointer { name, pointer_type, operand });
       }
       Statement::Not { name, operand } => {
-        set.insert(BindedValue::Not(operand));
+        set.insert(BindedValue::Not(operand.dupe()));
         collector.push(Statement::Not { name, operand });
       }
       Statement::Binary(Binary { name, operator, e1, e2 }) => {
-        set.insert(BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }));
+        set.insert(BindedValue::Binary(BinaryBindedValue {
+          operator,
+          e1: e1.dupe(),
+          e2: e2.dupe(),
+        }));
         collector.push(Statement::Binary(Binary { name, operator, e1, e2 }));
       }
       Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         set.insert(BindedValue::IndexedAccess(IndexAccessBindedValue {
           type_,
-          pointer_expression,
+          pointer_expression: pointer_expression.dupe(),
           index,
         }));
         collector.push(Statement::IndexedAccess { name, type_, pointer_expression, index });
@@ -56,7 +61,7 @@ fn optimize_stmts(
         let common_expressions = intersection_of(set1, vec![set2]);
         collector.push(Statement::IfElse { condition, s1, s2, final_assignments });
         for binded_value in common_expressions.into_iter().rev() {
-          set.insert(binded_value);
+          set.insert(binded_value.dupe());
           collector.push(match binded_value {
             BindedValue::IndexedAccess(IndexAccessBindedValue {
               type_,

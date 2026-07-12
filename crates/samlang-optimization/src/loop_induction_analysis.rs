@@ -19,7 +19,7 @@ impl PotentialLoopInvariantExpression {
   pub(super) fn to_expression(&self) -> Expression {
     match self {
       PotentialLoopInvariantExpression::Int(i) => Expression::Int32Literal(*i),
-      PotentialLoopInvariantExpression::Var(n) => Expression::Variable(*n),
+      PotentialLoopInvariantExpression::Var(n) => Expression::Variable(n.dupe()),
     }
   }
 }
@@ -74,8 +74,8 @@ pub(super) struct BasicInductionVariableWithLoopGuard {
 impl BasicInductionVariableWithLoopGuard {
   pub(super) fn as_general_basic_induction_variable(&self) -> GeneralBasicInductionVariable {
     GeneralBasicInductionVariable {
-      name: self.name,
-      initial_value: self.initial_value,
+      name: self.name.dupe(),
+      initial_value: self.initial_value.dupe(),
       increment_amount: self.increment_amount.clone(),
     }
   }
@@ -253,7 +253,7 @@ fn merge_constant_operation_into_derived_induction_variable(
     let DerivedInductionVariable { base_name, multiplier, immediate } = existing;
     merge_invariant_addition_for_loop_optimization(immediate, loop_invariant_expression).map(
       |merged_immediate| DerivedInductionVariable {
-        base_name: *base_name,
+        base_name: base_name.dupe(),
         multiplier: multiplier.clone(),
         immediate: merged_immediate,
       },
@@ -270,7 +270,7 @@ fn merge_constant_operation_into_derived_induction_variable(
           multiplier: PotentialLoopInvariantExpression::Int(m),
           immediate: PotentialLoopInvariantExpression::Int(i),
         } => Some(DerivedInductionVariable {
-          base_name: *base_name,
+          base_name: base_name.dupe(),
           multiplier: PotentialLoopInvariantExpression::Int(m * loop_invariant_expression_value),
           immediate: PotentialLoopInvariantExpression::Int(i * loop_invariant_expression_value),
         }),
@@ -284,7 +284,7 @@ fn merge_constant_operation_into_derived_induction_variable(
         multiplier: PotentialLoopInvariantExpression::Int(1),
         immediate: PotentialLoopInvariantExpression::Int(1),
       } => Some(DerivedInductionVariable {
-        base_name: *base_name,
+        base_name: base_name.dupe(),
         multiplier: loop_invariant_expression.clone(),
         immediate: loop_invariant_expression.clone(),
       }),
@@ -308,7 +308,7 @@ fn merge_variable_addition_into_derived_induction_variable(
     );
     match (merged_multiplier, merged_immediate) {
       (Some(merged_multiplier), Some(merged_immediate)) => Some(DerivedInductionVariable {
-        base_name: existing.base_name,
+        base_name: existing.base_name.dupe(),
         multiplier: merged_multiplier,
         immediate: merged_immediate,
       }),
@@ -332,7 +332,7 @@ fn get_loop_invariant_expression_opt(
     Expression::StringName(_) => None,
     Expression::Variable(v) => {
       if !non_loop_invariant_variables.contains(&v.name) {
-        Some(PotentialLoopInvariantExpression::Var(*v))
+        Some(PotentialLoopInvariantExpression::Var(v.dupe()))
       } else {
         None
       }
@@ -354,7 +354,7 @@ fn try_merge_into_derived_induction_variable_without_swap(
       && let Some(merged) =
         merge_variable_addition_into_derived_induction_variable(existing, another_variable)
     {
-      existing_set.insert(binary_statement.name, merged);
+      existing_set.insert(binary_statement.name.dupe(), merged);
       return true;
     }
     if let Some(e2) =
@@ -367,7 +367,7 @@ fn try_merge_into_derived_induction_variable_without_swap(
             binary_statement.operator == BinaryOperator::PLUS,
             &e2,
           ) {
-            existing_set.insert(binary_statement.name, merged);
+            existing_set.insert(binary_statement.name.dupe(), merged);
             return true;
           }
         }
@@ -395,10 +395,10 @@ fn try_merge_into_derived_induction_variable(
     _ => return,
   }
   let swapped = Binary {
-    name: binary_statement.name,
+    name: binary_statement.name.dupe(),
     operator: binary_statement.operator,
-    e1: binary_statement.e2,
-    e2: binary_statement.e1,
+    e1: binary_statement.e2.dupe(),
+    e2: binary_statement.e1.dupe(),
   };
   try_merge_into_derived_induction_variable_without_swap(
     existing_set,
@@ -444,12 +444,13 @@ fn extract_loop_guard_structure(
         get_guard_operator(*operator, *invert_condition),
         get_loop_invariant_expression_opt(e2, non_loop_invariant_variables),
       ) {
-        let potential_basic_induction_variable_with_loop_guard = e1_var.name;
+        let potential_basic_induction_variable_with_loop_guard = &e1_var.name;
         let break_collector = original_break_collector
           .as_ref()
-          .map(|v| (v.name, v.type_, *single_if_stmts[0].as_break().unwrap()));
+          .map(|v| (v.name.dupe(), v.type_, single_if_stmts[0].as_break().unwrap().dupe()));
         Some(LoopGuardStructure {
-          potential_basic_induction_variable_with_loop_guard,
+          potential_basic_induction_variable_with_loop_guard:
+            potential_basic_induction_variable_with_loop_guard.dupe(),
           guard_operator,
           guard_expression,
           break_collector,
@@ -494,10 +495,10 @@ fn extract_basic_induction_variables(
             get_loop_invariant_expression_opt(e2, non_loop_invariant_variables)
         {
           all_basic_induction_variables.push(GeneralBasicInductionVariableWithLoopValueCollector {
-            name: loop_variable.name,
-            initial_value: loop_variable.initial_value,
+            name: loop_variable.name.dupe(),
+            initial_value: loop_variable.initial_value.dupe(),
             increment_amount,
-            loop_value_collector: basic_induction_loop_increment_collector.name,
+            loop_value_collector: basic_induction_loop_increment_collector.name.dupe(),
           });
           continue 'outer;
         }
@@ -524,9 +525,9 @@ fn extract_derived_induction_variables(
   let mut existing_derived_induction_variable_set = HashMap::new();
   for v in all_basic_induction_variables {
     existing_derived_induction_variable_set.insert(
-      v.name,
+      v.name.dupe(),
       DerivedInductionVariable {
-        base_name: v.name,
+        base_name: v.name.dupe(),
         multiplier: PotentialLoopInvariantExpression::Int(1),
         immediate: PotentialLoopInvariantExpression::Int(0),
       },
@@ -543,7 +544,7 @@ fn extract_derived_induction_variables(
   }
   let mut induction_loop_variable_collector_names = HashSet::new();
   for v in all_basic_induction_variables {
-    induction_loop_variable_collector_names.insert(v.loop_value_collector);
+    induction_loop_variable_collector_names.insert(v.loop_value_collector.dupe());
   }
   let mut collector = Vec::new();
   for stmt in rest_stmts {
@@ -552,8 +553,8 @@ fn extract_derived_induction_variables(
       && !induction_loop_variable_collector_names.contains(&b.name)
     {
       collector.push(DerivedInductionVariableWithName {
-        name: b.name,
-        base_name: derived_induction_variable.base_name,
+        name: b.name.dupe(),
+        base_name: derived_induction_variable.base_name.dupe(),
         multiplier: derived_induction_variable.multiplier.clone(),
         immediate: derived_induction_variable.immediate.clone(),
       });
@@ -569,7 +570,7 @@ fn remove_dead_code_inside_loop(
   let mut live_variable_set = HashSet::new();
   for v in other_loop_variables {
     if let Some(var_name) = &v.loop_value.as_variable() {
-      live_variable_set.insert(var_name.name);
+      live_variable_set.insert(var_name.name.dupe());
     }
   }
   dead_code_elimination::optimize_stmts(rest_stmts, &mut live_variable_set)
@@ -623,8 +624,8 @@ pub(super) fn extract_optimizable_while_loop(
     .iter()
     .filter(|it| it.name.ne(&potential_basic_induction_variable_with_loop_guard))
     .map(|it| GeneralBasicInductionVariable {
-      name: it.name,
-      initial_value: it.initial_value,
+      name: it.name.dupe(),
+      initial_value: it.initial_value.dupe(),
       increment_amount: it.increment_amount.clone(),
     })
     .collect_vec();
@@ -636,7 +637,7 @@ pub(super) fn extract_optimizable_while_loop(
     non_loop_invariant_variables,
   );
   let derived_induction_variable_names =
-    derived_induction_variables.iter().map(|it| it.name).collect::<HashSet<_>>();
+    derived_induction_variables.iter().map(|it| it.name.dupe()).collect::<HashSet<_>>();
 
   // Phase 4: Remove undundant statements after getting all the induction variables.
   let mut statements = stmts.into_iter().skip(2).collect_vec();

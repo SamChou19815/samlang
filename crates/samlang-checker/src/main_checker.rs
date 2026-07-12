@@ -8,7 +8,7 @@ use super::{
   type_system,
   typing_context::{LocalTypingContext, TypingContext},
 };
-use dupe::Dupe;
+use dupe::{Dupe, IterDupedExt};
 use itertools::Itertools;
 use samlang_ast::{
   Description, Location, Reason,
@@ -154,7 +154,7 @@ fn solve_type_arguments(
     type_system::solve_multiple_type_constrains(&constraints, type_parameter_signatures);
   for type_parameter in type_parameter_signatures {
     partially_solved_substitution
-      .entry(type_parameter.name)
+      .entry(type_parameter.name.dupe())
       // Fill in unknown for unsolved types.
       .or_insert_with(|| Arc::new(cx.mk_placeholder_type(*function_call_reason)));
   }
@@ -251,7 +251,7 @@ fn check_literal(common: &expr::ExpressionCommon<()>, literal: &Literal) -> expr
       type_arguments: Vec::new(),
     })),
   };
-  expr::E::Literal(common.with_new_type(type_), *literal)
+  expr::E::Literal(common.with_new_type(type_), literal.dupe())
 }
 
 fn check_local_variable(
@@ -260,7 +260,7 @@ fn check_local_variable(
   id: &Id,
 ) -> expr::E<Arc<Type>> {
   let type_ = Arc::new(cx.local_typing_context.read(&common.loc));
-  expr::E::LocalId(common.with_new_type(type_), *id)
+  expr::E::LocalId(common.with_new_type(type_), id.dupe())
 }
 
 fn check_class_id(
@@ -270,21 +270,21 @@ fn check_class_id(
   id: &Id,
 ) -> expr::E<Arc<Type>> {
   let reason = Reason::new(common.loc, Some(common.loc));
-  if cx.class_exists(module_reference, id.name) {
+  if cx.class_exists(module_reference, id.name.dupe()) {
     let type_ = Arc::new(Type::Nominal(NominalType {
       reason,
       is_class_statics: true,
       module_reference,
-      id: id.name,
+      id: id.name.dupe(),
       type_arguments: Vec::new(),
     }));
-    expr::E::ClassId(common.with_new_type(type_), module_reference, *id)
+    expr::E::ClassId(common.with_new_type(type_), module_reference, id.dupe())
   } else {
-    cx.error_set.report_cannot_resolve_class_error(common.loc, module_reference, id.name);
+    cx.error_set.report_cannot_resolve_class_error(common.loc, module_reference, id.name.dupe());
     expr::E::ClassId(
       common.with_new_type(Arc::new(Type::Any(reason, false))),
       module_reference,
-      *id,
+      id.dupe(),
     )
   }
 }
@@ -399,15 +399,15 @@ fn check_member_with_unresolved_tparams(
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
-        field_name: expression.field_name,
+        field_name: expression.field_name.dupe(),
         field_order: expression.field_order,
       });
       return (partially_checked_expr, Vec::new());
     }
   };
-  let class_id = obj_type.id;
+  let class_id = obj_type.id.dupe();
   if let Some(method_type_info) =
-    cx.get_method_type(obj_type, expression.field_name.name, expression.common.loc)
+    cx.get_method_type(obj_type, expression.field_name.name.dupe(), expression.common.loc)
   {
     // This is a valid method. We will now type check it as a method access
     for targ in expression.explicit_type_arguments.iter().flat_map(|it| &it.arguments) {
@@ -419,7 +419,7 @@ fn check_member_with_unresolved_tparams(
       if explicit_type_arguments.len() == method_type_info.type_parameters.len() {
         let mut subst_map = HashMap::new();
         for (tparam, targ) in method_type_info.type_parameters.iter().zip(explicit_type_arguments) {
-          subst_map.insert(tparam.name, Arc::new(Type::from_annotation(targ)));
+          subst_map.insert(tparam.name.dupe(), Arc::new(Type::from_annotation(targ)));
         }
         validate_type_arguments(cx, &method_type_info.type_parameters, &subst_map);
         let type_ =
@@ -431,7 +431,7 @@ fn check_member_with_unresolved_tparams(
           explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments,
           object: Box::new(checked_expression),
-          method_name: expression.field_name,
+          method_name: expression.field_name.dupe(),
         });
         return (partially_checked_expr, Vec::new());
       }
@@ -450,7 +450,7 @@ fn check_member_with_unresolved_tparams(
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
-        method_name: expression.field_name,
+        method_name: expression.field_name.dupe(),
       });
       return (partially_checked_expr, Vec::new());
     }
@@ -471,7 +471,10 @@ fn check_member_with_unresolved_tparams(
         .type_parameters
         .iter()
         .map(|it| {
-          type_system::subst_type(&Type::Generic(Reason::dummy(), it.name), &solved_substitution)
+          type_system::subst_type(
+            &Type::Generic(Reason::dummy(), it.name.dupe()),
+            &solved_substitution,
+          )
         })
         .collect_vec();
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
@@ -479,7 +482,7 @@ fn check_member_with_unresolved_tparams(
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments,
         object: Box::new(checked_expression),
-        method_name: expression.field_name,
+        method_name: expression.field_name.dupe(),
       });
       return (partially_checked_expr, Vec::new());
     }
@@ -490,10 +493,10 @@ fn check_member_with_unresolved_tparams(
       inferred_type_arguments: method_type_info
         .type_parameters
         .iter()
-        .map(|it| Arc::new(Type::Generic(Reason::dummy(), it.name)))
+        .map(|it| Arc::new(Type::Generic(Reason::dummy(), it.name.dupe())))
         .collect_vec(),
       object: Box::new(checked_expression),
-      method_name: expression.field_name,
+      method_name: expression.field_name.dupe(),
     });
     (partially_checked_expr, method_type_info.type_parameters.clone())
   } else {
@@ -507,7 +510,7 @@ fn check_member_with_unresolved_tparams(
     let mut field_order_mapping = HashMap::new();
     let mut field_mappings = HashMap::new();
     for (i, field) in fields.into_iter().enumerate() {
-      field_order_mapping.insert(field.name, i);
+      field_order_mapping.insert(field.name.dupe(), i);
       field_mappings.insert(field.name, (field.type_, field.is_public));
     }
     if let Some((field_type, _)) =
@@ -520,15 +523,15 @@ fn check_member_with_unresolved_tparams(
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
-        field_name: expression.field_name,
+        field_name: expression.field_name.dupe(),
         field_order: order as i32,
       });
       (partially_checked_expr, Vec::new())
     } else {
       cx.error_set.report_cannot_resolve_member_error(
         expression.field_name.loc,
-        Description::NominalType { name: class_id, type_args: Vec::new() },
-        expression.field_name.name,
+        Description::NominalType { name: class_id.dupe(), type_args: Vec::new() },
+        expression.field_name.name.dupe(),
       );
       let any_type = Arc::new(Type::Any(Reason::new(expression.common.loc, None), false));
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
@@ -536,7 +539,7 @@ fn check_member_with_unresolved_tparams(
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: Vec::new(),
         object: Box::new(checked_expression),
-        field_name: expression.field_name,
+        field_name: expression.field_name.dupe(),
         field_order: expression.field_order,
       });
       (partially_checked_expr, Vec::new())
@@ -688,7 +691,7 @@ fn check_function_call_implicit_instantiation(
     .collect_vec();
   for type_parameter in still_unresolved_type_parameters {
     let t = cx.mk_underconstrained_any_type(*function_call_reason);
-    fully_solved_substitution.insert(type_parameter.name, Arc::new(t));
+    fully_solved_substitution.insert(type_parameter.name.dupe(), Arc::new(t));
   }
   let fully_solved_generic_type =
     type_system::subst_fn_type(generic_function_type, &fully_solved_substitution);
@@ -1048,7 +1051,7 @@ fn check_lambda(
       .iter()
       .zip(&argument_types)
       .map(|(param, t)| OptionallyAnnotatedId {
-        name: param.name,
+        name: param.name.dupe(),
         type_: t.dupe(),
         annotation: param.annotation.clone(),
       })
@@ -1139,7 +1142,7 @@ fn any_typed_invalid_matching_pattern(
         checked_destructured_names.push(pattern::ObjectPatternElement {
           loc: *loc,
           field_order: *field_order,
-          field_name: *field_name,
+          field_name: field_name.dupe(),
           pattern: Box::new(any_typed_invalid_matching_pattern(cx, pattern)),
           shorthand: *shorthand,
           type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
@@ -1161,14 +1164,14 @@ fn any_typed_invalid_matching_pattern(
     }) => pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc: *loc,
       tag_order: *tag_order,
-      tag: *tag,
+      tag: tag.dupe(),
       data_variables: data_variables.as_ref().map(|p| any_typed_invalid_tuple_pattern(cx, p)),
       type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
     }),
     pattern::MatchingPattern::Id(id, ()) => {
       let type_ = Arc::new(Type::Any(Reason::new(id.loc, Some(id.loc)), false));
       cx.local_typing_context.write(id.loc, type_.dupe());
-      pattern::MatchingPattern::Id(*id, type_)
+      pattern::MatchingPattern::Id(id.dupe(), type_)
     }
     pattern::MatchingPattern::Wildcard { location, associated_comments } => {
       pattern::MatchingPattern::Wildcard {
@@ -1269,8 +1272,8 @@ fn check_matching_pattern(
       let mut field_mappings = HashMap::new();
       let mut abstract_pattern_nodes = Vec::with_capacity(fields.len());
       for (i, field) in fields.into_iter().enumerate() {
-        field_order_mapping.insert(field.name, i);
-        not_mentioned_fields.insert(field.name);
+        field_order_mapping.insert(field.name.dupe(), i);
+        not_mentioned_fields.insert(field.name.dupe());
         field_mappings.insert(field.name, (field.type_, field.is_public));
         abstract_pattern_nodes.push(pattern_matching::AbstractPatternNode::wildcard());
       }
@@ -1289,7 +1292,7 @@ fn check_matching_pattern(
             cx.error_set.report_cannot_resolve_member_error(
               field_name.loc,
               pattern_type.to_description(),
-              field_name.name,
+              field_name.name.dupe(),
             );
           }
           not_mentioned_fields.remove(&field_name.name);
@@ -1299,7 +1302,7 @@ fn check_matching_pattern(
           checked_destructured_names.push(pattern::ObjectPatternElement {
             loc: *loc,
             field_order: *field_order,
-            field_name: *field_name,
+            field_name: field_name.dupe(),
             pattern: Box::new(checked),
             shorthand: *shorthand,
             type_: Arc::new(field_type.reposition(*loc)),
@@ -1310,7 +1313,7 @@ fn check_matching_pattern(
         cx.error_set.report_cannot_resolve_member_error(
           field_name.loc,
           pattern_type.to_description(),
-          field_name.name,
+          field_name.name.dupe(),
         );
         let type_ = Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
         let (checked, abstract_node) =
@@ -1318,7 +1321,7 @@ fn check_matching_pattern(
         checked_destructured_names.push(pattern::ObjectPatternElement {
           loc: *loc,
           field_order: *field_order,
-          field_name: *field_name,
+          field_name: field_name.dupe(),
           pattern: Box::new(checked),
           shorthand: *shorthand,
           type_: Arc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
@@ -1366,7 +1369,7 @@ fn check_matching_pattern(
         cx.error_set.report_cannot_resolve_member_error(
           tag.loc,
           pattern_type.to_description(),
-          tag.name,
+          tag.name.dupe(),
         );
         return (
           any_typed_invalid_matching_pattern(cx, pattern),
@@ -1439,7 +1442,7 @@ fn check_matching_pattern(
         pattern::MatchingPattern::Variant(pattern::VariantPattern {
           loc: *loc,
           tag_order,
-          tag: *tag,
+          tag: tag.dupe(),
           data_variables: checked_data_variables,
           type_: pattern_type.dupe(),
         }),
@@ -1452,7 +1455,7 @@ fn check_matching_pattern(
     pattern::MatchingPattern::Id(id, ()) => {
       cx.local_typing_context.write(id.loc, pattern_type.dupe());
       (
-        pattern::MatchingPattern::Id(*id, pattern_type.dupe()),
+        pattern::MatchingPattern::Id(id.dupe(), pattern_type.dupe()),
         pattern_matching::AbstractPatternNode::wildcard(),
       )
     }
@@ -1477,13 +1480,13 @@ fn check_matching_pattern(
           check_matching_pattern(cx, pattern, wildcard_on_bad_pattern, pattern_type);
         let actual_bindings: BTreeMap<PStr, Arc<Type>> =
           checked.bindings().into_iter().map(|(k, v)| (k, v.clone())).collect();
-        let expected_names: BTreeSet<PStr> = expected_bindings.keys().copied().collect();
-        let actual_names: BTreeSet<PStr> = actual_bindings.keys().copied().collect();
+        let expected_names: BTreeSet<PStr> = expected_bindings.keys().duped().collect();
+        let actual_names: BTreeSet<PStr> = actual_bindings.keys().duped().collect();
         if expected_names != actual_names {
           cx.error_set.report_or_pattern_inconsistent_bindings_error(
             *pattern.loc(),
-            expected_names.iter().copied().collect(),
-            actual_names.iter().copied().collect(),
+            expected_names.iter().duped().collect(),
+            actual_names.iter().duped().collect(),
           );
           has_error = true;
         } else {
@@ -1667,7 +1670,7 @@ pub fn type_check_module(
       for id in one_import.imported_members.iter() {
         if module_cx.interfaces.get(&id.name).filter(|interface_cx| !interface_cx.private).is_none()
         {
-          error_set.report_missing_export_error(id.loc, one_import.imported_module, id.name);
+          error_set.report_missing_export_error(id.loc, one_import.imported_module, id.name.dupe());
         }
       }
     } else {
@@ -1681,12 +1684,12 @@ pub fn type_check_module(
       reason: Reason::new(toplevel.name().loc, None),
       is_class_statics: false,
       module_reference,
-      id: toplevel.name().name,
+      id: toplevel.name().name.dupe(),
       type_arguments: toplevel
         .type_parameters()
         .iter()
         .flat_map(|it| &it.parameters)
-        .map(|it| Arc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
+        .map(|it| Arc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name.dupe())))
         .collect_vec(),
     };
     let global_signature::SuperTypesResolutionResult { types: resolved_super_types, is_cyclic } =
@@ -1717,7 +1720,7 @@ pub fn type_check_module(
       &mut local_cx,
       error_set,
       module_reference,
-      toplevel.name().name,
+      toplevel.name().name.dupe(),
       toplevel_tparams_sig.clone(),
     );
     validate_tparams_signature_type_instantiation(&mut cx, &toplevel_tparams_sig);
@@ -1768,7 +1771,7 @@ pub fn type_check_module(
         let resolved = global_signature::resolve_all_method_signatures(
           global_cx,
           &resolved_super_types,
-          member.name.name,
+          member.name.name.dupe(),
         );
         for expected in &resolved {
           check_class_member_conformance_with_signature(error_set, expected, member);
@@ -1790,7 +1793,7 @@ pub fn type_check_module(
         &mut local_cx,
         error_set,
         module_reference,
-        toplevel.name().name,
+        toplevel.name().name.dupe(),
         tparam_sigs,
       );
       for tparam in member.type_parameters.iter().flat_map(|it| &it.parameters) {
@@ -1815,11 +1818,11 @@ pub fn type_check_module(
         let mut missing_method_members =
           global_signature::resolve_all_member_names(global_cx, &resolved_super_types, true);
         for member in &c.members.members {
-          let n = member.decl.name.name;
+          let n = &member.decl.name.name;
           if member.decl.is_method {
-            missing_method_members.remove(&n);
+            missing_method_members.remove(n);
           } else {
-            missing_function_members.remove(&n);
+            missing_function_members.remove(n);
           }
         }
         match c.type_definition.as_ref() {
@@ -1838,11 +1841,11 @@ pub fn type_check_module(
           }
           None => {}
         }
-        missing_function_members.extend(&missing_method_members);
+        missing_function_members.extend(missing_method_members.iter().duped());
         if !missing_function_members.is_empty() {
           error_set.report_missing_class_member_definition_error(
             toplevel.name().loc,
-            missing_function_members.iter().copied().collect(),
+            missing_function_members.iter().duped().collect(),
           );
         }
         local_cx.write(c.loc, Arc::new(Type::Nominal(nominal_type)));
@@ -1863,7 +1866,7 @@ pub fn type_check_module(
             &mut local_cx,
             error_set,
             module_reference,
-            c.name.name,
+            c.name.name.dupe(),
             tparam_sigs,
           );
           let body_type_hint = Type::from_annotation(&member.decl.return_type);
@@ -1876,7 +1879,7 @@ pub fn type_check_module(
           loc: c.loc,
           associated_comments: c.associated_comments,
           private: c.private,
-          name: c.name,
+          name: c.name.dupe(),
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
           type_definition: c.type_definition.clone(),

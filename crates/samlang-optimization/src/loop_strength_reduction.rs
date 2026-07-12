@@ -2,6 +2,7 @@ use super::loop_induction_analysis::{
   GeneralBasicInductionVariable, OptimizableWhileLoop,
   merge_invariant_multiplication_for_loop_optimization,
 };
+use dupe::Dupe;
 use samlang_ast::{
   hir::BinaryOperator,
   mir::{Expression, INT_32_TYPE, Statement},
@@ -26,11 +27,11 @@ pub(super) fn optimize(
   counter: &TempPStrCounter,
 ) -> LoopStrengthReductionOptimizationResult {
   let mut basic_induction_variable_map = HashMap::from([(
-    basic_induction_variable_with_loop_guard.name,
+    basic_induction_variable_with_loop_guard.name.dupe(),
     basic_induction_variable_with_loop_guard.as_general_basic_induction_variable(),
   )]);
   for v in &general_induction_variables {
-    basic_induction_variable_map.insert(v.name, v.clone());
+    basic_induction_variable_map.insert(v.name.dupe(), v.clone());
   }
   let mut prefix_statements = Vec::new();
   let mut new_general_induction_variables = Vec::new();
@@ -47,13 +48,13 @@ pub(super) fn optimize(
       let new_initial_value_temp_temporary = counter.alloc_temp_str();
       let new_initial_value_name = counter.alloc_temp_str();
       prefix_statements.push(Statement::Binary(Statement::binary_flexible_unwrapped(
-        new_initial_value_temp_temporary,
+        new_initial_value_temp_temporary.dupe(),
         BinaryOperator::MUL,
         derived_induction_variable.multiplier.to_expression(),
-        associated_basic_induction_variable.initial_value,
+        associated_basic_induction_variable.initial_value.dupe(),
       )));
       prefix_statements.push(Statement::Binary(Statement::binary_flexible_unwrapped(
-        new_initial_value_name,
+        new_initial_value_name.dupe(),
         BinaryOperator::PLUS,
         derived_induction_variable.immediate.to_expression(),
         Expression::var_name(new_initial_value_temp_temporary, INT_32_TYPE),

@@ -4,21 +4,21 @@ use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Dupe, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct IndexAccessBindedValue {
   pub(super) type_: Type,
   pub(super) pointer_expression: Expression,
   pub(super) index: usize,
 }
 
-#[derive(Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Dupe, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct BinaryBindedValue {
   pub(super) operator: BinaryOperator,
   pub(super) e1: Expression,
   pub(super) e2: Expression,
 }
 
-#[derive(Clone, Dupe, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Dupe, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum BindedValue {
   IndexedAccess(IndexAccessBindedValue),
   Binary(BinaryBindedValue),

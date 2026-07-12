@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{lir, mir};
 use samlang_heap::{Heap, PStr};
@@ -168,13 +169,13 @@ impl<'a> LoweringManager<'a> {
             let pointer_expr =
               lir::Expression::Variable(closure_var_name, self.lower_type(closure_hir_type));
             statements.push(lir::Statement::IndexedAccess {
-              name: temp_fn,
+              name: temp_fn.dupe(),
               type_: lir::Type::Fn(fn_type.clone()),
               pointer_expression: pointer_expr.clone(),
               index: 0,
             });
             statements.push(lir::Statement::IndexedAccess {
-              name: temp_cx,
+              name: temp_cx.dupe(),
               type_: lir::ANY_POINTER_TYPE,
               pointer_expression: pointer_expr,
               index: 1,
@@ -279,7 +280,7 @@ impl<'a> LoweringManager<'a> {
         let fn_name_slot = {
           let temp = self.heap.alloc_temp_str();
           statements.push(lir::Statement::Cast {
-            name: temp,
+            name: temp.dupe(),
             type_: lir::Type::Fn(type_erased_closure_type.clone()),
             assigned_expression: lir::Expression::FnName(fn_name, original_fn_type),
           });
@@ -288,7 +289,7 @@ impl<'a> LoweringManager<'a> {
         let cx_slot = {
           let temp = self.heap.alloc_temp_str();
           statements.push(lir::Statement::Cast {
-            name: temp,
+            name: temp.dupe(),
             type_: lir::ANY_POINTER_TYPE,
             assigned_expression: context,
           });
@@ -810,9 +811,9 @@ type _CC = [(t0: any, t1: number) => number, any];
 type _Object = [number, number];
 type _Variant = [number];
 function __$cc(): i31 {{
-  let _t1: (t0: any, t1: number) => number = cc[0];
-  let _t2: any = cc[1];
-  _t1(_t2, 1);
+  let _t0: (t0: any, t1: number) => number = cc[0];
+  let _t1: any = cc[1];
+  _t0(_t1, 1);
   let v1: number = a[0];
   let v2: number = b[0];
   let v3: number = b[1];
@@ -839,12 +840,12 @@ function __$main(): number {{
   let O: _Object = [0, obj];
   let v1: any = [0, 0];
   let v2: any = [0, GLOBAL_STRING_0];
-  let _t3 = __$aaa as unknown as (t0: any) => number;
-  let _t4 = GLOBAL_STRING_0 as unknown as any;
-  let c1: _CC = [_t3, _t4];
-  let _t5 = __$bbb as unknown as (t0: any) => number;
-  let _t6 = 0 as unknown as any;
-  let c2: _CC = [_t5, _t6];
+  let _t2 = __$aaa as unknown as (t0: any) => number;
+  let _t3 = GLOBAL_STRING_0 as unknown as any;
+  let c1: _CC = [_t2, _t3];
+  let _t4 = __$bbb as unknown as (t0: any) => number;
+  let _t5 = 0 as unknown as any;
+  let c2: _CC = [_t4, _t5];
   return 0;
 }}
 function __$compiled_program_main(): number {{
@@ -854,12 +855,12 @@ function __$compiled_program_main(): number {{
     let ccc: number = __$cc(0);
     finalV = v1;
   }} else {{
-    let _t8: (t0: any, t1: number) => number = cc[0];
-    let _t9: any = cc[1];
-    let _t7: _CC = _t8(_t9, 0);
-    let _t10 = __$aaa as unknown as (t0: any) => number;
-    let _t11 = G1 as unknown as any;
-    let v2: _CC = [_t10, _t11];
+    let _t7: (t0: any, t1: number) => number = cc[0];
+    let _t8: any = cc[1];
+    let _t6: _CC = _t7(_t8, 0);
+    let _t9 = __$aaa as unknown as (t0: any) => number;
+    let _t10 = G1 as unknown as any;
+    let v2: _CC = [_t9, _t10];
     finalV = v2;
   }}
   var finalV2: number;

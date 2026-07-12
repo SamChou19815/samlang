@@ -1,4 +1,4 @@
-use super::{dep_graph::DependencyGraph, gc::perform_gc_after_recheck};
+use super::dep_graph::DependencyGraph;
 use rayon::prelude::*;
 use samlang_ast::source::Module;
 use samlang_checker::{
@@ -15,7 +15,6 @@ use std::{
 
 pub struct ServerState {
   pub heap: Heap,
-  enable_profiling: bool,
   pub string_sources: HashMap<ModuleReference, String>,
   pub(super) parsed_modules: HashMap<ModuleReference, Module<()>>,
   dep_graph: DependencyGraph,
@@ -51,7 +50,6 @@ impl ServerState {
       let errors = error_set.group_errors();
       ServerState {
         heap,
-        enable_profiling,
         string_sources,
         parsed_modules,
         dep_graph,
@@ -97,15 +95,6 @@ impl ServerState {
     for (mod_ref, mod_scoped_errors) in grouped_errors {
       self.errors.insert(mod_ref, mod_scoped_errors);
     }
-
-    // GC
-    samlang_profiling::measure_time(self.enable_profiling, "GC", || {
-      perform_gc_after_recheck(
-        &mut self.heap,
-        &self.checked_modules,
-        self.checked_modules.keys().copied().collect(),
-      )
-    });
   }
 
   pub fn all_modules(&self) -> Vec<&ModuleReference> {
