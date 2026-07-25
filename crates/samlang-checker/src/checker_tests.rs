@@ -3378,14 +3378,14 @@ Found 6 errors.
   }
 
   fn assert_module_errors(sources: Vec<(&'static str, &str)>, expected_errors: &str) {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let mut string_sources = HashMap::new();
     let mut unchecked_sources = HashMap::new();
     for (mod_ref_str, source) in sources {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![mod_ref_str.to_string()]);
       let parsed =
-        samlang_parser::parse_source_module_from_text(source, mod_ref, &mut heap, &mut error_set);
+        samlang_parser::parse_source_module_from_text(source, mod_ref, &heap, &mut error_set);
       string_sources.insert(mod_ref, source.to_string());
       unchecked_sources.insert(mod_ref, parsed);
     }

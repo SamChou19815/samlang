@@ -25,7 +25,7 @@ pub struct ServerState {
 
 impl ServerState {
   pub fn new(
-    mut heap: Heap,
+    heap: Heap,
     enable_profiling: bool,
     string_sources: HashMap<ModuleReference, String>,
   ) -> ServerState {
@@ -36,12 +36,7 @@ impl ServerState {
         .map(|(mod_ref, text)| {
           (
             *mod_ref,
-            samlang_parser::parse_source_module_from_text(
-              text,
-              *mod_ref,
-              &mut heap,
-              &mut error_set,
-            ),
+            samlang_parser::parse_source_module_from_text(text, *mod_ref, &heap, &mut error_set),
           )
         })
         .collect::<HashMap<_, _>>();
@@ -121,7 +116,7 @@ impl ServerState {
       let parsed = samlang_parser::parse_source_module_from_text(
         &source_code,
         mod_ref,
-        &mut self.heap,
+        &self.heap,
         &mut error_set,
       );
       self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed));
@@ -144,7 +139,7 @@ impl ServerState {
         let parsed = samlang_parser::parse_source_module_from_text(
           &source,
           new_mod_ref,
-          &mut self.heap,
+          &self.heap,
           &mut error_set,
         );
         self.string_sources.insert(new_mod_ref, source);
@@ -180,7 +175,7 @@ mod tests {
 
   #[test]
   fn update_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["test".to_string()]);
     let mut service = ServerState::new(heap, false, HashMap::new());
     service.update(vec![(
@@ -226,7 +221,7 @@ Error ----------------------------------- test.sam:3:26-3:32
 
   #[test]
   fn dependency_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test1_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let mut service = ServerState::new(
@@ -492,7 +487,7 @@ class Test2 {
 
   #[test]
   fn rename_mod_ref_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let a_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
     let b_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["B".to_string()]);

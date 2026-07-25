@@ -39,7 +39,7 @@ mod tests {
 
   #[test]
   fn expression_test() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let expr_str = r#"{
   let a: int = 3;
@@ -67,7 +67,7 @@ mod tests {
     let (_, expr) = samlang_parser::parse_source_expression_from_text(
       expr_str,
       ModuleReference::DUMMY,
-      &mut heap,
+      &heap,
       &mut error_set,
     );
     assert_eq!(false, error_set.has_errors());
@@ -126,7 +126,7 @@ def_to_use_map:
 
   #[test]
   fn toplevel_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let program_str = r#"
 import { Pair } from stdlib.utils
@@ -155,7 +155,7 @@ class MultiInvalidDef<T, T> {}
     let module = samlang_parser::parse_source_module_from_text(
       program_str,
       ModuleReference::DUMMY,
-      &mut heap,
+      &heap,
       &mut error_set,
     );
     assert_eq!(false, error_set.has_errors());
@@ -226,7 +226,7 @@ def_to_use_map:
 
   #[test]
   fn or_pattern_test() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let module = samlang_parser::parse_source_module_from_text(
       r#"class Status(Ok(int), Warning(int), Error(Str)) {
@@ -238,7 +238,7 @@ def_to_use_map:
 }
 "#,
       ModuleReference::DUMMY,
-      &mut heap,
+      &heap,
       &mut error_set,
     );
     let analysis_result =

@@ -305,7 +305,7 @@ Found 3 errors.
   fn get_members_test() {
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_ref_w = heap.alloc_module_reference(vec![PStr::UPPER_W]);
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([
@@ -770,7 +770,7 @@ Found 3 errors.
   fn resolve_type_definitions_test() {
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let mod_ref_w = heap.alloc_module_reference(vec![PStr::UPPER_W]);
     let global_cx = HashMap::from([

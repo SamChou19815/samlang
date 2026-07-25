@@ -103,10 +103,10 @@ pub fn optimize_sources(
     } = sources;
     let counter = heap.create_temp_counter();
     optimize_functions_for_rounds(&mut functions, &counter, configuration);
-    heap.sync_temp_counter(&counter);
     if configuration.does_perform_inlining {
-      functions = inlining::optimize_functions(functions, heap);
+      functions = inlining::optimize_functions(functions, heap, &counter);
     }
+    heap.sync_temp_counter(&counter);
     sources = samlang_ast::mir::Sources {
       symbol_table,
       global_variables,

@@ -10,6 +10,7 @@ use super::{
 use dupe::{Dupe, IterDupedExt, OptionDupedExt};
 use itertools::Itertools;
 use ordermap::OrderSet;
+use rayon::prelude::*;
 use samlang_ast::{hir, mir, source};
 use samlang_checker::type_;
 use samlang_collections::local_stacked_context::LocalStackedContext;
@@ -1483,10 +1484,21 @@ fn optimize_by_tail_rec_rewrite(heap: &mut Heap, sources: mir::Sources) -> mir::
     closure_types,
     type_definitions,
     main_function_names,
-    functions: functions
-      .into_iter()
-      .map(|f| mir_tail_recursion_rewrite::optimize_function_by_tailrec_rewrite(heap, f))
-      .collect(),
+    functions: {
+      // Each function is rewritten independently; only the temp-name counter is shared.
+      let counter = heap.create_temp_counter();
+      let functions = {
+        let heap: &Heap = heap;
+        functions
+          .into_par_iter()
+          .map(|f| {
+            mir_tail_recursion_rewrite::optimize_function_by_tailrec_rewrite(heap, &counter, f)
+          })
+          .collect::<Vec<_>>()
+      };
+      heap.sync_temp_counter(&counter);
+      functions
+    },
   }
 }
 

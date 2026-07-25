@@ -13,7 +13,7 @@ fn builtin_classes() -> HashSet<PStr> {
 pub fn parse_source_module_from_text(
   text: &str,
   module_reference: ModuleReference,
-  heap: &mut Heap,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> source::Module<()> {
   let builtins = builtin_classes();
@@ -26,7 +26,7 @@ pub fn parse_source_module_from_text(
 pub fn parse_source_expression_from_text(
   text: &str,
   module_reference: ModuleReference,
-  heap: &mut Heap,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> (source::CommentStore, source::expr::E<()>) {
   let builtins = builtin_classes();
@@ -36,7 +36,7 @@ pub fn parse_source_expression_from_text(
   source_parser::parse_expression_with_comment_store(parser)
 }
 
-pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, String> {
+pub fn builtin_std_raw_sources(heap: &Heap) -> HashMap<ModuleReference, String> {
   let mut sources = HashMap::new();
   sources.insert(
     heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "boxed".to_string()]),
@@ -89,9 +89,9 @@ mod tests {
   use pretty_assertions::assert_eq;
 
   fn expect_good_expr(text: &str) {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
+    parse_source_expression_from_text(text, ModuleReference::DUMMY, &heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
   }
 
@@ -182,9 +182,9 @@ mod tests {
   }
 
   fn expect_bad_expr(text: &str) {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
+    parse_source_expression_from_text(text, ModuleReference::DUMMY, &heap, &mut error_set);
     assert_ne!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
   }
 
@@ -244,7 +244,7 @@ mod tests {
 
   #[test]
   fn test_can_parse_good_programs() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
     // Adapted from website
@@ -322,7 +322,7 @@ mod tests {
     }
 "#;
     let parsed =
-      &parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
+      &parse_source_module_from_text(text, ModuleReference::DUMMY, &heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     assert_eq!(2, parsed.imports.len());
     assert_eq!(
@@ -354,7 +354,7 @@ mod tests {
 
   #[test]
   fn test_can_handle_bad_programs() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
     // Adapted from website
@@ -384,8 +384,7 @@ mod tests {
       }
     }
 "#;
-    let module =
-      parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
+    let module = parse_source_module_from_text(text, ModuleReference::DUMMY, &heap, &mut error_set);
 
     assert_eq!(1, module.imports.len());
     assert!(error_set.has_errors())
@@ -393,7 +392,7 @@ mod tests {
 
   #[test]
   fn test_can_handle_really_bad_programs() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
     import {Foo} from a.2
@@ -475,18 +474,18 @@ mod tests {
         int,int,int,int,int)
     ) {}
 "#;
-    parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
+    parse_source_module_from_text(text, ModuleReference::DUMMY, &heap, &mut error_set);
     assert!(error_set.has_errors())
   }
 
   #[test]
   fn test_can_handle_complete_trash() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     parse_source_module_from_text(
       "This is not a program.",
       ModuleReference::DUMMY,
-      &mut heap,
+      &heap,
       &mut error_set,
     );
     let expected_errors = r#"

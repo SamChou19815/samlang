@@ -37,17 +37,30 @@ pub fn compile_sources(
   enable_profiling: bool,
 ) -> Result<SourcesCompilationResult, String> {
   let mut error_set = samlang_errors::ErrorSet::new();
-  let mut parsed_sources = std::collections::HashMap::new();
-  samlang_profiling::measure_time(enable_profiling, "Parsing", || {
-    for (module_reference, source) in &source_handles {
-      let parsed = samlang_parser::parse_source_module_from_text(
-        source,
-        *module_reference,
-        heap,
-        &mut error_set,
-      );
-      parsed_sources.insert(*module_reference, parsed);
+  let parsed_sources = samlang_profiling::measure_time(enable_profiling, "Parsing", || {
+    use rayon::prelude::*;
+    // Modules parse independently. Each gets a private error set, merged sequentially below,
+    // so the shared `&Heap` is only touched to intern the module references of imports.
+    let heap: &samlang_heap::Heap = heap;
+    let results: Vec<_> = source_handles
+      .par_iter()
+      .map(|(module_reference, source)| {
+        let mut local_error_set = samlang_errors::ErrorSet::new();
+        let parsed = samlang_parser::parse_source_module_from_text(
+          source,
+          *module_reference,
+          heap,
+          &mut local_error_set,
+        );
+        (*module_reference, parsed, local_error_set)
+      })
+      .collect();
+    let mut parsed_sources = std::collections::HashMap::new();
+    for (module_reference, parsed, local_error_set) in results {
+      parsed_sources.insert(module_reference, parsed);
+      error_set.merge(local_error_set);
     }
+    parsed_sources
   });
   for module_reference in &entry_module_references {
     if !parsed_sources.contains_key(module_reference) {
@@ -140,7 +153,7 @@ class HelloWorld {
 }
 "#,
         ModuleReference::DUMMY,
-        &mut heap,
+        &heap,
         &mut error_set,
       ),
     )]);

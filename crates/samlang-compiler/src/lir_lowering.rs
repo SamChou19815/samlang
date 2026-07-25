@@ -1,7 +1,8 @@
 use dupe::Dupe;
 use itertools::Itertools;
+use rayon::prelude::*;
 use samlang_ast::{lir, mir};
-use samlang_heap::{Heap, PStr};
+use samlang_heap::{Heap, PStr, TempPStrCounter};
 use std::collections::{BTreeMap, HashSet};
 
 use crate::lir_unused_name_elimination;
@@ -54,18 +55,18 @@ fn lower_expression(expr: mir::Expression) -> lir::Expression {
 }
 
 struct LoweringManager<'a> {
-  heap: &'a mut Heap,
+  counter: &'a TempPStrCounter,
   closure_defs: &'a BTreeMap<mir::TypeNameId, lir::FunctionType>,
   types_needing_any_pointer: &'a TypesNeedingAnyPointer,
 }
 
 impl<'a> LoweringManager<'a> {
   fn new(
-    heap: &'a mut Heap,
+    counter: &'a TempPStrCounter,
     closure_defs: &'a BTreeMap<mir::TypeNameId, lir::FunctionType>,
     types_needing_any_pointer: &'a TypesNeedingAnyPointer,
   ) -> LoweringManager<'a> {
-    LoweringManager { heap, closure_defs, types_needing_any_pointer }
+    LoweringManager { counter, closure_defs, types_needing_any_pointer }
   }
 
   fn lower_type(&self, type_: mir::Type) -> lir::Type {
@@ -144,7 +145,7 @@ impl<'a> LoweringManager<'a> {
         let return_collector = if let Some(c) = return_collector {
           Some(c)
         } else if lowered_return_type.as_id().is_some() {
-          Some(self.heap.alloc_temp_str())
+          Some(self.counter.alloc_temp_str())
         } else {
           None
         };
@@ -162,8 +163,8 @@ impl<'a> LoweringManager<'a> {
             name: closure_var_name,
             type_: closure_hir_type,
           }) => {
-            let temp_fn = self.heap.alloc_temp_str();
-            let temp_cx = self.heap.alloc_temp_str();
+            let temp_fn = self.counter.alloc_temp_str();
+            let temp_cx = self.counter.alloc_temp_str();
             let closure_type_name = &closure_hir_type.as_id().unwrap();
             let fn_type = self.closure_defs.get(closure_type_name).unwrap();
             let pointer_expr =
@@ -278,7 +279,7 @@ impl<'a> LoweringManager<'a> {
         let mut statements = Vec::new();
         let context = self.lower_expression(context);
         let fn_name_slot = {
-          let temp = self.heap.alloc_temp_str();
+          let temp = self.counter.alloc_temp_str();
           statements.push(lir::Statement::Cast {
             name: temp.dupe(),
             type_: lir::Type::Fn(type_erased_closure_type.clone()),
@@ -287,7 +288,7 @@ impl<'a> LoweringManager<'a> {
           lir::Expression::Variable(temp, lir::Type::Fn(type_erased_closure_type))
         };
         let cx_slot = {
-          let temp = self.heap.alloc_temp_str();
+          let temp = self.counter.alloc_temp_str();
           statements.push(lir::Statement::Cast {
             name: temp.dupe(),
             type_: lir::ANY_POINTER_TYPE,
@@ -388,12 +389,15 @@ pub fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Source
       }
     }
   }
+  // Each function is lowered independently; only the temp-name counter is shared.
+  let counter = heap.create_temp_counter();
   let functions = functions
-    .into_iter()
+    .into_par_iter()
     .map(|f| {
-      LoweringManager::new(heap, &closure_def_map, &types_needing_any_pointer).lower_function(f)
+      LoweringManager::new(&counter, &closure_def_map, &types_needing_any_pointer).lower_function(f)
     })
-    .collect_vec();
+    .collect::<Vec<_>>();
+  heap.sync_temp_counter(&counter);
   lir_unused_name_elimination::optimize_lir_sources_by_eliminating_unused_ones(lir::Sources {
     symbol_table,
     global_variables,
@@ -512,8 +516,33 @@ mod tests {
     let _ = lir_sources.pretty_print(heap);
   }
 
+  /// Functions are lowered in parallel off a shared temp-name counter, so which function wins a
+  /// given `_tN` depends on thread scheduling. The names are still unique and the lowering is
+  /// otherwise deterministic, so renumber them by order of first appearance before comparing.
+  fn canonicalize_temp_names(s: &str) -> String {
+    let mut renamed = std::collections::HashMap::new();
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(start) = rest.find("_t") {
+      let digits = rest[start + 2..].chars().take_while(char::is_ascii_digit).collect::<String>();
+      out.push_str(&rest[..start]);
+      if digits.is_empty() {
+        out.push_str("_t");
+      } else {
+        let next = renamed.len();
+        out.push_str(&format!("_t{}", renamed.entry(digits.clone()).or_insert(next)));
+      }
+      rest = &rest[start + 2 + digits.len()..];
+    }
+    out.push_str(rest);
+    out
+  }
+
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
-    assert_eq!(expected, super::compile_mir_to_lir(heap, sources).pretty_print(heap));
+    assert_eq!(
+      canonicalize_temp_names(expected),
+      canonicalize_temp_names(&super::compile_mir_to_lir(heap, sources).pretty_print(heap))
+    );
   }
 
   #[test]
