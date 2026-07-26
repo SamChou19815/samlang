@@ -20,6 +20,3 @@ mod mir_tests;
 /// All of the LSP logic runs on source AST.
 pub mod source;
 mod source_tests;
-/// The final stage AST that closely models parts of WASM that are relevant to samlang.
-/// For now, this is the only supported backend.
-pub mod wasm;

@@ -96,7 +96,7 @@ impl TypeNameId {
   pub const PROCESS: TypeNameId = TypeNameId(2);
   pub const VEC: TypeNameId = TypeNameId(3);
 
-  pub(super) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+  pub fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
     // STR and VEC are special - they're builtin GC types defined in libsam.wat,
     // not generated structs.
     if *self == Self::STR {

@@ -1,13 +1,14 @@
 mod hir_lowering;
 mod hir_string_manager;
 mod hir_type_conversion;
+mod libsam;
 mod lir_lowering;
 mod lir_unused_name_elimination;
 mod mir_constant_param_elimination;
 mod mir_generics_specialization;
 mod mir_tail_recursion_rewrite;
 mod mir_type_deduplication;
-mod wasm_lowering;
+mod wast_lowering;
 
 pub use hir_lowering::compile_sources_to_mir;
 pub use lir_lowering::compile_mir_to_lir;
@@ -16,13 +17,9 @@ pub fn compile_lir_to_wasm(
   heap: &mut samlang_heap::Heap,
   sources: samlang_ast::lir::Sources,
 ) -> (String, Vec<u8>) {
-  let whole_module_string = format!(
-    "(module\n{}\n{}\n)\n",
-    include_str!("libsam.wat"),
-    wasm_lowering::compile_lir_to_wasm(heap, sources).pretty_print(heap)
-  );
-  let wat = wat::parse_str(&whole_module_string).unwrap();
-  (whole_module_string, wat)
+  let binary = wast_lowering::compile_lir_to_binary(heap, sources);
+  let wat_text = wasmprinter::print_bytes(&binary).unwrap();
+  (wat_text, binary)
 }
 
 pub struct SourcesCompilationResult {
