@@ -2,6 +2,7 @@ use super::loop_induction_analysis::{
   BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
   PotentialLoopInvariantExpression,
 };
+use dupe::Dupe;
 use samlang_ast::{
   hir::BinaryOperator,
   mir::{Binary, Expression, INT_32_TYPE, Statement, ZERO},
@@ -90,7 +91,7 @@ pub(super) fn optimize(
         let basic_induction_variable_with_loop_guard_final_value =
           *initial_guard_value + *guard_increment_amount * num_of_loop_iterations;
         return Some(vec![Statement::Binary(Binary {
-          name: *n,
+          name: n.dupe(),
           operator: BinaryOperator::PLUS,
           e1: Expression::i32(basic_induction_variable_with_loop_guard_final_value),
           e2: ZERO,
@@ -101,9 +102,9 @@ pub(super) fn optimize(
       // Now we know that the break value is a constant, so we can directly return the assignment
       // without looping around.
       return Some(vec![Statement::Binary(Binary {
-        name: *n,
+        name: n.dupe(),
         operator: BinaryOperator::PLUS,
-        e1: *e,
+        e1: e.dupe(),
         e2: ZERO,
       })]);
     }
@@ -120,15 +121,15 @@ pub(super) fn optimize(
     let increment_temporary = counter.alloc_temp_str();
     Some(vec![
       Statement::Binary(Statement::binary_flexible_unwrapped(
-        increment_temporary,
+        increment_temporary.dupe(),
         BinaryOperator::MUL,
         relevant_general_induction_variable.increment_amount.to_expression(),
         Expression::i32(num_of_loop_iterations),
       )),
       Statement::Binary(Statement::binary_flexible_unwrapped(
-        *break_collector.0,
+        break_collector.0.dupe(),
         BinaryOperator::PLUS,
-        relevant_general_induction_variable.initial_value,
+        relevant_general_induction_variable.initial_value.dupe(),
         Expression::var_name(increment_temporary, INT_32_TYPE),
       )),
     ])
@@ -136,9 +137,9 @@ pub(super) fn optimize(
     // Now we know that the break value is a constant, so we can directly return the assignment
     // without looping around.
     Some(vec![Statement::Binary(Binary {
-      name: *break_collector.0,
+      name: break_collector.0.dupe(),
       operator: BinaryOperator::PLUS,
-      e1: Expression::Variable(*break_collector.2),
+      e1: Expression::Variable(break_collector.2.dupe()),
       e2: ZERO,
     })])
   }

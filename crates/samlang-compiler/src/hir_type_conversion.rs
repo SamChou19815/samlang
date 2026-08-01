@@ -1,4 +1,4 @@
-use dupe::OptionDupedExt;
+use dupe::{Dupe, IterDupedExt, OptionDupedExt};
 use itertools::Itertools;
 use ordermap::OrderSet;
 use samlang_ast::{
@@ -49,7 +49,6 @@ impl TypeSynthesizer {
 
   pub(super) fn synthesize_closure_type(
     &mut self,
-    heap: &mut Heap,
     function_type: FunctionType,
     type_parameters: Vec<PStr>,
   ) -> ClosureTypeDefinition {
@@ -57,10 +56,11 @@ impl TypeSynthesizer {
     if let Some(existing_identifier) = self.reverse_function_map.get(&key) {
       return self.synthesized_closure_types.get(existing_identifier).unwrap().clone();
     }
-    let identifier = heap.alloc_string(format!("$SyntheticIDType{}", self.next_id));
-    let name = TypeName { module_reference: Some(ModuleReference::ROOT), type_name: identifier };
+    let identifier = Heap::alloc_string(format!("$SyntheticIDType{}", self.next_id));
+    let name =
+      TypeName { module_reference: Some(ModuleReference::ROOT), type_name: identifier.dupe() };
     self.next_id += 1;
-    self.reverse_function_map.insert(key, identifier);
+    self.reverse_function_map.insert(key, identifier.dupe());
     let definition = ClosureTypeDefinition { name, type_parameters, function_type };
     self.synthesized_closure_types.insert(identifier, definition.clone());
     definition
@@ -68,7 +68,6 @@ impl TypeSynthesizer {
 
   pub(super) fn synthesize_tuple_type(
     &mut self,
-    heap: &mut Heap,
     mappings: Vec<Type>,
     type_parameters: Vec<PStr>,
   ) -> TypeDefinition {
@@ -76,10 +75,11 @@ impl TypeSynthesizer {
     if let Some(existing_identifier) = self.reverse_tuple_map.get(&key) {
       return self.synthesized_tuple_types.get(existing_identifier).unwrap().clone();
     }
-    let identifier = heap.alloc_string(format!("$SyntheticIDType{}", self.next_id));
-    let name = TypeName { module_reference: Some(ModuleReference::ROOT), type_name: identifier };
+    let identifier = Heap::alloc_string(format!("$SyntheticIDType{}", self.next_id));
+    let name =
+      TypeName { module_reference: Some(ModuleReference::ROOT), type_name: identifier.dupe() };
     self.next_id += 1;
-    self.reverse_tuple_map.insert(key, identifier);
+    self.reverse_tuple_map.insert(key, identifier.dupe());
     let definition =
       TypeDefinition { name, type_parameters, mappings: TypeDefinitionMappings::Struct(mappings) };
     self.synthesized_tuple_types.insert(identifier, definition.clone());
@@ -96,7 +96,7 @@ fn collect_used_generic_types_visitor(
     Type::Int32 | Type::Int31 => {}
     Type::Id(IdType { name, type_arguments }) => {
       if name.module_reference.is_none() && generic_types.contains(&name.type_name) {
-        collector.insert(name.type_name);
+        collector.insert(name.type_name.dupe());
       }
       for t in type_arguments.iter() {
         collect_used_generic_types_visitor(t, generic_types, collector);
@@ -126,7 +126,7 @@ pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Typ
         replacement_map.get(&id.name.type_name).duped().unwrap()
       } else {
         Type::Id(IdType {
-          name: id.name,
+          name: id.name.dupe(),
           type_arguments: id
             .type_arguments
             .iter()
@@ -159,31 +159,30 @@ pub(super) struct TypeLoweringManager {
 }
 
 impl TypeLoweringManager {
-  pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &type_::Type) -> Type {
+  pub(super) fn lower_source_type(&mut self, type_: &type_::Type) -> Type {
     match type_ {
       type_::Type::Any(reason, placeholder) => {
         panic!("any(placeholder={placeholder}) at {reason:?}")
       }
       type_::Type::Primitive(_, _) => Type::Int32,
       type_::Type::Nominal(id) => {
-        let id_string = id.id;
+        let id_string = &id.id;
         Type::Id(IdType {
-          name: TypeName { module_reference: Some(id.module_reference), type_name: id_string },
-          type_arguments: id
-            .type_arguments
-            .iter()
-            .map(|it| self.lower_source_type(heap, it))
-            .collect(),
+          name: TypeName {
+            module_reference: Some(id.module_reference),
+            type_name: id_string.dupe(),
+          },
+          type_arguments: id.type_arguments.iter().map(|it| self.lower_source_type(it)).collect(),
         })
       }
       type_::Type::Generic(_, id) => {
         debug_assert!(self.generic_types.contains(id));
-        Type::new_generic_type(*id)
+        Type::new_generic_type(id.dupe())
       }
       type_::Type::Fn(f) => {
         let rewritten_function_type = Type::new_fn_unwrapped(
-          f.argument_types.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
-          self.lower_source_type(heap, &f.return_type),
+          f.argument_types.iter().map(|it| self.lower_source_type(it)).collect_vec(),
+          self.lower_source_type(&f.return_type),
         );
         let type_parameters = Vec::from_iter(
           collect_used_generic_types(&rewritten_function_type, &self.generic_types)
@@ -191,37 +190,29 @@ impl TypeLoweringManager {
             .sorted(),
         );
         let type_args: Arc<[_]> =
-          type_parameters.iter().map(|it| Type::new_generic_type(*it)).collect();
-        let closure_type_definition = self.type_synthesizer.synthesize_closure_type(
-          heap,
-          rewritten_function_type,
-          type_parameters,
-        );
+          type_parameters.iter().map(|it| Type::new_generic_type(it.dupe())).collect();
+        let closure_type_definition =
+          self.type_synthesizer.synthesize_closure_type(rewritten_function_type, type_parameters);
         Type::Id(IdType { name: closure_type_definition.name, type_arguments: type_args })
       }
     }
   }
 
-  pub(super) fn lower_source_types(
-    &mut self,
-    heap: &mut Heap,
-    source_types: &Vec<Arc<type_::Type>>,
-  ) -> Vec<Type> {
+  pub(super) fn lower_source_types(&mut self, source_types: &Vec<Arc<type_::Type>>) -> Vec<Type> {
     let mut types = Vec::new();
     for t in source_types {
-      types.push(self.lower_source_type(heap, t));
+      types.push(self.lower_source_type(t));
     }
     types
   }
 
   pub(super) fn lower_source_type_definition(
     &mut self,
-    heap: &mut Heap,
     module_reference: &ModuleReference,
     identifier: PStr,
     source_type_def: Option<&source::TypeDefinition>,
   ) -> TypeDefinition {
-    let type_parameters = self.generic_types.iter().copied().collect();
+    let type_parameters = self.generic_types.iter().duped().collect();
     let name = TypeName { module_reference: Some(*module_reference), type_name: identifier };
     match source_type_def {
       Some(source::TypeDefinition::Struct {
@@ -235,9 +226,7 @@ impl TypeLoweringManager {
         mappings: TypeDefinitionMappings::Struct(
           fields
             .iter()
-            .map(|field| {
-              self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation))
-            })
+            .map(|field| self.lower_source_type(&type_::Type::from_annotation(&field.annotation)))
             .collect(),
         ),
       },
@@ -254,12 +243,12 @@ impl TypeLoweringManager {
             .iter()
             .map(|variant| {
               (
-                variant.name.name,
+                variant.name.name.dupe(),
                 variant
                   .associated_data_types
                   .iter()
                   .flat_map(|it| &it.annotations)
-                  .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t)))
+                  .map(|t| self.lower_source_type(&type_::Type::from_annotation(t)))
                   .collect_vec(),
               )
             })
@@ -274,13 +263,12 @@ impl TypeLoweringManager {
 
   pub(super) fn lower_source_function_type_for_toplevel(
     &mut self,
-    heap: &mut Heap,
     argument_types: &[Arc<type_::Type>],
     return_type: &type_::Type,
   ) -> (Vec<PStr>, FunctionType) {
     let function_type = Type::new_fn_unwrapped(
-      argument_types.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
-      self.lower_source_type(heap, return_type),
+      argument_types.iter().map(|it| self.lower_source_type(it)).collect_vec(),
+      self.lower_source_type(return_type),
     );
     let type_parameters = Vec::from_iter(
       collect_used_generic_types(&function_type, &self.generic_types).into_iter().sorted(),
@@ -312,14 +300,14 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType0",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], Vec::new())
+        .synthesize_tuple_type(vec![INT_TYPE, Type::new_id(a.dupe(), vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
     assert_eq!(
       "_$SyntheticIDType1",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], Vec::new())
+        .synthesize_tuple_type(vec![INT_TYPE, Type::new_id(b.dupe(), vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
@@ -327,14 +315,14 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType0",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], Vec::new())
+        .synthesize_tuple_type(vec![INT_TYPE, Type::new_id(a.dupe(), vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
     assert_eq!(
       "_$SyntheticIDType1",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], Vec::new())
+        .synthesize_tuple_type(vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], Vec::new())
         .name
         .pretty_print(heap),
     );
@@ -342,14 +330,14 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType2",
       synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(Vec::new(), INT_TYPE), Vec::new())
+        .synthesize_closure_type(Type::new_fn_unwrapped(Vec::new(), INT_TYPE), Vec::new())
         .name
         .pretty_print(heap),
     );
     assert_eq!(
       "_$SyntheticIDType2",
       synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(Vec::new(), INT_TYPE), Vec::new())
+        .synthesize_closure_type(Type::new_fn_unwrapped(Vec::new(), INT_TYPE), Vec::new())
         .name
         .pretty_print(heap),
     );
@@ -357,7 +345,7 @@ mod tests {
     assert_eq!(
       "_$SyntheticIDType3",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(c, vec![INT_TYPE])], vec![a])
+        .synthesize_tuple_type(vec![INT_TYPE, Type::new_id(c, vec![INT_TYPE])], vec![a])
         .name
         .pretty_print(heap),
     );
@@ -489,12 +477,11 @@ mod tests {
   #[should_panic]
   #[test]
   fn type_lowering_manager_lower_source_type_panic_test() {
-    let heap = &mut Heap::new();
     TypeLoweringManager {
       generic_types: OrderSet::new(),
       type_synthesizer: TypeSynthesizer::new(),
     }
-    .lower_source_type(heap, &type_::Type::Any(Reason::dummy(), true));
+    .lower_source_type(&type_::Type::Any(Reason::dummy(), true));
   }
 
   #[test]
@@ -506,14 +493,14 @@ mod tests {
     };
     let builder = test_type_builder::create();
 
-    assert_eq!("int", manager.lower_source_type(heap, &builder.bool_type()).pretty_print(heap));
-    assert_eq!("int", manager.lower_source_type(heap, &builder.unit_type()).pretty_print(heap));
-    assert_eq!("int", manager.lower_source_type(heap, &builder.int_type()).pretty_print(heap));
-    assert_eq!("_Str", manager.lower_source_type(heap, &builder.string_type()).pretty_print(heap));
+    assert_eq!("int", manager.lower_source_type(&builder.bool_type()).pretty_print(heap));
+    assert_eq!("int", manager.lower_source_type(&builder.unit_type()).pretty_print(heap));
+    assert_eq!("int", manager.lower_source_type(&builder.int_type()).pretty_print(heap));
+    assert_eq!("_Str", manager.lower_source_type(&builder.string_type()).pretty_print(heap));
     assert_eq!(
       "_Str",
       manager
-        .lower_source_types(heap, &vec![builder.string_type()])
+        .lower_source_types(&vec![builder.string_type()])
         .iter()
         .map(|it| it.pretty_print(heap))
         .join("")
@@ -521,7 +508,7 @@ mod tests {
 
     assert_eq!("DUMMY_A<int>", {
       let t = builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]);
-      manager.lower_source_type(heap, &t).pretty_print(heap)
+      manager.lower_source_type(&t).pretty_print(heap)
     });
 
     let mut manager2 = TypeLoweringManager {
@@ -533,7 +520,7 @@ mod tests {
         vec![builder.generic_type(heap.alloc_str_for_test("T")), builder.bool_type()],
         builder.int_type(),
       );
-      manager2.lower_source_type(heap, &t).pretty_print(heap)
+      manager2.lower_source_type(&t).pretty_print(heap)
     });
 
     let SynthesizedTypes { closure_types, tuple_types } =
@@ -585,7 +572,7 @@ mod tests {
     };
     let foo_str = heap.alloc_str_for_test("Foo");
     let type_def =
-      manager.lower_source_type_definition(heap, &ModuleReference::ROOT, foo_str, Some(&type_def));
+      manager.lower_source_type_definition(&ModuleReference::ROOT, foo_str, Some(&type_def));
     let SynthesizedTypes { closure_types, mut tuple_types } =
       manager.type_synthesizer.synthesized_types();
     assert_eq!(
@@ -613,16 +600,12 @@ mod tests {
     };
     let builder = test_type_builder::create();
 
-    let (tparams1, f1) = manager.lower_source_function_type_for_toplevel(
-      heap,
-      &[builder.int_type()],
-      &builder.bool_type(),
-    );
+    let (tparams1, f1) =
+      manager.lower_source_function_type_for_toplevel(&[builder.int_type()], &builder.bool_type());
     assert!(tparams1.is_empty());
     assert_eq!("(int) -> int", f1.pretty_print(heap));
 
     let (tparams2, f2) = manager.lower_source_function_type_for_toplevel(
-      heap,
       &[builder.fun_type(vec![builder.int_type()], builder.bool_type())],
       &builder.bool_type(),
     );

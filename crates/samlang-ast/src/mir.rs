@@ -196,7 +196,7 @@ impl SymbolTable {
     let base = self.type_name_lookup_table.get(&id).unwrap();
     let subtype_id = self.create_type_name_internal(TypeName {
       module_reference: base.module_reference,
-      type_name: base.type_name,
+      type_name: base.type_name.dupe(),
       suffix: base.suffix.clone(),
       sub_type_tag: Some(tag),
     });
@@ -208,7 +208,7 @@ impl SymbolTable {
     let base = self.type_name_lookup_table.get(&id).unwrap();
     self.create_type_name_internal(TypeName {
       module_reference: base.module_reference,
-      type_name: base.type_name,
+      type_name: base.type_name.dupe(),
       suffix,
       sub_type_tag: base.sub_type_tag,
     })
@@ -363,7 +363,7 @@ impl TypeDefinition {
   }
 }
 
-#[derive(Debug, Clone, Dupe, Copy, Hash)]
+#[derive(Debug, Clone, Dupe, Hash)]
 pub struct VariableName {
   pub name: PStr,
   pub type_: Type,
@@ -379,7 +379,7 @@ impl VariableName {
   }
 }
 
-#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionName {
   pub type_name: TypeNameId,
   pub fn_name: PStr,
@@ -456,7 +456,7 @@ pub struct FunctionNameExpression {
   pub type_: FunctionType,
 }
 
-#[derive(Debug, Clone, Dupe, Copy, EnumAsInner)]
+#[derive(Debug, Clone, Dupe, EnumAsInner)]
 pub enum Expression {
   Int32Literal(i32),
   Int31Literal(i32),

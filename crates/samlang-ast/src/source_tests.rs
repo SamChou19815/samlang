@@ -22,7 +22,7 @@ mod tests {
         "{:?}{:?}{:?}",
         comment.text,
         CommentStore::new().clone().create_comment_reference(Vec::new()).dupe(),
-        CommentStore::new().clone().create_comment_reference(vec![comment]).dupe()
+        CommentStore::new().clone().create_comment_reference(vec![comment.dupe()]).dupe()
       )
       .is_empty()
     );
@@ -31,7 +31,9 @@ mod tests {
     assert!(
       CommentStore::new().clone().get_mut(NO_COMMENT_REFERENCE).iter().collect_vec().is_empty()
     );
-    assert!(CommentsNode::Comments(vec![comment]).eq(&CommentsNode::Comments(vec![comment])));
+    assert!(
+      CommentsNode::Comments(vec![comment.dupe()]).eq(&CommentsNode::Comments(vec![comment]))
+    );
     assert!(CommentStore::new().eq(&CommentStore::new()));
 
     assert_eq!("!", expr::UnaryOperator::NOT.dupe().to_string());
@@ -319,7 +321,7 @@ mod tests {
 
   #[test]
   fn annot_pretty_print_test() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     assert_eq!("true", Literal::true_literal().pretty_print(&heap));
     assert_eq!("false", Literal::false_literal().pretty_print(&heap));
     assert_eq!("0", Literal::int_literal(0).dupe().pretty_print(&heap));
@@ -367,7 +369,7 @@ mod tests {
 
   #[test]
   fn precedence_boilerplate_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let common = ExpressionCommon::dummy(());
     let zero_expr = E::Literal(ExpressionCommon::dummy(()), Literal::Int(0));
 
@@ -629,7 +631,7 @@ mod tests {
 
   #[test]
   fn toplevel_boilterplate() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     assert_eq!(
       "name",
       annotation::TypeParameter {

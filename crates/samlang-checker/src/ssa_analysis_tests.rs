@@ -15,7 +15,7 @@ mod tests {
 
   #[test]
   fn method_access_coverage_hack() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
     ssa_analysis::perform_ssa_analysis_on_expression(

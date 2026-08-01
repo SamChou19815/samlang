@@ -2,6 +2,7 @@ use super::{
   hir::{BinaryOperator, GlobalString},
   mir::{FunctionName, SymbolTable, TypeNameId},
 };
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use samlang_heap::{Heap, PStr};
 use std::collections::HashMap;
@@ -665,7 +666,7 @@ impl Sources {
       collector.push_str(": _Str = [0, `");
       collector.push_str(s.as_str(heap));
       collector.push_str("` as unknown as number];\n");
-      str_lookup_table.insert(*s, i);
+      str_lookup_table.insert(s.dupe(), i);
     }
     for d in &self.type_definitions {
       // Skip STR and VEC types - they are special built-in types handled in ts_prolog

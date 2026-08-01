@@ -4,6 +4,7 @@ use super::loop_induction_analysis::{
   BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
   PotentialLoopInvariantExpression, merge_invariant_multiplication_for_loop_optimization,
 };
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
@@ -101,7 +102,7 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
     || l.loop_variables_that_are_not_basic_induction_variables.iter().any(|v| {
       expr_uses_basic_induction_var(&v.loop_value, &l.basic_induction_variable_with_loop_guard)
     })
-    || l.break_collector.is_some_and(|v| {
+    || l.break_collector.as_ref().is_some_and(|v| {
       expr_uses_basic_induction_var(&v.2, &l.basic_induction_variable_with_loop_guard)
     })
 }
@@ -136,19 +137,19 @@ pub(super) fn optimize(
   let new_guard_value_name = counter.alloc_temp_str();
   let prefix_statements = vec![
     Statement::Binary(Statement::binary_flexible_unwrapped(
-      new_initial_value_temp_temporary,
+      new_initial_value_temp_temporary.dupe(),
       BinaryOperator::MUL,
       only_relevant_induction_loop_variables.multiplier.to_expression(),
-      optimizable_while_loop.basic_induction_variable_with_loop_guard.initial_value,
+      optimizable_while_loop.basic_induction_variable_with_loop_guard.initial_value.dupe(),
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
-      new_initial_value_name,
+      new_initial_value_name.dupe(),
       BinaryOperator::PLUS,
       only_relevant_induction_loop_variables.immediate.to_expression(),
       Expression::var_name(new_initial_value_temp_temporary, INT_32_TYPE),
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
-      new_guard_value_temp_temporary,
+      new_guard_value_temp_temporary.dupe(),
       BinaryOperator::MUL,
       only_relevant_induction_loop_variables.multiplier.to_expression(),
       optimizable_while_loop
@@ -157,7 +158,7 @@ pub(super) fn optimize(
         .to_expression(),
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
-      new_guard_value_name,
+      new_guard_value_name.dupe(),
       BinaryOperator::PLUS,
       only_relevant_induction_loop_variables.immediate.to_expression(),
       Expression::var_name(new_guard_value_temp_temporary, INT_32_TYPE),
@@ -165,7 +166,7 @@ pub(super) fn optimize(
   ];
 
   let new_basic_induction_variable_with_loop_guard = BasicInductionVariableWithLoopGuard {
-    name: only_relevant_induction_loop_variables.name,
+    name: only_relevant_induction_loop_variables.name.dupe(),
     initial_value: Expression::var_name(new_initial_value_name, INT_32_TYPE),
     increment_amount: added_invariant_expression_in_loop,
     guard_operator: GuardOperator::LT,

@@ -167,23 +167,23 @@ impl<'a> WrappedLogosLexer<'a> {
     Self { lexer: LogosToken::lexer(source), module_reference, position: Position(0, 0) }
   }
 
-  fn next_token(&mut self, heap: &mut Heap, error_set: &mut ErrorSet) -> Option<Token> {
+  fn next_token(&mut self, error_set: &mut ErrorSet) -> Option<Token> {
     self.skip_whitespace();
 
     if let Some((loc, s)) = self.lex_str_lit_opt() {
       if !string_has_valid_escape(&s) {
         error_set.report_invalid_syntax_error(loc, "Invalid escape in string.".to_string())
       }
-      return Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
+      return Some(Token(loc, TokenContent::StringLiteral(Heap::alloc_string(s))));
     }
 
     if let Some((loc, s)) = self.lex_line_comment_opt() {
-      let comment_pstr = heap.alloc_string(s);
+      let comment_pstr = Heap::alloc_string(s);
       return Some(Token(loc, TokenContent::LineComment(comment_pstr)));
     }
 
     if let Some((is_doc, loc, s)) = self.lex_block_comment_opt() {
-      let comment_pstr = heap.alloc_string(s);
+      let comment_pstr = Heap::alloc_string(s);
       return Some(Token(
         loc,
         if is_doc {
@@ -210,7 +210,7 @@ impl<'a> WrappedLogosLexer<'a> {
         content.push_str(&self.lexer.remainder()[..skip_count]);
         self.position.1 += skip_count as u32;
         self.lexer.bump(skip_count);
-        let p_str = heap.alloc_string(content.to_string());
+        let p_str = Heap::alloc_string(content.to_string());
         let loc = Location { module_reference: self.module_reference, start, end: self.position };
         error_set.report_invalid_syntax_error(loc, "Invalid token.".to_string());
         return Some(Token(loc, TokenContent::Error(p_str)));
@@ -288,17 +288,17 @@ impl<'a> WrappedLogosLexer<'a> {
       LogosToken::OpDotDotDot => Some(self.translate_op_token(TokenOp::DotDotDot)),
       LogosToken::UpperId => {
         let loc = self.loc_of_lexer_span();
-        let p_str = heap.alloc_string(self.lexer.slice().to_string());
+        let p_str = Heap::alloc_string(self.lexer.slice().to_string());
         Some(Token(loc, TokenContent::UpperId(p_str)))
       }
       LogosToken::LowerId => {
         let loc = self.loc_of_lexer_span();
-        let p_str = heap.alloc_string(self.lexer.slice().to_string());
+        let p_str = Heap::alloc_string(self.lexer.slice().to_string());
         Some(Token(loc, TokenContent::LowerId(p_str)))
       }
       LogosToken::Int => {
         let loc = self.loc_of_lexer_span();
-        let p_str = heap.alloc_string(self.lexer.slice().to_string());
+        let p_str = Heap::alloc_string(self.lexer.slice().to_string());
         Some(Token(loc, TokenContent::IntLiteral(p_str)))
       }
     }
@@ -638,7 +638,7 @@ impl TokenOp {
   }
 }
 
-#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, PartialEq, Eq)]
 pub(super) enum TokenContent {
   Keyword(Keyword),
   Operator(TokenOp),
@@ -671,7 +671,7 @@ impl TokenContent {
   }
 }
 
-#[derive(Clone, Dupe, Copy)]
+#[derive(Clone, Dupe)]
 pub(super) struct Token(pub(super) Location, pub(super) TokenContent);
 
 impl Token {
@@ -717,7 +717,7 @@ impl<'a> TokenProducer<'a> {
       return None;
     }
     loop {
-      let Some(raw) = self.lexer.next_token(heap, error_set) else {
+      let Some(raw) = self.lexer.next_token(error_set) else {
         self.done = true;
         return self.pending.take();
       };
@@ -754,7 +754,7 @@ impl<'a> TokenProducer<'a> {
               // Merge - and MAX_INT_PLUS_ONE into MIN_INT
               self.pending = Some(Token(
                 prev_loc.union(&loc),
-                TokenContent::IntLiteral(heap.alloc_string(format!("-{s}"))),
+                TokenContent::IntLiteral(Heap::alloc_string(format!("-{s}"))),
               ));
               return None;
             }

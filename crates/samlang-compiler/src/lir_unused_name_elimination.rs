@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   lir::{Expression, Function, FunctionType, GenenalLoopVariable, Sources, Statement, Type},
@@ -32,10 +33,10 @@ fn collect_used_names_from_expression(
     Expression::Int32Literal(_) | Expression::Int31Literal(_) => {}
     Expression::Variable(_, t) => collect_for_type_set(t, type_set),
     Expression::StringName(n) => {
-      str_name_set.insert(*n);
+      str_name_set.insert(n.dupe());
     }
     Expression::FnName(n, t) => {
-      fn_name_set.insert(*n);
+      fn_name_set.insert(n.dupe());
       type_set.insert(n.type_name);
       collect_for_type_set_from_fn_type(t, type_set);
     }
@@ -161,7 +162,7 @@ fn analyze_used_function_names_and_type_names(
 ) -> (HashSet<PStr>, HashSet<FunctionName>, HashSet<TypeNameId>) {
   let mut used_functions_map = HashMap::new();
   for f in functions {
-    used_functions_map.insert(f.name, get_other_functions_used_by_given_function(f));
+    used_functions_map.insert(f.name.dupe(), get_other_functions_used_by_given_function(f));
   }
 
   let mut used_fn_names: HashSet<_> = entry_points.iter().cloned().collect();
@@ -173,13 +174,13 @@ fn analyze_used_function_names_and_type_names(
     {
       for used_fn in fn_used_by_this_function {
         if !used_fn_names.contains(used_fn) {
-          used_fn_names.insert(*used_fn);
-          stack.push(*used_fn);
+          used_fn_names.insert(used_fn.dupe());
+          stack.push(used_fn.dupe());
         }
       }
       for used_str in str_used_by_this_function {
         if !used_str_names.contains(used_str) {
-          used_str_names.insert(*used_str);
+          used_str_names.insert(used_str.dupe());
         }
       }
     }

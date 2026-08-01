@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use samlang_ast::{
   Location,
   source::{
@@ -69,7 +70,7 @@ fn mod_id(id: &Id, new_name: PStr) -> Id {
 }
 
 fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) -> Id {
-  if id.loc.eq(&definition_and_uses.definition_location) { mod_id(id, new_name) } else { *id }
+  if id.loc.eq(&definition_and_uses.definition_location) { mod_id(id, new_name) } else { id.dupe() }
 }
 
 fn apply_tuple_pattern_renaming(
@@ -90,7 +91,11 @@ fn apply_tuple_pattern_renaming(
     elements: elements
       .iter()
       .map(|pattern::TuplePatternElement { pattern, type_ }| pattern::TuplePatternElement {
-        pattern: Box::new(apply_matching_pattern_renaming(pattern, definition_and_uses, new_name)),
+        pattern: Box::new(apply_matching_pattern_renaming(
+          pattern,
+          definition_and_uses,
+          new_name.dupe(),
+        )),
         type_: *type_,
       })
       .collect(),
@@ -126,8 +131,11 @@ fn apply_matching_pattern_renaming(
              shorthand: _,
              type_,
            }| {
-            let pattern =
-              Box::new(apply_matching_pattern_renaming(pattern, definition_and_uses, new_name));
+            let pattern = Box::new(apply_matching_pattern_renaming(
+              pattern,
+              definition_and_uses,
+              new_name.dupe(),
+            ));
             let shorthand = matches!(
               pattern.as_ref(),
               pattern::MatchingPattern::Id(id, _) if id.name.eq(&field_name.name),
@@ -135,7 +143,7 @@ fn apply_matching_pattern_renaming(
             pattern::ObjectPatternElement {
               loc: *loc,
               field_order: *field_order,
-              field_name: *field_name,
+              field_name: field_name.dupe(),
               pattern,
               shorthand,
               type_: *type_,
@@ -153,7 +161,7 @@ fn apply_matching_pattern_renaming(
     }) => pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc: *loc,
       tag_order: *tag_order,
-      tag: *tag,
+      tag: tag.dupe(),
       data_variables: data_variables
         .as_ref()
         .map(|p| apply_tuple_pattern_renaming(p, definition_and_uses, new_name)),
@@ -162,7 +170,7 @@ fn apply_matching_pattern_renaming(
     pattern::MatchingPattern::Id(id, ()) => {
       let is_def = id.loc.eq(&definition_and_uses.definition_location);
       let is_use = definition_and_uses.use_locations.iter().any(|l| l.eq(&id.loc));
-      let name = if is_def || is_use { new_name } else { id.name };
+      let name = if is_def || is_use { new_name } else { id.name.dupe() };
       pattern::MatchingPattern::Id(
         Id { loc: id.loc, associated_comments: id.associated_comments, name },
         (),
@@ -173,7 +181,7 @@ fn apply_matching_pattern_renaming(
       location: *location,
       patterns: patterns
         .iter()
-        .map(|p| apply_matching_pattern_renaming(p, definition_and_uses, new_name))
+        .map(|p| apply_matching_pattern_renaming(p, definition_and_uses, new_name.dupe()))
         .collect(),
     },
   }
@@ -195,7 +203,7 @@ fn apply_parenthesized_expression_list_renaming(
     ending_associated_comments: *ending_associated_comments,
     expressions: expressions
       .iter()
-      .map(|e| apply_expr_renaming(e, definition_and_uses, new_name))
+      .map(|e| apply_expr_renaming(e, definition_and_uses, new_name.dupe()))
       .collect(),
   }
 }
@@ -208,15 +216,15 @@ fn apply_if_else_renaming(
   expr::IfElse {
     common: if_else.common.clone(),
     condition: Box::new(match if_else.condition.as_ref() {
-      expr::IfElseCondition::Expression(e) => {
-        expr::IfElseCondition::Expression(apply_expr_renaming(e, definition_and_uses, new_name))
-      }
+      expr::IfElseCondition::Expression(e) => expr::IfElseCondition::Expression(
+        apply_expr_renaming(e, definition_and_uses, new_name.dupe()),
+      ),
       expr::IfElseCondition::Guard(p, e) => expr::IfElseCondition::Guard(
-        apply_matching_pattern_renaming(p, definition_and_uses, new_name),
-        apply_expr_renaming(e, definition_and_uses, new_name),
+        apply_matching_pattern_renaming(p, definition_and_uses, new_name.dupe()),
+        apply_expr_renaming(e, definition_and_uses, new_name.dupe()),
       ),
     }),
-    e1: Box::new(apply_block_renaming(&if_else.e1, definition_and_uses, new_name)),
+    e1: Box::new(apply_block_renaming(&if_else.e1, definition_and_uses, new_name.dupe())),
     e2: Box::new(match if_else.e2.as_ref() {
       expr::IfElseOrBlock::IfElse(e) => {
         expr::IfElseOrBlock::IfElse(apply_if_else_renaming(e, definition_and_uses, new_name))
@@ -243,17 +251,21 @@ fn apply_block_renaming(
           expr::Statement::Declaration(Box::new(expr::DeclarationStatement {
             loc: decl.loc,
             associated_comments: decl.associated_comments,
-            pattern: apply_matching_pattern_renaming(&decl.pattern, definition_and_uses, new_name),
+            pattern: apply_matching_pattern_renaming(
+              &decl.pattern,
+              definition_and_uses,
+              new_name.dupe(),
+            ),
             annotation: decl.annotation.clone(),
             assigned_expression: Box::new(apply_expr_renaming(
               &decl.assigned_expression,
               definition_and_uses,
-              new_name,
+              new_name.dupe(),
             )),
           }))
         }
         expr::Statement::Expression(expr) => expr::Statement::Expression(Box::new(
-          apply_expr_renaming(expr, definition_and_uses, new_name),
+          apply_expr_renaming(expr, definition_and_uses, new_name.dupe()),
         )),
       })
       .collect(),
@@ -286,7 +298,7 @@ fn apply_expr_renaming(
       explicit_type_arguments: e.explicit_type_arguments.clone(),
       inferred_type_arguments: e.inferred_type_arguments.clone(),
       object: Box::new(apply_expr_renaming(&e.object, definition_and_uses, new_name)),
-      field_name: e.field_name,
+      field_name: e.field_name.dupe(),
       field_order: e.field_order,
     }),
     expr::E::MethodAccess(e) => expr::E::MethodAccess(expr::MethodAccess {
@@ -294,7 +306,7 @@ fn apply_expr_renaming(
       explicit_type_arguments: e.explicit_type_arguments.clone(),
       inferred_type_arguments: e.inferred_type_arguments.clone(),
       object: Box::new(apply_expr_renaming(&e.object, definition_and_uses, new_name)),
-      method_name: e.method_name,
+      method_name: e.method_name.dupe(),
     }),
     expr::E::Unary(e) => expr::E::Unary(expr::Unary {
       common: e.common.clone(),
@@ -303,7 +315,7 @@ fn apply_expr_renaming(
     }),
     expr::E::Call(e) => expr::E::Call(expr::Call {
       common: e.common.clone(),
-      callee: Box::new(apply_expr_renaming(&e.callee, definition_and_uses, new_name)),
+      callee: Box::new(apply_expr_renaming(&e.callee, definition_and_uses, new_name.dupe())),
       arguments: apply_parenthesized_expression_list_renaming(
         &e.arguments,
         definition_and_uses,
@@ -314,13 +326,13 @@ fn apply_expr_renaming(
       common: e.common.clone(),
       operator_preceding_comments: e.operator_preceding_comments,
       operator: e.operator,
-      e1: Box::new(apply_expr_renaming(&e.e1, definition_and_uses, new_name)),
+      e1: Box::new(apply_expr_renaming(&e.e1, definition_and_uses, new_name.dupe())),
       e2: Box::new(apply_expr_renaming(&e.e2, definition_and_uses, new_name)),
     }),
     expr::E::IfElse(e) => expr::E::IfElse(apply_if_else_renaming(e, definition_and_uses, new_name)),
     expr::E::Match(e) => expr::E::Match(expr::Match {
       common: e.common.clone(),
-      matched: Box::new(apply_expr_renaming(&e.matched, definition_and_uses, new_name)),
+      matched: Box::new(apply_expr_renaming(&e.matched, definition_and_uses, new_name.dupe())),
       cases: e
         .cases
         .iter()
@@ -328,8 +340,12 @@ fn apply_expr_renaming(
           |expr::VariantPatternToExpression { loc, pattern, body, ending_associated_comments }| {
             expr::VariantPatternToExpression {
               loc: *loc,
-              pattern: apply_matching_pattern_renaming(pattern, definition_and_uses, new_name),
-              body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name)),
+              pattern: apply_matching_pattern_renaming(
+                pattern,
+                definition_and_uses,
+                new_name.dupe(),
+              ),
+              body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name.dupe())),
               ending_associated_comments: *ending_associated_comments,
             }
           },
@@ -345,7 +361,7 @@ fn apply_expr_renaming(
           .parameters
           .iter()
           .map(|OptionallyAnnotatedId { name, type_, annotation }| OptionallyAnnotatedId {
-            name: mod_def_id(name, definition_and_uses, new_name),
+            name: mod_def_id(name, definition_and_uses, new_name.dupe()),
             type_: *type_,
             annotation: annotation.clone(),
           })
@@ -375,7 +391,7 @@ pub(super) fn apply_renaming(
           loc: c.loc,
           associated_comments: c.associated_comments,
           private: c.private,
-          name: c.name,
+          name: c.name.dupe(),
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
           type_definition: c.type_definition.clone(),
@@ -406,7 +422,7 @@ pub(super) fn apply_renaming(
                       associated_comments: *associated_comments,
                       is_public: *is_public,
                       is_method: *is_method,
-                      name: *name,
+                      name: name.dupe(),
                       type_parameters: type_parameters.clone(),
                       parameters: samlang_ast::source::FunctionParameters {
                         location: parameters.location,
@@ -417,7 +433,7 @@ pub(super) fn apply_renaming(
                             .parameters
                             .iter()
                             .map(|AnnotatedId { name, type_, annotation }| AnnotatedId {
-                              name: mod_def_id(name, definition_and_uses, new_name),
+                              name: mod_def_id(name, definition_and_uses, new_name.dupe()),
                               type_: *type_,
                               annotation: annotation.clone(),
                             })
@@ -426,7 +442,7 @@ pub(super) fn apply_renaming(
                       },
                       return_type: return_type.clone(),
                     },
-                    body: apply_expr_renaming(body, definition_and_uses, new_name),
+                    body: apply_expr_renaming(body, definition_and_uses, new_name.dupe()),
                   }
                 },
               )
@@ -602,7 +618,7 @@ class Main {
 
 interface Foo {}
 "#;
-    let (mut heap, lookup) = prepare_lookup(source);
+    let (heap, lookup) = prepare_lookup(source);
     let (_, parsed) = parse(source);
     let renamed = apply_renaming(
       &parsed,
@@ -644,7 +660,7 @@ interface Foo {}
     location: Location,
     expected: &str,
   ) {
-    let (mut heap, parsed) = parse(source);
+    let (heap, parsed) = parse(source);
     let renamed = apply_renaming(
       &parsed,
       &lookup.find_all_definition_and_uses(&location).unwrap(),

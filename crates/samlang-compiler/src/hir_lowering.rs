@@ -7,7 +7,7 @@ use super::{
   mir_constant_param_elimination, mir_generics_specialization, mir_tail_recursion_rewrite,
   mir_type_deduplication,
 };
-use dupe::{Dupe, OptionDupedExt};
+use dupe::{Dupe, IterDupedExt, OptionDupedExt};
 use itertools::Itertools;
 use ordermap::OrderSet;
 use samlang_ast::{hir, mir, source};
@@ -91,7 +91,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   ) -> ExpressionLoweringManager<'a> {
     let mut variable_cx = LoweringContext::new();
     for (n, t) in &defined_variables {
-      bind_value(&mut variable_cx, *n, hir::Expression::var_name(*n, t.dupe()));
+      bind_value(&mut variable_cx, n.clone(), hir::Expression::var_name(n.clone(), t.dupe()));
     }
     ExpressionLoweringManager {
       heap,
@@ -118,7 +118,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         module_reference: Some(ModuleReference::ROOT),
         type_name: PStr::UNDERSCORE_GENERATED_FN,
       },
-      fn_name: self.heap.alloc_string(fn_id_str),
+      fn_name: Heap::alloc_string(fn_id_str),
     }
   }
 
@@ -142,11 +142,11 @@ impl<'a> ExpressionLoweringManager<'a> {
     .sorted()
     .collect_vec();
     let type_arguments: Arc<[_]> =
-      type_parameters.iter().copied().map(hir::Type::new_generic_type).collect();
+      type_parameters.iter().duped().map(hir::Type::new_generic_type).collect();
     let name = self
       .type_lowering_manager
       .type_synthesizer
-      .synthesize_tuple_type(self.heap, mappings, type_parameters)
+      .synthesize_tuple_type(mappings, type_parameters)
       .name;
     hir::IdType { name, type_arguments }
   }
@@ -161,11 +161,11 @@ impl<'a> ExpressionLoweringManager<'a> {
         .sorted()
         .collect_vec();
     let type_arguments: Arc<[_]> =
-      type_parameters.iter().copied().map(hir::Type::new_generic_type).collect();
+      type_parameters.iter().duped().map(hir::Type::new_generic_type).collect();
     let name = self
       .type_lowering_manager
       .type_synthesizer
-      .synthesize_closure_type(self.heap, fn_type, type_parameters)
+      .synthesize_closure_type(fn_type, type_parameters)
       .name;
     hir::IdType { name, type_arguments }
   }
@@ -179,7 +179,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let replacement_map: HashMap<_, _> = type_def
       .type_parameters
       .iter()
-      .copied()
+      .duped()
       .zip(hir_id_type.type_arguments.iter().cloned())
       .collect();
     type_def
@@ -194,11 +194,9 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn get_function_type_without_context(&mut self, t: &type_::Type) -> hir::FunctionType {
     let type_::FunctionType { argument_types, return_type, .. } =
       t.as_fn().expect("Expecting function type");
-    let (_, t) = self.type_lowering_manager.lower_source_function_type_for_toplevel(
-      self.heap,
-      argument_types,
-      return_type,
-    );
+    let (_, t) = self
+      .type_lowering_manager
+      .lower_source_function_type_for_toplevel(argument_types, return_type);
     t
   }
 
@@ -212,7 +210,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source::expr::E::Literal(_, source::Literal::String(s)) => LoweringResult {
         statements: Vec::new(),
-        expression: hir::Expression::StringName(self.string_manager.allocate(*s).0),
+        expression: hir::Expression::StringName(self.string_manager.allocate(s.dupe()).0),
       },
       source::expr::E::LocalId(_, id) => LoweringResult {
         statements: Vec::new(),
@@ -240,9 +238,9 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn create_hir_function_name(&self, receiver: &type_::Type, fn_name: PStr) -> hir::FunctionName {
     let type_name = if let Some(t) = receiver.as_nominal() {
-      hir::TypeName { module_reference: Some(t.module_reference), type_name: t.id }
+      hir::TypeName { module_reference: Some(t.module_reference), type_name: t.id.dupe() }
     } else {
-      hir::TypeName { module_reference: None, type_name: *receiver.as_generic().unwrap().1 }
+      hir::TypeName { module_reference: None, type_name: receiver.as_generic().unwrap().1.dupe() }
     };
     hir::FunctionName { type_name, fn_name }
   }
@@ -258,7 +256,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let extracted_field_type = &mappings_for_id_type[index];
     let value_name = self.allocate_temp_variable();
     statements.push(hir::Statement::IndexedAccess {
-      name: value_name,
+      name: value_name.dupe(),
       type_: extracted_field_type.dupe(),
       pointer_expression: result_expr,
       index,
@@ -266,8 +264,8 @@ impl<'a> ExpressionLoweringManager<'a> {
 
     bind_value(
       &mut self.variable_cx,
-      value_name,
-      hir::Expression::var_name(value_name, extracted_field_type.dupe()),
+      value_name.dupe(),
+      hir::Expression::var_name(value_name.clone(), extracted_field_type.dupe()),
     );
     LoweringResult {
       statements,
@@ -280,7 +278,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     expression: &source::expr::MethodAccess<Arc<type_::Type>>,
   ) -> LoweringResult {
     let source_obj_type = expression.object.type_();
-    let function_name = self.create_hir_function_name(source_obj_type, expression.method_name.name);
+    let function_name =
+      self.create_hir_function_name(source_obj_type, expression.method_name.name.dupe());
     let LoweringResult { mut statements, expression: result_expr } = self.lower(&expression.object);
     let original_function_type = self.get_function_type_without_context(&expression.common.type_);
     let method_type = hir::FunctionType {
@@ -294,18 +293,18 @@ impl<'a> ExpressionLoweringManager<'a> {
     let closure_variable_name = self.allocate_temp_variable();
     bind_value(
       &mut self.variable_cx,
-      closure_variable_name,
-      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.dupe())),
+      closure_variable_name.dupe(),
+      hir::Expression::var_name(closure_variable_name.clone(), hir::Type::Id(closure_type.dupe())),
     );
     statements.push(hir::Statement::ClosureInit {
-      closure_variable_name,
+      closure_variable_name: closure_variable_name.dupe(),
       closure_type: closure_type.dupe(),
       function_name: hir::FunctionNameExpression {
         name: function_name,
         type_: method_type,
         type_arguments: self
           .type_lowering_manager
-          .lower_source_types(self.heap, &expression.inferred_type_arguments),
+          .lower_source_types(&expression.inferred_type_arguments),
       },
       context: result_expr,
     });
@@ -321,10 +320,10 @@ impl<'a> ExpressionLoweringManager<'a> {
     let value_name = self.allocate_temp_variable();
     statements.push(match expression.operator {
       source::expr::UnaryOperator::NOT => {
-        hir::Statement::Not { name: value_name, operand: result_expr }
+        hir::Statement::Not { name: value_name.dupe(), operand: result_expr }
       }
       source::expr::UnaryOperator::NEG => hir::Statement::Binary {
-        name: value_name,
+        name: value_name.dupe(),
         operator: hir::BinaryOperator::MINUS,
         e1: hir::ZERO,
         e2: result_expr,
@@ -341,7 +340,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let mut lowered_stmts = Vec::new();
     let return_collector_name = self.allocate_temp_variable();
     let fn_name = self.create_hir_function_name(&common.type_, PStr::INIT);
-    let return_type = self.type_lowering_manager.lower_source_type(self.heap, &common.type_);
+    let return_type = self.type_lowering_manager.lower_source_type(&common.type_);
 
     let mut lowered_arguments = Vec::with_capacity(1 + expressions.len());
     let mut parameter_types = Vec::with_capacity(1 + expressions.len());
@@ -365,7 +364,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       }),
       arguments: lowered_arguments,
       return_type: return_type.dupe(),
-      return_collector: Some(return_collector_name),
+      return_collector: Some(return_collector_name.dupe()),
     });
     LoweringResult {
       statements: lowered_stmts,
@@ -385,14 +384,13 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::expr::E::MethodAccess(source_callee) => {
         let source_target_type = source_callee.object.type_();
         let fn_name =
-          self.create_hir_function_name(source_target_type, source_callee.method_name.name);
+          self.create_hir_function_name(source_target_type, source_callee.method_name.name.dupe());
         let fn_type_without_cx =
           self.get_function_type_without_context(&source_callee.common.type_);
         let hir_target = self.lowered_and_add_statements(&source_callee.object, &mut lowered_stmts);
         let hir_target_type = hir_target.type_();
-        let inferred_targs = self
-          .type_lowering_manager
-          .lower_source_types(self.heap, &source_callee.inferred_type_arguments);
+        let inferred_targs =
+          self.type_lowering_manager.lower_source_types(&source_callee.inferred_type_arguments);
         let type_arguments = if let Some(id_type) = hir_target_type.as_id() {
           id_type.type_arguments.iter().cloned().chain(inferred_targs).collect_vec()
         } else {
@@ -423,7 +421,11 @@ impl<'a> ExpressionLoweringManager<'a> {
               )
               .collect_vec(),
             return_type: fn_type_without_cx.return_type.as_ref().dupe(),
-            return_collector: if is_void_return { None } else { Some(return_collector_name) },
+            return_collector: if is_void_return {
+              None
+            } else {
+              Some(return_collector_name.dupe())
+            },
           },
         )
       }
@@ -435,9 +437,8 @@ impl<'a> ExpressionLoweringManager<'a> {
           .unwrap();
         let source_callee_type = source_callee.type_();
         let source_callee_fn_type = source_callee_type.as_fn().unwrap();
-        let return_type = self
-          .type_lowering_manager
-          .lower_source_type(self.heap, &source_callee_fn_type.return_type);
+        let return_type =
+          self.type_lowering_manager.lower_source_type(&source_callee_fn_type.return_type);
         let lowered_args = expression
           .arguments
           .expressions
@@ -450,7 +451,11 @@ impl<'a> ExpressionLoweringManager<'a> {
             callee: hir::Callee::Variable(lowered_fn_expr),
             arguments: lowered_args,
             return_type,
-            return_collector: if is_void_return { None } else { Some(return_collector_name) },
+            return_collector: if is_void_return {
+              None
+            } else {
+              Some(return_collector_name.dupe())
+            },
           },
         )
       }
@@ -489,7 +494,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           condition: e1,
           s1: s2,
           s2: Vec::new(),
-          final_assignments: vec![(temp, hir::INT_TYPE, e2, hir::ZERO)],
+          final_assignments: vec![(temp.dupe(), hir::INT_TYPE, e2, hir::ZERO)],
         });
         return LoweringResult {
           statements,
@@ -512,7 +517,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           condition: e1,
           s1: Vec::new(),
           s2,
-          final_assignments: vec![(temp, hir::INT_TYPE, hir::ONE, e2)],
+          final_assignments: vec![(temp.dupe(), hir::INT_TYPE, hir::ONE, e2)],
         });
         return LoweringResult {
           statements,
@@ -526,7 +531,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         ) = (expression.e1.as_ref(), expression.e2.as_ref())
         {
           let concat_string = format!("{}{}", s1.as_str(self.heap), s2.as_str(self.heap));
-          let concat_pstr = self.heap.alloc_string(concat_string);
+          let concat_pstr = Heap::alloc_string(concat_string);
           return LoweringResult {
             statements: Vec::new(),
             expression: hir::Expression::StringName(self.string_manager.allocate(concat_pstr).0),
@@ -553,7 +558,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           }),
           arguments: vec![e1, e2],
           return_type: hir::STRING_TYPE.dupe(),
-          return_collector: Some(return_collector_name),
+          return_collector: Some(return_collector_name.dupe()),
         });
         return LoweringResult {
           statements: lowered_stmts,
@@ -576,7 +581,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let e1 = self.lowered_and_add_statements(&expression.e1, &mut lowered_stmts);
     let e2 = self.lowered_and_add_statements(&expression.e2, &mut lowered_stmts);
     let value_temp = self.allocate_temp_variable();
-    lowered_stmts.push(hir::Statement::Binary { name: value_temp, operator, e1, e2 });
+    lowered_stmts.push(hir::Statement::Binary { name: value_temp.dupe(), operator, e1, e2 });
     LoweringResult {
       statements: lowered_stmts,
       expression: hir::Expression::var_name(value_temp, hir::INT_TYPE),
@@ -598,9 +603,13 @@ impl<'a> ExpressionLoweringManager<'a> {
         let mut binding_names = HashMap::new();
         for (n, t) in p.bindings() {
           let name = self.allocate_temp_variable();
-          binding_names.insert(n, name);
-          let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-          bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
+          binding_names.insert(n.dupe(), name.dupe());
+          let type_ = self.type_lowering_manager.lower_source_type(t);
+          bind_value(
+            &mut self.variable_cx,
+            n,
+            hir::Expression::var_name(name.clone(), type_.dupe()),
+          );
           lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
         }
         let LoweringResult { statements: mut stmts, expression: condition } =
@@ -629,13 +638,13 @@ impl<'a> ExpressionLoweringManager<'a> {
       condition,
       s1,
       s2,
-      final_assignments: vec![(final_var_name, lowered_return_type.dupe(), e1, e2)],
+      final_assignments: vec![(final_var_name.clone(), lowered_return_type.dupe(), e1, e2)],
     });
     self.variable_cx.pop_scope();
     bind_value(
       &mut self.variable_cx,
-      final_var_name,
-      hir::Expression::var_name(final_var_name, lowered_return_type.dupe()),
+      final_var_name.dupe(),
+      hir::Expression::var_name(final_var_name.clone(), lowered_return_type.dupe()),
     );
     LoweringResult {
       statements: lowered_stmts,
@@ -675,7 +684,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           } = self.lower_matching_pattern(
             &nested.pattern,
             binding_names,
-            hir::Expression::var_name(name, field_type.dupe()),
+            hir::Expression::var_name(name.clone(), field_type.dupe()),
           );
           nested_pattern_lowering_stmts.insert(
             0,
@@ -698,7 +707,12 @@ impl<'a> ExpressionLoweringManager<'a> {
               condition: nested_pattern_condition,
               s1: acc.statements,
               s2: Vec::new(),
-              final_assignments: vec![(final_condition, hir::INT_TYPE, acc.expression, hir::ZERO)],
+              final_assignments: vec![(
+                final_condition.dupe(),
+                hir::INT_TYPE,
+                acc.expression,
+                hir::ZERO,
+              )],
             });
             acc = LoweringResult {
               statements: nested_pattern_lowering_stmts,
@@ -721,7 +735,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           } = self.lower_matching_pattern(
             &nested.pattern,
             binding_names,
-            hir::Expression::var_name(name, field_type.dupe()),
+            hir::Expression::var_name(name.clone(), field_type.dupe()),
           );
           nested_pattern_lowering_stmts.insert(
             0,
@@ -744,7 +758,12 @@ impl<'a> ExpressionLoweringManager<'a> {
               condition: nested_pattern_condition,
               s1: acc.statements,
               s2: Vec::new(),
-              final_assignments: vec![(final_condition, hir::INT_TYPE, acc.expression, hir::ZERO)],
+              final_assignments: vec![(
+                final_condition.dupe(),
+                hir::INT_TYPE,
+                acc.expression,
+                hir::ZERO,
+              )],
             });
             acc = LoweringResult {
               statements: nested_pattern_lowering_stmts,
@@ -766,9 +785,9 @@ impl<'a> ExpressionLoweringManager<'a> {
         for source::pattern::TuplePatternElement { pattern: _, type_: nested_type } in
           data_variables.iter().flat_map(|it| &it.elements)
         {
-          let data_var_type = self.type_lowering_manager.lower_source_type(self.heap, nested_type);
+          let data_var_type = self.type_lowering_manager.lower_source_type(nested_type);
           let name = self.allocate_temp_variable();
-          non_optional_bindings.push((name, data_var_type.dupe()));
+          non_optional_bindings.push((name.clone(), data_var_type.dupe()));
           optional_bindings.push(Some((name, data_var_type)));
         }
         let mut acc = LoweringResult { statements: Vec::new(), expression: hir::ONE };
@@ -799,7 +818,7 @@ impl<'a> ExpressionLoweringManager<'a> {
                 s1: acc.statements,
                 s2: Vec::new(),
                 final_assignments: vec![(
-                  final_condition,
+                  final_condition.dupe(),
                   hir::INT_TYPE,
                   acc.expression,
                   hir::ZERO,
@@ -821,7 +840,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             s1: acc.statements,
             s2: Vec::new(),
             final_assignments: vec![(
-              final_assignment_temp,
+              final_assignment_temp.dupe(),
               hir::INT_TYPE,
               acc.expression,
               hir::ZERO,
@@ -832,7 +851,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source::pattern::MatchingPattern::Id(id, _) => LoweringResult {
         statements: vec![hir::Statement::LateInitAssignment {
-          name: *binding_names.get(&id.name).unwrap(),
+          name: binding_names.get(&id.name).unwrap().dupe(),
           assigned_expression: lowered_expression,
         }],
         expression: hir::ONE,
@@ -863,7 +882,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             condition: cond,
             s1: vec![],
             s2: prev_stmts,
-            final_assignments: vec![(result_var, hir::INT_TYPE, hir::ONE, prev_expr)],
+            final_assignments: vec![(result_var.dupe(), hir::INT_TYPE, hir::ONE, prev_expr)],
           });
           acc = (pattern_stmts, hir::Expression::var_name(result_var, hir::INT_TYPE));
         }
@@ -877,8 +896,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let matched_expr = self.lowered_and_add_statements(&expression.matched, &mut lowered_stmts);
 
     let unreachable_branch_collector = self.allocate_temp_variable();
-    let final_return_type =
-      self.type_lowering_manager.lower_source_type(self.heap, &expression.common.type_);
+    let final_return_type = self.type_lowering_manager.lower_source_type(&expression.common.type_);
     let mut acc = (
       vec![hir::Statement::Call {
         callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
@@ -900,7 +918,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           hir::Expression::StringName(self.string_manager.allocate(PStr::EMPTY).0),
         ],
         return_type: final_return_type.dupe(),
-        return_collector: Some(unreachable_branch_collector),
+        return_collector: Some(unreachable_branch_collector.dupe()),
       }],
       hir::Expression::var_name(unreachable_branch_collector, final_return_type),
     );
@@ -919,9 +937,9 @@ impl<'a> ExpressionLoweringManager<'a> {
       let mut binding_names = HashMap::new();
       for (n, t) in pattern.bindings() {
         let name = self.allocate_temp_variable();
-        binding_names.insert(n, name);
-        let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
+        binding_names.insert(n.dupe(), name.dupe());
+        let type_ = self.type_lowering_manager.lower_source_type(t);
+        bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name.clone(), type_.dupe()));
         new_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
       }
       let LoweringResult { statements: mut binding_stmts, expression: match_success_condition } =
@@ -934,7 +952,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         s1: body_lowering_result.statements,
         s2: acc_stmts,
         final_assignments: vec![(
-          final_assignment_temp,
+          final_assignment_temp.dupe(),
           lowered_return_type.dupe(),
           body_lowering_result.expression,
           acc_e,
@@ -963,21 +981,22 @@ impl<'a> ExpressionLoweringManager<'a> {
       .iter()
       .map(|(name, e)| {
         let body_name =
-          if *name == PStr::UNDERSCORE_THIS { self.heap.alloc_temp_str() } else { *name };
-        (*name, body_name, e.type_().dupe())
+          if *name == PStr::UNDERSCORE_THIS { self.heap.alloc_temp_str() } else { name.dupe() };
+        (name.dupe(), body_name, e.type_().dupe())
       })
       .collect_vec();
     let mut lambda_stmts = Vec::new();
     for (index, (_orig, body_name, type_)) in captured_renamed.iter().enumerate() {
       lambda_stmts.push(hir::Statement::IndexedAccess {
-        name: *body_name,
+        name: body_name.dupe(),
         type_: type_.dupe(),
         pointer_expression: hir::Expression::var_name(PStr::UNDERSCORE_THIS, context_type.dupe()),
         index,
       });
     }
 
-    let parameters = expression.parameters.parameters.iter().map(|it| it.name.name).collect_vec();
+    let parameters =
+      expression.parameters.parameters.iter().map(|it| it.name.name.dupe()).collect_vec();
     let source_fn_type = expression.common.type_.as_fn().unwrap();
     let (
       type_parameters,
@@ -986,7 +1005,6 @@ impl<'a> ExpressionLoweringManager<'a> {
         return_type: fun_type_without_cx_return_type,
       },
     ) = self.type_lowering_manager.lower_source_function_type_for_toplevel(
-      self.heap,
       &source_fn_type.argument_types,
       &source_fn_type.return_type,
     );
@@ -997,7 +1015,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         .into_iter()
         .zip(fun_type_without_cx_argument_types.iter().cloned())
         .chain(self.defined_variables.iter().cloned())
-        .chain(captured_renamed.iter().map(|(_orig, body_name, t)| (*body_name, t.dupe())))
+        .chain(captured_renamed.iter().map(|(_orig, body_name, t)| (body_name.clone(), t.dupe())))
         .collect_vec(),
       self.type_definition_mapping,
       self.heap,
@@ -1009,8 +1027,8 @@ impl<'a> ExpressionLoweringManager<'a> {
       if *orig != *body_name {
         bind_value(
           &mut manager.variable_cx,
-          *orig,
-          hir::Expression::var_name(*body_name, t.dupe()),
+          orig.dupe(),
+          hir::Expression::var_name(body_name.clone(), t.dupe()),
         );
       }
     }
@@ -1026,7 +1044,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       name: fn_name,
       parameters: vec![PStr::UNDERSCORE_THIS]
         .into_iter()
-        .chain(expression.parameters.parameters.iter().map(|it| it.name.name))
+        .chain(expression.parameters.parameters.iter().map(|it| it.name.name.dupe()))
         .collect_vec(),
       type_parameters,
       type_: hir::FunctionType {
@@ -1049,8 +1067,8 @@ impl<'a> ExpressionLoweringManager<'a> {
       .captured
       .keys()
       .map(|k| {
-        let resolved_name = if *k == PStr::THIS { PStr::UNDERSCORE_THIS } else { *k };
-        (resolved_name, self.resolve_variable(&resolved_name))
+        let resolved_name = if *k == PStr::THIS { PStr::UNDERSCORE_THIS } else { k.dupe() };
+        (resolved_name.dupe(), self.resolve_variable(&resolved_name))
       })
       .collect_vec();
 
@@ -1064,14 +1082,14 @@ impl<'a> ExpressionLoweringManager<'a> {
         captured.iter().map(|(_, v)| v.type_().dupe()).collect_vec(),
       );
       lowered_stmts.push(hir::Statement::StructInit {
-        struct_variable_name: context_name,
+        struct_variable_name: context_name.dupe(),
         type_: context_type.dupe(),
         expression_list: captured.iter().map(|(_, v)| v.dupe()).collect_vec(),
       });
       bind_value(
         &mut self.variable_cx,
-        context_name,
-        hir::Expression::var_name(context_name, hir::Type::Id(context_type.dupe())),
+        context_name.dupe(),
+        hir::Expression::var_name(context_name.clone(), hir::Type::Id(context_type.dupe())),
       );
       hir::Expression::var_name(context_name, hir::Type::Id(context_type))
     };
@@ -1082,15 +1100,15 @@ impl<'a> ExpressionLoweringManager<'a> {
       return_type: synthetic_lambda.type_.return_type.clone(),
     });
     lowered_stmts.push(hir::Statement::ClosureInit {
-      closure_variable_name,
+      closure_variable_name: closure_variable_name.dupe(),
       closure_type: closure_type.dupe(),
       function_name: hir::FunctionNameExpression {
-        name: synthetic_lambda.name,
+        name: synthetic_lambda.name.dupe(),
         type_: synthetic_lambda.type_.clone(),
         type_arguments: synthetic_lambda
           .type_parameters
           .iter()
-          .copied()
+          .duped()
           .map(hir::Type::new_generic_type)
           .collect_vec(),
       },
@@ -1099,8 +1117,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     self.synthetic_functions.push(synthetic_lambda);
     bind_value(
       &mut self.variable_cx,
-      closure_variable_name,
-      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.dupe())),
+      closure_variable_name.dupe(),
+      hir::Expression::var_name(closure_variable_name.clone(), hir::Type::Id(closure_type.dupe())),
     );
     LoweringResult {
       statements: lowered_stmts,
@@ -1119,9 +1137,13 @@ impl<'a> ExpressionLoweringManager<'a> {
           let mut binding_names = HashMap::new();
           for (n, t) in decl_stmt.pattern.bindings() {
             let name = self.allocate_temp_variable();
-            binding_names.insert(n, name);
-            let type_ = self.type_lowering_manager.lower_source_type(self.heap, t);
-            bind_value(&mut self.variable_cx, n, hir::Expression::var_name(name, type_.dupe()));
+            binding_names.insert(n.dupe(), name.dupe());
+            let type_ = self.type_lowering_manager.lower_source_type(t);
+            bind_value(
+              &mut self.variable_cx,
+              n,
+              hir::Expression::var_name(name.clone(), type_.dupe()),
+            );
             lowered_stmts.push(hir::Statement::LateInitDeclaration { name, type_ });
           }
           let LoweringResult { statements: mut stmts, expression: _ } =
@@ -1156,21 +1178,20 @@ fn lower_source_expression(
 }
 
 fn lower_constructors(
-  heap: &mut Heap,
   module_reference: &ModuleReference,
   class_name: PStr,
   type_definition_mapping: &HashMap<hir::TypeName, hir::TypeDefinition>,
 ) -> Vec<hir::Function> {
   let type_name =
-    hir::TypeName { module_reference: Some(*module_reference), type_name: class_name };
+    hir::TypeName { module_reference: Some(*module_reference), type_name: class_name.dupe() };
   let type_def = type_definition_mapping.get(&type_name).unwrap();
   let struct_var_name = PStr::LOWER_O;
   let struct_type = hir::IdType {
-    name: type_name,
+    name: type_name.dupe(),
     type_arguments: type_def
       .type_parameters
       .iter()
-      .map(|n| hir::Type::new_generic_type(*n))
+      .map(|n| hir::Type::new_generic_type(n.dupe()))
       .collect(),
   };
   let mut functions = Vec::new();
@@ -1180,7 +1201,7 @@ fn lower_constructors(
         name: hir::FunctionName { type_name, fn_name: PStr::INIT },
         parameters: vec![PStr::UNDERSCORE_THIS]
           .into_iter()
-          .chain(types.iter().enumerate().map(|(i, _)| heap.alloc_string(format!("_f{i}"))))
+          .chain(types.iter().enumerate().map(|(i, _)| Heap::alloc_string(format!("_f{i}"))))
           .collect_vec(),
         type_parameters: type_def.type_parameters.clone(),
         type_: hir::Type::new_fn_unwrapped(
@@ -1188,13 +1209,13 @@ fn lower_constructors(
           hir::Type::Id(struct_type.dupe()),
         ),
         body: vec![hir::Statement::StructInit {
-          struct_variable_name: struct_var_name,
+          struct_variable_name: struct_var_name.dupe(),
           type_: struct_type.dupe(),
           expression_list: types
             .iter()
             .enumerate()
             .map(|(order, t)| {
-              hir::Expression::var_name(heap.alloc_string(format!("_f{order}")), t.dupe())
+              hir::Expression::var_name(Heap::alloc_string(format!("_f{order}")), t.dupe())
             })
             .collect_vec(),
         }],
@@ -1208,13 +1229,13 @@ fn lower_constructors(
           name: hir::FunctionName {
             type_name: hir::TypeName {
               module_reference: Some(*module_reference),
-              type_name: class_name,
+              type_name: class_name.dupe(),
             },
-            fn_name: *tag_name,
+            fn_name: tag_name.dupe(),
           },
           parameters: vec![PStr::UNDERSCORE_THIS]
             .into_iter()
-            .chain((0..(data_types.len())).map(|i| heap.alloc_string(format!("_data{i}"))))
+            .chain((0..(data_types.len())).map(|i| Heap::alloc_string(format!("_data{i}"))))
             .collect(),
           type_parameters: type_def.type_parameters.clone(),
           type_: hir::Type::new_fn_unwrapped(
@@ -1222,19 +1243,19 @@ fn lower_constructors(
             hir::Type::Id(struct_type.dupe()),
           ),
           body: vec![hir::Statement::EnumInit {
-            enum_variable_name: struct_var_name,
+            enum_variable_name: struct_var_name.dupe(),
             enum_type: struct_type.dupe(),
             tag: tag_order,
             associated_data_list: data_types
               .iter()
               .enumerate()
               .map(|(i, data_type)| {
-                hir::Expression::var_name(heap.alloc_string(format!("_data{i}")), data_type.dupe())
+                hir::Expression::var_name(Heap::alloc_string(format!("_data{i}")), data_type.dupe())
               })
               .collect(),
           }],
           return_value: hir::Expression::var_name(
-            struct_var_name,
+            struct_var_name.dupe(),
             hir::Type::Id(struct_type.dupe()),
           ),
         };
@@ -1246,7 +1267,7 @@ fn lower_constructors(
 }
 
 fn lower_tparams(type_parameters: Option<&source::annotation::TypeParameters>) -> Vec<PStr> {
-  type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name).collect_vec()
+  type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name.dupe()).collect_vec()
 }
 
 fn compile_sources_with_generics_preserved(
@@ -1262,12 +1283,15 @@ fn compile_sources_with_generics_preserved(
   for (mod_ref, source_module) in sources.iter() {
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
-        type_lowering_manager.generic_types =
-          c.type_parameters.iter().flat_map(|it| &it.parameters).map(|it| it.name.name).collect();
+        type_lowering_manager.generic_types = c
+          .type_parameters
+          .iter()
+          .flat_map(|it| &it.parameters)
+          .map(|it| it.name.name.dupe())
+          .collect();
         compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
-          heap,
           mod_ref,
-          c.name.name,
+          c.name.name.dupe(),
           c.type_definition.as_ref(),
         ));
         if c.name.name == PStr::MAIN_TYPE
@@ -1289,7 +1313,7 @@ fn compile_sources_with_generics_preserved(
     }
   }
   let type_def_mappings: HashMap<_, _> =
-    compiled_type_defs.iter().map(|it| (it.name, it.clone())).collect();
+    compiled_type_defs.iter().map(|it| (it.name.dupe(), it.clone())).collect();
 
   let mut string_manager = StringManager::new();
   let mut next_synthetic_fn_id_manager = NextSyntheticFnIdManager { id: 0 };
@@ -1298,24 +1322,23 @@ fn compile_sources_with_generics_preserved(
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
         compiled_functions.append(&mut lower_constructors(
-          heap,
           module_reference,
-          c.name.name,
+          c.name.name.dupe(),
           &type_def_mappings,
         ));
         for member in &c.members.members {
           let function_name = hir::FunctionName {
             type_name: hir::TypeName {
               module_reference: Some(*module_reference),
-              type_name: c.name.name,
+              type_name: c.name.name.dupe(),
             },
-            fn_name: member.decl.name.name,
+            fn_name: member.decl.name.name.dupe(),
           };
           let class_tparams = lower_tparams(c.type_parameters.as_ref());
           if member.decl.is_method {
             let tparams: OrderSet<_> = class_tparams
               .iter()
-              .copied()
+              .duped()
               .chain(lower_tparams(member.decl.type_parameters.as_ref()))
               .collect();
             type_lowering_manager.generic_types = tparams.clone();
@@ -1324,7 +1347,7 @@ fn compile_sources_with_generics_preserved(
               hir::Type::Id(hir::IdType {
                 name: hir::TypeName {
                   module_reference: Some(*module_reference),
-                  type_name: c.name.name,
+                  type_name: c.name.name.dupe(),
                 },
                 type_arguments: class_tparams
                   .into_iter()
@@ -1335,9 +1358,9 @@ fn compile_sources_with_generics_preserved(
             .into_iter()
             .chain(member.decl.parameters.parameters.iter().map(|id| {
               (
-                id.name.name,
+                id.name.name.dupe(),
                 type_lowering_manager
-                  .lower_source_type(heap, &type_::Type::from_annotation(&id.annotation)),
+                  .lower_source_type(&type_::Type::from_annotation(&id.annotation)),
               )
             }))
             .collect_vec();
@@ -1358,7 +1381,7 @@ fn compile_sources_with_generics_preserved(
             let main_fn_type = hir::Type::new_fn_unwrapped(
               main_function_parameter_with_types.iter().map(|(_, t)| t.dupe()).collect_vec(),
               type_lowering_manager
-                .lower_source_type(heap, &type_::Type::from_annotation(&member.decl.return_type)),
+                .lower_source_type(&type_::Type::from_annotation(&member.decl.return_type)),
             );
             compiled_functions_to_add.push(hir::Function {
               name: function_name,
@@ -1380,9 +1403,9 @@ fn compile_sources_with_generics_preserved(
               .into_iter()
               .chain(member.decl.parameters.parameters.iter().map(|id| {
                 (
-                  id.name.name,
+                  id.name.name.dupe(),
                   type_lowering_manager
-                    .lower_source_type(heap, &type_::Type::from_annotation(&id.annotation)),
+                    .lower_source_type(&type_::Type::from_annotation(&id.annotation)),
                 )
               }))
               .collect_vec();
@@ -1403,7 +1426,7 @@ fn compile_sources_with_generics_preserved(
             let main_fn_type = hir::Type::new_fn_unwrapped(
               main_function_parameter_with_types.iter().map(|(_, t)| t.dupe()).collect_vec(),
               type_lowering_manager
-                .lower_source_type(heap, &type_::Type::from_annotation(&member.decl.return_type)),
+                .lower_source_type(&type_::Type::from_annotation(&member.decl.return_type)),
             );
             let original_f = hir::Function {
               name: function_name,
@@ -1698,7 +1721,7 @@ mod tests {
         },
       ),
       heap,
-      "let _t1: DUMMY_Dummy = DUMMY_Dummy$init<int, int>(0, 0, 0);\nreturn (_t1: DUMMY_Dummy);",
+      "let _t0: DUMMY_Dummy = DUMMY_Dummy$init<int, int>(0, 0, 0);\nreturn (_t0: DUMMY_Dummy);",
     );
   }
 
@@ -1718,7 +1741,7 @@ mod tests {
         field_order: 0,
       }),
       heap,
-      "let _t1: int = (_this: DUMMY_Dummy)[0];\nreturn (_t1: int);",
+      "let _t0: int = (_this: DUMMY_Dummy)[0];\nreturn (_t0: int);",
     );
 
     // MethodAccess lowering works.
@@ -1735,8 +1758,8 @@ mod tests {
       }),
       heap,
       r#"closure type _$SyntheticIDType0 = (int) -> int
-let _t2: _$SyntheticIDType0 = Closure { fun: (DUMMY_Dummy$foo: (DUMMY_Dummy, int) -> int), context: (_this: DUMMY_Dummy) };
-return (_t2: _$SyntheticIDType0);"#,
+let _t0: _$SyntheticIDType0 = Closure { fun: (DUMMY_Dummy$foo: (DUMMY_Dummy, int) -> int), context: (_this: DUMMY_Dummy) };
+return (_t0: _$SyntheticIDType0);"#,
     );
   }
 
@@ -1767,8 +1790,8 @@ return (_t2: _$SyntheticIDType0);"#,
         },
       }),
       heap,
-      r#"let _t1: int = DUMMY_Dummy$fooBar((_this: DUMMY_Dummy), (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
-return (_t1: int);"#,
+      r#"let _t0: int = DUMMY_Dummy$fooBar((_this: DUMMY_Dummy), (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+return (_t0: int);"#,
     );
     // Function call 2/n: closure call with return
     let heap = &mut Heap::new();
@@ -1790,8 +1813,8 @@ return (_t1: int);"#,
         },
       }),
       heap,
-      r#"let _t1: int = (closure: DUMMY_Closure)(1);
-return (_t1: int);"#,
+      r#"let _t0: int = (closure: DUMMY_Closure)(1);
+return (_t0: int);"#,
     );
     // Function call 3/n: closure call without return
     let heap = &mut Heap::new();
@@ -1831,7 +1854,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = !(_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = !(_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1841,7 +1864,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = 0 - (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = 0 - (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
 
     // Binary Lowering: normal
@@ -1855,7 +1878,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) + (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) + (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1867,7 +1890,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) - (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) - (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1879,7 +1902,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) * (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) * (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1891,7 +1914,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) / (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) / (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1903,7 +1926,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) % (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) % (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1915,7 +1938,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) < (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) < (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1927,7 +1950,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) <= (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) <= (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1939,7 +1962,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) > (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) > (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1951,7 +1974,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) >= (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) >= (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1963,7 +1986,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) == (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) == (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1975,7 +1998,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t1 = (_this: DUMMY_Dummy) != (_this: DUMMY_Dummy);\nreturn (_t1: int);",
+      "let _t0 = (_this: DUMMY_Dummy) != (_this: DUMMY_Dummy);\nreturn (_t0: int);",
     );
     // Binary Lowering: Short circuiting &&
     let heap = &mut Heap::new();
@@ -1988,13 +2011,13 @@ return 0;"#,
         e2: Box::new(id_expr(heap.alloc_str_for_test("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t1: int;
+      r#"let _t0: int;
 if (foo: int) {
-  _t1 = (bar: int);
+  _t0 = (bar: int);
 } else {
-  _t1 = 0;
+  _t0 = 0;
 }
-return (_t1: int);"#,
+return (_t0: int);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -2073,13 +2096,13 @@ return (_t1: int);"#,
         e2: Box::new(id_expr(heap.alloc_str_for_test("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t1: int;
+      r#"let _t0: int;
 if (foo: int) {
-  _t1 = 1;
+  _t0 = 1;
 } else {
-  _t1 = (bar: int);
+  _t0 = (bar: int);
 }
-return (_t1: int);"#,
+return (_t0: int);"#,
     );
     // Binary Lowering: string concat
     let heap = &mut Heap::new();
@@ -2092,8 +2115,8 @@ return (_t1: int);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t1: _Str = _Str$concat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
-return (_t1: _Str);"#,
+      r#"let _t0: _Str = _Str$concat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+return (_t0: _Str);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -2146,9 +2169,9 @@ function __GenFn$0(_this: _$SyntheticIDType0, a: int): int {
   return (_this: DUMMY_Dummy);
 }
 
-let _t2: _$SyntheticIDType0 = [(captured_a: int)];
-let _t1: _$SyntheticIDType1 = Closure { fun: (__GenFn$0: (_$SyntheticIDType0, int) -> int), context: (_t2: _$SyntheticIDType0) };
-return (_t1: _$SyntheticIDType1);"#,
+let _t1: _$SyntheticIDType0 = [(captured_a: int)];
+let _t0: _$SyntheticIDType1 = Closure { fun: (__GenFn$0: (_$SyntheticIDType0, int) -> int), context: (_t1: _$SyntheticIDType0) };
+return (_t0: _$SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2177,9 +2200,9 @@ function __GenFn$0(_this: _$SyntheticIDType0, a: int): int {
   return (_this: DUMMY_Dummy);
 }
 
-let _t2: _$SyntheticIDType0 = [(captured_a: int)];
-let _t1: _$SyntheticIDType1 = Closure { fun: (__GenFn$0: (_$SyntheticIDType0, int) -> int), context: (_t2: _$SyntheticIDType0) };
-return (_t1: _$SyntheticIDType1);"#,
+let _t1: _$SyntheticIDType0 = [(captured_a: int)];
+let _t0: _$SyntheticIDType1 = Closure { fun: (__GenFn$0: (_$SyntheticIDType0, int) -> int), context: (_t1: _$SyntheticIDType0) };
+return (_t0: _$SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2208,9 +2231,9 @@ function __GenFn$0(_this: _$SyntheticIDType0, a: int): DUMMY_Dummy {
   return (_this: DUMMY_Dummy);
 }
 
-let _t2: _$SyntheticIDType0 = [(captured_a: int)];
-let _t1: _$SyntheticIDType1 = Closure { fun: (__GenFn$0: (_$SyntheticIDType0, int) -> DUMMY_Dummy), context: (_t2: _$SyntheticIDType0) };
-return (_t1: _$SyntheticIDType1);"#,
+let _t1: _$SyntheticIDType0 = [(captured_a: int)];
+let _t0: _$SyntheticIDType1 = Closure { fun: (__GenFn$0: (_$SyntheticIDType0, int) -> DUMMY_Dummy), context: (_t1: _$SyntheticIDType0) };
+return (_t0: _$SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2237,8 +2260,8 @@ function __GenFn$0(_this: i31, a: int): DUMMY_Dummy {
   return (_this: DUMMY_Dummy);
 }
 
-let _t1: _$SyntheticIDType0 = Closure { fun: (__GenFn$0: (i31, int) -> DUMMY_Dummy), context: 0 as i31 };
-return (_t1: _$SyntheticIDType0);"#,
+let _t0: _$SyntheticIDType0 = Closure { fun: (__GenFn$0: (i31, int) -> DUMMY_Dummy), context: 0 as i31 };
+return (_t0: _$SyntheticIDType0);"#,
     );
   }
 
@@ -2315,13 +2338,13 @@ return (_t1: _$SyntheticIDType0);"#,
         })),
       }),
       heap,
-      r#"let _t1: DUMMY_Dummy;
+      r#"let _t0: DUMMY_Dummy;
 if (_this: DUMMY_Dummy) {
-  _t1 = (_this: DUMMY_Dummy);
+  _t0 = (_this: DUMMY_Dummy);
 } else {
-  _t1 = (_this: DUMMY_Dummy);
+  _t0 = (_this: DUMMY_Dummy);
 }
-return (_t1: DUMMY_Dummy);"#,
+return (_t0: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2384,32 +2407,32 @@ return (_t1: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let _t6: int;
-let [_t7: int] if tagof((_this: DUMMY_Dummy))==0 {
-  _t6 = (_t7: int);
-  _t8 = 1;
-} else {
-  _t8 = 0;
-}
-let _t5: DUMMY_Dummy;
-if (_t8: int) {
+let _t5: int;
+let [_t6: int] if tagof((_this: DUMMY_Dummy))==0 {
   _t5 = (_t6: int);
+  _t7 = 1;
 } else {
-  let [_t3: int] if tagof((_this: DUMMY_Dummy))==1 {
-    _t4 = 1;
-  } else {
-    _t4 = 0;
-  }
-  let _t2: DUMMY_Dummy;
-  if (_t4: int) {
-    _t2 = (_this: DUMMY_Dummy);
-  } else {
-    let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-    _t2 = (_t1: DUMMY_Dummy);
-  }
-  _t5 = (_t2: DUMMY_Dummy);
+  _t7 = 0;
 }
-return (_t5: DUMMY_Dummy);"#,
+let _t4: DUMMY_Dummy;
+if (_t7: int) {
+  _t4 = (_t5: int);
+} else {
+  let [_t2: int] if tagof((_this: DUMMY_Dummy))==1 {
+    _t3 = 1;
+  } else {
+    _t3 = 0;
+  }
+  let _t1: DUMMY_Dummy;
+  if (_t3: int) {
+    _t1 = (_this: DUMMY_Dummy);
+  } else {
+    let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+    _t1 = (_t0: DUMMY_Dummy);
+  }
+  _t4 = (_t1: DUMMY_Dummy);
+}
+return (_t4: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2495,43 +2518,43 @@ return (_t5: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let [_t10: int] if tagof((_this: DUMMY_Dummy))==0 {
-  _t11 = 1;
+let [_t9: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t10 = 1;
 } else {
-  _t11 = 0;
+  _t10 = 0;
 }
-let _t9: DUMMY_Dummy;
-if (_t11: int) {
-  _t9 = (_this: DUMMY_Dummy);
+let _t8: DUMMY_Dummy;
+if (_t10: int) {
+  _t8 = (_this: DUMMY_Dummy);
 } else {
-  let _t6: int;
-  let [_t7: int] if tagof((_this: DUMMY_Dummy))==1 {
-    _t6 = (_t7: int);
-    _t8 = 1;
-  } else {
-    _t8 = 0;
-  }
-  let _t5: DUMMY_Dummy;
-  if (_t8: int) {
+  let _t5: int;
+  let [_t6: int] if tagof((_this: DUMMY_Dummy))==1 {
     _t5 = (_t6: int);
+    _t7 = 1;
   } else {
-    let [_t3: int] if tagof((_this: DUMMY_Dummy))==2 {
-      _t4 = 1;
-    } else {
-      _t4 = 0;
-    }
-    let _t2: DUMMY_Dummy;
-    if (_t4: int) {
-      _t2 = (_this: DUMMY_Dummy);
-    } else {
-      let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-      _t2 = (_t1: DUMMY_Dummy);
-    }
-    _t5 = (_t2: DUMMY_Dummy);
+    _t7 = 0;
   }
-  _t9 = (_t5: DUMMY_Dummy);
+  let _t4: DUMMY_Dummy;
+  if (_t7: int) {
+    _t4 = (_t5: int);
+  } else {
+    let [_t2: int] if tagof((_this: DUMMY_Dummy))==2 {
+      _t3 = 1;
+    } else {
+      _t3 = 0;
+    }
+    let _t1: DUMMY_Dummy;
+    if (_t3: int) {
+      _t1 = (_this: DUMMY_Dummy);
+    } else {
+      let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+      _t1 = (_t0: DUMMY_Dummy);
+    }
+    _t4 = (_t1: DUMMY_Dummy);
+  }
+  _t8 = (_t4: DUMMY_Dummy);
 }
-return (_t9: DUMMY_Dummy);"#,
+return (_t8: DUMMY_Dummy);"#,
     );
   }
 
@@ -2721,40 +2744,40 @@ return (_t9: DUMMY_Dummy);"#,
         })),
       }),
       heap,
-      r#"let _t1: int;
-let _t2: int;
-let _t4: int = (_this: DUMMY_Dummy)[0];
-_t1 = (_t4: int);
-let _t3: int = (_this: DUMMY_Dummy)[1];
-_t2 = (_t3: int);
+      r#"let _t0: int;
+let _t1: int;
+let _t3: int = (_this: DUMMY_Dummy)[0];
+_t0 = (_t3: int);
+let _t2: int = (_this: DUMMY_Dummy)[1];
+_t1 = (_t2: int);
+let _t4: int;
 let _t5: int;
-let _t6: int;
-let [_t7: int, _t8: int] if tagof((_this: DUMMY_Dummy))==0 {
-  let [_t9: int, _t10: int] if tagof((_t7: int))==0 {
+let [_t6: int, _t7: int] if tagof((_this: DUMMY_Dummy))==0 {
+  let [_t8: int, _t9: int] if tagof((_t6: int))==0 {
+    _t4 = (_t8: int);
     _t5 = (_t9: int);
-    _t6 = (_t10: int);
+    _t10 = 1;
+  } else {
+    _t10 = 0;
+  }
+  let _t11: int;
+  if (_t10: int) {
+    _t5 = (_t7: int);
     _t11 = 1;
   } else {
     _t11 = 0;
   }
-  let _t12: int;
-  if (_t11: int) {
-    _t6 = (_t8: int);
-    _t12 = 1;
-  } else {
-    _t12 = 0;
-  }
-  _t13 = (_t12: int);
+  _t12 = (_t11: int);
 } else {
-  _t13 = 0;
+  _t12 = 0;
 }
-let _t14: int;
-if (_t13: int) {
-  _t14 = (_t5: int);
+let _t13: int;
+if (_t12: int) {
+  _t13 = (_t4: int);
 } else {
-  _t14 = (_this: DUMMY_Dummy);
+  _t13 = (_this: DUMMY_Dummy);
 }
-return (_t14: int);"#,
+return (_t13: int);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2920,61 +2943,61 @@ return (_t14: int);"#,
         })),
       }),
       heap,
-      r#"let _t1: int;
-let _t6: int = (_this: DUMMY_Dummy)[0];
-let [_t7: int] if tagof((_t6: int))==0 {
-  _t1 = (_t7: int);
-  _t8 = 1;
+      r#"let _t0: int;
+let _t5: int = (_this: DUMMY_Dummy)[0];
+let [_t6: int] if tagof((_t5: int))==0 {
+  _t0 = (_t6: int);
+  _t7 = 1;
+} else {
+  _t7 = 0;
+}
+let _t8: int;
+if (_t7: int) {
+  let _t1: int = (_this: DUMMY_Dummy)[1];
+  let [_t2: int] if tagof((_t1: int))==1 {
+    _t0 = (_t2: int);
+    _t3 = 1;
+  } else {
+    _t3 = 0;
+  }
+  let _t4: int;
+  if (_t3: int) {
+    _t4 = 1;
+  } else {
+    _t4 = 0;
+  }
+  _t8 = (_t4: int);
 } else {
   _t8 = 0;
 }
 let _t9: int;
 if (_t8: int) {
-  let _t2: int = (_this: DUMMY_Dummy)[1];
-  let [_t3: int] if tagof((_t2: int))==1 {
-    _t1 = (_t3: int);
-    _t4 = 1;
-  } else {
-    _t4 = 0;
-  }
-  let _t5: int;
-  if (_t4: int) {
-    _t5 = 1;
-  } else {
-    _t5 = 0;
-  }
-  _t9 = (_t5: int);
-} else {
-  _t9 = 0;
-}
-let _t10: int;
-if (_t9: int) {
+  let _t10: int;
   let _t11: int;
-  let _t12: int;
-  let [_t13: int, _t14: int] if tagof((_this: DUMMY_Dummy))==0 {
+  let [_t12: int, _t13: int] if tagof((_this: DUMMY_Dummy))==0 {
+    _t10 = (_t12: int);
     _t11 = (_t13: int);
-    _t12 = (_t14: int);
-    _t15 = 1;
+    _t14 = 1;
   } else {
-    _t15 = 0;
+    _t14 = 0;
   }
-  let _t16: int;
-  if (_t15: int) {
-    _t16 = (_t11: int);
+  let _t15: int;
+  if (_t14: int) {
+    _t15 = (_t10: int);
   } else {
-    _t16 = (_this: DUMMY_Dummy);
+    _t15 = (_this: DUMMY_Dummy);
   }
-  _t10 = (_t16: int);
+  _t9 = (_t15: int);
 } else {
+  let _t16: int;
   let _t17: int;
-  let _t18: int;
-  let _t20: int = (_this: DUMMY_Dummy)[0];
-  _t17 = (_t20: int);
-  let _t19: int = (_this: DUMMY_Dummy)[1];
-  _t18 = (_t19: int);
-  _t10 = (_this: DUMMY_Dummy);
+  let _t19: int = (_this: DUMMY_Dummy)[0];
+  _t16 = (_t19: int);
+  let _t18: int = (_this: DUMMY_Dummy)[1];
+  _t17 = (_t18: int);
+  _t9 = (_this: DUMMY_Dummy);
 }
-return (_t10: int);"#,
+return (_t9: int);"#,
     );
 
     let heap = &mut Heap::new();
@@ -3132,61 +3155,61 @@ return (_t10: int);"#,
         })),
       }),
       heap,
-      r#"let _t1: int;
-let _t6: int = (_this: DUMMY_Dummy)[0];
-let [_t7: int] if tagof((_t6: int))==0 {
-  _t1 = (_t7: int);
-  _t8 = 1;
+      r#"let _t0: int;
+let _t5: int = (_this: DUMMY_Dummy)[0];
+let [_t6: int] if tagof((_t5: int))==0 {
+  _t0 = (_t6: int);
+  _t7 = 1;
+} else {
+  _t7 = 0;
+}
+let _t8: int;
+if (_t7: int) {
+  let _t1: int = (_this: DUMMY_Dummy)[1];
+  let [_t2: int] if tagof((_t1: int))==1 {
+    _t0 = (_t2: int);
+    _t3 = 1;
+  } else {
+    _t3 = 0;
+  }
+  let _t4: int;
+  if (_t3: int) {
+    _t4 = 1;
+  } else {
+    _t4 = 0;
+  }
+  _t8 = (_t4: int);
 } else {
   _t8 = 0;
 }
 let _t9: int;
 if (_t8: int) {
-  let _t2: int = (_this: DUMMY_Dummy)[1];
-  let [_t3: int] if tagof((_t2: int))==1 {
-    _t1 = (_t3: int);
-    _t4 = 1;
-  } else {
-    _t4 = 0;
-  }
-  let _t5: int;
-  if (_t4: int) {
-    _t5 = 1;
-  } else {
-    _t5 = 0;
-  }
-  _t9 = (_t5: int);
-} else {
-  _t9 = 0;
-}
-let _t10: int;
-if (_t9: int) {
+  let _t10: int;
   let _t11: int;
-  let _t12: int;
-  let [_t13: int, _t14: int] if tagof((_this: DUMMY_Dummy))==0 {
+  let [_t12: int, _t13: int] if tagof((_this: DUMMY_Dummy))==0 {
+    _t10 = (_t12: int);
     _t11 = (_t13: int);
-    _t12 = (_t14: int);
-    _t15 = 1;
+    _t14 = 1;
   } else {
-    _t15 = 0;
+    _t14 = 0;
   }
-  let _t16: int;
-  if (_t15: int) {
-    _t16 = (_t11: int);
+  let _t15: int;
+  if (_t14: int) {
+    _t15 = (_t10: int);
   } else {
-    _t16 = (_this: DUMMY_Dummy);
+    _t15 = (_this: DUMMY_Dummy);
   }
-  _t10 = (_t16: int);
+  _t9 = (_t15: int);
 } else {
+  let _t16: int;
   let _t17: int;
-  let _t18: int;
-  let _t20: int = (_this: DUMMY_Dummy)[0];
-  _t17 = (_t20: int);
-  let _t19: int = (_this: DUMMY_Dummy)[1];
-  _t18 = (_t19: int);
-  _t10 = (_this: DUMMY_Dummy);
+  let _t19: int = (_this: DUMMY_Dummy)[0];
+  _t16 = (_t19: int);
+  let _t18: int = (_this: DUMMY_Dummy)[1];
+  _t17 = (_t18: int);
+  _t9 = (_this: DUMMY_Dummy);
 }
-return (_t10: int);"#,
+return (_t9: int);"#,
     );
   }
 
@@ -3268,44 +3291,44 @@ return (_t10: int);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let _t5: int;
-let [_t8: int] if tagof((_this: DUMMY_Dummy))==0 {
-  _t5 = (_t8: int);
+let _t4: int;
+let [_t7: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t4 = (_t7: int);
+  _t8 = 1;
+} else {
+  _t8 = 0;
+}
+let _t9: int;
+if (_t8: int) {
   _t9 = 1;
 } else {
-  _t9 = 0;
-}
-let _t10: int;
-if (_t9: int) {
-  _t10 = 1;
-} else {
-  let [_t6: int] if tagof((_this: DUMMY_Dummy))==1 {
-    _t5 = (_t6: int);
-    _t7 = 1;
+  let [_t5: int] if tagof((_this: DUMMY_Dummy))==1 {
+    _t4 = (_t5: int);
+    _t6 = 1;
   } else {
-    _t7 = 0;
+    _t6 = 0;
   }
-  _t10 = (_t7: int);
+  _t9 = (_t6: int);
 }
-let _t4: DUMMY_Dummy;
-if (_t10: int) {
-  _t4 = (_t5: int);
+let _t3: DUMMY_Dummy;
+if (_t9: int) {
+  _t3 = (_t4: int);
 } else {
   let [] if tagof((_this: DUMMY_Dummy))==2 {
-    _t3 = 1;
+    _t2 = 1;
   } else {
-    _t3 = 0;
+    _t2 = 0;
   }
-  let _t2: DUMMY_Dummy;
-  if (_t3: int) {
-    _t2 = (_this: DUMMY_Dummy);
+  let _t1: DUMMY_Dummy;
+  if (_t2: int) {
+    _t1 = (_this: DUMMY_Dummy);
   } else {
-    let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-    _t2 = (_t1: DUMMY_Dummy);
+    let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+    _t1 = (_t0: DUMMY_Dummy);
   }
-  _t4 = (_t2: DUMMY_Dummy);
+  _t3 = (_t1: DUMMY_Dummy);
 }
-return (_t4: DUMMY_Dummy);"#,
+return (_t3: DUMMY_Dummy);"#,
     );
   }
 
@@ -3356,40 +3379,40 @@ return (_t4: DUMMY_Dummy);"#,
       r#"const GLOBAL_STRING_0 = '';
 
 let [] if tagof((_this: DUMMY_Dummy))==0 {
+  _t5 = 1;
+} else {
+  _t5 = 0;
+}
+let _t6: int;
+if (_t5: int) {
   _t6 = 1;
 } else {
-  _t6 = 0;
-}
-let _t7: int;
-if (_t6: int) {
-  _t7 = 1;
-} else {
   let [] if tagof((_this: DUMMY_Dummy))==1 {
+    _t3 = 1;
+  } else {
+    _t3 = 0;
+  }
+  let _t4: int;
+  if (_t3: int) {
     _t4 = 1;
   } else {
-    _t4 = 0;
-  }
-  let _t5: int;
-  if (_t4: int) {
-    _t5 = 1;
-  } else {
     let [] if tagof((_this: DUMMY_Dummy))==2 {
-      _t3 = 1;
+      _t2 = 1;
     } else {
-      _t3 = 0;
+      _t2 = 0;
     }
-    _t5 = (_t3: int);
+    _t4 = (_t2: int);
   }
-  _t7 = (_t5: int);
+  _t6 = (_t4: int);
 }
-let _t2: DUMMY_Dummy;
-if (_t7: int) {
-  _t2 = (_this: DUMMY_Dummy);
+let _t1: DUMMY_Dummy;
+if (_t6: int) {
+  _t1 = (_this: DUMMY_Dummy);
 } else {
-  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-  _t2 = (_t1: DUMMY_Dummy);
+  let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t1 = (_t0: DUMMY_Dummy);
 }
-return (_t2: DUMMY_Dummy);"#,
+return (_t1: DUMMY_Dummy);"#,
     );
   }
 
@@ -3415,14 +3438,14 @@ return (_t2: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let _t2: DUMMY_Dummy;
+let _t1: DUMMY_Dummy;
 if 0 {
-  _t2 = (_this: DUMMY_Dummy);
+  _t1 = (_this: DUMMY_Dummy);
 } else {
-  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-  _t2 = (_t1: DUMMY_Dummy);
+  let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t1 = (_t0: DUMMY_Dummy);
 }
-return (_t2: DUMMY_Dummy);"#,
+return (_t1: DUMMY_Dummy);"#,
     );
   }
 
@@ -3457,18 +3480,18 @@ return (_t2: DUMMY_Dummy);"#,
       r#"const GLOBAL_STRING_0 = '';
 
 let [] if tagof((_this: DUMMY_Dummy))==0 {
-  _t3 = 1;
+  _t2 = 1;
 } else {
-  _t3 = 0;
+  _t2 = 0;
 }
-let _t2: DUMMY_Dummy;
-if (_t3: int) {
-  _t2 = (_this: DUMMY_Dummy);
+let _t1: DUMMY_Dummy;
+if (_t2: int) {
+  _t1 = (_this: DUMMY_Dummy);
 } else {
-  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-  _t2 = (_t1: DUMMY_Dummy);
+  let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t1 = (_t0: DUMMY_Dummy);
 }
-return (_t2: DUMMY_Dummy);"#,
+return (_t1: DUMMY_Dummy);"#,
     );
   }
 
@@ -3550,44 +3573,44 @@ return (_t2: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let _t3: int;
-let [_t4: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==0 {
-  let [_t7: int] if tagof((_t4: DUMMY_Dummy))==0 {
-    _t3 = (_t7: int);
+let _t2: int;
+let [_t3: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==0 {
+  let [_t6: int] if tagof((_t3: DUMMY_Dummy))==0 {
+    _t2 = (_t6: int);
+    _t7 = 1;
+  } else {
+    _t7 = 0;
+  }
+  let _t8: int;
+  if (_t7: int) {
     _t8 = 1;
   } else {
-    _t8 = 0;
+    let [_t4: int] if tagof((_t3: DUMMY_Dummy))==1 {
+      _t2 = (_t4: int);
+      _t5 = 1;
+    } else {
+      _t5 = 0;
+    }
+    _t8 = (_t5: int);
   }
   let _t9: int;
   if (_t8: int) {
     _t9 = 1;
   } else {
-    let [_t5: int] if tagof((_t4: DUMMY_Dummy))==1 {
-      _t3 = (_t5: int);
-      _t6 = 1;
-    } else {
-      _t6 = 0;
-    }
-    _t9 = (_t6: int);
+    _t9 = 0;
   }
-  let _t10: int;
-  if (_t9: int) {
-    _t10 = 1;
-  } else {
-    _t10 = 0;
-  }
-  _t11 = (_t10: int);
+  _t10 = (_t9: int);
 } else {
-  _t11 = 0;
+  _t10 = 0;
 }
-let _t2: DUMMY_Dummy;
-if (_t11: int) {
-  _t2 = (_t3: int);
+let _t1: DUMMY_Dummy;
+if (_t10: int) {
+  _t1 = (_t2: int);
 } else {
-  let _t1: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
-  _t2 = (_t1: DUMMY_Dummy);
+  let _t0: DUMMY_Dummy = _Process$panic<DUMMY_Dummy>(0, "");
+  _t1 = (_t0: DUMMY_Dummy);
 }
-return (_t2: DUMMY_Dummy);"#,
+return (_t1: DUMMY_Dummy);"#,
     );
   }
 
@@ -3671,14 +3694,14 @@ return (_t2: DUMMY_Dummy);"#,
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
       heap,
-      r#"let _t1: int;
-let _t2: int;
-let _t4: int = (_this: DUMMY_Dummy)[0];
-_t1 = (_t4: int);
-let _t3: int = (_this: DUMMY_Dummy)[1];
-_t2 = (_t3: int);
-let _t5: int;
-_t5 = 0;
+      r#"let _t0: int;
+let _t1: int;
+let _t3: int = (_this: DUMMY_Dummy)[0];
+_t0 = (_t3: int);
+let _t2: int = (_this: DUMMY_Dummy)[1];
+_t1 = (_t2: int);
+let _t4: int;
+_t4 = 0;
 return 0;"#,
     );
 
@@ -3764,16 +3787,16 @@ return 0;"#,
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
       heap,
-      r#"let _t1: int;
-let _t2: int;
-let _t4: int = (_this: DUMMY_Dummy)[0];
-_t1 = (_t4: int);
-let _t3: int = (_this: DUMMY_Dummy)[1];
-_t2 = (_t3: int);
-let _t5: int;
-let _t7: int = (_this: DUMMY_Dummy)[0];
-_t5 = (_t7: int);
-let _t6: int = (_this: DUMMY_Dummy)[1];
+      r#"let _t0: int;
+let _t1: int;
+let _t3: int = (_this: DUMMY_Dummy)[0];
+_t0 = (_t3: int);
+let _t2: int = (_this: DUMMY_Dummy)[1];
+_t1 = (_t2: int);
+let _t4: int;
+let _t6: int = (_this: DUMMY_Dummy)[0];
+_t4 = (_t6: int);
+let _t5: int = (_this: DUMMY_Dummy)[1];
 return 0;"#,
     );
 
@@ -3827,10 +3850,10 @@ return 0;"#,
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
       heap,
-      r#"let _t1: int = ModuleModule_ImportedClass$bar(0 as i31, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
-let _t2: int;
-_t2 = (_t1: int);
-return (_t2: int);"#,
+      r#"let _t0: int = ModuleModule_ImportedClass$bar(0 as i31, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+let _t1: int;
+_t1 = (_t0: int);
+return (_t1: int);"#,
     );
 
     let heap = &mut Heap::new();
@@ -3868,11 +3891,11 @@ return (_t2: int);"#,
       heap,
       r#"const GLOBAL_STRING_0 = 'foo';
 
+let _t0: int;
+_t0 = "foo";
 let _t1: int;
-_t1 = "foo";
-let _t2: int;
-_t2 = (_t1: int);
-return (_t2: int);"#,
+_t1 = (_t0: int);
+return (_t1: int);"#,
     );
 
     let heap = &mut Heap::new();
@@ -3911,11 +3934,11 @@ return (_t2: int);"#,
         ending_associated_comments: source::NO_COMMENT_REFERENCE,
       }),
       heap,
-      r#"let _t1: int;
-_t1 = (_this: DUMMY_Dummy);
-let _t2: int;
-_t2 = (_t1: int);
-return (_t2: int);"#,
+      r#"let _t0: int;
+_t0 = (_this: DUMMY_Dummy);
+let _t1: int;
+_t1 = (_t0: int);
+return (_t1: int);"#,
     );
 
     let heap = &mut Heap::new();
@@ -4398,17 +4421,17 @@ function DUMMY_Class1$infiniteLoop(_this: int): int {
 }
 
 function DUMMY_Class1$factorial(_this: int, n: int, acc: int): int {
-  let _t4 = (n: int) == 0;
-  let _t5: int;
-  if (_t4: int) {
-    _t5 = 1;
+  let _t3 = (n: int) == 0;
+  let _t4: int;
+  if (_t3: int) {
+    _t4 = 1;
   } else {
-    let _t7 = (n: int) - 1;
-    let _t8 = (n: int) * (acc: int);
-    let _t6: int = DUMMY_Class1$factorial(0 as i31, (_t7: int), (_t8: int));
-    _t5 = (_t6: int);
+    let _t6 = (n: int) - 1;
+    let _t7 = (n: int) * (acc: int);
+    let _t5: int = DUMMY_Class1$factorial(0 as i31, (_t6: int), (_t7: int));
+    _t4 = (_t5: int);
   }
-  return (_t5: int);
+  return (_t4: int);
 }
 
 function DUMMY_Class2$Tag(_this: int, _data0: int): DUMMY_Class2 {

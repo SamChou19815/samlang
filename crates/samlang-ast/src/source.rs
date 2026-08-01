@@ -11,7 +11,7 @@ pub enum CommentKind {
   DOC,
 }
 
-#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, PartialEq, Eq)]
 pub struct Comment {
   pub kind: CommentKind,
   pub text: PStr,
@@ -83,7 +83,7 @@ impl Default for CommentStore {
   }
 }
 
-#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, PartialEq, Eq)]
 pub enum Literal {
   Bool(bool),
   Int(i32),
@@ -223,7 +223,7 @@ pub mod annotation {
   }
 }
 
-#[derive(Clone, Dupe, Copy, PartialEq, Eq)]
+#[derive(Clone, Dupe, PartialEq, Eq)]
 pub struct Id {
   pub loc: Location,
   pub associated_comments: CommentReference,
@@ -238,6 +238,7 @@ impl Id {
 
 pub mod pattern {
   use super::{Id, Location};
+  use dupe::Dupe;
   use samlang_heap::PStr;
   use std::collections::BTreeMap;
 
@@ -359,7 +360,7 @@ pub mod pattern {
           }
         }
         Self::Id(Id { name, .. }, t) => {
-          collector.insert(*name, t);
+          collector.insert(name.dupe(), t);
         }
         Self::Wildcard { .. } => {}
         Self::Or { patterns, .. } => {

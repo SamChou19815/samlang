@@ -3,8 +3,6 @@ mod api_tests;
 mod ast_differ;
 /// A service to maintain up-to-date dependency graph
 mod dep_graph;
-/// A service to perform garbage collection on heaps
-mod gc;
 /// A service to perform global search for find references
 mod global_searcher;
 /// A service to find the smallest cover of a meaningful AST node
@@ -14,6 +12,7 @@ pub mod server_state;
 /// A service to power go-to-definition requests
 mod variable_definition;
 
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   Location, Position,
@@ -27,7 +26,7 @@ use samlang_checker::{
   type_check_module,
 };
 use samlang_errors::{ErrorDetail, ErrorSet};
-use samlang_heap::{ModuleReference, PStr};
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::sync::Arc;
 
 mod state_searcher_utils {
@@ -111,6 +110,7 @@ mod state_searcher_utils {
       .unwrap()
       .name()
       .name
+      .dupe()
   }
 }
 
@@ -266,7 +266,12 @@ pub mod query {
     comment_store: &CommentStore,
     comment_ref: CommentReference,
   ) -> Option<PStr> {
-    comment_store.get(comment_ref).iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| c.text)
+    comment_store
+      .get(comment_ref)
+      .iter()
+      .rev()
+      .find(|c| c.kind == CommentKind::DOC)
+      .map(|c| c.text.dupe())
   }
 
   fn query_result_with_optional_document(
@@ -497,7 +502,7 @@ pub mod rewrite {
     let renamed = variable_definition::apply_renaming(
       module,
       &def_and_uses,
-      state.heap.alloc_string(new_name.to_string()),
+      Heap::alloc_string(new_name.to_string()),
     );
     Some(samlang_printer::pretty_print_source_module(&state.heap, 100, &renamed))
   }
@@ -517,7 +522,7 @@ pub mod rewrite {
                 *module_reference,
                 location,
                 *mod_ref,
-                *name,
+                name.dupe(),
               ))
             }
           }
@@ -672,7 +677,7 @@ pub mod completion {
             .iter()
             .flat_map(|it| it.imported_members.iter())
             .chain(ast.toplevels.iter().map(|t| t.name()))
-            .map(|id| id.name)
+            .map(|id| id.name.dupe())
             .collect::<HashSet<_>>();
           let mut items = Vec::new();
           for (import_mod_ref, mod_cx) in &state.global_cx {
@@ -693,7 +698,7 @@ pub mod completion {
                   *module_reference,
                   Location { module_reference: *module_reference, start: position, end: position },
                   *import_mod_ref,
-                  *n,
+                  n.dupe(),
                 )
               };
               items.push((

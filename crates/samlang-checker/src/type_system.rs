@@ -97,7 +97,7 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
       return Some(Type::Primitive(*lower_r, *lower_p));
     }
     (Type::Generic(lower_r, lower_n), Type::Generic(_, upper_n)) if lower_n == upper_n => {
-      return Some(Type::Generic(*lower_r, *lower_n));
+      return Some(Type::Generic(*lower_r, lower_n.dupe()));
     }
     (Type::Nominal(lower_n), Type::Nominal(upper_n))
       if lower_n.module_reference == upper_n.module_reference
@@ -120,7 +120,7 @@ fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError)
             reason: lower_n.reason,
             is_class_statics: lower_n.is_class_statics,
             module_reference: lower_n.module_reference,
-            id: lower_n.id,
+            id: lower_n.id.dupe(),
             type_arguments,
           }));
         }
@@ -210,7 +210,7 @@ fn solve_type_constraints_internal(
         // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
         // do not participate in constraint solving.
         if !contains_placeholder(concrete) {
-          partially_solved.insert(*id, Arc::new(concrete.clone()));
+          partially_solved.insert(id.dupe(), Arc::new(concrete.clone()));
         }
       }
     }
@@ -242,7 +242,7 @@ pub(super) fn solve_multiple_type_constrains(
   let mut partially_solved = HashMap::new();
   let mut type_parameters = HashSet::new();
   for sig in type_parameter_signatures {
-    type_parameters.insert(sig.name);
+    type_parameters.insert(sig.name.dupe());
   }
   for TypeConstraint { concrete_type, generic_type } in constraints {
     solve_type_constraints_internal(
@@ -271,7 +271,7 @@ pub(super) fn solve_type_constraints(
     type_parameter_signatures,
   );
   for type_param in type_parameter_signatures {
-    solved_substitution.entry(type_param.name).or_insert_with(|| {
+    solved_substitution.entry(type_param.name.dupe()).or_insert_with(|| {
       // Fill in placeholder for unsolved types.
       Arc::new(Type::Any(Reason::new(concrete.get_reason().use_loc, None), true))
     });
@@ -294,7 +294,7 @@ pub(super) fn subst_nominal_type(
     reason: type_.reason,
     is_class_statics: type_.is_class_statics,
     module_reference: type_.module_reference,
-    id: type_.id,
+    id: type_.id.dupe(),
     type_arguments: type_.type_arguments.iter().map(|it| subst_type(it, mapping)).collect(),
   }
 }

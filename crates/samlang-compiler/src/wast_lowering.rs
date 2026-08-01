@@ -14,6 +14,7 @@
 //! Throughout this module, `//` comments above AST construction sites show the WebAssembly text
 //! that the constructed nodes correspond to.
 
+use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use samlang_ast::{hir, lir, mir};
@@ -181,7 +182,7 @@ pub(crate) struct NamePool {
 
 impl NamePool {
   fn add_function(&mut self, name: mir::FunctionName, heap: &Heap, table: &mir::SymbolTable) {
-    self.function_names.entry(name).or_insert_with(|| {
+    self.function_names.entry(name.dupe()).or_insert_with(|| {
       let mut s = String::new();
       name.write_encoded(&mut s, heap, table);
       s
@@ -189,7 +190,7 @@ impl NamePool {
   }
 
   fn add_local(&mut self, name: PStr, heap: &Heap) {
-    self.local_names.entry(name).or_insert_with(|| name.as_str(heap).to_string());
+    self.local_names.entry(name.dupe()).or_insert_with(|| name.as_str(heap).to_string());
   }
 
   fn add_type(&mut self, name: mir::TypeNameId, heap: &Heap, table: &mir::SymbolTable) {
@@ -216,11 +217,11 @@ impl NamePool {
   fn scan_expression(&mut self, e: &lir::Expression, heap: &Heap, table: &mir::SymbolTable) {
     match e {
       lir::Expression::Variable(n, t) => {
-        self.add_local(*n, heap);
+        self.add_local(n.dupe(), heap);
         self.add_lir_type(t, heap, table);
       }
       lir::Expression::FnName(name, t) => {
-        self.add_function(*name, heap, table);
+        self.add_function(name.dupe(), heap, table);
         for at in &t.argument_types {
           self.add_lir_type(at, heap, table);
         }
@@ -243,21 +244,21 @@ impl NamePool {
   ) {
     match s {
       lir::Statement::IsPointer { name, pointer_type, operand } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.add_type(*pointer_type, heap, table);
         self.scan_expression(operand, heap, table);
       }
       lir::Statement::Not { name, operand } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.scan_expression(operand, heap, table);
       }
       lir::Statement::Binary { name, e1, e2, .. } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.scan_expression(e1, heap, table);
         self.scan_expression(e2, heap, table);
       }
       lir::Statement::IndexedAccess { name, type_, pointer_expression, .. } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.add_lir_type(type_, heap, table);
         self.scan_expression(pointer_expression, heap, table);
       }
@@ -268,7 +269,7 @@ impl NamePool {
         }
         self.add_lir_type(return_type, heap, table);
         if let Some(c) = return_collector {
-          self.add_local(*c, heap);
+          self.add_local(c.dupe(), heap);
         }
       }
       lir::Statement::IfElse { condition, s1, s2, final_assignments } => {
@@ -280,7 +281,7 @@ impl NamePool {
           self.scan_statement(s, heap, table, while_count);
         }
         for (n, t, e1, e2) in final_assignments {
-          self.add_local(*n, heap);
+          self.add_local(n.dupe(), heap);
           self.add_lir_type(t, heap, table);
           self.scan_expression(e1, heap, table);
           self.scan_expression(e2, heap, table);
@@ -296,7 +297,7 @@ impl NamePool {
       lir::Statement::While { loop_variables, statements, break_collector } => {
         *while_count += 1;
         for v in loop_variables {
-          self.add_local(v.name, heap);
+          self.add_local(v.name.dupe(), heap);
           self.add_lir_type(&v.type_, heap, table);
           self.scan_expression(&v.initial_value, heap, table);
           self.scan_expression(&v.loop_value, heap, table);
@@ -305,25 +306,25 @@ impl NamePool {
           self.scan_statement(s, heap, table, while_count);
         }
         if let Some((n, t)) = break_collector {
-          self.add_local(*n, heap);
+          self.add_local(n.dupe(), heap);
           self.add_lir_type(t, heap, table);
         }
       }
       lir::Statement::Cast { name, type_, assigned_expression } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.add_lir_type(type_, heap, table);
         self.scan_expression(assigned_expression, heap, table);
       }
       lir::Statement::LateInitDeclaration { name, type_ } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.add_lir_type(type_, heap, table);
       }
       lir::Statement::LateInitAssignment { name, assigned_expression } => {
-        self.add_local(*name, heap);
+        self.add_local(name.dupe(), heap);
         self.scan_expression(assigned_expression, heap, table);
       }
       lir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
-        self.add_local(*struct_variable_name, heap);
+        self.add_local(struct_variable_name.dupe(), heap);
         self.add_lir_type(type_, heap, table);
         for e in expression_list {
           self.scan_expression(e, heap, table);
@@ -515,8 +516,8 @@ fn collect(
     let offset = data_segment_bytes.len();
     let length = content_str.len();
     data_segment_bytes.extend_from_slice(content_str.as_bytes());
-    let global_name = heap.alloc_string(format!("GLOBAL_STRING_{idx}"));
-    string_name_mapping.insert(*content, global_name);
+    let global_name = Heap::alloc_string(format!("GLOBAL_STRING_{idx}"));
+    string_name_mapping.insert(content.dupe(), global_name.dupe());
     gc_string_globals.push(GlobalGcString {
       name: global_name,
       data_segment_index: 2, // Use $d2 since libsam uses $d0 and $d1
@@ -529,7 +530,7 @@ fn collect(
 
   let mut function_index_mapping = HashMap::new();
   for (i, f) in functions.iter().enumerate() {
-    function_index_mapping.insert(f.name, i);
+    function_index_mapping.insert(f.name.dupe(), i);
   }
 
   let mut type_field_mappings: HashMap<mir::TypeNameId, Vec<LoweredType>> = HashMap::new();
@@ -603,13 +604,13 @@ fn collect(
       .or_insert_with(|| format!("d{}", gc_string.data_segment_index));
   }
   for name in main_function_names {
-    pool.add_function(*name, heap, &table);
+    pool.add_function(name.dupe(), heap, &table);
   }
   let mut max_while_count = 0;
   for function in functions {
-    pool.add_function(function.name, heap, &table);
+    pool.add_function(function.name.dupe(), heap, &table);
     for (n, t) in function.parameters.iter().zip(&function.type_.argument_types) {
-      pool.add_local(*n, heap);
+      pool.add_local(n.dupe(), heap);
       pool.add_lir_type(t, heap, &table);
     }
     pool.add_lir_type(&function.type_.return_type, heap, &table);
@@ -653,7 +654,7 @@ struct Ctx<'a> {
   function_index_mapping: &'a HashMap<mir::FunctionName, usize>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct LoopContext {
   break_collector: Option<PStr>,
   break_collector_type: Option<LoweredType>,
@@ -685,7 +686,7 @@ fn emit_get<'a>(
   ty: LoweredType,
   out: &mut Vec<Instruction<'a>>,
 ) {
-  state.local_variables.insert(n, ty);
+  state.local_variables.insert(n.dupe(), ty);
   out.push(Instruction::LocalGet(widx(ctx.pool.local(n))));
   if is_ref_lowered(ty) {
     out.push(Instruction::RefAsNonNull);
@@ -700,7 +701,7 @@ fn emit_get_no_update<'a>(
   n: PStr,
   out: &mut Vec<Instruction<'a>>,
 ) {
-  out.push(Instruction::LocalGet(widx(ctx.pool.local(n))));
+  out.push(Instruction::LocalGet(widx(ctx.pool.local(n.dupe()))));
   if state.local_variables.get(&n).is_some_and(|t| is_ref_lowered(*t)) {
     out.push(Instruction::RefAsNonNull);
   }
@@ -714,7 +715,7 @@ fn emit_set<'a>(
   ty: LoweredType,
   out: &mut Vec<Instruction<'a>>,
 ) {
-  state.local_variables.insert(n, ty);
+  state.local_variables.insert(n.dupe(), ty);
   out.push(Instruction::LocalSet(widx(ctx.pool.local(n))));
 }
 
@@ -735,9 +736,9 @@ fn emit_expr<'a>(
       let ty = lower_type(t);
       // Don't override existing type (e.g. if it was set to AnyPointer, keep it).
       if state.local_variables.contains_key(n) {
-        emit_get_no_update(state, ctx, *n, out);
+        emit_get_no_update(state, ctx, n.dupe(), out);
       } else {
-        emit_get(state, ctx, *n, ty, out);
+        emit_get(state, ctx, n.dupe(), ty, out);
       }
     }
     // (ref.as_non_null (global.get $name))
@@ -774,9 +775,9 @@ fn emit_expr_with_reference_type<'a>(
       };
       let stored_type = state.local_variables.get(n).copied();
       if stored_type.is_some() {
-        emit_get_no_update(state, ctx, *n, out);
+        emit_get_no_update(state, ctx, n.dupe(), out);
       } else {
-        emit_get(state, ctx, *n, lowered_type, out);
+        emit_get(state, ctx, n.dupe(), lowered_type, out);
       }
       // Cast is needed when the stored/declared type is Eq (AnyPointer) but we need a specific
       // struct type. (ref.cast (ref $ref_type) ...)
@@ -814,13 +815,13 @@ fn emit_stmt<'a>(
     lir::Statement::IsPointer { name, pointer_type, operand } => {
       emit_expr(state, ctx, operand, out);
       out.push(Instruction::RefTest(RefTest { r#type: id_ref_type(ctx.pool, *pointer_type) }));
-      emit_set(state, ctx, *name, LoweredType::Int32, out);
+      emit_set(state, ctx, name.dupe(), LoweredType::Int32, out);
     }
     // (local.set $name (i32.xor operand (i32.const 1)))
     lir::Statement::Not { name, operand } => {
       emit_expr(state, ctx, operand, out);
       emit_xor_one(out);
-      emit_set(state, ctx, *name, LoweredType::Int32, out);
+      emit_set(state, ctx, name.dupe(), LoweredType::Int32, out);
     }
     lir::Statement::Binary { name, operator, e1, e2 } => {
       let is_str_cmp = matches!(operator, hir::BinaryOperator::EQ | hir::BinaryOperator::NE)
@@ -849,7 +850,7 @@ fn emit_stmt<'a>(
           out.push(i32_binary_op(*operator));
         }
       }
-      emit_set(state, ctx, *name, LoweredType::Int32, out);
+      emit_set(state, ctx, name.dupe(), LoweredType::Int32, out);
     }
     // (local.set $name (struct.get $T index pointer))
     lir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
@@ -859,7 +860,7 @@ fn emit_stmt<'a>(
         r#struct: widx(ctx.pool.type_(struct_type)),
         field: Index::Num(*index as u32, zspan()),
       }));
-      emit_set(state, ctx, *name, result_type, out);
+      emit_set(state, ctx, name.dupe(), result_type, out);
     }
     lir::Statement::Call { callee, arguments, return_type, return_collector } => {
       // Check if this is a call to a builtin that expects (ref eq) as the first arg.
@@ -867,9 +868,14 @@ fn emit_stmt<'a>(
         if let lir::Expression::FnName(name, _) = callee {
           let needs_ref_eq = name.type_name == mir::TypeNameId::PROCESS
             || (*name == mir::FunctionName::STR_FROM_INT)
-            || vec_fn_is_static(*name);
+            || vec_fn_is_static(name.dupe());
           let is_panic = *name == mir::FunctionName::PROCESS_PANIC;
-          (needs_ref_eq, is_panic, vec_fn_element_arg_index(*name), vec_fn_returns_element(*name))
+          (
+            needs_ref_eq,
+            is_panic,
+            vec_fn_element_arg_index(name.dupe()),
+            vec_fn_returns_element(name.dupe()),
+          )
         } else {
           (false, false, None, false)
         };
@@ -903,7 +909,7 @@ fn emit_stmt<'a>(
       }
       match callee {
         lir::Expression::FnName(name, _) => {
-          out.push(Instruction::Call(widx(ctx.pool.func(*name))));
+          out.push(Instruction::Call(widx(ctx.pool.func(name.dupe()))));
         }
         _ => {
           // call_indirect: arguments, then the function index, then the instruction.
@@ -921,7 +927,7 @@ fn emit_stmt<'a>(
         out.push(Instruction::Drop);
         out.push(Instruction::Unreachable);
         if let Some(c) = return_collector {
-          state.local_variables.insert(*c, lower_type(return_type));
+          state.local_variables.insert(c.dupe(), lower_type(return_type));
         }
       } else {
         // Vec.pop / Vec.get return (ref eq) at WAT level; unwrap based on the element type.
@@ -933,7 +939,7 @@ fn emit_stmt<'a>(
           }
         }
         if let Some(c) = return_collector {
-          emit_set(state, ctx, *c, lower_type(return_type), out);
+          emit_set(state, ctx, c.dupe(), lower_type(return_type), out);
         } else {
           out.push(Instruction::Drop);
         }
@@ -953,9 +959,9 @@ fn emit_stmt<'a>(
       for (n, t, e1, e2) in final_assignments {
         let ty = lower_type(t);
         emit_expr(state, ctx, e1, &mut s1v);
-        emit_set(state, ctx, *n, ty, &mut s1v);
+        emit_set(state, ctx, n.dupe(), ty, &mut s1v);
         emit_expr(state, ctx, e2, &mut s2v);
-        emit_set(state, ctx, *n, ty, &mut s2v);
+        emit_set(state, ctx, n.dupe(), ty, &mut s2v);
       }
       if s1v.is_empty() {
         if !s2v.is_empty() {
@@ -991,26 +997,26 @@ fn emit_stmt<'a>(
     }
     lir::Statement::Break(e) => {
       let LoopContext { break_collector, break_collector_type, exit_label } =
-        state.loop_cx.unwrap();
+        state.loop_cx.clone().unwrap();
       if let Some(c) = break_collector {
         emit_expr(state, ctx, e, out);
-        emit_set(state, ctx, c, break_collector_type.unwrap(), out);
+        emit_set(state, ctx, c.dupe(), break_collector_type.unwrap(), out);
       }
       out.push(Instruction::Br(widx(ctx.pool.label(exit_label))));
     }
     lir::Statement::While { loop_variables, statements, break_collector } => {
-      let saved_loop_cx = state.loop_cx;
+      let saved_loop_cx = state.loop_cx.take();
       let continue_label = alloc_label(state);
       let exit_label = alloc_label(state);
       state.loop_cx = Some(LoopContext {
-        break_collector: break_collector.as_ref().map(|(n, _)| *n),
+        break_collector: break_collector.as_ref().map(|(n, _)| n.dupe()),
         break_collector_type: break_collector.as_ref().map(|(_, t)| lower_type(t)),
         exit_label,
       });
       for it in loop_variables {
         let t = lower_type(&it.type_);
         emit_expr(state, ctx, &it.initial_value, out);
-        emit_set(state, ctx, it.name, t, out);
+        emit_set(state, ctx, it.name.dupe(), t, out);
       }
       let mut body = Vec::new();
       for s in statements {
@@ -1019,7 +1025,7 @@ fn emit_stmt<'a>(
       for v in loop_variables {
         let t = lower_type(&v.type_);
         emit_expr(state, ctx, &v.loop_value, &mut body);
-        emit_set(state, ctx, v.name, t, &mut body);
+        emit_set(state, ctx, v.name.dupe(), t, &mut body);
       }
       body.push(Instruction::Br(widx(ctx.pool.label(continue_label))));
       // (loop $continue (block $exit body...))
@@ -1041,17 +1047,17 @@ fn emit_stmt<'a>(
       if needs_ref_cast {
         out.push(Instruction::RefCast(RefCast { r#type: lir_ref_type(ctx.pool, type_) }));
       }
-      emit_set(state, ctx, *name, t, out);
+      emit_set(state, ctx, name.dupe(), t, out);
     }
     lir::Statement::LateInitAssignment { name, assigned_expression } => {
       emit_expr(state, ctx, assigned_expression, out);
       // The type was already declared by LateInitDeclaration.
       let t = state.local_variables.get(name).copied().unwrap_or(LoweredType::Int32);
-      emit_set(state, ctx, *name, t, out);
+      emit_set(state, ctx, name.dupe(), t, out);
     }
     lir::Statement::LateInitDeclaration { name, type_ } => {
       // Just register the type, no WASM instruction needed.
-      state.local_variables.insert(*name, lower_type(type_));
+      state.local_variables.insert(name.dupe(), lower_type(type_));
     }
     lir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
       let type_ref = lower_type(type_).into_reference().unwrap();
@@ -1068,7 +1074,7 @@ fn emit_stmt<'a>(
         }
       }
       out.push(Instruction::StructNew(widx(ctx.pool.type_(type_ref))));
-      emit_set(state, ctx, *struct_variable_name, LoweredType::Reference(type_ref), out);
+      emit_set(state, ctx, struct_variable_name.dupe(), LoweredType::Reference(type_ref), out);
     }
   }
 }
@@ -1086,7 +1092,7 @@ fn emit_function<'a>(ctx: &Ctx<'a>, function: &'a lir::Function) -> ModuleField<
       .parameters
       .iter()
       .zip(&function.type_.argument_types)
-      .map(|(n, t)| (*n, lower_type(t)))
+      .map(|(n, t)| (n.dupe(), lower_type(t)))
       .collect(),
   };
   let mut instrs = Vec::new();
@@ -1106,14 +1112,14 @@ fn emit_function<'a>(ctx: &Ctx<'a>, function: &'a lir::Function) -> ModuleField<
     .parameters
     .iter()
     .zip(&function.type_.argument_types)
-    .map(|(n, t)| (Some(wid(ctx.pool.local(*n))), None, val_type(ctx.pool, &lower_type(t))))
+    .map(|(n, t)| (Some(wid(ctx.pool.local(n.dupe()))), None, val_type(ctx.pool, &lower_type(t))))
     .collect();
   let locals = state
     .local_variables
     .iter()
     // Use nullable types for locals to handle conditional initialization.
     .map(|(n, t)| Local {
-      id: Some(wid(ctx.pool.local(*n))),
+      id: Some(wid(ctx.pool.local(n.dupe()))),
       name: None,
       ty: nullable_val_type(ctx.pool, t),
     })
@@ -1127,7 +1133,7 @@ fn emit_function<'a>(ctx: &Ctx<'a>, function: &'a lir::Function) -> ModuleField<
   };
   ModuleField::Func(Func {
     span: zspan(),
-    id: Some(wid(ctx.pool.func(function.name))),
+    id: Some(wid(ctx.pool.func(function.name.dupe()))),
     name: None,
     exports: InlineExport::default(),
     kind: FuncKind::Inline { locals, expression: expression(instrs) },
@@ -1285,7 +1291,9 @@ fn build_wast_module<'a>(
     id: Some(wid("0")),
     name: None,
     kind: ElemKind::Active { table: None, offset: Expression::one(Instruction::I32Const(0)) },
-    payload: ElemPayload::Indices(functions.iter().map(|f| widx(pool.func(f.name))).collect()),
+    payload: ElemPayload::Indices(
+      functions.iter().map(|f| widx(pool.func(f.name.dupe()))).collect(),
+    ),
   }));
   fields.extend(function_fields);
   // Add init function and start section if there are GC string globals:
@@ -1317,9 +1325,9 @@ fn build_wast_module<'a>(
   for name in main_function_names {
     fields.push(ModuleField::Export(Export {
       span: zspan(),
-      name: pool.func(*name),
+      name: pool.func(name.dupe()),
       kind: ExportKind::Func,
-      item: widx(pool.func(*name)),
+      item: widx(pool.func(name.dupe())),
     }));
   }
 
@@ -1373,6 +1381,7 @@ pub(crate) fn print_for_test(heap: &mut Heap, sources: lir::Sources) -> String {
 #[cfg(test)]
 mod tests {
   use super::{NamePool, lir_ref_type, print_for_test};
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     hir::{BinaryOperator, GlobalString},
@@ -2934,8 +2943,8 @@ mod tests {
       .map(|op| Statement::Binary {
         name: heap.alloc_str_for_test("b"),
         operator: *op,
-        e1: Expression::Variable(x, INT_32_TYPE),
-        e2: Expression::Variable(x, INT_32_TYPE),
+        e1: Expression::Variable(x.dupe(), INT_32_TYPE),
+        e2: Expression::Variable(x.dupe(), INT_32_TYPE),
       })
       .collect::<Vec<_>>();
     // An Int31 local (nullable Int31 local slot) and an Eq local (reading an AnyPointer variable).
@@ -2969,7 +2978,7 @@ mod tests {
     });
     // An if with a non-empty then and an empty else (no `else` block is emitted).
     body.push(Statement::IfElse {
-      condition: Expression::Variable(x, INT_32_TYPE),
+      condition: Expression::Variable(x.dupe(), INT_32_TYPE),
       s1: vec![Statement::Cast {
         name: heap.alloc_str_for_test("ifl"),
         type_: INT_32_TYPE,

@@ -37,6 +37,7 @@
 //! Call r = f(ctx, a1, a2)
 //! ```
 
+use dupe::Dupe;
 use samlang_ast::mir::{
   Binary, Callee, Expression, Function, FunctionNameExpression, GenenalLoopVariable,
   IfElseFinalAssignment, Statement,
@@ -70,7 +71,7 @@ impl EscapeAnalysis {
 
   fn mark_escape(&mut self, expression: &Expression) {
     if let Expression::Variable(variable) = expression {
-      self.escaped.insert(variable.name);
+      self.escaped.insert(variable.name.dupe());
     }
   }
 
@@ -131,9 +132,10 @@ impl EscapeAnalysis {
       Statement::LateInitDeclaration { name: _, type_: _ } => {}
       Statement::StructInit { struct_variable_name, type_name: _, expression_list } => {
         self.mark_escapes(expression_list);
-        self
-          .struct_definitions
-          .insert(*struct_variable_name, StructDefinition { fields: expression_list.clone() });
+        self.struct_definitions.insert(
+          struct_variable_name.dupe(),
+          StructDefinition { fields: expression_list.dupe().to_vec() },
+        );
       }
       Statement::ClosureInit {
         closure_variable_name,
@@ -143,8 +145,8 @@ impl EscapeAnalysis {
       } => {
         self.mark_escape(context);
         self.closure_definitions.insert(
-          *closure_variable_name,
-          ClosureDefinition { function_name: function_name.clone(), context: *context },
+          closure_variable_name.dupe(),
+          ClosureDefinition { function_name: function_name.clone(), context: context.dupe() },
         );
       }
     }
@@ -156,10 +158,10 @@ fn resolve_expression(
   expression: Expression,
 ) -> Expression {
   let Expression::Variable(variable) = expression else { return expression };
-  let Some(&replacement) = substitution.get(&variable.name) else {
+  let Some(replacement) = substitution.get(&variable.name) else {
     return Expression::Variable(variable);
   };
-  resolve_expression(substitution, replacement)
+  resolve_expression(substitution, replacement.dupe())
 }
 
 fn rewrite_statements(
@@ -191,40 +193,48 @@ fn rewrite_statement(
   match statement {
     Statement::IsPointer { name, pointer_type, operand } => {
       output.push(Statement::IsPointer {
-        name: *name,
+        name: name.dupe(),
         pointer_type: *pointer_type,
-        operand: resolve_expression(substitution, *operand),
+        operand: resolve_expression(substitution, operand.dupe()),
       });
     }
     Statement::Not { name, operand } => {
-      output
-        .push(Statement::Not { name: *name, operand: resolve_expression(substitution, *operand) });
+      output.push(Statement::Not {
+        name: name.dupe(),
+        operand: resolve_expression(substitution, operand.dupe()),
+      });
     }
     Statement::Binary(Binary { name, operator, e1, e2 }) => {
       output.push(Statement::Binary(Binary {
-        name: *name,
+        name: name.dupe(),
         operator: *operator,
-        e1: resolve_expression(substitution, *e1),
-        e2: resolve_expression(substitution, *e2),
+        e1: resolve_expression(substitution, e1.dupe()),
+        e2: resolve_expression(substitution, e2.dupe()),
       }));
     }
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       if let Expression::Variable(variable) = pointer_expression {
         if let Some(definition) = scalar_replacement_structs.get(&variable.name) {
-          substitution.insert(*name, resolve_expression(substitution, definition.fields[*index]));
+          substitution.insert(
+            name.dupe(),
+            resolve_expression(
+              substitution,
+              <samlang_ast::mir::Expression as Clone>::clone(&definition.fields[*index]),
+            ),
+          );
         } else {
           output.push(Statement::IndexedAccess {
-            name: *name,
+            name: name.dupe(),
             type_: *type_,
-            pointer_expression: resolve_expression(substitution, *pointer_expression),
+            pointer_expression: resolve_expression(substitution, pointer_expression.dupe()),
             index: *index,
           });
         }
       } else {
         output.push(Statement::IndexedAccess {
-          name: *name,
+          name: name.dupe(),
           type_: *type_,
-          pointer_expression: resolve_expression(substitution, *pointer_expression),
+          pointer_expression: resolve_expression(substitution, pointer_expression.dupe()),
           index: *index,
         });
       }
@@ -233,49 +243,52 @@ fn rewrite_statement(
       Callee::Variable(variable) if scalar_replacement_closures.contains_key(&variable.name) => {
         let definition = scalar_replacement_closures.get(&variable.name).unwrap();
         let function_name = definition.function_name.clone();
-        let resolved_context = resolve_expression(substitution, definition.context);
+        let resolved_context = resolve_expression(substitution, definition.context.dupe());
         let mut direct_arguments = vec![resolved_context];
         for argument in arguments {
-          direct_arguments.push(resolve_expression(substitution, *argument));
+          direct_arguments.push(resolve_expression(substitution, argument.dupe()));
         }
         output.push(Statement::Call {
           callee: Callee::FunctionName(function_name),
           arguments: direct_arguments,
           return_type: *return_type,
-          return_collector: *return_collector,
+          return_collector: return_collector.dupe(),
         });
       }
       Callee::Variable(variable) => {
         let resolved_callee = Callee::Variable(
-          *resolve_expression(substitution, Expression::Variable(*variable)).as_variable().unwrap(),
+          resolve_expression(substitution, Expression::Variable(variable.dupe()))
+            .as_variable()
+            .unwrap()
+            .dupe(),
         );
         let mut resolved_arguments = Vec::new();
         for argument in arguments {
-          resolved_arguments.push(resolve_expression(substitution, *argument));
+          resolved_arguments.push(resolve_expression(substitution, argument.dupe()));
         }
         output.push(Statement::Call {
           callee: resolved_callee,
           arguments: resolved_arguments,
           return_type: *return_type,
-          return_collector: *return_collector,
+          return_collector: return_collector.dupe(),
         });
       }
       Callee::FunctionName(function_name_expression) => {
         let resolved_callee = Callee::FunctionName(function_name_expression.clone());
         let mut resolved_arguments = Vec::new();
         for argument in arguments {
-          resolved_arguments.push(resolve_expression(substitution, *argument));
+          resolved_arguments.push(resolve_expression(substitution, argument.dupe()));
         }
         output.push(Statement::Call {
           callee: resolved_callee,
           arguments: resolved_arguments,
           return_type: *return_type,
-          return_collector: *return_collector,
+          return_collector: return_collector.dupe(),
         });
       }
     },
     Statement::IfElse { condition, s1, s2, final_assignments } => {
-      let condition = resolve_expression(substitution, *condition);
+      let condition = resolve_expression(substitution, condition.dupe());
       let mut then_statements = Vec::new();
       rewrite_statements(
         scalar_replacement_structs,
@@ -295,10 +308,10 @@ fn rewrite_statement(
       let mut new_final_assignments = Vec::new();
       for IfElseFinalAssignment { name, type_, e1, e2 } in final_assignments {
         new_final_assignments.push(IfElseFinalAssignment {
-          name: *name,
+          name: name.dupe(),
           type_: *type_,
-          e1: resolve_expression(substitution, *e1),
-          e2: resolve_expression(substitution, *e2),
+          e1: resolve_expression(substitution, e1.dupe()),
+          e2: resolve_expression(substitution, e2.dupe()),
         });
       }
       output.push(Statement::IfElse {
@@ -309,7 +322,7 @@ fn rewrite_statement(
       });
     }
     Statement::SingleIf { condition, invert_condition, statements } => {
-      let condition = resolve_expression(substitution, *condition);
+      let condition = resolve_expression(substitution, condition.dupe());
       let mut rewritten_statements = Vec::new();
       rewrite_statements(
         scalar_replacement_structs,
@@ -325,16 +338,16 @@ fn rewrite_statement(
       });
     }
     Statement::Break(expression) => {
-      output.push(Statement::Break(resolve_expression(substitution, *expression)));
+      output.push(Statement::Break(resolve_expression(substitution, expression.dupe())));
     }
     Statement::While { loop_variables, statements, break_collector } => {
       let mut new_loop_variables = Vec::new();
       for GenenalLoopVariable { name, type_, initial_value, loop_value } in loop_variables {
         new_loop_variables.push(GenenalLoopVariable {
-          name: *name,
+          name: name.dupe(),
           type_: *type_,
-          initial_value: resolve_expression(substitution, *initial_value),
-          loop_value: resolve_expression(substitution, *loop_value),
+          initial_value: resolve_expression(substitution, initial_value.dupe()),
+          loop_value: resolve_expression(substitution, loop_value.dupe()),
         });
       }
       let mut rewritten_statements = Vec::new();
@@ -348,23 +361,23 @@ fn rewrite_statement(
       output.push(Statement::While {
         loop_variables: new_loop_variables,
         statements: rewritten_statements,
-        break_collector: *break_collector,
+        break_collector: break_collector.dupe(),
       });
     }
     Statement::Cast { name, type_, assigned_expression } => {
       output.push(Statement::Cast {
-        name: *name,
+        name: name.dupe(),
         type_: *type_,
-        assigned_expression: resolve_expression(substitution, *assigned_expression),
+        assigned_expression: resolve_expression(substitution, assigned_expression.dupe()),
       });
     }
     Statement::LateInitDeclaration { name, type_ } => {
-      output.push(Statement::LateInitDeclaration { name: *name, type_: *type_ });
+      output.push(Statement::LateInitDeclaration { name: name.dupe(), type_: *type_ });
     }
     Statement::LateInitAssignment { name, assigned_expression } => {
       output.push(Statement::LateInitAssignment {
-        name: *name,
-        assigned_expression: resolve_expression(substitution, *assigned_expression),
+        name: name.dupe(),
+        assigned_expression: resolve_expression(substitution, assigned_expression.dupe()),
       });
     }
     Statement::StructInit { struct_variable_name, type_name, expression_list } => {
@@ -373,10 +386,10 @@ fn rewrite_statement(
       } else {
         let mut resolved_fields = Vec::new();
         for expression in expression_list {
-          resolved_fields.push(resolve_expression(substitution, *expression));
+          resolved_fields.push(resolve_expression(substitution, expression.dupe()));
         }
         output.push(Statement::StructInit {
-          struct_variable_name: *struct_variable_name,
+          struct_variable_name: struct_variable_name.dupe(),
           type_name: *type_name,
           expression_list: resolved_fields,
         });
@@ -387,10 +400,10 @@ fn rewrite_statement(
         // dropped
       } else {
         output.push(Statement::ClosureInit {
-          closure_variable_name: *closure_variable_name,
+          closure_variable_name: closure_variable_name.dupe(),
           closure_type_name: *closure_type_name,
           function_name: function_name.clone(),
-          context: resolve_expression(substitution, *context),
+          context: resolve_expression(substitution, context.dupe()),
         });
       }
     }
@@ -427,5 +440,5 @@ pub(super) fn optimize_function(function: &mut Function) {
     &mut new_body,
   );
   function.body = new_body;
-  function.return_value = resolve_expression(&substitution, function.return_value);
+  function.return_value = resolve_expression(&substitution, function.return_value.dupe());
 }

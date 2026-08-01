@@ -27,7 +27,7 @@ pub fn build_module_signature(
   for toplevel in &module.toplevels {
     let is_class = toplevel.is_class();
     let private = toplevel.is_private();
-    let name = toplevel.name().name;
+    let name = toplevel.name().name.dupe();
     let mut functions = HashMap::new();
     let mut methods = HashMap::new();
     for member in toplevel.members_iter() {
@@ -37,9 +37,9 @@ pub fn build_module_signature(
         type_: FunctionType::from_function(member),
       };
       if member.is_method {
-        methods.insert(member.name.name, type_info);
+        methods.insert(member.name.name.dupe(), type_info);
       } else if is_class {
-        functions.insert(member.name.name, type_info);
+        functions.insert(member.name.name.dupe(), type_info);
       }
     }
     let toplevel_tparams_sig = TypeParameterSignature::from_list(toplevel.type_parameters());
@@ -48,12 +48,12 @@ pub fn build_module_signature(
         reason: Reason::new(class.name.loc, Some(class.name.loc)),
         is_class_statics: false,
         module_reference,
-        id: class.name.name,
+        id: class.name.name.dupe(),
         type_arguments: class
           .type_parameters
           .iter()
           .flat_map(|it| &it.parameters)
-          .map(|it| Arc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
+          .map(|it| Arc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name.dupe())))
           .collect_vec(),
       }));
       match class.type_definition.as_ref() {
@@ -85,7 +85,7 @@ pub fn build_module_signature(
             fields
               .iter()
               .map(|field| StructItemDefinitionSignature {
-                name: field.name.name,
+                name: field.name.name.dupe(),
                 type_: Arc::new(Type::from_annotation(&field.annotation)),
                 is_public: field.is_public,
               })
@@ -114,13 +114,13 @@ pub fn build_module_signature(
                 return_type: class_type.dupe(),
               },
             };
-            functions.insert(variant.name.name, ctor_fn);
+            functions.insert(variant.name.name.dupe(), ctor_fn);
           }
           Some(TypeDefinitionSignature::Enum(
             variants
               .iter()
               .map(|variant| EnumVariantDefinitionSignature {
-                name: variant.name.name,
+                name: variant.name.name.dupe(),
                 types: variant
                   .associated_data_types
                   .iter()
@@ -213,21 +213,21 @@ pub(super) fn resolve_all_member_names(
 ) -> HashSet<PStr> {
   let mut collector = HashSet::new();
   let mut lookup_candidates =
-    interface_types.iter().map(|t| (t.module_reference, t.id)).collect_vec();
+    interface_types.iter().map(|t| (t.module_reference, t.id.dupe())).collect_vec();
   let mut visited = HashSet::new();
   loop {
     if let Some((mod_ref, toplevel_name)) = lookup_candidates.pop() {
-      if !visited.insert((mod_ref, toplevel_name)) {
+      if !visited.insert((mod_ref, toplevel_name.dupe())) {
         // We don't need to worry about popping off keys, because repeated visits will resolve to the
         // exact same names.
         continue;
       }
       if let Some(interface_cx) = resolve_interface_cx(global_cx, mod_ref, toplevel_name) {
         for n in if method { interface_cx.methods.keys() } else { interface_cx.functions.keys() } {
-          collector.insert(*n);
+          collector.insert(n.dupe());
         }
         for super_type in interface_cx.super_types.iter() {
-          lookup_candidates.push((super_type.module_reference, super_type.id));
+          lookup_candidates.push((super_type.module_reference, super_type.id.dupe()));
         }
       }
     } else {
@@ -242,16 +242,16 @@ fn resolve_all_transitive_super_types_recursive(
   collector: &mut SuperTypesResolutionResult,
   visited: &mut HashSet<(ModuleReference, PStr)>,
 ) {
-  if !visited.insert((interface_type.module_reference, interface_type.id)) {
+  if !visited.insert((interface_type.module_reference, interface_type.id.dupe())) {
     collector.is_cyclic = true;
     return;
   }
   if let Some(interface_cx) =
-    resolve_interface_cx(global_cx, interface_type.module_reference, interface_type.id)
+    resolve_interface_cx(global_cx, interface_type.module_reference, interface_type.id.dupe())
   {
     let mut subst_mapping = HashMap::new();
     for (tparam, targ) in interface_cx.type_parameters.iter().zip(&interface_type.type_arguments) {
-      subst_mapping.insert(tparam.name, targ.dupe());
+      subst_mapping.insert(tparam.name.dupe(), targ.dupe());
     }
     for super_type in &interface_cx.super_types {
       let instantiated_super_type = type_system::subst_nominal_type(super_type, &subst_mapping);
@@ -264,7 +264,7 @@ fn resolve_all_transitive_super_types_recursive(
       collector.types.push(instantiated_super_type);
     }
   }
-  visited.remove(&(interface_type.module_reference, interface_type.id));
+  visited.remove(&(interface_type.module_reference, interface_type.id.dupe()));
 }
 
 pub(super) fn resolve_all_transitive_super_types(
@@ -294,7 +294,7 @@ fn resolve_function_signature_internal<'a>(
       return;
     }
     if let Some((mod_ref, toplevel_name)) = lookup_candidates.pop() {
-      if !visited.insert((mod_ref, toplevel_name)) {
+      if !visited.insert((mod_ref, toplevel_name.dupe())) {
         // We don't need to worry about popping off keys, because repeated visits will resolve to the
         // exact same function.
         continue; // Cyclic type definitions will be validated by super type resolver.
@@ -304,7 +304,7 @@ fn resolve_function_signature_internal<'a>(
           collector.push(info);
         }
         for super_type in interface_cx.super_types.iter().rev() {
-          lookup_candidates.push((super_type.module_reference, super_type.id));
+          lookup_candidates.push((super_type.module_reference, super_type.id.dupe()));
         }
       }
     } else {
@@ -338,15 +338,15 @@ fn resolve_method_signature_recursive(
   collector: &mut Vec<MemberSignature>,
   visited: &mut HashSet<(ModuleReference, PStr)>,
 ) {
-  if !visited.insert((interface_type.module_reference, interface_type.id)) {
+  if !visited.insert((interface_type.module_reference, interface_type.id.dupe())) {
     return; // Cyclic type definitions will be validated by super type resolver.
   }
   if let Some(interface_cx) =
-    resolve_interface_cx(global_cx, interface_type.module_reference, interface_type.id)
+    resolve_interface_cx(global_cx, interface_type.module_reference, interface_type.id.dupe())
   {
     let mut subst_mapping = HashMap::new();
     for (tparam, targ) in interface_cx.type_parameters.iter().zip(&interface_type.type_arguments) {
-      subst_mapping.insert(tparam.name, targ.dupe());
+      subst_mapping.insert(tparam.name.dupe(), targ.dupe());
     }
     if let Some(info) = interface_cx.methods.get(&method_name) {
       collector.push(MemberSignature {
@@ -357,7 +357,7 @@ fn resolve_method_signature_recursive(
           .map(|tparam| {
             let bound =
               tparam.bound.as_ref().map(|t| type_system::subst_nominal_type(t, &subst_mapping));
-            TypeParameterSignature { name: tparam.name, bound }
+            TypeParameterSignature { name: tparam.name.dupe(), bound }
           })
           .collect(),
         type_: type_system::subst_fn_type(&info.type_, &subst_mapping),
@@ -368,7 +368,7 @@ fn resolve_method_signature_recursive(
         resolve_method_signature_recursive(
           global_cx,
           &type_system::subst_nominal_type(super_type, &subst_mapping),
-          method_name,
+          method_name.dupe(),
           all,
           collector,
           visited,
@@ -376,7 +376,7 @@ fn resolve_method_signature_recursive(
       }
     }
   }
-  visited.remove(&(interface_type.module_reference, interface_type.id));
+  visited.remove(&(interface_type.module_reference, interface_type.id.dupe()));
 }
 
 pub(super) fn resolve_method_signature(
@@ -406,7 +406,7 @@ pub(super) fn resolve_all_method_signatures(
     resolve_method_signature_recursive(
       global_cx,
       interface_type,
-      method_name,
+      method_name.dupe(),
       true,
       &mut collector,
       &mut HashSet::new(),

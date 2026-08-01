@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use samlang_ast::mir::{Expression, GenenalLoopVariable, Statement, VariableName};
 use samlang_heap::PStr;
 use std::collections::HashSet;
@@ -24,7 +25,7 @@ pub(super) fn optimize(
   ),
 ) -> LoopInvariantCodeMotionOptimizationResult {
   let mut non_loop_invariant_variables =
-    loop_variables.iter().map(|it| it.name).collect::<HashSet<_>>();
+    loop_variables.iter().map(|it| it.name.dupe()).collect::<HashSet<_>>();
 
   let mut hoisted_stmts = Vec::new();
   let mut inner_stmts = Vec::new();
@@ -35,7 +36,7 @@ pub(super) fn optimize(
         if expression_is_loop_invariant(operand, &non_loop_invariant_variables) {
           hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(*name);
+          non_loop_invariant_variables.insert(name.dupe());
           inner_stmts.push(stmt);
         }
       }
@@ -45,7 +46,7 @@ pub(super) fn optimize(
         {
           hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(b.name);
+          non_loop_invariant_variables.insert(b.name.dupe());
           inner_stmts.push(stmt);
         }
       }
@@ -53,7 +54,7 @@ pub(super) fn optimize(
         if expression_is_loop_invariant(pointer_expression, &non_loop_invariant_variables) {
           hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(*name);
+          non_loop_invariant_variables.insert(name.dupe());
           inner_stmts.push(stmt);
         }
       }
@@ -61,13 +62,13 @@ pub(super) fn optimize(
         if expression_is_loop_invariant(assigned_expression, &non_loop_invariant_variables) {
           hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(*name);
+          non_loop_invariant_variables.insert(name.dupe());
           inner_stmts.push(stmt);
         }
       }
       Statement::LateInitDeclaration { name, type_: _ }
       | Statement::LateInitAssignment { name, assigned_expression: _ } => {
-        non_loop_invariant_variables.insert(*name);
+        non_loop_invariant_variables.insert(name.dupe());
         inner_stmts.push(stmt)
       }
       Statement::StructInit { struct_variable_name, type_name: _, expression_list } => {
@@ -77,7 +78,7 @@ pub(super) fn optimize(
         {
           hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(*struct_variable_name);
+          non_loop_invariant_variables.insert(struct_variable_name.dupe());
           inner_stmts.push(stmt);
         }
       }
@@ -90,19 +91,19 @@ pub(super) fn optimize(
         if expression_is_loop_invariant(context, &non_loop_invariant_variables) {
           hoisted_stmts.push(stmt);
         } else {
-          non_loop_invariant_variables.insert(*closure_variable_name);
+          non_loop_invariant_variables.insert(closure_variable_name.dupe());
           inner_stmts.push(stmt);
         }
       }
       Statement::Call { callee: _, arguments: _, return_type: _, return_collector } => {
         if let Some(c) = &return_collector {
-          non_loop_invariant_variables.insert(*c);
+          non_loop_invariant_variables.insert(c.dupe());
         }
         inner_stmts.push(stmt);
       }
       Statement::IfElse { condition: _, s1: _, s2: _, final_assignments } => {
         for fa in final_assignments {
-          non_loop_invariant_variables.insert(fa.name);
+          non_loop_invariant_variables.insert(fa.name.dupe());
         }
         inner_stmts.push(stmt);
       }
@@ -111,7 +112,7 @@ pub(super) fn optimize(
       }
       Statement::While { loop_variables: _, statements: _, break_collector } => {
         if let Some(v) = &break_collector {
-          non_loop_invariant_variables.insert(v.name);
+          non_loop_invariant_variables.insert(v.name.dupe());
         }
         inner_stmts.push(stmt);
       }

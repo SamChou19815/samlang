@@ -476,7 +476,7 @@ sources.mains = [__$ddd]"#;
     let a = PStr::LOWER_A;
     let b = PStr::LOWER_B;
     assert_eq!(
-      (BinaryOperator::PLUS, Expression::StringName(b), Expression::StringName(a),),
+      (BinaryOperator::PLUS, Expression::StringName(b.dupe()), Expression::StringName(a.dupe()),),
       Statement::flexible_order_binary(
         BinaryOperator::PLUS,
         Expression::StringName(a),

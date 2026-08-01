@@ -8,7 +8,7 @@ use samlang_ast::mir::{
 use samlang_heap::PStr;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Dupe, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Dupe, PartialEq, Eq)]
 enum ParamUsageAnalysisState {
   Unused,
   Referenced,
@@ -22,7 +22,7 @@ fn meet_param_state(
   a: ParamUsageAnalysisState,
   b: ParamUsageAnalysisState,
 ) -> ParamUsageAnalysisState {
-  match (a, b) {
+  match (a.dupe(), b.dupe()) {
     (ParamUsageAnalysisState::Unused, _) | (_, ParamUsageAnalysisState::Unused) => {
       ParamUsageAnalysisState::Unused
     }
@@ -51,7 +51,7 @@ fn collect_def_function_usages_var(
   state: &mut HashMap<PStr, ParamUsageAnalysisState>,
   v: &VariableName,
 ) {
-  state.entry(v.name).and_modify(|state| *state = ParamUsageAnalysisState::Referenced);
+  state.entry(v.name.dupe()).and_modify(|state| *state = ParamUsageAnalysisState::Referenced);
 }
 
 fn collect_def_function_usages_expr(
@@ -192,7 +192,7 @@ fn collect_global_usages_stmt(
       function_name,
       context: _,
     } => {
-      state.insert(function_name.name, FunctionAnalysisState::Unoptimizable);
+      state.insert(function_name.name.dupe(), FunctionAnalysisState::Unoptimizable);
     }
     Statement::Call {
       callee: Callee::FunctionName(FunctionNameExpression { name: fn_name, type_: _ }),
@@ -203,11 +203,11 @@ fn collect_global_usages_stmt(
       if let Some(FunctionAnalysisState::Optimizable(param_states)) = state.get_mut(fn_name) {
         for (i, arg) in arguments.iter().enumerate() {
           param_states[i] = meet_param_state(
-            param_states[i],
+            <ParamUsageAnalysisState as Clone>::clone(&param_states[i]),
             match arg {
               Expression::Int32Literal(n) => ParamUsageAnalysisState::Int32Constant(*n),
               Expression::Int31Literal(n) => ParamUsageAnalysisState::Int31Constant(*n),
-              Expression::StringName(p) => ParamUsageAnalysisState::StrConstant(*p),
+              Expression::StringName(p) => ParamUsageAnalysisState::StrConstant(p.dupe()),
               Expression::Variable(_) => ParamUsageAnalysisState::Unoptimizable,
             },
           )
@@ -223,12 +223,12 @@ fn collect_all_usages(sources: &Sources) -> HashMap<FunctionName, FunctionAnalys
     let mut local_state = f
       .parameters
       .iter()
-      .map(|param| (*param, ParamUsageAnalysisState::Unused))
+      .map(|param| (param.dupe(), ParamUsageAnalysisState::Unused))
       .collect::<HashMap<_, _>>();
     collect_def_function_usages_stmts(&mut local_state, f, &f.body);
     collect_def_function_usages_expr(&mut local_state, &f.return_value);
     state.insert(
-      f.name,
+      f.name.dupe(),
       FunctionAnalysisState::Optimizable(
         f.parameters.iter().map(|p| local_state.remove(p).unwrap()).collect(),
       ),
@@ -258,7 +258,7 @@ fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
       None => {}
       Some(VariableRewriteInstruction::Int32(n)) => *expr = Expression::Int32Literal(*n),
       Some(VariableRewriteInstruction::Int31(n)) => *expr = Expression::Int31Literal(*n),
-      Some(VariableRewriteInstruction::StrConstant(s)) => *expr = Expression::StringName(*s),
+      Some(VariableRewriteInstruction::StrConstant(s)) => *expr = Expression::StringName(s.dupe()),
     },
   }
 }
@@ -363,7 +363,7 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
       FunctionAnalysisState::Unoptimizable => {}
       FunctionAnalysisState::Optimizable(param_states) => {
         all_functions.insert(
-          *n,
+          n.dupe(),
           param_states.iter().map(|s| s == &ParamUsageAnalysisState::Unoptimizable).collect_vec(),
         );
       }
@@ -377,19 +377,19 @@ pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
 
       let mut current_index = 0;
       f.parameters.retain(|name| {
-        let state = param_states[current_index];
+        let state = &param_states[current_index];
         current_index += 1;
         match state {
           ParamUsageAnalysisState::Int32Constant(i) => {
-            local_rewrite.insert(*name, VariableRewriteInstruction::Int32(i));
+            local_rewrite.insert(name.dupe(), VariableRewriteInstruction::Int32(*i));
             false
           }
           ParamUsageAnalysisState::Int31Constant(i) => {
-            local_rewrite.insert(*name, VariableRewriteInstruction::Int31(i));
+            local_rewrite.insert(name.dupe(), VariableRewriteInstruction::Int31(*i));
             false
           }
           ParamUsageAnalysisState::StrConstant(s) => {
-            local_rewrite.insert(*name, VariableRewriteInstruction::StrConstant(s));
+            local_rewrite.insert(name.dupe(), VariableRewriteInstruction::StrConstant(s.clone()));
             false
           }
           ParamUsageAnalysisState::Unoptimizable => true,
@@ -492,30 +492,30 @@ mod tests {
           },
           body: vec![
             Statement::Not {
-              name: dummy_name,
+              name: dummy_name.dupe(),
               operand: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
             },
             Statement::binary(
-              dummy_name,
+              dummy_name.dupe(),
               BinaryOperator::PLUS,
               Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
               Expression::var_name(PStr::LOWER_C, INT_32_TYPE),
             ),
             Statement::binary(
-              dummy_name,
+              dummy_name.dupe(),
               BinaryOperator::PLUS,
               Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
               Expression::var_name(PStr::LOWER_B, INT_32_TYPE),
             ),
             Statement::IndexedAccess {
-              name: dummy_name,
+              name: dummy_name.dupe(),
               type_: INT_32_TYPE,
               pointer_expression: Expression::var_name(PStr::LOWER_A, INT_32_TYPE),
               index: 0,
             },
             Statement::ClosureInit {
-              closure_variable_name: dummy_name,
-              closure_type_name: table.create_type_name_for_test(dummy_name),
+              closure_variable_name: dummy_name.dupe(),
+              closure_type_name: table.create_type_name_for_test(dummy_name.dupe()),
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
                 type_: FunctionType {
@@ -526,7 +526,10 @@ mod tests {
               context: ZERO,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName { name: dummy_name, type_: INT_32_TYPE }),
+              callee: Callee::Variable(VariableName {
+                name: dummy_name.dupe(),
+                type_: INT_32_TYPE,
+              }),
               arguments: vec![ZERO],
               return_type: INT_32_TYPE,
               return_collector: None,
@@ -617,7 +620,7 @@ mod tests {
               s1: vec![Statement::Break(ZERO)],
               s2: vec![Statement::Break(ZERO)],
               final_assignments: vec![IfElseFinalAssignment {
-                name: dummy_name,
+                name: dummy_name.dupe(),
                 type_: INT_32_TYPE,
                 e1: ZERO,
                 e2: ZERO,
@@ -630,7 +633,7 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: dummy_name,
+                name: dummy_name.dupe(),
                 type_: INT_32_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
@@ -638,11 +641,15 @@ mod tests {
               statements: vec![Statement::Break(ZERO)],
               break_collector: None,
             },
-            Statement::Cast { name: dummy_name, type_: INT_31_TYPE, assigned_expression: ZERO },
-            Statement::LateInitDeclaration { name: dummy_name, type_: INT_31_TYPE },
-            Statement::LateInitAssignment { name: dummy_name, assigned_expression: ZERO },
+            Statement::Cast {
+              name: dummy_name.dupe(),
+              type_: INT_31_TYPE,
+              assigned_expression: ZERO,
+            },
+            Statement::LateInitDeclaration { name: dummy_name.dupe(), type_: INT_31_TYPE },
+            Statement::LateInitAssignment { name: dummy_name.dupe(), assigned_expression: ZERO },
             Statement::StructInit {
-              struct_variable_name: dummy_name,
+              struct_variable_name: dummy_name.dupe(),
               type_name: table.create_type_name_with_suffix(
                 ModuleReference::DUMMY,
                 dummy_name,

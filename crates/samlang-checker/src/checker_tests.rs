@@ -12,6 +12,7 @@ mod tests {
     type_check_sources, type_system,
     typing_context::{LocalTypingContext, TypingContext},
   };
+  use dupe::Dupe;
   use pretty_assertions::assert_eq;
   use samlang_ast::{
     Location, Reason,
@@ -86,7 +87,7 @@ mod tests {
       &mut local_cx,
       &mut error_set,
       ModuleReference::DUMMY,
-      test_str,
+      test_str.dupe(),
       /* availableTypeParameters */ Vec::new(),
     );
 
@@ -917,7 +918,7 @@ Found 1 error.
     let test2_str = heap.alloc_str_for_test("Test2");
     let test4_str = heap.alloc_str_for_test("Test4");
 
-    assert_checks(heap, "Test.init(true, 3)", &builder.simple_nominal_type(test_str));
+    assert_checks(heap, "Test.init(true, 3)", &builder.simple_nominal_type(test_str.dupe()));
     assert_checks(
       heap,
       "{ let foo=true; Test.init(foo, 3) }",
@@ -926,7 +927,7 @@ Found 1 error.
     assert_errors_full_customization(
       heap,
       "Test2.Foo(true)",
-      &builder.simple_nominal_type(test2_str),
+      &builder.simple_nominal_type(test2_str.dupe()),
       "",
       "Test2",
       false,
@@ -934,7 +935,7 @@ Found 1 error.
     assert_errors_full_customization(
       heap,
       "Test2.Bar(42)",
-      &builder.simple_nominal_type(test2_str),
+      &builder.simple_nominal_type(test2_str.dupe()),
       "",
       "Test2",
       false,
@@ -942,7 +943,7 @@ Found 1 error.
     assert_errors_full_customization(
       heap,
       "Test4.Foo(true)",
-      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str.dupe(), vec![builder.bool_type()]),
       "",
       "Test4",
       false,
@@ -950,7 +951,7 @@ Found 1 error.
     assert_errors_full_customization(
       heap,
       "Test4.Foo<bool>(true)",
-      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str.dupe(), vec![builder.bool_type()]),
       "",
       "Test4",
       false,
@@ -959,7 +960,7 @@ Found 1 error.
     assert_errors(
       heap,
       "Test.Foo(true)",
-      &builder.simple_nominal_type(test2_str),
+      &builder.simple_nominal_type(test2_str.dupe()),
       r#"
 Error ------------------------------------ DUMMY.sam:1:6-1:9
 
@@ -975,7 +976,7 @@ Found 1 error.
     assert_errors(
       heap,
       "Test.Bar(42)",
-      &builder.simple_nominal_type(test2_str),
+      &builder.simple_nominal_type(test2_str.dupe()),
       r#"
 Error ------------------------------------ DUMMY.sam:1:6-1:9
 
@@ -991,7 +992,7 @@ Found 1 error.
     assert_errors(
       heap,
       "Test4.Foo<int, bool>(true)",
-      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str.dupe(), vec![builder.bool_type()]),
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:21
 
@@ -1007,7 +1008,7 @@ Found 1 error.
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
-      &builder.general_nominal_type(test4_str, vec![builder.int_type()]),
+      &builder.general_nominal_type(test4_str.dupe(), vec![builder.int_type()]),
       r#"
 Error ---------------------------------- DUMMY.sam:1:16-1:20
 
@@ -1073,7 +1074,7 @@ Found 2 errors.
     assert_errors(
       heap,
       "Test44.Bar(42)",
-      &builder.simple_nominal_type(test2_str),
+      &builder.simple_nominal_type(test2_str.dupe()),
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:7
 

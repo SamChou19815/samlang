@@ -64,7 +64,7 @@ fn search_optional_type_parameters(
     if tparam.name.loc.contains_position(position) {
       return Some(LocationCoverSearchResult::TypedName(
         tparam.name.loc,
-        Type::Generic(Reason::new(tparam.name.loc, Some(tparam.name.loc)), tparam.name.name),
+        Type::Generic(Reason::new(tparam.name.loc, Some(tparam.name.loc)), tparam.name.name.dupe()),
         true,
       ));
     }
@@ -204,7 +204,7 @@ fn search_expression(
     }
     expr::E::ClassId(_, mod_ref, id) => {
       // We already checked at the start whether the expression contains the target.
-      Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
+      Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name.dupe()))
     }
     expr::E::Tuple(_, expressions) => {
       search_parenthesized_expression_list(expressions, position, stop_at_call)
@@ -221,8 +221,8 @@ fn search_expression(
             LocationCoverSearchResult::InterfaceMemberName {
               loc: e.field_name.loc,
               module_reference: nominal_type.module_reference,
-              class_name: nominal_type.id,
-              fn_name: e.field_name.name,
+              class_name: nominal_type.id.dupe(),
+              fn_name: e.field_name.name.dupe(),
               is_method: false,
               type_: e.common.type_.dupe(),
             }
@@ -230,8 +230,8 @@ fn search_expression(
             LocationCoverSearchResult::PropertyName(
               e.field_name.loc,
               nominal_type.module_reference,
-              nominal_type.id,
-              e.field_name.name,
+              nominal_type.id.dupe(),
+              e.field_name.name.dupe(),
             )
           }
         })
@@ -251,8 +251,8 @@ fn search_expression(
         .map(|nominal_type| LocationCoverSearchResult::InterfaceMemberName {
           loc: e.method_name.loc,
           module_reference: nominal_type.module_reference,
-          class_name: nominal_type.id,
-          fn_name: e.method_name.name,
+          class_name: nominal_type.id.dupe(),
+          fn_name: e.method_name.name.dupe(),
           is_method: !nominal_type.is_class_statics,
           type_: e.common.type_.dupe(),
         })
@@ -339,7 +339,11 @@ pub(super) fn search_module_locally(
       continue;
     }
     if name.loc.contains_position(position) {
-      return Some(LocationCoverSearchResult::ToplevelName(name.loc, module_reference, name.name));
+      return Some(LocationCoverSearchResult::ToplevelName(
+        name.loc,
+        module_reference,
+        name.name.dupe(),
+      ));
     }
     if let Some(found) = search_optional_type_parameters(toplevel.type_parameters(), position) {
       return Some(found);
@@ -352,8 +356,8 @@ pub(super) fn search_module_locally(
         return Some(LocationCoverSearchResult::InterfaceMemberName {
           loc: member.name.loc,
           module_reference,
-          class_name: name.name,
-          fn_name: member.name.name,
+          class_name: name.name.dupe(),
+          fn_name: member.name.name.dupe(),
           is_method: member.is_method,
           type_: Arc::new(Type::Fn(FunctionType::from_function(member))),
         });

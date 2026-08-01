@@ -1,4 +1,5 @@
 use super::optimization_common::LocalValueContextForOptimization;
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
@@ -72,10 +73,10 @@ mod estimator {
     for f in functions {
       let cost = estimate_fn_inline_cost(f);
       if cost <= INLINE_THRESHOLD {
-        functions_that_can_be_inlined.insert(f.name);
+        functions_that_can_be_inlined.insert(f.name.dupe());
       }
       if cost <= PERFORM_INLINE_THRESHOLD {
-        functions_that_can_perform_inlining.insert(f.name);
+        functions_that_can_perform_inlining.insert(f.name.dupe());
       }
     }
     FunctionsToInline { functions_that_can_be_inlined, functions_that_can_perform_inlining }
@@ -179,14 +180,14 @@ fn inline_rewrite_variable(
   cx: &mut LocalValueContextForOptimization,
 ) -> Expression {
   if let Some(binded) = cx.get(name) {
-    *binded
+    binded.dupe()
   } else {
-    Expression::Variable(VariableName { name: *name, type_: *type_ })
+    Expression::Variable(VariableName { name: name.dupe(), type_: *type_ })
   }
 }
 
 fn inline_rewrite_expr(expr: &Expression, cx: &mut LocalValueContextForOptimization) -> Expression {
-  if let Expression::Variable(v) = expr { inline_rewrite_variable(v, cx) } else { *expr }
+  if let Expression::Variable(v) = expr { inline_rewrite_variable(v, cx) } else { expr.dupe() }
 }
 
 fn inline_rewrite_expressions(
@@ -210,8 +211,8 @@ fn bind_with_mangled_name(
   name: &PStr,
   type_: &Type,
 ) -> PStr {
-  let mangled_name = heap.alloc_string(format!("{}{}", prefix.as_str(heap), name.as_str(heap)));
-  cx.checked_bind(*name, Expression::var_name(mangled_name, *type_));
+  let mangled_name = Heap::alloc_string(format!("{}{}", prefix.as_str(heap), name.as_str(heap)));
+  cx.checked_bind(name.dupe(), Expression::var_name(mangled_name.dupe(), *type_));
   mangled_name
 }
 
@@ -292,7 +293,7 @@ fn inline_rewrite_stmt(
           name: bind_with_mangled_name(cx, heap, prefix, name, type_),
           type_: *type_,
           initial_value: inline_rewrite_expr(initial_value, cx),
-          loop_value: *loop_value,
+          loop_value: loop_value.dupe(),
         })
         .collect_vec();
       let statements = inline_rewrite_stmts(cx, heap, prefix, statements);
@@ -325,7 +326,7 @@ fn inline_rewrite_stmt(
       type_: *type_,
     },
     Statement::LateInitAssignment { name, assigned_expression } => Statement::LateInitAssignment {
-      name: cx.get(name).unwrap().into_variable().unwrap().name,
+      name: cx.get(name).unwrap().dupe().into_variable().unwrap().name,
       assigned_expression: inline_rewrite_expr(assigned_expression, cx),
     },
     Statement::StructInit { struct_variable_name, type_name, expression_list } => {
@@ -390,7 +391,7 @@ fn perform_inline_rewrite_on_function_stmt(
       let mut cx = LocalValueContextForOptimization::new();
       // Inline step 1: Bind args to args temp
       for (param, arg) in parameters_of_function_to_be_inlined.iter().zip(arguments) {
-        cx.checked_bind(*param, arg);
+        cx.checked_bind(param.dupe(), arg);
       }
       // Inline step 2: Add in body code and change return statements
       let mut rewritten_body = inline_rewrite_stmts(
@@ -508,9 +509,9 @@ pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> V
     let mut all_other_functions = Vec::new();
     let mut names = Vec::new();
     for f in temp_functions {
-      names.push(f.name);
+      names.push(f.name.dupe());
       if estimator_result.functions_that_can_be_inlined.contains(&f.name) {
-        functions_that_can_be_inlined.insert(f.name, f);
+        functions_that_can_be_inlined.insert(f.name.dupe(), f);
       } else {
         all_other_functions.push(f);
       }
@@ -530,7 +531,7 @@ pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> V
         heap,
       ))
     }
-    inlined.sort_by_key(|a| a.name);
+    inlined.sort_by_key(|a| a.name.dupe());
     temp_functions = inlined;
   }
   temp_functions

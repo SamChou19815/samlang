@@ -1,3 +1,4 @@
+use dupe::Dupe;
 use itertools::Itertools;
 use samlang_ast::{
   hir::BinaryOperator,
@@ -38,7 +39,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
       let stmts = if let Some(return_collector) = expected_return_collector {
         rest_stmts_iterator
           .chain(vec![Statement::Binary(Statement::binary_unwrapped(
-            *return_collector,
+            return_collector.dupe(),
             BinaryOperator::PLUS,
             ZERO,
             ZERO,
@@ -51,7 +52,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let relevant_final_assignment =
-        final_assignments.iter().find(|it| expected_return_collector.eq(&Some(it.name)));
+        final_assignments.iter().find(|it| expected_return_collector.eq(&Some(it.name.dupe())));
       let new_expected_ret_collectors = if expected_return_collector.is_some() {
         if let Some(IfElseFinalAssignment { e1, e2, .. }) = relevant_final_assignment {
           (e1.as_variable().cloned().map(|it| it.name), e2.as_variable().cloned().map(|it| it.name))
@@ -93,7 +94,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
               statements: s1
                 .into_iter()
                 .chain(vec![Statement::Break(
-                  relevant_final_assignment.map(|fa| fa.e1).unwrap_or(ZERO),
+                  relevant_final_assignment.map(|fa| fa.e1.dupe()).unwrap_or(ZERO),
                 )])
                 .collect_vec(),
             }])
@@ -109,7 +110,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
               statements: s2
                 .into_iter()
                 .chain(vec![Statement::Break(
-                  relevant_final_assignment.map(|fa| fa.e2).unwrap_or(ZERO),
+                  relevant_final_assignment.map(|fa| fa.e2.dupe()).unwrap_or(ZERO),
                 )])
                 .collect_vec(),
             }])
@@ -123,12 +124,12 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
         ) => {
           let mut new_final_assignments = final_assignments
             .into_iter()
-            .filter(|it| expected_return_collector.ne(&Some(it.name)))
+            .filter(|it| expected_return_collector.ne(&Some(it.name.dupe())))
             .collect_vec();
           let mut args = Vec::new();
           for ((e1, e2), t) in a1.into_iter().zip(a2).zip(function_parameter_types) {
             let name = heap.alloc_temp_str();
-            args.push(Expression::var_name(name, *t));
+            args.push(Expression::var_name(name.dupe(), *t));
             new_final_assignments.push(IfElseFinalAssignment { name, type_: *t, e1, e2 });
           }
           Ok(RewriteResult {
@@ -159,7 +160,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
 ) -> (Function, bool) {
   let expected_return_collector = match &function.return_value {
     Expression::Int32Literal(_) | Expression::Int31Literal(_) => None,
-    Expression::Variable(v) => Some(v.name),
+    Expression::Variable(v) => Some(v.name.dupe()),
     Expression::StringName(_) => return (function, false),
   };
   let Function { name, parameters, type_, body, return_value } = function;
@@ -179,10 +180,10 @@ fn optimize_function_by_tailrec_rewrite_aux(
       .zip(type_.argument_types.iter())
       .zip(args)
       .map(|((n, t), loop_value)| GenenalLoopVariable {
-        name: *n,
+        name: n.dupe(),
         type_: *t,
         initial_value: Expression::var_name(
-          heap.alloc_string(tail_rec_param_name(n.as_str(heap))),
+          Heap::alloc_string(tail_rec_param_name(n.as_str(heap))),
           *t,
         ),
         loop_value,
@@ -195,8 +196,10 @@ fn optimize_function_by_tailrec_rewrite_aux(
       None
     },
   };
-  let parameters =
-    parameters.iter().map(|n| heap.alloc_string(tail_rec_param_name(n.as_str(heap)))).collect_vec();
+  let parameters = parameters
+    .iter()
+    .map(|n| Heap::alloc_string(tail_rec_param_name(n.as_str(heap))))
+    .collect_vec();
   (Function { name, parameters, type_, body: vec![while_loop], return_value }, true)
 }
 

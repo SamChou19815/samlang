@@ -1,4 +1,5 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
+use dupe::{Dupe, OptionDupedExt};
 use samlang_ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName};
 use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
@@ -13,7 +14,7 @@ fn lvn_bind_var(cx: &mut LocalContext, name: PStr, value: PStr) {
 }
 
 fn lvn_bind_value(cx: &mut LocalBindedValueContext, value: &BindedValue, name: PStr) {
-  let inserted = cx.insert(*value, name);
+  let inserted = cx.insert(value.dupe(), name);
   debug_assert!(inserted.is_none());
 }
 
@@ -21,7 +22,7 @@ fn optimize_variable(
   VariableName { name, type_: _ }: &mut VariableName,
   variable_cx: &mut LocalContext,
 ) {
-  *name = variable_cx.get(name).cloned().unwrap_or(*name);
+  *name = variable_cx.get(name).duped().unwrap_or(name.dupe());
 }
 
 fn optimize_expr(expression: &mut Expression, variable_cx: &mut LocalContext) {
@@ -38,35 +39,39 @@ fn optimize_stmt(
   match stmt {
     Statement::IsPointer { name, pointer_type, operand } => {
       optimize_expr(operand, variable_cx);
-      let value = BindedValue::IsPointer(*pointer_type, *operand);
+      let value = BindedValue::IsPointer(*pointer_type, operand.dupe());
       if let Some(binded) = binded_value_cx.get(&value) {
-        lvn_bind_var(variable_cx, *name, *binded);
+        lvn_bind_var(variable_cx, name.dupe(), binded.dupe());
         false
       } else {
-        lvn_bind_value(binded_value_cx, &value, *name);
+        lvn_bind_value(binded_value_cx, &value, name.dupe());
         true
       }
     }
     Statement::Not { name, operand } => {
       optimize_expr(operand, variable_cx);
-      let value = BindedValue::Not(*operand);
+      let value = BindedValue::Not(operand.dupe());
       if let Some(binded) = binded_value_cx.get(&value) {
-        lvn_bind_var(variable_cx, *name, *binded);
+        lvn_bind_var(variable_cx, name.dupe(), binded.dupe());
         false
       } else {
-        lvn_bind_value(binded_value_cx, &value, *name);
+        lvn_bind_value(binded_value_cx, &value, name.dupe());
         true
       }
     }
     Statement::Binary(Binary { name, operator, e1, e2 }) => {
       optimize_expr(e1, variable_cx);
       optimize_expr(e2, variable_cx);
-      let value = BindedValue::Binary(BinaryBindedValue { operator: *operator, e1: *e1, e2: *e2 });
+      let value = BindedValue::Binary(BinaryBindedValue {
+        operator: *operator,
+        e1: e1.dupe(),
+        e2: e2.dupe(),
+      });
       if let Some(binded) = binded_value_cx.get(&value) {
-        lvn_bind_var(variable_cx, *name, *binded);
+        lvn_bind_var(variable_cx, name.dupe(), binded.dupe());
         false
       } else {
-        lvn_bind_value(binded_value_cx, &value, *name);
+        lvn_bind_value(binded_value_cx, &value, name.dupe());
         true
       }
     }
@@ -74,14 +79,14 @@ fn optimize_stmt(
       optimize_expr(pointer_expression, variable_cx);
       let value = BindedValue::IndexedAccess(IndexAccessBindedValue {
         type_: *type_,
-        pointer_expression: *pointer_expression,
+        pointer_expression: pointer_expression.dupe(),
         index: *index,
       });
       if let Some(binded) = binded_value_cx.get(&value) {
-        lvn_bind_var(variable_cx, *name, *binded);
+        lvn_bind_var(variable_cx, name.dupe(), binded.dupe());
         false
       } else {
-        lvn_bind_value(binded_value_cx, &value, *name);
+        lvn_bind_value(binded_value_cx, &value, name.dupe());
         true
       }
     }
