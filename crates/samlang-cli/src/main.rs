@@ -38,7 +38,7 @@ mod utils {
   }
 
   pub(super) fn file_path_to_module_reference_alloc(
-    heap: &mut samlang_heap::Heap,
+    heap: &samlang_heap::Heap,
     absolute_source_path: &Path,
     absolute_file_path: &Path,
   ) -> Option<samlang_heap::ModuleReference> {
@@ -46,49 +46,73 @@ mod utils {
       .map(|parts| heap.alloc_module_reference_from_string_vec(parts))
   }
 
-  fn walk(
-    heap: &mut samlang_heap::Heap,
+  use rayon::prelude::*;
+
+  fn is_ignored(
     configuration: &samlang_configuration::ProjectConfiguration,
     absolute_source_path: &Path,
-    start_path: &Path,
-    sources: &mut HashMap<samlang_heap::ModuleReference, String>,
-  ) {
-    for ignore in &configuration.ignores {
-      if start_path
+    path: &Path,
+  ) -> bool {
+    configuration.ignores.iter().any(|ignore| {
+      path
         .strip_prefix(absolute_source_path)
         .ok()
         .and_then(|s| s.to_str())
         .map(|s| s.contains(ignore))
         .unwrap_or(false)
-      {
-        return;
-      }
+    })
+  }
+
+  fn is_sam_file(path: &Path) -> bool {
+    path.to_str().is_some_and(|s| s.ends_with(".sam"))
+  }
+
+  /// Collects the paths of every non-ignored `.sam` file under `start_path`.
+  ///
+  /// Subdirectories are traversed in parallel, and each entry's kind is taken from the directory
+  /// listing rather than from `Path::is_dir`/`is_file`, which would cost two extra `stat` calls
+  /// per entry. Symlinks carry no kind in the listing, so those alone fall back to the
+  /// symlink-following predicates, preserving the original traversal behavior.
+  fn walk(
+    configuration: &samlang_configuration::ProjectConfiguration,
+    absolute_source_path: &Path,
+    start_path: &Path,
+  ) -> Vec<PathBuf> {
+    if is_ignored(configuration, absolute_source_path, start_path) {
+      return Vec::new();
     }
-    if start_path.is_file() && start_path.to_str().unwrap().ends_with(".sam") {
-      if let (Some(mod_ref), Ok(src)) = (
-        file_path_to_module_reference_alloc(heap, absolute_source_path, start_path),
-        fs::read_to_string(start_path),
-      ) {
-        if !configuration.dangerously_allow_libdef_shadowing && mod_ref.is_std(heap) {
-          eprintln!("Modules under std namespace cannot be included.");
-          eprintln!("They are reserved for builtin standard library.");
-          std::process::exit(1)
+    let Ok(read_dir_result) = fs::read_dir(start_path) else {
+      // Not a readable directory: the only interesting case left is a `.sam` file itself.
+      return if start_path.is_file() && is_sam_file(start_path) {
+        vec![start_path.to_path_buf()]
+      } else {
+        Vec::new()
+      };
+    };
+    read_dir_result
+      .flatten()
+      .collect::<Vec<_>>()
+      .par_iter()
+      .flat_map(|entry| {
+        let path = entry.path();
+        let is_dir = match entry.file_type() {
+          Ok(t) if !t.is_symlink() => t.is_dir(),
+          _ => path.is_dir(),
+        };
+        if is_dir {
+          walk(configuration, absolute_source_path, &path)
+        } else if is_sam_file(&path) && !is_ignored(configuration, absolute_source_path, &path) {
+          vec![path]
         } else {
-          sources.insert(mod_ref, src);
+          Vec::new()
         }
-      }
-    } else if start_path.is_dir()
-      && let Ok(read_dir_result) = fs::read_dir(start_path)
-    {
-      for entry in read_dir_result.into_iter().flatten() {
-        walk(heap, configuration, absolute_source_path, entry.path().as_path(), sources);
-      }
-    }
+      })
+      .collect()
   }
 
   pub(super) fn collect_sources(
     configuration: &samlang_configuration::ProjectConfiguration,
-    heap: &mut samlang_heap::Heap,
+    heap: &samlang_heap::Heap,
   ) -> HashMap<samlang_heap::ModuleReference, String> {
     let mut sources = if configuration.dangerously_allow_libdef_shadowing {
       HashMap::new()
@@ -99,7 +123,22 @@ mod utils {
       fs::canonicalize(PathBuf::from(&configuration.source_directory))
     {
       let start_path = absolute_source_path.as_path();
-      walk(heap, configuration, start_path, start_path, &mut sources);
+      // Reading a file and interning its module reference are independent per path.
+      let collected = walk(configuration, start_path, start_path)
+        .par_iter()
+        .filter_map(|path| {
+          let mod_ref = file_path_to_module_reference_alloc(heap, start_path, path)?;
+          Some((mod_ref, fs::read_to_string(path).ok()?))
+        })
+        .collect::<Vec<_>>();
+      for (mod_ref, src) in collected {
+        if !configuration.dangerously_allow_libdef_shadowing && mod_ref.is_std(heap) {
+          eprintln!("Modules under std namespace cannot be included.");
+          eprintln!("They are reserved for builtin standard library.");
+          std::process::exit(1)
+        }
+        sources.insert(mod_ref, src);
+      }
     }
     sources
   }
@@ -698,12 +737,12 @@ mod runners {
       for (module_reference, source) in utils::collect_sources(&configuration, heap) {
         let path =
           PathBuf::from(&configuration.source_directory).join(module_reference.to_filename(heap));
-        let mut heap = samlang_heap::Heap::new();
+        let heap = samlang_heap::Heap::new();
         let mut error_set = samlang_errors::ErrorSet::new();
         let module = samlang_parser::parse_source_module_from_text(
           &source,
           samlang_heap::ModuleReference::DUMMY,
-          &mut heap,
+          &heap,
           &mut error_set,
         );
         if error_set.has_errors() {
@@ -850,8 +889,8 @@ mod runners {
       if let Ok(absolute_source_path) =
         fs::canonicalize(PathBuf::from(&configuration.source_directory))
       {
-        let mut heap = samlang_heap::Heap::new();
-        let collected_sources = utils::collect_sources(&configuration, &mut heap);
+        let heap = samlang_heap::Heap::new();
+        let collected_sources = utils::collect_sources(&configuration, &heap);
         let state = samlang_services::server_state::ServerState::new(heap, true, collected_sources);
         let (service, socket) =
           LspService::new(|client| lsp::Backend::new(client, absolute_source_path, state));

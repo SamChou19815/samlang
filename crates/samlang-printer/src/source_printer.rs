@@ -1338,10 +1338,10 @@ mod tests {
   use samlang_parser::{parse_source_expression_from_text, parse_source_module_from_text};
 
   fn assert_reprint_expr(source: &str, expected: &str) {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let (comment_store, e) =
-      parse_source_expression_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
+      parse_source_expression_from_text(source, ModuleReference::DUMMY, &heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));
     assert_eq!(
       expected,
@@ -1350,10 +1350,9 @@ mod tests {
   }
 
   fn assert_reprint_module(source: &str, expected: &str) {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let m =
-      parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
+    let m = parse_source_module_from_text(source, ModuleReference::DUMMY, &heap, &mut error_set);
     for n in &m.imports {
       pretty_print_import(&heap, 40, &m.comment_store, n);
     }

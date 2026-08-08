@@ -5,7 +5,7 @@ use std::{
   mem::ManuallyDrop,
   ops::Deref,
   sync::{
-    Arc,
+    Arc, RwLock,
     atomic::{AtomicU32, Ordering},
   },
 };
@@ -403,7 +403,8 @@ impl ModuleReference {
   pub const STD_TUPLES: ModuleReference = ModuleReference(2);
 
   pub fn get_parts<'a>(&self, heap: &'a Heap) -> &'a [PStr] {
-    heap.module_reference_pointer_table[self.0]
+    // The parts are leaked, so the `&'static [PStr]` outlives the lock guard.
+    heap.module_references.read().unwrap().pointer_table[self.0]
   }
 
   pub fn is_std(&self, heap: &Heap) -> bool {
@@ -450,22 +451,31 @@ impl TempPStrCounter {
   }
 }
 
+/// Append-only interning table for module references. Entries are never removed and the parts
+/// are leaked, so a reader can copy out a `&'static [PStr]` and drop the guard immediately.
+#[derive(Default)]
+struct ModuleReferenceInterner {
+  pointer_table: Vec<&'static [PStr]>,
+  interned: HashMap<&'static [PStr], ModuleReference>,
+}
+
 /// The heap interns module references and allocates the globally unique temp string names.
 /// Strings themselves are not interned: every `PStr` fully owns its string (inline or via a
 /// reference-counted allocation), so no GC of the heap is ever needed.
+///
+/// Module reference interning is behind a lock and takes `&self`, so phases that only need to
+/// resolve module references (parsing, source collection) can run in parallel off a shared
+/// `&Heap`. Temp string allocation still needs `&mut self`; use [`Heap::create_temp_counter`]
+/// to hand a thread-safe allocator to parallel work.
 pub struct Heap {
-  module_reference_pointer_table: Vec<&'static [PStr]>,
-  interned_module_reference: HashMap<&'static [PStr], ModuleReference>,
+  module_references: RwLock<ModuleReferenceInterner>,
   alloc_counter: u32,
 }
 
 impl Heap {
   pub fn new() -> Heap {
-    let mut heap = Heap {
-      module_reference_pointer_table: Vec::new(),
-      interned_module_reference: HashMap::new(),
-      alloc_counter: 0,
-    };
+    let heap =
+      Heap { module_references: RwLock::new(ModuleReferenceInterner::default()), alloc_counter: 0 };
     heap.alloc_module_reference(Vec::new()); // Root
     let dummy_parts = vec![PStr::DUMMY_MODULE];
     let allocated_dummy = heap.alloc_module_reference(dummy_parts);
@@ -516,28 +526,32 @@ impl Heap {
 
   pub fn get_allocated_module_reference_opt(&self, parts: Vec<String>) -> Option<ModuleReference> {
     let p_str_parts = parts.iter().map(|p| Self::alloc_str_internal(p)).collect_vec();
-    self.interned_module_reference.get(p_str_parts.deref()).cloned()
+    self.module_references.read().unwrap().interned.get(p_str_parts.deref()).cloned()
   }
 
-  pub fn alloc_module_reference(&mut self, parts: Vec<PStr>) -> ModuleReference {
-    if let Some(id) = self.interned_module_reference.get(parts.deref()) {
+  /// Interning takes the write lock unconditionally rather than probing under a read lock first.
+  /// It runs once per import statement, so it is far off the hot path, and a single path keeps
+  /// this free of an untestable check-then-upgrade race.
+  pub fn alloc_module_reference(&self, parts: Vec<PStr>) -> ModuleReference {
+    let mut interner = self.module_references.write().unwrap();
+    if let Some(id) = interner.interned.get(parts.deref()) {
       *id
     } else {
-      let mod_ref = ModuleReference(self.module_reference_pointer_table.len());
+      let mod_ref = ModuleReference(interner.pointer_table.len());
       // We don't plan to gc module
       let leaked_parts = Vec::leak(parts);
-      self.interned_module_reference.insert(leaked_parts, mod_ref);
-      self.module_reference_pointer_table.push(leaked_parts);
+      interner.interned.insert(leaked_parts, mod_ref);
+      interner.pointer_table.push(leaked_parts);
       mod_ref
     }
   }
 
-  pub fn alloc_module_reference_from_string_vec(&mut self, parts: Vec<String>) -> ModuleReference {
+  pub fn alloc_module_reference_from_string_vec(&self, parts: Vec<String>) -> ModuleReference {
     let parts = parts.into_iter().map(Heap::alloc_string).collect_vec();
     self.alloc_module_reference(parts)
   }
 
-  pub fn alloc_dummy_module_reference(&mut self) -> ModuleReference {
+  pub fn alloc_dummy_module_reference(&self) -> ModuleReference {
     let parts = vec![PStr::DUMMY_MODULE];
     self.alloc_module_reference(parts)
   }
@@ -579,7 +593,7 @@ mod tests {
 
   #[test]
   fn heap_tests() {
-    let mut heap = Heap::default();
+    let heap = Heap::default();
     assert_eq!(1, heap.alloc_dummy_module_reference().0);
     let a1 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
     let b = PStr::LOWER_B;

@@ -17,7 +17,7 @@ mod tests {
 
   #[test]
   fn query_test_1() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
@@ -132,7 +132,7 @@ class Test1(val a: int) {
 
   #[test]
   fn query_test_2() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let state = server_state::ServerState::new(
@@ -186,7 +186,7 @@ class Test2(val a: int) {
 
   #[test]
   fn query_def_loc_test_1() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let state = server_state::ServerState::new(
@@ -229,7 +229,7 @@ class Test2(val a: int) {
 
   #[test]
   fn query_def_loc_test_2() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -282,7 +282,7 @@ Cannot resolve name `a`.
 
   #[test]
   fn query_def_loc_test_3() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test1_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
@@ -464,7 +464,7 @@ Cannot resolve name `c`.
 
   #[test]
   fn query_folding_ranges_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -582,7 +582,7 @@ class Main {
 
   #[test]
   fn reformat_good_program_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -610,7 +610,7 @@ class Main {
 
   #[test]
   fn reformat_bad_program_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -636,7 +636,7 @@ class Developer(
 
   #[test]
   fn rename_bad_identifier_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let mut state = server_state::ServerState::new(heap, false, HashMap::new());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "3").is_none());
@@ -646,7 +646,7 @@ class Developer(
 
   #[test]
   fn rename_not_found_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let mut state = server_state::ServerState::new(
       heap,
@@ -672,7 +672,7 @@ class Test1 {
 
   #[test]
   fn rename_variable_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let mut state = server_state::ServerState::new(
       heap,
@@ -723,7 +723,7 @@ class Test {
 
   #[test]
   fn error_quickfix_test2() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -764,7 +764,7 @@ class Foo {
 
   #[test]
   fn error_quickfix_test3() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mod_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -803,7 +803,7 @@ class Foo {}
 
   #[test]
   fn autocomplete_test_1() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let state = server_state::ServerState::new(
       heap,
@@ -890,7 +890,7 @@ sam [kind=Function, detail=sam(): Developer]"#,
 
   #[test]
   fn autocomplete_test_2() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let state = server_state::ServerState::new(
       heap,

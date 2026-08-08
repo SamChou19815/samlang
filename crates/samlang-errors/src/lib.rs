@@ -1168,7 +1168,7 @@ mod tests {
 
   #[test]
   fn error_message_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
 
     assert_eq!("", error_set.pretty_print_error_messages_no_frame_for_test(&heap));

@@ -14,7 +14,7 @@ pub(super) struct SourceParser<'a> {
   last_location: Location,
   comments_store: CommentStore,
   module_reference: ModuleReference,
-  heap: &'a mut Heap,
+  heap: &'a Heap,
   error_set: &'a mut ErrorSet,
   builtin_classes: HashSet<PStr>,
   class_source_map: HashMap<PStr, ModuleReference>,
@@ -24,7 +24,7 @@ pub(super) struct SourceParser<'a> {
 impl<'a> SourceParser<'a> {
   pub(super) fn new(
     token_producer: TokenProducer<'a>,
-    heap: &'a mut Heap,
+    heap: &'a Heap,
     error_set: &'a mut ErrorSet,
     module_reference: ModuleReference,
     builtin_classes: HashSet<PStr>,
@@ -2227,12 +2227,12 @@ mod tests {
 
   #[test]
   fn base_tests_1() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let token_producer = TokenProducer::new("", ModuleReference::DUMMY);
     let mut parser = SourceParser::new(
       token_producer,
-      &mut heap,
+      &heap,
       &mut error_set,
       ModuleReference::DUMMY,
       HashSet::new(),
@@ -2250,13 +2250,13 @@ mod tests {
 
   #[test]
   fn base_tests_2() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     // Use an invalid token sequence to produce an error token
     let token_producer = TokenProducer::new("#ouch", ModuleReference::DUMMY);
     let mut parser = SourceParser::new(
       token_producer,
-      &mut heap,
+      &heap,
       &mut error_set,
       ModuleReference::DUMMY,
       HashSet::new(),
@@ -2273,12 +2273,12 @@ mod tests {
 
   #[test]
   fn base_tests_3() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let token_producer = TokenProducer::new("let // comment\nlet", ModuleReference::DUMMY);
     let mut parser = SourceParser::new(
       token_producer,
-      &mut heap,
+      &heap,
       &mut error_set,
       ModuleReference::DUMMY,
       HashSet::new(),

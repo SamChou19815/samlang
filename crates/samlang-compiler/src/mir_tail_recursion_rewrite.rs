@@ -7,7 +7,7 @@ use samlang_ast::{
     Statement, Type, VariableName, ZERO,
   },
 };
-use samlang_heap::{Heap, PStr};
+use samlang_heap::{Heap, PStr, TempPStrCounter};
 
 struct RewriteResult {
   stmts: Vec<Statement>,
@@ -19,7 +19,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
   function_name: &FunctionName,
   function_parameter_types: &Vec<Type>,
   expected_return_collector: &Option<PStr>,
-  heap: &mut Heap,
+  counter: &TempPStrCounter,
 ) -> Result<RewriteResult, Vec<Statement>> {
   let mut rev_stmt_iterator = stmts.into_iter().rev();
   let last_stmt = if let Some(last_stmt) = rev_stmt_iterator.next() {
@@ -71,14 +71,14 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
         function_name,
         function_parameter_types,
         &new_expected_ret_collectors.0,
-        heap,
+        counter,
       );
       let s2_result = try_rewrite_stmts_for_tailrec_without_using_return_value(
         s2,
         function_name,
         function_parameter_types,
         &new_expected_ret_collectors.1,
-        heap,
+        counter,
       );
       match (s1_result, s2_result) {
         (Err(s1), Err(s2)) => Err(
@@ -128,7 +128,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
             .collect_vec();
           let mut args = Vec::new();
           for ((e1, e2), t) in a1.into_iter().zip(a2).zip(function_parameter_types) {
-            let name = heap.alloc_temp_str();
+            let name = counter.alloc_temp_str();
             args.push(Expression::var_name(name.dupe(), *t));
             new_final_assignments.push(IfElseFinalAssignment { name, type_: *t, e1, e2 });
           }
@@ -155,7 +155,8 @@ fn tail_rec_param_name(name: &str) -> String {
 }
 
 fn optimize_function_by_tailrec_rewrite_aux(
-  heap: &mut Heap,
+  heap: &Heap,
+  counter: &TempPStrCounter,
   function: Function,
 ) -> (Function, bool) {
   let expected_return_collector = match &function.return_value {
@@ -169,7 +170,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
     &name,
     &type_.argument_types,
     &expected_return_collector,
-    heap,
+    counter,
   ) {
     Ok(result) => result,
     Err(body) => return (Function { name, parameters, type_, body, return_value }, false),
@@ -204,10 +205,11 @@ fn optimize_function_by_tailrec_rewrite_aux(
 }
 
 pub(super) fn optimize_function_by_tailrec_rewrite(
-  heap: &mut Heap,
+  heap: &Heap,
+  counter: &TempPStrCounter,
   function: Function,
 ) -> Function {
-  let (f, _) = optimize_function_by_tailrec_rewrite_aux(heap, function);
+  let (f, _) = optimize_function_by_tailrec_rewrite_aux(heap, counter, function);
   f
 }
 
@@ -218,7 +220,8 @@ mod tests {
   use samlang_ast::mir::{FunctionNameExpression, INT_32_TYPE, IfElseFinalAssignment, SymbolTable};
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {
-    assert!(!optimize_function_by_tailrec_rewrite_aux(heap, f).1)
+    let counter = heap.create_temp_counter();
+    assert!(!optimize_function_by_tailrec_rewrite_aux(heap, &counter, f).1)
   }
 
   fn assert_optimization_succeed(
@@ -227,7 +230,11 @@ mod tests {
     table: &SymbolTable,
     expected: &str,
   ) {
-    assert_eq!(expected, optimize_function_by_tailrec_rewrite(heap, f).debug_print(heap, table));
+    let counter = heap.create_temp_counter();
+    assert_eq!(
+      expected,
+      optimize_function_by_tailrec_rewrite(heap, &counter, f).debug_print(heap, table)
+    );
   }
 
   #[test]

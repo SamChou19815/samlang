@@ -17,6 +17,7 @@
 use dupe::Dupe;
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
+use rayon::prelude::*;
 use samlang_ast::{hir, lir, mir};
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{BTreeMap, HashMap};
@@ -1360,7 +1361,9 @@ pub(crate) fn compile_lir_to_binary(heap: &mut Heap, sources: lir::Sources) -> V
     string_name_mapping: &metadata.string_name_mapping,
     function_index_mapping: &metadata.function_index_mapping,
   };
-  let function_fields = functions.iter().map(|f| emit_function(&ctx, f)).collect_vec();
+  // The emit pass is read-only over `ctx` (all `&mut Heap` work happened in `collect`),
+  // so functions are emitted in parallel.
+  let function_fields = functions.par_iter().map(|f| emit_function(&ctx, f)).collect::<Vec<_>>();
   build_wast_module(
     heap,
     &metadata,

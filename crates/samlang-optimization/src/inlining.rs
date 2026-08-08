@@ -8,7 +8,7 @@ use samlang_ast::{
     GenenalLoopVariable, INT_32_TYPE, IfElseFinalAssignment, Statement, Type, VariableName, ZERO,
   },
 };
-use samlang_heap::{Heap, PStr};
+use samlang_heap::{Heap, PStr, TempPStrCounter};
 use std::collections::{HashMap, HashSet};
 
 mod estimator {
@@ -206,7 +206,7 @@ fn inline_rewrite_callee(callee: &Callee, cx: &mut LocalValueContextForOptimizat
 
 fn bind_with_mangled_name(
   cx: &mut LocalValueContextForOptimization,
-  heap: &mut Heap,
+  heap: &Heap,
   prefix: &PStr,
   name: &PStr,
   type_: &Type,
@@ -218,7 +218,7 @@ fn bind_with_mangled_name(
 
 fn inline_rewrite_stmt(
   cx: &mut LocalValueContextForOptimization,
-  heap: &mut Heap,
+  heap: &Heap,
   prefix: &PStr,
   stmt: &Statement,
 ) -> Statement {
@@ -361,7 +361,7 @@ fn inline_rewrite_stmt(
 
 fn inline_rewrite_stmts(
   cx: &mut LocalValueContextForOptimization,
-  heap: &mut Heap,
+  heap: &Heap,
   prefix: &PStr,
   stmts: &[Statement],
 ) -> Vec<Statement> {
@@ -372,7 +372,8 @@ fn perform_inline_rewrite_on_function_stmt(
   stmt: Statement,
   current_fn_name: &FunctionName,
   functions_that_can_be_inlined: &HashMap<FunctionName, Function>,
-  heap: &mut Heap,
+  heap: &Heap,
+  counter: &TempPStrCounter,
 ) -> Vec<Statement> {
   match stmt {
     Statement::Call {
@@ -387,7 +388,7 @@ fn perform_inline_rewrite_on_function_stmt(
         return_value: return_value_of_function_to_be_inlined,
         ..
       } = functions_that_can_be_inlined.get(&name).unwrap();
-      let temporary_prefix = heap.alloc_temp_str();
+      let temporary_prefix = counter.alloc_temp_str();
       let mut cx = LocalValueContextForOptimization::new();
       // Inline step 1: Bind args to args temp
       for (param, arg) in parameters_of_function_to_be_inlined.iter().zip(arguments) {
@@ -420,12 +421,14 @@ fn perform_inline_rewrite_on_function_stmt(
           current_fn_name,
           functions_that_can_be_inlined,
           heap,
+          counter,
         ),
         s2: perform_inline_rewrite_on_function_stmts(
           s2,
           current_fn_name,
           functions_that_can_be_inlined,
           heap,
+          counter,
         ),
         final_assignments,
       }]
@@ -439,6 +442,7 @@ fn perform_inline_rewrite_on_function_stmt(
           current_fn_name,
           functions_that_can_be_inlined,
           heap,
+          counter,
         ),
       }]
     }
@@ -450,6 +454,7 @@ fn perform_inline_rewrite_on_function_stmt(
           current_fn_name,
           functions_that_can_be_inlined,
           heap,
+          counter,
         ),
         break_collector,
       }]
@@ -463,7 +468,8 @@ fn perform_inline_rewrite_on_function_stmts(
   statements: Vec<Statement>,
   current_fn_name: &FunctionName,
   functions_that_can_be_inlined: &HashMap<FunctionName, Function>,
-  heap: &mut Heap,
+  heap: &Heap,
+  counter: &TempPStrCounter,
 ) -> Vec<Statement> {
   statements
     .into_iter()
@@ -473,6 +479,7 @@ fn perform_inline_rewrite_on_function_stmts(
         current_fn_name,
         functions_that_can_be_inlined,
         heap,
+        counter,
       )
     })
     .collect()
@@ -481,13 +488,15 @@ fn perform_inline_rewrite_on_function_stmts(
 fn perform_inline_rewrite_on_function(
   function: Function,
   functions_that_can_be_inlined: &HashMap<FunctionName, Function>,
-  heap: &mut Heap,
+  heap: &Heap,
+  counter: &TempPStrCounter,
 ) -> Function {
   let body = perform_inline_rewrite_on_function_stmts(
     function.body,
     &function.name,
     functions_that_can_be_inlined,
     heap,
+    counter,
   );
   Function {
     name: function.name,
@@ -498,7 +507,13 @@ fn perform_inline_rewrite_on_function(
   }
 }
 
-pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> Vec<Function> {
+pub(super) fn optimize_functions(
+  functions: Vec<Function>,
+  heap: &Heap,
+  counter: &TempPStrCounter,
+) -> Vec<Function> {
+  use rayon::prelude::*;
+
   let mut temp_functions = functions;
   for _ in 0..5 {
     let estimator_result = estimator::get_functions_to_inline(&temp_functions);
@@ -516,21 +531,21 @@ pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> V
         all_other_functions.push(f);
       }
     }
-    let mut inlined = Vec::new();
-    for f in all_other_functions {
-      if estimator_result.functions_that_can_perform_inlining.contains(&f.name) {
-        inlined.push(perform_inline_rewrite_on_function(f, &functions_that_can_be_inlined, heap))
-      } else {
-        inlined.push(f);
-      }
-    }
-    for f in functions_that_can_be_inlined.values() {
-      inlined.push(perform_inline_rewrite_on_function(
-        f.clone(),
-        &functions_that_can_be_inlined,
-        heap,
-      ))
-    }
+    // Every rewrite reads `functions_that_can_be_inlined` and writes only its own function,
+    // so the whole round runs in parallel.
+    let mut inlined = all_other_functions
+      .into_par_iter()
+      .map(|f| {
+        if estimator_result.functions_that_can_perform_inlining.contains(&f.name) {
+          perform_inline_rewrite_on_function(f, &functions_that_can_be_inlined, heap, counter)
+        } else {
+          f
+        }
+      })
+      .chain(functions_that_can_be_inlined.par_iter().map(|(_, f)| {
+        perform_inline_rewrite_on_function(f.clone(), &functions_that_can_be_inlined, heap, counter)
+      }))
+      .collect::<Vec<_>>();
     inlined.sort_by_key(|a| a.name.dupe());
     temp_functions = inlined;
   }

@@ -486,12 +486,12 @@ mod tests {
   }
 
   fn parse(source: &str) -> (Heap, Module<()>) {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = samlang_errors::ErrorSet::new();
     let module = samlang_parser::parse_source_module_from_text(
       source,
       ModuleReference::DUMMY,
-      &mut heap,
+      &heap,
       &mut error_set,
     );
     assert_eq!(false, error_set.has_errors());

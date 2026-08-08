@@ -103,8 +103,8 @@ pub struct State(samlang_services::server_state::ServerState);
 
 impl Default for State {
   fn default() -> Self {
-    let mut heap = samlang_heap::Heap::new();
-    let sources = samlang_parser::builtin_std_raw_sources(&mut heap);
+    let heap = samlang_heap::Heap::new();
+    let sources = samlang_parser::builtin_std_raw_sources(&heap);
     Self(samlang_services::server_state::ServerState::new(heap, false, sources))
   }
 }

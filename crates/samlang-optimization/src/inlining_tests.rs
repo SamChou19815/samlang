@@ -14,7 +14,11 @@ mod tests {
 
   #[test]
   fn empty_test() {
-    assert!(super::super::inlining::optimize_functions(Vec::new(), &mut Heap::new()).is_empty());
+    let heap = Heap::new();
+    assert!(
+      super::super::inlining::optimize_functions(Vec::new(), &heap, &heap.create_temp_counter())
+        .is_empty()
+    );
   }
 
   fn assert_correctly_inlined(
@@ -23,7 +27,8 @@ mod tests {
     table: &SymbolTable,
     expected: &str,
   ) {
-    let actual = super::super::inlining::optimize_functions(functions, heap)
+    let counter = heap.create_temp_counter();
+    let actual = super::super::inlining::optimize_functions(functions, heap, &counter)
       .into_iter()
       .map(|mut f| {
         super::super::conditional_constant_propagation::optimize_function(&mut f);
@@ -132,6 +137,7 @@ mod tests {
   fn abort_tests() {
     let heap = &mut Heap::new();
     let table = &mut SymbolTable::new();
+    let counter = heap.create_temp_counter();
 
     super::super::inlining::optimize_functions(
       vec![Function {
@@ -142,6 +148,7 @@ mod tests {
         return_value: ZERO,
       }],
       heap,
+      &counter,
     );
 
     super::super::inlining::optimize_functions(
@@ -170,6 +177,7 @@ mod tests {
         },
       ],
       heap,
+      &counter,
     );
   }
 

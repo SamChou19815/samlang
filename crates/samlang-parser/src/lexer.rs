@@ -712,7 +712,7 @@ impl<'a> TokenProducer<'a> {
     Self { lexer: WrappedLogosLexer::new(source, module_reference), pending: None, done: false }
   }
 
-  pub(super) fn next_token(&mut self, heap: &mut Heap, error_set: &mut ErrorSet) -> Option<Token> {
+  pub(super) fn next_token(&mut self, heap: &Heap, error_set: &mut ErrorSet) -> Option<Token> {
     if self.done {
       return None;
     }
@@ -733,7 +733,7 @@ impl<'a> TokenProducer<'a> {
   fn process_raw_token(
     &mut self,
     token: Token,
-    heap: &mut Heap,
+    heap: &Heap,
     error_set: &mut ErrorSet,
   ) -> Option<Token> {
     match token {
@@ -772,7 +772,7 @@ mod tests {
   fn lex_source_program(
     source: &str,
     module_reference: ModuleReference,
-    heap: &mut Heap,
+    heap: &Heap,
     error_set: &mut ErrorSet,
   ) -> Vec<Token> {
     let mut producer = TokenProducer::new(source, module_reference);
@@ -889,8 +889,8 @@ mod tests {
   }
 
   fn lex(source: &str) -> Vec<String> {
-    let mut heap = Heap::new();
-    lex_source_program(source, ModuleReference::ROOT, &mut heap, &mut ErrorSet::new())
+    let heap = Heap::new();
+    lex_source_program(source, ModuleReference::ROOT, &heap, &mut ErrorSet::new())
       .into_iter()
       .map(|t| t.pretty_print(&heap))
       .collect()
