@@ -63,6 +63,10 @@ pub fn builtin_std_raw_sources(heap: &Heap) -> HashMap<ModuleReference, String> 
     include_str!("../../../std/result.sam").to_string(),
   );
   sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "set".to_string()]),
+    include_str!("../../../std/set.sam").to_string(),
+  );
+  sources.insert(
     heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "tuples".to_string()]),
     include_str!("../../../std/tuples.sam").to_string(),
   );
