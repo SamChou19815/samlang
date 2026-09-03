@@ -683,6 +683,7 @@ mod tests {
     assert_eq!(Ordering::Greater, PStr::INVALID_PSTR.cmp(&s1));
     assert_eq!(Ordering::Less, s2.cmp(&PStr::INVALID_PSTR));
     assert_eq!(Some(Ordering::Less), s1.partial_cmp(&s2));
+    assert_eq!(Some(Ordering::Less), s1.0.partial_cmp(&s2.0));
   }
 
   #[test]

@@ -51,12 +51,13 @@ Identifiers in samlang are case-sensitive and follow two patterns:
 - `\b` - backspace
 - `\f` - form feed
 - `\n` - newline
+- `\r` - carriage return
 - `\"` - double quote character
 - `\\` - backslash character (to escape the backslash itself)
 
 - Example: `"Hello, World!\n\tTabbed"`
 
-**Unit Literal**: The keyword `unit` represents the unit type and its sole value.
+**Unit Value**: There is no dedicated unit literal token. The keyword `unit` names the unit type; its sole value is written as `{ }` (an empty block expression).
 
 ### 2.3 Comments
 
@@ -92,7 +93,7 @@ The following keywords are reserved and cannot be used as identifiers:
 
 **Declaration Keywords:**
 
-- `class`, `interface`, `val`, `function`, `method`, `as`
+- `class`, `interface`, `val`, `let`, `function`, `method`, `as`
 
 **Visibility Modifiers:**
 
@@ -104,7 +105,9 @@ The following keywords are reserved and cannot be used as identifiers:
 
 **Type Keywords:**
 
-- `int`, `Str`, `bool`, `unit`
+- `int`, `bool`, `unit` (and the reserved keyword `string`)
+
+Note that `Str` is not a keyword: it is the name of the built-in string class and lexes as an ordinary uppercase identifier.
 
 **Literal Keywords:**
 
@@ -208,7 +211,7 @@ The import syntax is:
 import { Name1, Name2, Name3 } from module.path
 ```
 
-Imports must be at the top of a file and can import classes, interfaces, and their members (functions, methods, and variants of enum classes).
+Imports must be at the top of a file. Only top-level classes and interfaces can be imported; their members (functions, methods, and variants) are accessed through the imported class or interface name.
 
 ### 3.3 Standard Library
 
@@ -220,7 +223,7 @@ The `std/` directory contains standard library modules which are automatically i
 - `std.map` - Ordered maps (`Map<K: Comparable<K>, V>`)
 - `std.set` - Ordered sets (`Set<V: Comparable<V>>`)
 - `std.tuples` - Tuple types (`Pair<E0, E1>`, `Triple<E0, E1, E2>`, etc.)
-- `std.interfaces` - Common interfaces (`Comparable<T>`, `TryUnwrap<T>`)
+- `std.interfaces` - Common interfaces (`Comparable<T>`)
 - `std.boxed` - Boxed primitives (`Int`, `Bool`)
 
 Standard library modules can be shadowed by user-defined modules only when `__dangerously_allow_libdef_shadowing__` is enabled in `sconfig.json`.
@@ -271,11 +274,11 @@ let s = Student.init("Alice", 21)
 let n = s.getName()
 ```
 
-Fields in struct classes may be omitted from the constructor:
+Individual fields may be marked `private`, which makes them inaccessible outside the defining module:
 
 ```samlang
-class Clazz(val t: Pair<Triple<int, int, bool>, Str>) {
-  function of(): Clazz = Clazz.init(((42, 2, false), "")
+class Clazz(private val t: Pair<Triple<int, int, bool>, Str>) {
+  function of(): Clazz = Clazz.init(((42, 2, false), ""))
 }
 ```
 
@@ -737,7 +740,7 @@ let v = Vec.empty<int>();
 v.push(10);
 v.push(20);
 v.push(30);
-let sum = ForTests.intRange(0, v.length()).fold((acc, i) -> acc + v.get(i), 0);
+let sum = v.get(0) + v.get(1) + v.get(2);
 ```
 
 ### 5.13 Type Errors
@@ -781,16 +784,15 @@ Expression ::= Literal
 Literal expressions represent constant values.
 
 ```text
-IntLiteral      ::= '-'? ('0' | [1-9][0-9]*)
+IntLiteral      ::= '0' | [1-9][0-9]*
 BoolLiteral     ::= 'true' | 'false'
 StringLiteral   ::= '"' (character | escape)* '"'
-UnitLiteral     ::= '{' '}'
 ```
 
-- **Integer literals** produce values of type `int`. The lexer recognizes negative integers as a single token (e.g., `-42` is a single literal token, not a unary minus applied to `42`).
+- **Integer literals** produce values of type `int`. A negative integer such as `-42` is a unary minus applied to the literal `42`, not a single token. The only exception is `-2147483648`: since `2147483648` overflows `int`, the lexer merges the `-` and the literal into a single minimum-value token.
 - **Boolean literals** `true` and `false` produce values of type `bool`.
 - **String literals** produce values of type `Str`. See Section 2 for escape sequences.
-- **The unit literal** `{ }` produces the single value of type `unit`.
+- **The unit value** is written `{ }` (an empty block expression); there is no dedicated unit literal token.
 
 ### 6.2 Variable References
 
@@ -925,10 +927,10 @@ let some = Option.Some(42);     // T inferred as int
 
 #### 6.7.5 Call Semantics and Evaluation Order
 
-Arguments are evaluated left-to-right before the callee is invoked. The callee is evaluated only after all arguments.
+The callee expression (or the receiver, for method calls) is evaluated first, then the arguments are evaluated left-to-right, and finally the call is performed.
 
 ```samlang
-f(a(), b(), c())               // a() evaluated first, then b(), then c()
+f(a(), b(), c())               // f evaluated first, then a(), then b(), then c()
 ```
 
 ### 6.8 Unary Operators
@@ -978,19 +980,19 @@ Division by zero results in runtime behavior defined by the target platform (typ
 | `==`     | `T`, `T`      | `bool`      | Equality              |
 | `!=`     | `T`, `T`      | `bool`      | Inequality            |
 
-Equality operators are structural: two values are equal if they have the same structure and all components are recursively equal. Nominal type values are equal if they are the same variant (for enums) with equal associated data.
+Equality operators compare by identity, not by structure: primitive values (`int`, `bool`, `unit`) are compared by value, while heap-allocated values (structs, tuples, data-carrying enum variants, closures) are compared by reference. Enum variants without associated data are represented as small integers and therefore compare equal by value.
 
 ```samlang
-Option.Some(42) == Option.Some(42)    // true
-Option.Some(42) == Option.None()        // false
+Option.None<int>() == Option.None<int>()    // true (data-less variants compare by value)
+Option.Some(42) == Option.Some(42)          // false (two separate allocations)
 ```
 
 #### Logical Operators
 
-| Operator | Operand types  | Result type | Description    |
-| -------- | -------------- | ----------- | -------------- | ------ | ---------- |
-| `&&`     | `bool`, `bool` | `bool`      | Logical AND    |
-| `        |                | `           | `bool`, `bool` | `bool` | Logical OR |
+| Operator | Operand types  | Result type | Description |
+| -------- | -------------- | ----------- | ----------- |
+| `&&`     | `bool`, `bool` | `bool`      | Logical AND |
+| `\|\|`   | `bool`, `bool` | `bool`      | Logical OR  |
 
 Logical operators short-circuit: the right operand is evaluated only if necessary.
 
@@ -1016,12 +1018,13 @@ If-else expressions conditionally evaluate one of two branches based on a boolea
 
 ```text
 IfElseExpression ::=
-  'if' Condition Expression 'else' Expression
+  'if' Condition BlockExpression 'else' (IfElseExpression | BlockExpression)
 
 Condition ::= Expression | PatternGuard
 PatternGuard ::= 'let' Pattern '=' Expression
-
 ```
+
+Both branches must be block expressions (surrounded by braces); the else branch may alternatively be another if-else expression.
 
 #### 6.10.1 Simple If-Else
 
@@ -1053,7 +1056,7 @@ if let Some(x) = option {
 }
 ```
 
-The pattern is checked for exhaustiveness; a pattern that always matches (e.g., a variable binding) produces a warning.
+A guard pattern that always matches (e.g., a variable binding or wildcard) is rejected with an error, since the else branch would be unreachable.
 
 #### 6.10.3 Chained If-Else
 
@@ -1075,8 +1078,10 @@ Match expressions provide exhaustive pattern matching on a value.
 
 ```text
 MatchExpression ::=
-  'match' Expression '{' [VariantPatternToExpression (',' VariantPatternToExpression)* [',']] '}'
+  'match' Expression '{' PatternToExpression (',' PatternToExpression)* [','] '}'
 ```
+
+A match expression must contain at least one case. The trailing comma after the last case is optional.
 
 ```samlang
 match option {
@@ -1131,12 +1136,13 @@ function makeAdder(n: int): (int) -> int = (x) -> x + n
 Blocks are sequences of statements followed by an optional final expression. Statements and final expressions can be freely mixed within a block. The block's value is the value of the final expression, or `unit` if there is no final expression.
 
 ```text
-BlockExpression ::=
-  '{' [DeclarationStatement (';' DeclarationStatement)* [';' [Expression]]] '}'
+BlockExpression ::= '{' Statement* [Expression] '}'
+Statement       ::= LetStatement | ExpressionStatement
 ```
 
-```text
-samlang
+Each statement is terminated by a semicolon; the optional final expression has no trailing semicolon.
+
+```samlang
 {
   let x = 42;
   let y = x + 1;
@@ -1181,15 +1187,15 @@ This ensures that each variable is assigned exactly once (within its binding sco
 
 For reference, the complete precedence table (highest to lowest):
 
-| Level | Expression forms                                      |
-| ----- | ----------------------------------------------------- |
-| 12    | Lambda `->`                                           |
-| 11    | Match `match`                                         |
-| 10    | If-else `if ... else`                                 |
-| 4-9   | Binary operators (see Section 6.9)                    |
-| 2     | Unary operators `!`, `-`                              |
-| 1     | Field/method access `.`, call `()`, block `{}`        |
-| 0     | Literals, variables, class references, tuples `(...)` |
+| Level | Expression forms                                                  |
+| ----- | ----------------------------------------------------------------- |
+| 12    | Lambda `->`                                                       |
+| 11    | Match `match`                                                     |
+| 10    | If-else `if ... else`                                             |
+| 3-9   | Binary operators (see Section 6.9 and Section 9)                  |
+| 2     | Unary operators `!`, `-`                                          |
+| 1     | Field/method access `.`, call `()`                                |
+| 0     | Literals, variables, class references, tuples `(...)`, block `{}` |
 
 Parentheses can be used to override default precedence:
 
@@ -1208,7 +1214,7 @@ x.f(y)            // method call
 Expression evaluation follows these rules:
 
 1. Literals, variables, and class references evaluate immediately.
-2. Function calls: arguments are evaluated left-to-right, then the callee is evaluated and invoked.
+2. Function calls: the callee (or receiver) is evaluated first, then arguments are evaluated left-to-right, then the call is performed.
 3. Binary operators: left operand evaluated first, then right operand, then operator applied.
 4. Logical `&&` and `||` short-circuit (right operand may not be evaluated).
 5. Block expressions: statements are executed in order; final expression is evaluated last.
@@ -1310,23 +1316,13 @@ VariablePattern ::= lowerId
 let x = value;
 ```
 
-### 8.3 Literal Patterns
+### 8.3 No Literal Patterns
 
-Literal patterns match against specific constant values.
-
-```text
-LiteralPattern ::= IntLiteral | BoolLiteral
-```
+There are no literal patterns: integer, boolean, and string literals cannot be used as patterns. Matching against specific constant values must be expressed with `if`/`else` comparisons instead:
 
 ```samlang
-match x {
-  0 -> "zero",
-  1 -> "one",
-  _ -> "other",
-}
+if x == 0 { "zero" } else if x == 1 { "one" } else { "other" }
 ```
-
-String literals cannot be used as patterns.
 
 ### 8.4 Tuple Patterns
 
@@ -1339,10 +1335,11 @@ TuplePattern ::= '(' Pattern (',' Pattern)+ ')'
 ```samlang
 let (x, y) = pair;
 
-match triple {
-  (0, 0, 0) -> "origin",
-  (x, y, 0) -> "on XY plane",
-  _ -> "elsewhere",
+match pairOfOptions {
+  (Some(a), Some(b)) -> a + b,
+  (Some(a), _) -> a,
+  (_, Some(b)) -> b,
+  _ -> 0,
 }
 ```
 
@@ -1352,10 +1349,10 @@ Struct patterns match values of struct class types by field name.
 
 ```text
 StructPattern ::= '{' FieldPattern (',' FieldPattern)* '}'
-FieldPattern ::= lowerId | lowerId 'as' lowerId
+FieldPattern ::= lowerId ['as' Pattern]
 ```
 
-A field pattern can be just a field name (which binds the field value to a variable of the same name) or `field as binding` (which binds the field value to a different variable).
+A field pattern can be just a field name (which binds the field value to a variable of the same name) or `field as pattern` (which matches the field value against a nested pattern — most commonly a plain identifier to bind it under a different name).
 
 ```samlang
 let { name, github } = developer;
@@ -1397,11 +1394,11 @@ match result {
 Pattern matching is evaluated as follows:
 
 1. For a variable pattern, match succeeds and the variable is bound to the value.
-2. For a literal pattern, match succeeds if the value equals the literal.
-3. For a tuple pattern, match succeeds if the value is a tuple of the same size and each subpattern matches the corresponding element.
-4. For a struct pattern, match succeeds if the value is an instance of the specified struct class and each field pattern matches the corresponding field.
-5. For a variant pattern, match succeeds if the value is an instance of the enum class, is of the specified variant, and each subpattern matches the corresponding data field.
-6. For a wildcard pattern, match always succeeds with no bindings.
+2. For a tuple pattern, match succeeds if the value is a tuple of the same size and each subpattern matches the corresponding element.
+3. For a struct pattern, match succeeds if the value is an instance of the specified struct class and each field pattern matches the corresponding field.
+4. For a variant pattern, match succeeds if the value is an instance of the enum class, is of the specified variant, and each subpattern matches the corresponding data field.
+5. For a wildcard pattern, match always succeeds with no bindings.
+6. For an or-pattern, match succeeds if any alternative matches.
 
 Pattern matching in `match` expressions is checked for exhaustiveness. The compiler ensures that for every possible value of the matched expression, at least one pattern will match.
 
@@ -1415,7 +1412,7 @@ OrPattern ::= Pattern ('|' Pattern)+
 
 ```samlang
 match result {
-  Ok(x) | Err(x) -> x,  // Both variants bind 'x' with the same type
+  Ok(x) | Error(x) -> x,  // Both variants bind 'x' with the same type
 }
 
 match color {
@@ -1444,7 +1441,7 @@ match pair {
 
 ### 8.10 As-Patterns
 
-The `as` keyword is used to rename bindings in struct patterns, but there is no general as-pattern for aliasing an entire matched value.
+The `as` keyword is only used within struct patterns to match a field against a nested pattern (see Section 8.5); there is no general as-pattern for aliasing an entire matched value.
 
 ---
 
@@ -1452,21 +1449,20 @@ The `as` keyword is used to rename bindings in struct patterns, but there is no 
 
 The following table lists all operators and constructs in order from tightest binding (evaluated first) to loosest binding (evaluated last). Operators at the same precedence level are left-associative unless otherwise noted.
 
-| Level | Construct                                                  | Description              | Associativity |
-| ----- | ---------------------------------------------------------- | ------------------------ | ------------- | ---------- | ---- |
-| 0     | Literals, identifiers, `this`, tuple construction          | Atoms                    | N/A           |
-| 1     | `.` field access, `expr(...)` function call, `{...}` block | Postfix                  | Left          |
-| 2     | `-expr`, `!expr`                                           | Unary operators (prefix) | N/A           |
-| 3     | N/A                                                        | (reserved)               | N/A           |
-| 4     | `*`, `/`, `%`                                              | Multiplicative           | Left          |
-| 5     | `+`, `-`, `::`                                             | Additive, string concat  | Left          |
-| 6     | `<`, `<=`, `>`, `>=`, `==`, `!=`                           | Comparison               | Left          |
-| 7     | `&&`                                                       | Logical AND              | Left          |
-| 8     | `                                                          |                          | `             | Logical OR | Left |
-| 9     | N/A                                                        | (reserved)               | N/A           |
-| 10    | `if`...`else`, `if let`...`else`                           | Conditional              | N/A           |
-| 11    | `match`                                                    | Pattern matching         | N/A           |
-| 12    | `(params) -> expr`                                         | Lambda                   | N/A           |
+| Level | Construct                                                      | Description              | Associativity |
+| ----- | -------------------------------------------------------------- | ------------------------ | ------------- |
+| 0     | Literals, identifiers, `this`, tuple construction, `{...}` block | Atoms                  | N/A           |
+| 1     | `.` field access, `expr(...)` function call                    | Postfix                  | Left          |
+| 2     | `-expr`, `!expr`                                               | Unary operators (prefix) | N/A           |
+| 3     | `::`                                                           | String concatenation     | Left          |
+| 4     | `*`, `/`, `%`                                                  | Multiplicative           | Left          |
+| 5     | `+`, `-`                                                       | Additive                 | Left          |
+| 6     | `<`, `<=`, `>`, `>=`, `==`, `!=`                               | Comparison               | Left          |
+| 7     | `&&`                                                           | Logical AND              | Left          |
+| 8     | `\|\|`                                                         | Logical OR               | Left          |
+| 10    | `if`...`else`, `if let`...`else`                               | Conditional              | N/A           |
+| 11    | `match`                                                        | Pattern matching         | N/A           |
+| 12    | `(params) -> expr`                                             | Lambda                   | N/A           |
 
 **Notes:**
 
@@ -1548,7 +1544,7 @@ For user-defined classes, the compiler automatically generates constructors:
 For a class with only fields (no variants), a constructor `ClassName.init(...)` is automatically generated:
 
 ```samlang
-class Person(val name: Str, val age: int) {
+class Person(val name: Str, val age: int) {}
 
 let p = Person.init("Alice", 30)
 ```
@@ -1558,7 +1554,7 @@ let p = Person.init("Alice", 30)
 For a class with variants, constructors are generated for each variant:
 
 ```samlang
-class Color(Red, Green, Blue, Custom(Str)) {
+class Color(Red, Green, Blue, Custom(Str)) {}
 
 let red = Color.Red()
 let custom = Color.Custom("#ff0000")
@@ -1588,13 +1584,7 @@ The `compare` method returns:
 - Zero if `this == other`
 - A positive integer if `this > other`
 
-**TryUnwrap Interface:**
-
-```samlang
-interface TryUnwrap<T> {
-  method tryUnwrap(): Option<T>
-}
-```
+`Comparable<T>` is the only declaration in `std.interfaces`. The `TryUnwrap<T>` interface is defined in `std.option` (see Section 11.3).
 
 ### 11.2 std.boxed
 
@@ -1621,16 +1611,19 @@ class Bool(val value: bool) : Comparable<Bool>
 
 ### 11.3 std.option
 
-Represents optional values, similar to `Option` in Rust or `Maybe` in Haskell.
+Represents optional values, similar to `Option` in Rust or `Maybe` in Haskell. This module also defines the `TryUnwrap<T>` interface:
 
 ```samlang
-class Option<T>(None, Some(T))
+interface TryUnwrap<T> {
+  method tryUnwrap(): Option<T>
+}
+
+class Option<T>(None, Some(T)) : TryUnwrap<T>
 ```
 
 **Static Methods:**
 
 - `both<A, B>(optionA: Option<A>, optionB: Option<B>): Option<Pair<A, B>>` — Combine two options; succeeds only if both are `Some`.
-- `none<T>(): Option<T>` — Create an `Option` representing "none" with the specified type parameter.
 
 **Instance Methods:**
 
@@ -1706,7 +1699,7 @@ class List<T>(Nil, Cons(T, List<T>))
 - `reverseAndAppend(other: List<T>): List<T>` — Reverse this list and append another list.
 - `fold<A>(f: (A, T) -> A, init: A): A` — Left-fold: combine elements using a binary function.
 - `foldRight<A>(f: (T, A) -> A, init: A): A` — Right-fold: combine elements from right to left.
-- `bind<R>(f: (T) -> Option<R>): Option<R>` — Chain operations returning lists; also known as `flatMap`.
+- `bind<R>(f: (T) -> List<R>): List<R>` — Chain operations returning lists; also known as `flatMap`.
 - `reverse(): List<T>` — Return a reversed copy of the list.
 
 ### 11.6 std.map
@@ -1721,7 +1714,6 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
 
 - `empty<K: Comparable<K>, V>(): Map<K, V>` — Create an empty map.
 - `singleton<K: Comparable<K>, V>(key: K, value: V): Map<K, V>` — Create a single-entry map.
-- `fromList<V: Comparable<V>>(list: List<Pair<K, V>>): Map<K, V>` — Create a map from a list of key-value pairs.
 
 **Instance Methods:**
 
@@ -1738,7 +1730,7 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
 - `compare(other: Map<K, V>, f: (V, V) -> int): int` — Compare maps using a value comparison function.
 - `equal(other: Map<K, V>, f: (V, V) -> bool): bool` — Check equality using a value comparison function.
 - `iter(f: (K, V) -> unit): unit` — Iterate over key-value pairs in order.
-- `fold<A>(acc: A, f: (K, V) -> A): A` — Fold over key-value pairs in order.
+- `fold<A>(acc: A, f: (A, K, V) -> A): A` — Fold over key-value pairs in order.
 - `forAll(f: (K, V) -> bool): bool` — Return `true` if all key-value pairs satisfy the predicate.
 - `exists(f: (K, V) -> bool): bool` — Return `true` if any key-value pair satisfies the predicate.
 - `filter(f: (K, V) -> bool): Map<K, V>` — Keep only the key-value pairs satisfying the predicate.
@@ -1779,13 +1771,13 @@ class Set<V: Comparable<V>>(Empty, Leaf(V), Node(int, V, Set<V>, Set<V>))
 - `subset(other: Set<V>): bool` — Return `true` if `this` is a subset of `other`.
 - `remove(value: V): Set<V>` — Remove an element if present.
 - `compare(other: Set<V>, f: (V, V) -> int): int` — Compare sets using an element comparison function.
-- `equal(other: Set<V>, f: (V, V) -> bool`: bool` — Check equality using an element comparison function.
-- `iter(f: (V) -> unit`: unit — Iterate over elements in order.
-- `fold<A>(acc: A, f: (V) -> A): A` — Fold over elements in order.
+- `equal(other: Set<V>, f: (V, V) -> bool): bool` — Check equality using an element comparison function.
+- `iter(f: (V) -> unit): unit` — Iterate over elements in order.
+- `fold<A>(acc: A, f: (A, V) -> A): A` — Fold over elements in order.
 - `forAll(f: (V) -> bool): bool` — Return `true` if all elements satisfy the predicate.
-- `exists(f: (V) -> bool`: bool — — Return `true` if any element satisfies the predicate.
-- `filter(f: (V) -> bool`: Set<V>` — Keep only the elements satisfying the predicate.
-- `partition(f: (V) -> bool`: Pair<Set<V>, Set<V>>` — Split into two sets based on a predicate.
+- `exists(f: (V) -> bool): bool` — Return `true` if any element satisfies the predicate.
+- `filter(f: (V) -> bool): Set<V>` — Keep only the elements satisfying the predicate.
+- `partition(f: (V) -> bool): Pair<Set<V>, Set<V>>` — Split into two sets based on a predicate.
 - `size(): int` — Return the number of elements.
 - `min(): Option<V>` — Return the minimum element.
 - `max(): Option<V>` — Return the maximum element.
@@ -1818,12 +1810,12 @@ All tuple classes from `Pair` through `Tuple16` implement `GeneralTuple<E0, E1>`
 - `Tuple8<E0, E1, E2, E3, E4, E5, E6, E7>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7)` — 8-element tuple.
 - `Tuple9<E0, E1, E2, E3, E4, E5, E6, E7, E8>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8)` — 9-element tuple.
 - `Tuple10<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9)` — 10-element tuple.
-- `Tuple11<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E7, val e9: E8, val e10: E10)` — 11-element tuple.
-- `Tuple12<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E7, val e8: E8, val e9: E8, val e10: E8, val e11: E11)` — 12-element tuple.
-- `Tuple13<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E7, val e8: E7, val e9: E7, val e9: E7, val e10: E7, val e11: E7, val e12: E12)` — 13-element tuple.
-- `Tuple14<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E7, val e9: E7, val e10: E7, val e11: E7, val e12: E7, val e13: E13)` — 14-element tuple.
-- `Tuple15<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E7, val e9: E7, val e10: E7, val e11: E7, val e12: E7, val e13: E7, val e14: E14)` — 15-element tuple.
-- `Tuple16<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14, E15>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E7, val e9: E7, val e10: E7, val e11: E7, val e12: E7, val e13: E7, val e14: E14, val e15: E15)` — 16-element tuple.
+- `Tuple11<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9, val e10: E10)` — 11-element tuple.
+- `Tuple12<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9, val e10: E10, val e11: E11)` — 12-element tuple.
+- `Tuple13<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9, val e10: E10, val e11: E11, val e12: E12)` — 13-element tuple.
+- `Tuple14<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9, val e10: E10, val e11: E11, val e12: E12, val e13: E13)` — 14-element tuple.
+- `Tuple15<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9, val e10: E10, val e11: E11, val e12: E12, val e13: E13, val e14: E14)` — 15-element tuple.
+- `Tuple16<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14, E15>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4, val e5: E5, val e6: E6, val e7: E7, val e8: E8, val e9: E9, val e10: E10, val e11: E11, val e12: E12, val e13: E13, val e14: E14, val e15: E15)` — 16-element tuple.
 
 All tuple classes provide:
 
@@ -1858,19 +1850,19 @@ The High-Level IR is a direct lowering from the typed AST. Generics are preserve
 
 #### HIR AST Design
 
-The HIR AST in `samlang-ast/src/hir.rs` represents the structure of a samlang program at a high level. The key HIR node types are:
+The HIR AST in `samlang-ast/src/hir.rs` represents the whole program as a flat `Sources` structure; classes, interfaces, and per-file modules no longer exist at this level. `Sources` contains:
 
-- **Modules**: Each source file becomes a `Module` node containing top-level declarations
-- **Classes**: With fields (`val`), methods, static functions, type parameters, and super-types
-- **Interfaces**: Method signatures with type parameters and super-types
-- **Functions**: Bodies with local variables, SSA-style bindings, and a return expression
-- **Methods**: Bodies with a `self_` parameter as the receiver and SSA-style bindings
+- **Global variables**: Interned string constants collected from string literals
+- **Closure type definitions**: Function types for lambdas and method references
+- **Type definitions**: Struct and enum layouts (with generics still present)
+- **Main function names**: The entry functions discovered in the sources
+- **Functions**: Flat, named functions with SSA-style statements and a return expression (methods have already been converted to functions)
 
 #### Source → HIR Transformations
 
 Key transformations performed when lowering from Source AST to HIR:
 
-1. **Method → Static Function**: Instance methods are converted to static functions with an explicit `_this` parameter as the first parameter. The receiver is passed as the first argument.
+1. **Method → Function**: Instance methods are converted to top-level functions with an explicit `_this` parameter as the first parameter. The receiver is passed as the first argument.
 
    ```samlang
    // Source
@@ -1878,10 +1870,8 @@ Key transformations performed when lowering from Source AST to HIR:
      method distanceSquared(): int = ...
    }
 
-   // HIR
-   class Point(val x: int, val y: int) {
-     function distanceSquared(this: Point, x: int): int = ...
-   }
+   // HIR (conceptually)
+   function _Point$distanceSquared(_this: Point): int = ...
    ```
 
 2. **Struct Constructors**: Lowered to `StructInit` statements that allocate and initialize struct fields. For a struct with `val` fields `f1, f2, ..., fn`, the constructor becomes:
@@ -1914,7 +1904,7 @@ Key transformations performed when lowering from Source AST to HIR:
 
 7. **Tuple Types**: Synthesized as named struct types (`Pair`, `Triple`, etc.) from the standard library. Tuple construction `(e0, e1, e2)` becomes a `StructInit` for the appropriate tuple class.
 
-8. **String Literals**: Converted to global string constants referenced by name. Each unique string literal is assigned a name like `_Str_42` and referenced globally.
+8. **String Literals**: Converted to global string constants. String literals are interned, so each unique string is stored once and referenced globally.
 
 9. **Control Flow**: SSA-style control flow using `IfElse` with `final_assignments` (phi nodes) to merge values from different branches. This enables efficient SSA-based optimizations.
 
@@ -1946,17 +1936,17 @@ This transformation enables downstream optimizations to work on concrete types w
 
 Each enum variant is classified into one of three representation strategies to optimize memory and performance:
 
-| Strategy    | When Used                         | Description                                                                       |
-| ----------- | --------------------------------- | --------------------------------------------------------------------------------- |
-| **Int31**   | 0 data fields                     | Stored directly as a raw `ref.i31` value. No heap allocation required.            |
-| **Unboxed** | 1 data field (primitive)          | Uses an identity cast. The value is stored without a wrapper struct.              |
-| **Boxed**   | Multiple data fields or 1 complex | Default strategy - uses a heap-allocated struct with a tag field and data fields. |
+| Strategy    | When Used                                            | Description                                                                       |
+| ----------- | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Int31**   | 0 data fields                                        | Stored directly as a raw `ref.i31` value. No heap allocation required.            |
+| **Unboxed** | 1 data field that is statically known to be a pointer | Uses an identity cast. The value is stored without a wrapper struct.              |
+| **Boxed**   | Everything else                                      | Default strategy - uses a heap-allocated struct with a tag field and data fields. |
 
-The compiler analyzes enum patterns and usage across the codebase to select the optimal representation for each variant:
+The classification is purely structural:
 
-- Variants that are only pattern-matched (data never accessed) → **Int31**
-- Variants with a single primitive field that's always accessed directly → **Unboxed**
-- Variants with multiple fields or complex structures → **Boxed**
+- A variant with no associated data → **Int31**
+- The first data-carrying variant, if its single field is guaranteed to be a heap pointer (a struct, or an enum whose variants are all boxed) → **Unboxed**. Primitive fields such as `int` are never eligible, since an unboxed integer would be indistinguishable from an `Int31` tag, and at most one variant per enum can be unboxed.
+- All other data-carrying variants → **Boxed**
 
 This optimization significantly reduces memory allocation and improves performance for common enum patterns.
 
@@ -1966,21 +1956,20 @@ Structurally identical specialized types are merged to reduce code size. If two 
 
 For example:
 
-- If `List<int>` and `List__int` are both created, they merge into a single type
+- If two different specialized structs both lower to the field layout `[int, int]`, they merge into a single type definition
 - This reduces code duplication while maintaining type safety
 
 #### 12.3.4 Constant Parameter Elimination
 
-Parameters that are always passed the same constant value are inlined at each call site, reducing parameter passing overhead.
+If every call site of a function passes the same constant for a parameter, that parameter is removed from the function signature and the constant is substituted directly into the function body, reducing parameter passing overhead.
 
-```samlang
-// Before: calls to foo(5, 5) allocate space for both arguments
-foo(5, 5);  // After inlining: no call overhead
-```
+#### 12.3.5 Tail Recursion Rewrite
+
+Directly tail-recursive functions are rewritten into loops, so simple tail recursion does not grow the runtime stack. Mutual recursion and non-tail calls are not rewritten.
 
 ### 12.4 MIR Optimization Passes
 
-The MIR optimizer runs four rounds of per-function optimization combined with function inlining and global dead code elimination. Each round consists of the following passes:
+The MIR optimizer runs four rounds of per-function optimization combined with function inlining and global dead code elimination. Each round consists of the following passes (plus a scalar replacement pass, run after constant propagation, that eliminates struct allocations that are only field-accessed and devirtualizes closures that are only called directly):
 
 #### 12.4.1 Conditional Constant Propagation (CCP)
 
@@ -2091,17 +2080,16 @@ This enables the implementation of first-class functions with proper closure sem
 
 #### 12.5.4 Subtype Hierarchies for Enums
 
-For enum types, a parent type is created with an extensible tag field to enable uniform dispatch:
+For enum types, an extensible parent struct containing only the `i32` tag field is created, and each boxed variant becomes a struct subtype of that parent:
 
-```samlang
-// MIR: enum E<T> has variants V1, ..., Vn
-// LIR creates parent type
-enum Parent<T> {
-  tag: int,
-}
+```text
+// MIR: enum E has variants V1, ..., Vn
+// LIR creates:
+//   parent struct E       = { tag: i32 }        (extensible)
+//   variant struct E$_SubK = { tag: i32, ... }  (subtype of E, for each boxed variant)
 ```
 
-Pattern matching uses `ref.test` to check the tag and `ref.cast` to obtain the parent type, then dispatches through the parent's vtable.
+Pattern matching casts a value to the parent type to read its tag (or uses `ref.test` when the enum also has `Int31` variants), then `ref.cast`s to the specific variant subtype to extract the data fields.
 
 #### 12.5.5 Closure Function Signatures
 
@@ -2135,29 +2123,32 @@ The WebAssembly backend uses the WasmGC proposal:
 #### Integer Variants (Int31)
 
 - Stored using `ref.i31` and accessed via `i31.get_s` instruction
-- Most memory-efficient for enums with 0 or 1 data fields
-- Enables simple pointer-based comparison
+- Used for enum variants with no data fields
+- Enables simple pointer-based comparison via `ref.eq`
 
 #### Whole-Program Compilation
 
 - **Single `.wasm` module**: All reachable functions are compiled into one WebAssembly module
-- **Entry points**: Any `Main` class with a `main()` method is exported
-- **Runtime imports**: The Wasm module imports:
-  - `Process.println` → `Process$println`
-  - `Process.panic` → `Process$panic`
-- **String operations**: Helper functions provided for `Str` operations:
-  - `Str.fromInt` → `Str$fromInt`
-  - `Str.concat` → `Str$concat`
+- **Entry points**: Any class named `Main` with a parameterless, non-generic `main` function is exported
+- **Runtime imports**: The Wasm module imports from the `builtins` module:
+  - `Process.println` → `__Process$println`
+  - `Process.panic` → `__Process$panic`
+- **String and Vec operations**: Helper functions are defined inside the module for the remaining builtins, e.g.:
+  - `Str.fromInt` → `__Str$fromInt`
+  - `.toInt()` → `__Str$toInt`
+  - `::` (concatenation) → `__Str$concat`
+  - `Vec` statics and methods → `__Vec$...`
 
 #### Type Mappings
 
-The LIR integer type maps to Wasm types:
+LIR types map to Wasm types:
 
-| LIR Type     | WASM Type | Description      |
-| ------------ | --------- | ---------------- |
-| `Int32`      | `i32`     | 32-bit integer   |
-| `Int31`      | `i31`     | Enum variant tag |
-| `AnyPointer` | `i32`     | Function pointer |
+| LIR Type        | WASM Type                  | Description                            |
+| --------------- | -------------------------- | -------------------------------------- |
+| `Int32`         | `i32`                      | 32-bit integer                         |
+| `Int31`         | `(ref i31)`                | Data-less enum variant                 |
+| `AnyPointer`    | `(ref eq)`                 | Type-erased pointer                    |
+| Function types  | `i32`                      | Function table index for `call_indirect` |
 
 ### 12.7 LIR to TypeScript
 
@@ -2167,21 +2158,21 @@ The TypeScript backend uses the same LIR but emits TypeScript syntax:
 
 Converted to tuple types for compatibility with JavaScript:
 
-```samlang
+```typescript
 // LIR: struct Point { x: int, y: int }
 // TypeScript
-type _Point = [number, _Str] = [0, "Point"];
+type _Point = [number, number];
 ```
 
 #### Type Mappings
 
 - `Int32`/`Int31` → `number`
 - `AnyPointer` → `any`
-- `Id(name)` → Type alias for class/interface names
+- `Id(name)` → Type alias for the generated struct's tuple type
 
 #### Division
 
-Integer division uses `Math.floor(a / b)` for semantics matching WebAssembly's truncating division.
+Integer division is emitted as `Math.floor(a / b)` to produce an integer result.
 
 #### Comparisons
 
@@ -2230,7 +2221,7 @@ Identifiers may be of arbitrary length, subject to memory constraints of the com
 
 ### 13.7 Recursion Depth
 
-The language does not enforce a maximum recursion depth. Programs with deep recursion may exhaust runtime stack resources; tail-call optimization is not guaranteed.
+The language does not enforce a maximum recursion depth. The compiler rewrites directly tail-recursive functions into loops (see Section 12.3.5), but general tail-call optimization (e.g., for mutual recursion) is not guaranteed, so deeply recursive programs may exhaust runtime stack resources.
 
 ### 13.8 Module Nesting
 
@@ -2254,11 +2245,11 @@ There are no looping constructs (no `while`, `for`, `do`, or `loop` keywords). I
 
 ### 14.3 No Null/Nullable Types
 
-Samlang does not have a null value or nullable type constructors. Optional values are represented using the `Option` type from the standard library, with variants `Option::Some(value)` and `Option::None()`.
+Samlang does not have a null value or nullable type constructors. Optional values are represented using the `Option` type from the standard library, with variants `Option.Some(value)` and `Option.None()`.
 
 ### 14.4 No Exceptions
 
-There are no exception types, throw statements, or try-catch blocks. Error handling is performed using the `Result` type from the standard library, with variants `Result::Ok(value)` and `Result::Error(error)`. Runtime panics are triggered through `Process.panic(message)`.
+There are no exception types, throw statements, or try-catch blocks. Error handling is performed using the `Result` type from the standard library, with variants `Result.Ok(value)` and `Result.Error(error)`. Runtime panics are triggered through `Process.panic(message)`.
 
 ### 14.5 No Class Inheritance
 
@@ -2278,7 +2269,7 @@ All state must be encapsulated within functions. There are no global variable de
 
 ### 14.9 No Array/List Literal Syntax
 
-There is no syntax for array or list literals. Lists are constructed using the `List` module functions, such as `List.empty()`, `List.singleton(value)`, and `List.cons(head, tail)`.
+There is no syntax for array or list literals. Lists are constructed using the `List` class, e.g. `List.nil()`, `List.of(value)`, the variant constructor `List.Cons(head, tail)`, or the `.cons(value)` method.
 
 ### 14.10 No Switch Statements
 
