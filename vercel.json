@@ -4,5 +4,6 @@
   "framework": null,
   "installCommand": "pnpm i --frozen-lockfile",
   "public": true,
-  "outputDirectory": "packages/samlang-website/out"
+  "outputDirectory": "packages/samlang-website/out",
+  "rewrites": [{ "source": "/", "destination": "/index" }]
 }
