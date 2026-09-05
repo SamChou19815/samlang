@@ -16,7 +16,7 @@ samlang-printer = { path = "../samlang-printer" }
 samlang-profiling = { path = "../samlang-profiling" }
 samlang-services = { path = "../samlang-services" }
 serde_json = "1.0"
-tokio = { version = "1.52.3", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
+tokio = { version = "1.53.1", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
 tower-lsp = "0.20.0"
 
 [lints.rust]
