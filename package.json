@@ -10,5 +10,5 @@
     "ssg": "pnpm --filter samlang-website ssg",
     "webdev": "pnpm --filter samlang-website dev"
   },
-  "packageManager": "pnpm@10.0.0"
+  "packageManager": "pnpm@12.3.4"
 }
