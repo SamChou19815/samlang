@@ -68,7 +68,14 @@ pub(crate) fn expression<'a>(instrs: Vec<Instruction<'a>>) -> Expression<'a> {
 
 /// A `TypeDef` without any subtyping/shared/descriptor annotations.
 fn plain_type_def(kind: InnerTypeKind<'_>) -> TypeDef<'_> {
-  TypeDef { kind, shared: false, parent: None, descriptor: None, describes: None, final_type: None }
+  TypeDef {
+    kind,
+    shared: false,
+    parents: vec![],
+    descriptor: None,
+    describes: None,
+    final_type: None,
+  }
 }
 
 /// The WASM value types relevant to samlang, lowered from `lir::Type`.
@@ -405,22 +412,22 @@ fn id_ref_type(pool: &NamePool, id: mir::TypeNameId) -> RefType<'_> {
 
 fn i32_binary_op(op: hir::BinaryOperator) -> Instruction<'static> {
   match op {
-    hir::BinaryOperator::MUL => Instruction::I32Mul,
-    hir::BinaryOperator::DIV => Instruction::I32DivS,
-    hir::BinaryOperator::MOD => Instruction::I32RemS,
-    hir::BinaryOperator::PLUS => Instruction::I32Add,
-    hir::BinaryOperator::MINUS => Instruction::I32Sub,
-    hir::BinaryOperator::LAND => Instruction::I32And,
-    hir::BinaryOperator::LOR => Instruction::I32Or,
-    hir::BinaryOperator::SHL => Instruction::I32Shl,
-    hir::BinaryOperator::SHR => Instruction::I32ShrU,
-    hir::BinaryOperator::XOR => Instruction::I32Xor,
-    hir::BinaryOperator::LT => Instruction::I32LtS,
-    hir::BinaryOperator::LE => Instruction::I32LeS,
-    hir::BinaryOperator::GT => Instruction::I32GtS,
-    hir::BinaryOperator::GE => Instruction::I32GeS,
-    hir::BinaryOperator::EQ => Instruction::I32Eq,
-    hir::BinaryOperator::NE => Instruction::I32Ne,
+    hir::BinaryOperator::MUL => Instruction::i32_mul,
+    hir::BinaryOperator::DIV => Instruction::i32_div_s,
+    hir::BinaryOperator::MOD => Instruction::i32_rem_s,
+    hir::BinaryOperator::PLUS => Instruction::i32_add,
+    hir::BinaryOperator::MINUS => Instruction::i32_sub,
+    hir::BinaryOperator::LAND => Instruction::i32_and,
+    hir::BinaryOperator::LOR => Instruction::i32_or,
+    hir::BinaryOperator::SHL => Instruction::i32_shl,
+    hir::BinaryOperator::SHR => Instruction::i32_shr_u,
+    hir::BinaryOperator::XOR => Instruction::i32_xor,
+    hir::BinaryOperator::LT => Instruction::i32_lt_s,
+    hir::BinaryOperator::LE => Instruction::i32_le_s,
+    hir::BinaryOperator::GT => Instruction::i32_gt_s,
+    hir::BinaryOperator::GE => Instruction::i32_ge_s,
+    hir::BinaryOperator::EQ => Instruction::i32_eq,
+    hir::BinaryOperator::NE => Instruction::i32_ne,
   }
 }
 
@@ -688,9 +695,9 @@ fn emit_get<'a>(
   out: &mut Vec<Instruction<'a>>,
 ) {
   state.local_variables.insert(n.dupe(), ty);
-  out.push(Instruction::LocalGet(widx(ctx.pool.local(n))));
+  out.push(Instruction::local_get(widx(ctx.pool.local(n))));
   if is_ref_lowered(ty) {
-    out.push(Instruction::RefAsNonNull);
+    out.push(Instruction::ref_as_non_null);
   }
 }
 
@@ -702,9 +709,9 @@ fn emit_get_no_update<'a>(
   n: PStr,
   out: &mut Vec<Instruction<'a>>,
 ) {
-  out.push(Instruction::LocalGet(widx(ctx.pool.local(n.dupe()))));
+  out.push(Instruction::local_get(widx(ctx.pool.local(n.dupe()))));
   if state.local_variables.get(&n).is_some_and(|t| is_ref_lowered(*t)) {
-    out.push(Instruction::RefAsNonNull);
+    out.push(Instruction::ref_as_non_null);
   }
 }
 
@@ -717,7 +724,7 @@ fn emit_set<'a>(
   out: &mut Vec<Instruction<'a>>,
 ) {
   state.local_variables.insert(n.dupe(), ty);
-  out.push(Instruction::LocalSet(widx(ctx.pool.local(n))));
+  out.push(Instruction::local_set(widx(ctx.pool.local(n))));
 }
 
 fn emit_expr<'a>(
@@ -727,11 +734,11 @@ fn emit_expr<'a>(
   out: &mut Vec<Instruction<'a>>,
 ) {
   match e {
-    lir::Expression::Int32Literal(v) => out.push(Instruction::I32Const(*v)),
+    lir::Expression::Int32Literal(v) => out.push(Instruction::i32_const(*v)),
     // (ref.i31 (i32.const v))
     lir::Expression::Int31Literal(v) => {
-      out.push(Instruction::I32Const(*v));
-      out.push(Instruction::RefI31);
+      out.push(Instruction::i32_const(*v));
+      out.push(Instruction::ref_i31);
     }
     lir::Expression::Variable(n, t) => {
       let ty = lower_type(t);
@@ -745,12 +752,12 @@ fn emit_expr<'a>(
     // (ref.as_non_null (global.get $name))
     lir::Expression::StringName(n) => {
       let global_name = ctx.string_name_mapping.get(n).unwrap();
-      out.push(Instruction::GlobalGet(widx(global_name.as_str(ctx.heap))));
-      out.push(Instruction::RefAsNonNull);
+      out.push(Instruction::global_get(widx(global_name.as_str(ctx.heap))));
+      out.push(Instruction::ref_as_non_null);
     }
     lir::Expression::FnName(n, _) => {
       let index = ctx.function_index_mapping.get(n).unwrap();
-      out.push(Instruction::I32Const(i32::try_from(*index).unwrap()));
+      out.push(Instruction::i32_const(i32::try_from(*index).unwrap()));
     }
   }
 }
@@ -783,14 +790,14 @@ fn emit_expr_with_reference_type<'a>(
       // Cast is needed when the stored/declared type is Eq (AnyPointer) but we need a specific
       // struct type. (ref.cast (ref $ref_type) ...)
       if matches!(stored_type, Some(LoweredType::Eq)) {
-        out.push(Instruction::RefCast(RefCast { r#type: id_ref_type(ctx.pool, ref_type) }));
+        out.push(Instruction::ref_cast(RefCast { r#type: id_ref_type(ctx.pool, ref_type) }));
       }
       ref_type
     }
     lir::Expression::StringName(n) => {
       let global_name = ctx.string_name_mapping.get(n).unwrap();
-      out.push(Instruction::GlobalGet(widx(global_name.as_str(ctx.heap))));
-      out.push(Instruction::RefAsNonNull);
+      out.push(Instruction::global_get(widx(global_name.as_str(ctx.heap))));
+      out.push(Instruction::ref_as_non_null);
       mir::TypeNameId::STR
     }
     lir::Expression::FnName(_, _) => {
@@ -801,8 +808,8 @@ fn emit_expr_with_reference_type<'a>(
 
 /// `(i32.xor ... (i32.const 1))` — logical negation of an i32 boolean already on the stack.
 fn emit_xor_one(out: &mut Vec<Instruction<'_>>) {
-  out.push(Instruction::I32Const(1));
-  out.push(Instruction::I32Xor);
+  out.push(Instruction::i32_const(1));
+  out.push(Instruction::i32_xor);
 }
 
 fn emit_stmt<'a>(
@@ -815,7 +822,7 @@ fn emit_stmt<'a>(
     // (local.set $name (ref.test (ref $T) operand))
     lir::Statement::IsPointer { name, pointer_type, operand } => {
       emit_expr(state, ctx, operand, out);
-      out.push(Instruction::RefTest(RefTest { r#type: id_ref_type(ctx.pool, *pointer_type) }));
+      out.push(Instruction::ref_test(RefTest { r#type: id_ref_type(ctx.pool, *pointer_type) }));
       emit_set(state, ctx, name.dupe(), LoweredType::Int32, out);
     }
     // (local.set $name (i32.xor operand (i32.const 1)))
@@ -831,7 +838,7 @@ fn emit_stmt<'a>(
         // (call $__Str$eq e1 e2) [ (i32.xor ... (i32.const 1)) for NE ]
         emit_expr(state, ctx, e1, out);
         emit_expr(state, ctx, e2, out);
-        out.push(Instruction::Call(widx(ctx.pool.func(mir::FunctionName::STR_EQ))));
+        out.push(Instruction::call(widx(ctx.pool.func(mir::FunctionName::STR_EQ))));
         if *operator == hir::BinaryOperator::NE {
           emit_xor_one(out);
         }
@@ -843,7 +850,7 @@ fn emit_stmt<'a>(
             && (is_reference_expr(e1) || is_reference_expr(e2));
         if is_ref_comparison {
           // (ref.eq e1 e2) [ (i32.xor ... (i32.const 1)) for NE ]
-          out.push(Instruction::RefEq);
+          out.push(Instruction::ref_eq);
           if *operator == hir::BinaryOperator::NE {
             emit_xor_one(out);
           }
@@ -857,7 +864,7 @@ fn emit_stmt<'a>(
     lir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       let result_type = lower_type(type_);
       let struct_type = emit_expr_with_reference_type(state, ctx, pointer_expression, out);
-      out.push(Instruction::StructGet(StructAccess {
+      out.push(Instruction::struct_get(StructAccess {
         r#struct: widx(ctx.pool.type_(struct_type)),
         field: Index::Num(*index as u32, zspan()),
       }));
@@ -889,12 +896,12 @@ fn emit_stmt<'a>(
         emit_expr(state, ctx, arg, out);
         // The first argument (this/self) to builtin methods should be (ref eq), not i32.
         if i == 0 && needs_ref_eq_this && matches!(arg, lir::Expression::Int32Literal(0)) {
-          out.push(Instruction::RefI31);
+          out.push(Instruction::ref_i31);
           continue;
         }
         // Vec element-typed args: the WAT slot is (ref null eq). i32 args need i31 boxing.
         if Some(i) == vec_element_arg && lir_expr_is_i32(arg) {
-          out.push(Instruction::RefI31);
+          out.push(Instruction::ref_i31);
           continue;
         }
         if let (Some(param_types), lir::Expression::Variable(var_name, _)) =
@@ -903,21 +910,21 @@ fn emit_stmt<'a>(
           && let Some(lir::Type::Id(_)) = param_types.get(i)
         {
           // (ref.cast (ref $T) arg) — downcast an erased (ref eq) to the expected struct type.
-          out.push(Instruction::RefCast(RefCast {
+          out.push(Instruction::ref_cast(RefCast {
             r#type: lir_ref_type(ctx.pool, &param_types[i]),
           }));
         }
       }
       match callee {
         lir::Expression::FnName(name, _) => {
-          out.push(Instruction::Call(widx(ctx.pool.func(name.dupe()))));
+          out.push(Instruction::call(widx(ctx.pool.func(name.dupe()))));
         }
         _ => {
           // call_indirect: arguments, then the function index, then the instruction.
           emit_expr(state, ctx, callee, out);
           let function_type_name = ctx.function_type_mapping
             [&lower_function_type(callee.as_variable().unwrap().1.as_fn().unwrap())];
-          out.push(Instruction::CallIndirect(Box::new(CallIndirect {
+          out.push(Instruction::call_indirect(Box::new(CallIndirect {
             table: widx("0"),
             ty: TypeUse::new_with_index(widx(ctx.pool.type_(function_type_name))),
           })));
@@ -925,8 +932,8 @@ fn emit_stmt<'a>(
       }
       if is_panic {
         // Panic never returns: drop the result and add unreachable.
-        out.push(Instruction::Drop);
-        out.push(Instruction::Unreachable);
+        out.push(Instruction::drop);
+        out.push(Instruction::unreachable);
         if let Some(c) = return_collector {
           state.local_variables.insert(c.dupe(), lower_type(return_type));
         }
@@ -934,15 +941,16 @@ fn emit_stmt<'a>(
         // Vec.pop / Vec.get return (ref eq) at WAT level; unwrap based on the element type.
         if vec_returns_element {
           if return_type.is_int32() {
-            out.push(Instruction::Call(widx(ctx.pool.func(mir::FunctionName::UNWRAP_I31))));
+            out.push(Instruction::call(widx(ctx.pool.func(mir::FunctionName::UNWRAP_I31))));
           } else {
-            out.push(Instruction::RefCast(RefCast { r#type: lir_ref_type(ctx.pool, return_type) }));
+            out
+              .push(Instruction::ref_cast(RefCast { r#type: lir_ref_type(ctx.pool, return_type) }));
           }
         }
         if let Some(c) = return_collector {
           emit_set(state, ctx, c.dupe(), lower_type(return_type), out);
         } else {
-          out.push(Instruction::Drop);
+          out.push(Instruction::drop);
         }
       }
     }
@@ -969,20 +977,20 @@ fn emit_stmt<'a>(
           // (if (i32.xor condition (i32.const 1)) (then s2...))
           out.extend(cond);
           emit_xor_one(out);
-          out.push(Instruction::If(block_type(None)));
+          out.push(Instruction::if_(block_type(None)));
           out.extend(s2v);
-          out.push(Instruction::End(None));
+          out.push(Instruction::end(None));
         }
       } else {
         // (if condition (then s1...) [ (else s2...) ])
         out.extend(cond);
-        out.push(Instruction::If(block_type(None)));
+        out.push(Instruction::if_(block_type(None)));
         out.extend(s1v);
         if !s2v.is_empty() {
-          out.push(Instruction::Else(None));
+          out.push(Instruction::else_(None));
           out.extend(s2v);
         }
-        out.push(Instruction::End(None));
+        out.push(Instruction::end(None));
       }
     }
     lir::Statement::SingleIf { condition, invert_condition, statements } => {
@@ -990,11 +998,11 @@ fn emit_stmt<'a>(
       if *invert_condition {
         emit_xor_one(out);
       }
-      out.push(Instruction::If(block_type(None)));
+      out.push(Instruction::if_(block_type(None)));
       for s in statements {
         emit_stmt(state, ctx, s, out);
       }
-      out.push(Instruction::End(None));
+      out.push(Instruction::end(None));
     }
     lir::Statement::Break(e) => {
       let LoopContext { break_collector, break_collector_type, exit_label } =
@@ -1003,7 +1011,7 @@ fn emit_stmt<'a>(
         emit_expr(state, ctx, e, out);
         emit_set(state, ctx, c.dupe(), break_collector_type.unwrap(), out);
       }
-      out.push(Instruction::Br(widx(ctx.pool.label(exit_label))));
+      out.push(Instruction::br(widx(ctx.pool.label(exit_label))));
     }
     lir::Statement::While { loop_variables, statements, break_collector } => {
       let saved_loop_cx = state.loop_cx.take();
@@ -1028,13 +1036,13 @@ fn emit_stmt<'a>(
         emit_expr(state, ctx, &v.loop_value, &mut body);
         emit_set(state, ctx, v.name.dupe(), t, &mut body);
       }
-      body.push(Instruction::Br(widx(ctx.pool.label(continue_label))));
+      body.push(Instruction::br(widx(ctx.pool.label(continue_label))));
       // (loop $continue (block $exit body...))
-      out.push(Instruction::Loop(block_type(Some(ctx.pool.label(continue_label)))));
-      out.push(Instruction::Block(block_type(Some(ctx.pool.label(exit_label)))));
+      out.push(Instruction::loop_(block_type(Some(ctx.pool.label(continue_label)))));
+      out.push(Instruction::block(block_type(Some(ctx.pool.label(exit_label)))));
       out.extend(body);
-      out.push(Instruction::End(None));
-      out.push(Instruction::End(None));
+      out.push(Instruction::end(None));
+      out.push(Instruction::end(None));
       state.loop_cx = saved_loop_cx;
     }
     lir::Statement::Cast { name, type_, assigned_expression } => {
@@ -1046,7 +1054,7 @@ fn emit_stmt<'a>(
         lir::Expression::Variable(_, lir::Type::AnyPointer | lir::Type::Id(_))
       ) && type_.is_id();
       if needs_ref_cast {
-        out.push(Instruction::RefCast(RefCast { r#type: lir_ref_type(ctx.pool, type_) }));
+        out.push(Instruction::ref_cast(RefCast { r#type: lir_ref_type(ctx.pool, type_) }));
       }
       emit_set(state, ctx, name.dupe(), t, out);
     }
@@ -1071,10 +1079,10 @@ fn emit_stmt<'a>(
           .get(i)
           .is_some_and(|ft| matches!(e, lir::Expression::Int32Literal(0)) && is_ref_lowered(*ft));
         if needs_i31 {
-          out.push(Instruction::RefI31);
+          out.push(Instruction::ref_i31);
         }
       }
-      out.push(Instruction::StructNew(widx(ctx.pool.type_(type_ref))));
+      out.push(Instruction::struct_new(widx(ctx.pool.type_(type_ref))));
       emit_set(state, ctx, struct_variable_name.dupe(), LoweredType::Reference(type_ref), out);
     }
   }
@@ -1104,7 +1112,7 @@ fn emit_function<'a>(ctx: &Ctx<'a>, function: &'a lir::Function) -> ModuleField<
   let return_type = lower_type(&function.type_.return_type);
   emit_expr(&mut state, ctx, &function.return_value, &mut instrs);
   if is_ref_lowered(return_type) {
-    instrs.push(Instruction::RefAsNonNull);
+    instrs.push(Instruction::ref_as_non_null);
   }
   for n in &function.parameters {
     state.local_variables.remove(n);
@@ -1190,8 +1198,13 @@ fn build_wast_module<'a>(
     name: None,
     def: plain_type_def(InnerTypeKind::Struct(StructType {
       fields: vec![
-        StructField { id: None, mutable: true, ty: StorageType::Val(ref_named(false, "_VecData")) },
-        StructField { id: None, mutable: true, ty: StorageType::Val(ValType::I32) },
+        StructField {
+          id: None,
+          name: None,
+          mutable: true,
+          ty: StorageType::Val(ref_named(false, "_VecData")),
+        },
+        StructField { id: None, name: None, mutable: true, ty: StorageType::Val(ValType::I32) },
       ],
     })),
   });
@@ -1231,13 +1244,18 @@ fn build_wast_module<'a>(
             .iter()
             .map(|t| StructField {
               id: None,
+              name: None,
               mutable: false,
               ty: StorageType::Val(val_type(pool, t)),
             })
             .collect(),
         }),
         shared: false,
-        parent: type_definition.parent_type.map(|parent| widx(pool.type_(parent))),
+        parents: type_definition
+          .parent_type
+          .map(|parent| widx(pool.type_(parent)))
+          .into_iter()
+          .collect(),
         descriptor: None,
         describes: None,
         final_type: if needs_sub { Some(false) } else { None },
@@ -1266,7 +1284,7 @@ fn build_wast_module<'a>(
       name: None,
       exports: InlineExport::default(),
       ty: GlobalType { ty: ref_named(true, "_Str"), mutable: true, shared: false },
-      kind: GlobalKind::Inline(Expression::one(Instruction::RefNull(HeapType::Concrete(widx(
+      kind: GlobalKind::Inline(Expression::one(Instruction::ref_null(HeapType::Concrete(widx(
         "_Str",
       ))))),
     }));
@@ -1291,7 +1309,7 @@ fn build_wast_module<'a>(
     span: zspan(),
     id: Some(wid("0")),
     name: None,
-    kind: ElemKind::Active { table: None, offset: Expression::one(Instruction::I32Const(0)) },
+    kind: ElemKind::Active { table: None, offset: Expression::one(Instruction::i32_const(0)) },
     payload: ElemPayload::Indices(
       functions.iter().map(|f| widx(pool.func(f.name.dupe()))).collect(),
     ),
@@ -1304,13 +1322,13 @@ fn build_wast_module<'a>(
   if !metadata.gc_string_globals.is_empty() {
     let mut instrs = Vec::with_capacity(metadata.gc_string_globals.len() * 4);
     for gc_string in &metadata.gc_string_globals {
-      instrs.push(Instruction::I32Const(gc_string.offset as i32));
-      instrs.push(Instruction::I32Const(gc_string.length as i32));
-      instrs.push(Instruction::ArrayNewData(ArrayNewData {
+      instrs.push(Instruction::i32_const(gc_string.offset as i32));
+      instrs.push(Instruction::i32_const(gc_string.length as i32));
+      instrs.push(Instruction::array_new_data(ArrayNewData {
         array: widx("_Str"),
         data_idx: widx(pool.data_segment(gc_string.data_segment_index)),
       }));
-      instrs.push(Instruction::GlobalSet(widx(gc_string.name.as_str(heap))));
+      instrs.push(Instruction::global_set(widx(gc_string.name.as_str(heap))));
     }
     fields.push(ModuleField::Func(Func {
       span: zspan(),
@@ -2037,8 +2055,8 @@ mod tests {
   (type (;25;) (func (param i32) (result i32)))
   (type (;26;) (func (param (ref $_TestStruct)) (result i32)))
   (type (;27;) (func))
-  (import "builtins" "__Process$println" (func $__Process$println (;0;) (type 7)))
-  (import "builtins" "__Process$panic" (func $__Process$panic (;1;) (type 7)))
+  (import "builtins" "__Process$println" (func $__Process$println (;0;) (type 7) (param (ref eq) (ref $_Str)) (result i32)))
+  (import "builtins" "__Process$panic" (func $__Process$panic (;1;) (type 7) (param (ref eq) (ref $_Str)) (result i32)))
   (table $0 (;0;) 4 funcref)
   (global $g1 (;0;) (mut (ref null $_Str)) ref.null $_Str)
   (global $GLOBAL_STRING_0 (;1;) (mut (ref null $_Str)) ref.null $_Str)
