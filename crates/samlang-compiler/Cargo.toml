@@ -17,8 +17,8 @@ samlang-optimization = { path = "../samlang-optimization" }
 samlang-parser = { path = "../samlang-parser" }
 samlang-profiling = { path = "../samlang-profiling" }
 rayon = { workspace = true }
-wast = "258.0.0"
-wasmprinter = "0.258.0"
+wast = "261.0.0"
+wasmprinter = "0.261.0"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

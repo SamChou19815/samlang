@@ -76,32 +76,32 @@ fn fold(operands: Vec<Instrs>, op: Instruction<'static>) -> Instrs {
 
 /// `(local.get $name)`
 fn lget(name: &'static str) -> Instrs {
-  vec![Instruction::LocalGet(widx(name))]
+  vec![Instruction::local_get(widx(name))]
 }
 
 /// `(local.set $name value)`
 fn lset(name: &'static str, value: Instrs) -> Instrs {
-  fold(vec![value], Instruction::LocalSet(widx(name)))
+  fold(vec![value], Instruction::local_set(widx(name)))
 }
 
 /// `(local.tee $name value)`
 fn ltee(name: &'static str, value: Instrs) -> Instrs {
-  fold(vec![value], Instruction::LocalTee(widx(name)))
+  fold(vec![value], Instruction::local_tee(widx(name)))
 }
 
 /// `(i32.const v)`
 fn i32c(v: i32) -> Instrs {
-  vec![Instruction::I32Const(v)]
+  vec![Instruction::i32_const(v)]
 }
 
 /// `(ref.null eq)`
 fn ref_null_eq_instr() -> Instrs {
-  vec![Instruction::RefNull(HeapType::Abstract { shared: false, ty: AbstractHeapType::Eq })]
+  vec![Instruction::ref_null(HeapType::Abstract { shared: false, ty: AbstractHeapType::Eq })]
 }
 
 /// `(ref.null $_Str)`
 fn ref_null_str_instr() -> Instrs {
-  vec![Instruction::RefNull(HeapType::Concrete(widx("_Str")))]
+  vec![Instruction::ref_null(HeapType::Concrete(widx("_Str")))]
 }
 
 /// `(<op> a b)` for each i32 binary operator, plus `(ref.eq a b)`.
@@ -111,37 +111,37 @@ macro_rules! binary_operators {
   };
 }
 binary_operators! {
-  i32_add => I32Add,
-  i32_sub => I32Sub,
-  i32_mul => I32Mul,
-  i32_div_u => I32DivU,
-  i32_and => I32And,
-  i32_or => I32Or,
-  i32_shl => I32Shl,
-  i32_eq => I32Eq,
-  i32_ne => I32Ne,
-  i32_lt_s => I32LtS,
-  i32_le_s => I32LeS,
-  i32_gt_s => I32GtS,
-  i32_gt_u => I32GtU,
-  i32_ge_s => I32GeS,
-  i32_ge_u => I32GeU,
-  ref_eq_cmp => RefEq,
+  i32_add => i32_add,
+  i32_sub => i32_sub,
+  i32_mul => i32_mul,
+  i32_div_u => i32_div_u,
+  i32_and => i32_and,
+  i32_or => i32_or,
+  i32_shl => i32_shl,
+  i32_eq => i32_eq,
+  i32_ne => i32_ne,
+  i32_lt_s => i32_lt_s,
+  i32_le_s => i32_le_s,
+  i32_gt_s => i32_gt_s,
+  i32_gt_u => i32_gt_u,
+  i32_ge_s => i32_ge_s,
+  i32_ge_u => i32_ge_u,
+  ref_eq_cmp => ref_eq,
 }
 
 /// `(i32.eqz v)`
 fn i32_eqz(v: Instrs) -> Instrs {
-  fold(vec![v], Instruction::I32Eqz)
+  fold(vec![v], Instruction::i32_eqz)
 }
 
 /// `(array.len v)`
 fn array_len(v: Instrs) -> Instrs {
-  fold(vec![v], Instruction::ArrayLen)
+  fold(vec![v], Instruction::array_len)
 }
 
 /// `(array.new $type init len)`
 fn array_new(type_: &'static str, init: Instrs, len: Instrs) -> Instrs {
-  fold(vec![init, len], Instruction::ArrayNew(widx(type_)))
+  fold(vec![init, len], Instruction::array_new(widx(type_)))
 }
 
 /// `(array.new_data $type $data_segment offset size)`
@@ -153,23 +153,23 @@ fn array_new_data(
 ) -> Instrs {
   fold(
     vec![offset, size],
-    Instruction::ArrayNewData(ArrayNewData { array: widx(type_), data_idx: widx(data_segment) }),
+    Instruction::array_new_data(ArrayNewData { array: widx(type_), data_idx: widx(data_segment) }),
   )
 }
 
 /// `(array.get $type array index)`
 fn array_get(type_: &'static str, array: Instrs, index: Instrs) -> Instrs {
-  fold(vec![array, index], Instruction::ArrayGet(widx(type_)))
+  fold(vec![array, index], Instruction::array_get(widx(type_)))
 }
 
 /// `(array.get_s $type array index)`
 fn array_get_s(type_: &'static str, array: Instrs, index: Instrs) -> Instrs {
-  fold(vec![array, index], Instruction::ArrayGetS(widx(type_)))
+  fold(vec![array, index], Instruction::array_get_s(widx(type_)))
 }
 
 /// `(array.set $type array index value)`
 fn array_set(type_: &'static str, array: Instrs, index: Instrs, value: Instrs) -> Instrs {
-  fold(vec![array, index, value], Instruction::ArraySet(widx(type_)))
+  fold(vec![array, index, value], Instruction::array_set(widx(type_)))
 }
 
 /// `(array.copy $type $type dst dst_index src src_index len)`
@@ -183,20 +183,20 @@ fn array_copy(
 ) -> Instrs {
   fold(
     vec![dst, dst_index, src, src_index, len],
-    Instruction::ArrayCopy(ArrayCopy { dest_array: widx(type_), src_array: widx(type_) }),
+    Instruction::array_copy(ArrayCopy { dest_array: widx(type_), src_array: widx(type_) }),
   )
 }
 
 /// `(struct.new $type field...)`
 fn struct_new(type_: &'static str, fields: Vec<Instrs>) -> Instrs {
-  fold(fields, Instruction::StructNew(widx(type_)))
+  fold(fields, Instruction::struct_new(widx(type_)))
 }
 
 /// `(struct.get $type field struct_ref)`
 fn struct_get(type_: &'static str, field: u32, struct_ref: Instrs) -> Instrs {
   fold(
     vec![struct_ref],
-    Instruction::StructGet(StructAccess {
+    Instruction::struct_get(StructAccess {
       r#struct: widx(type_),
       field: Index::Num(field, zspan()),
     }),
@@ -207,7 +207,7 @@ fn struct_get(type_: &'static str, field: u32, struct_ref: Instrs) -> Instrs {
 fn struct_set(type_: &'static str, field: u32, struct_ref: Instrs, value: Instrs) -> Instrs {
   fold(
     vec![struct_ref, value],
-    Instruction::StructSet(StructAccess {
+    Instruction::struct_set(StructAccess {
       r#struct: widx(type_),
       field: Index::Num(field, zspan()),
     }),
@@ -216,14 +216,14 @@ fn struct_set(type_: &'static str, field: u32, struct_ref: Instrs, value: Instrs
 
 /// `(call $name argument...)`
 fn call(name: &'static str, arguments: Vec<Instrs>) -> Instrs {
-  fold(arguments, Instruction::Call(widx(name)))
+  fold(arguments, Instruction::call(widx(name)))
 }
 
 /// `(ref.cast (ref $type) v)` for a concrete type.
 fn ref_cast(type_: &'static str, v: Instrs) -> Instrs {
   fold(
     vec![v],
-    Instruction::RefCast(RefCast {
+    Instruction::ref_cast(RefCast {
       r#type: RefType { nullable: false, heap: HeapType::Concrete(widx(type_)) },
     }),
   )
@@ -233,7 +233,7 @@ fn ref_cast(type_: &'static str, v: Instrs) -> Instrs {
 fn ref_cast_i31(v: Instrs) -> Instrs {
   fold(
     vec![v],
-    Instruction::RefCast(RefCast {
+    Instruction::ref_cast(RefCast {
       r#type: RefType {
         nullable: false,
         heap: HeapType::Abstract { shared: false, ty: AbstractHeapType::I31 },
@@ -244,67 +244,67 @@ fn ref_cast_i31(v: Instrs) -> Instrs {
 
 /// `(ref.as_non_null v)`
 fn ref_as_non_null(v: Instrs) -> Instrs {
-  fold(vec![v], Instruction::RefAsNonNull)
+  fold(vec![v], Instruction::ref_as_non_null)
 }
 
 /// `(i31.get_s v)`
 fn i31_get_s(v: Instrs) -> Instrs {
-  fold(vec![v], Instruction::I31GetS)
+  fold(vec![v], Instruction::i31_get_s)
 }
 
 /// `(select v_if_nonzero v_if_zero condition)`
 fn select(v_if_nonzero: Instrs, v_if_zero: Instrs, condition: Instrs) -> Instrs {
-  fold(vec![v_if_nonzero, v_if_zero, condition], Instruction::Select(SelectTypes { tys: None }))
+  fold(vec![v_if_nonzero, v_if_zero, condition], Instruction::select(SelectTypes { tys: None }))
 }
 
 /// `(return v)`
 fn ret(v: Instrs) -> Instrs {
-  fold(vec![v], Instruction::Return)
+  fold(vec![v], Instruction::return_)
 }
 
 /// `(drop v)`
 fn drop_(v: Instrs) -> Instrs {
-  fold(vec![v], Instruction::Drop)
+  fold(vec![v], Instruction::drop)
 }
 
 /// `(unreachable)`
 fn unreachable() -> Instrs {
-  vec![Instruction::Unreachable]
+  vec![Instruction::unreachable]
 }
 
 /// `(block $label body...)`
 fn block(label: &'static str, body: Vec<Instrs>) -> Instrs {
-  let mut out = vec![Instruction::Block(block_type(Some(label)))];
+  let mut out = vec![Instruction::block(block_type(Some(label)))];
   out.extend(body.into_iter().flatten());
-  out.push(Instruction::End(None));
+  out.push(Instruction::end(None));
   out
 }
 
 /// `(loop $label body...)`
 fn loop_(label: &'static str, body: Vec<Instrs>) -> Instrs {
-  let mut out = vec![Instruction::Loop(block_type(Some(label)))];
+  let mut out = vec![Instruction::loop_(block_type(Some(label)))];
   out.extend(body.into_iter().flatten());
-  out.push(Instruction::End(None));
+  out.push(Instruction::end(None));
   out
 }
 
 /// `(if condition (then then_branch...))`
 fn if_then(condition: Instrs, then_branch: Vec<Instrs>) -> Instrs {
   let mut out = condition;
-  out.push(Instruction::If(block_type(None)));
+  out.push(Instruction::if_(block_type(None)));
   out.extend(then_branch.into_iter().flatten());
-  out.push(Instruction::End(None));
+  out.push(Instruction::end(None));
   out
 }
 
 /// `(br $label)`
 fn br(label: &'static str) -> Instrs {
-  vec![Instruction::Br(widx(label))]
+  vec![Instruction::br(widx(label))]
 }
 
 /// `(br_if $label condition)`
 fn br_if(label: &'static str, condition: Instrs) -> Instrs {
-  fold(vec![condition], Instruction::BrIf(widx(label)))
+  fold(vec![condition], Instruction::br_if(widx(label)))
 }
 
 // ----------------------------------------------------------------------------
